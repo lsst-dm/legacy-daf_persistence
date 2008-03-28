@@ -1,0 +1,11 @@
+>merge: build
+>merge: core
+>merge: boost
+>merge: jaula
+>merge: coral
+>merge: seal
+>merge: mysqlclient
+>merge: swig
+>merge: doxygen
+>self
+

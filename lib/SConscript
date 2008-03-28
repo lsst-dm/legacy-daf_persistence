@@ -1,0 +1,64 @@
+# -*- python -*-
+Import('env')
+import os
+
+env.SharedLibrary('mwi', map(lambda str: "../src/utils/" + str,
+                            ["Component.cc",
+                             "Demangle.cc",
+                             "Trace.cc",
+                             "Utils.cc"
+                             ]) +
+                         map(lambda str: "../src/data/" + str,
+                            ["Citizen.cc",
+                             "DataProperty.cc",
+                             "DataPropertyFormatter.cc",
+                             "FitsFormatter.cc",
+                             "LsstDataConfigurator.cc",
+                             "LsstImpl_DC2.cc",
+                             "Provenance.cc",
+                             "ReleaseProcess.cc",
+                             "Security.cc",
+                             "SupportFactory.cc"
+                             ]) +
+                         map(lambda str: "../src/persistence/" + str,
+                            ["BoostStorage.cc",
+                             "DateTime.cc",
+                             "FitsStorage.cc",
+                             "Formatter.cc",
+                             "FormatterRegistry.cc",
+                             "LogicalLocation.cc",
+                             "Persistable.cc",
+                             "Persistence.cc",
+                             "Storage.cc",
+                             "StorageRegistry.cc",
+                             "XmlStorage.cc",
+                             "DbAuth.cc",
+                             "DbStorage.cc",
+                             "DbStorageImpl.cc",
+                             "DbStorageLocation.cc",
+                             "DbTsvStorage.cc"]) +
+                         map(lambda str: "../src/exceptions/" + str,
+                            ["Exception.cc"
+                            ]) +
+                         map(lambda str: "../src/policy/" + str,
+                            ["Policy.cc",
+                             "PolicySource.cc",
+                             "PolicyFile.cc",
+                             "PolicyParser.cc",
+                             "PolicyParserFactory.cc",
+                             "SupportedFormats.cc",
+                             "Dictionary.cc",
+                             "json/JSONParser.cc",
+                             "json/JSONParserFactory.cc",
+                             "paf/PAFParser.cc",
+                             "paf/PAFParserFactory.cc"
+                            ]) +
+                         map(lambda str: "../src/logging/" + str,
+                            ["Log.cc",
+                             "LogRecord.cc",
+                             "LogFormatter.cc",
+                             "LogDestination.cc",
+                             "DualLog.cc",
+                             "ScreenLog.cc"
+                            ]), LIBS=env.getlibs("boost jaula coral seal mysqlclient"))
+

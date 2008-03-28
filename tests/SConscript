@@ -1,0 +1,60 @@
+# -*- python -*-
+Import("env")
+
+env.Program(["BuildExcept.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["DataProperty_1.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["DataProperty_2.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["DataProperty_3.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["DataProperty_4.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["DateTime_1.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["DbStorage_1.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["FormatterRegistry_1.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["lsstdata01.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["Persistence_1.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["Persistence_2.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["Persistence_3.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["Policy_1.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["Policy_2.cc"], LIBS=env.libs["boost"] + ["mwi", "jaula"])
+env.Program(["Policy_3.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["Policy_4.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["testLogRecord.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["testLogFormatter.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["testLogDestination.cc"], LIBS=env.libs["boost"] + ["mwi"])
+env.Program(["testLog.cc"], LIBS=env.libs["boost"] + ["mwi"])
+
+env.CheckSwig("python", ilang="c++")
+env.Append(SWIGFLAGS=" -Ipython")
+exceptionTests = env.LoadableModuleIncomplete("_exceptionTests", "exceptionTests.i", LIBS=["mwi"])
+
+#
+# Tests
+#
+import lsst.tests
+import os
+env['ENV']['SEAL_PLUGINS'] = os.environ['SEAL_PLUGINS']
+
+tests = lsst.tests.Control(env, ignoreList=['exceptionTests.py'], verbose=True)
+
+tests.run("BuildExcept.cc")
+tests.run("DataProperty_*.cc")
+tests.run("FormatterRegistry_*.cc")
+tests.run("Persistence_3.cc")
+tests.run("Policy_*.cc")
+tests.run("lsstdata01.cc")
+
+if os.environ.has_key('LSST_DB_AUTH') or os.path.exists("/tmp/lsst.db.auth"):
+    if os.environ.has_key('LSST_DB_AUTH'):
+        env['ENV']['LSST_DB_AUTH'] = os.environ['LSST_DB_AUTH']
+    tests.run("DateTime_1.cc")
+    tests.run("DbStorage_*.cc")
+    tests.run("Persistence_1.cc")
+    tests.run("Persistence_2.cc")
+else:
+    print "WARNING: No fallback database authenticator seen"
+    print "Database tests are being skipped"
+
+for target in tests.run("*.py"):
+    env.Depends(target, exceptionTests)
+    for mod in Split("utils data logging"):
+        env.Depends(target,
+                    "../python/lsst/mwi/_%s%s" % (mod, env['LDMODULESUFFIX']))
