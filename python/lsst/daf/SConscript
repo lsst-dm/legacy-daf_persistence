@@ -1,0 +1,9 @@
+# -*- python -*-
+Import("env")
+
+env.CheckSwig("python", ilang="c++")
+env.LoadableModuleIncomplete("_data", Split("data.i"), LIBS=env.libs["boost"] + ["mwi"])
+env.LoadableModuleIncomplete("_utils", Split("utils.i"), LIBS=env.libs["boost"] + ["mwi"])
+env.LoadableModuleIncomplete("_logging", Split("logging.i"), LIBS=env.libs["boost"] + ["mwi"])
+env.LoadableModuleIncomplete("_policy", Split("policy.i"), LIBS=env.libs["boost"] + ["mwi", "jaula"])
+env.LoadableModuleIncomplete("_persistence", Split("persistence.i"), LIBS=env.libs["boost"] + ["mwi"])
