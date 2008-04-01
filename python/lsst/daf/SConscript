@@ -2,5 +2,5 @@
 Import("env")
 
 env.CheckSwig("python", ilang="c++")
-lsstLibs = "daf_base pex_exceptions pex_policy".spit()
+lsstLibs = "daf_base pex_exceptions pex_policy".split()
 env.LoadableModuleIncomplete("_persistence", Split("persistence.i"), LIBS=env.libs["boost"] + lsstLibs)

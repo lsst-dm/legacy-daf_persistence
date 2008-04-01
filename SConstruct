@@ -32,7 +32,7 @@ if not re.search(r"LSST_HAVE_TR1", str(env['CCFLAGS'])):
 #
 # Build/install things
 #
-for d in Split("examples include/lsst/mwi/exceptions lib tests python/lsst/mwi doc"):
+for d in Split("lib tests python/lsst/daf doc"):
     SConscript(os.path.join(d, "SConscript"))
 
 env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
