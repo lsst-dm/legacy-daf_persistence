@@ -1,12 +1,12 @@
 // -*- lsst-c++ -*-
-%define persistence_DOCSTRING
+%define persistenceLib_DOCSTRING
 "
 Access to the lsst::daf::persistence classes
 "
 %enddef
 
 %feature("autodoc", "1");
-%module(package="lsst.daf.persistence", docstring=persistence_DOCSTRING) persistence
+%module(docstring=persistenceLib_DOCSTRING) persistenceLib
 
 %{
 #include "lsst/daf/base.h"
