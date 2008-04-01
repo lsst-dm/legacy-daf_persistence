@@ -17,7 +17,7 @@ env = scons.makeEnv("daf_persistence",
                      ["mysqlclient", "mysql/mysql.h", "mysqlclient_r:C"],
                      ["daf_base", "lsst/daf/base.h", "daf_base:C++"],
                      ["pex_exceptions", "lsst/pex/exceptions.h", "pex_exceptions:C++"],
-                     ["pex_policy", "lsst/pex/policy.h", "pex_policy:C++"],
+                     ["pex_policy", "lsst/pex/policy/Policy.h", "pex_policy:C++"],
                     ])
 
 #
