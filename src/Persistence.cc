@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,25 +17,25 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/Persistence.h"
+#include "lsst/daf/persistence/Persistence.h"
 
 #include <boost/regex.hpp>
 
-#include "lsst/mwi/persistence/Formatter.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
-#include "lsst/mwi/persistence/Persistable.h"
-#include "lsst/mwi/policy/Policy.h"
-#include "lsst/mwi/persistence/Storage.h"
+#include "lsst/daf/persistence/Formatter.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/Persistable.h"
+#include "lsst/pex/policy/Policy.h"
+#include "lsst/daf/persistence/Storage.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
  * \param[in] policy Policy to configure the Persistence object
  */
-Persistence::Persistence(lsst::mwi::policy::Policy::Ptr policy) :
-    lsst::mwi::data::Citizen(typeid(*this)), _policy(policy) {
+Persistence::Persistence(lsst::pex::policy::Policy::Ptr policy) :
+    lsst::daf::base::Citizen(typeid(*this)), _policy(policy) {
 }
 
 /** Destructor.
@@ -53,7 +53,7 @@ Persistence::~Persistence(void) {
 Storage::Ptr Persistence::_getStorage(std::string const& storageType,
                                       LogicalLocation const& location,
                                       bool persist) {
-    lsst::mwi::policy::Policy::Ptr policyPtr;
+    lsst::pex::policy::Policy::Ptr policyPtr;
     if (_policy && _policy->exists(storageType)) {
         policyPtr = _policy->getPolicy(storageType);
     }
@@ -88,10 +88,10 @@ Storage::Ptr Persistence::getRetrieveStorage(std::string const& storageType,
  */
 void Persistence::persist(
     Persistable const& persistable, Storage::List const& storageList,
-    lsst::mwi::data::DataProperty::PtrType additionalData) {
+    lsst::daf::base::DataProperty::PtrType additionalData) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
-    lsst::mwi::policy::Policy::Ptr policyPtr;
+    lsst::pex::policy::Policy::Ptr policyPtr;
     if (_policy && _policy->exists(policyName)) {
         policyPtr = _policy->getPolicy(policyName);
     }
@@ -124,10 +124,10 @@ void Persistence::persist(
  */
 Persistable* Persistence::unsafeRetrieve(
     std::string const& persistableType, Storage::List const& storageList,
-    lsst::mwi::data::DataProperty::PtrType additionalData) {
+    lsst::daf::base::DataProperty::PtrType additionalData) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
-    lsst::mwi::policy::Policy::Ptr policyPtr;
+    lsst::pex::policy::Policy::Ptr policyPtr;
     if (_policy && _policy->exists(policyName)) {
         policyPtr = _policy->getPolicy(policyName);
     }
@@ -162,7 +162,7 @@ Persistable* Persistence::unsafeRetrieve(
  */
 Persistable::Ptr Persistence::retrieve(
     std::string const& persistableType, Storage::List const& storageList,
-    lsst::mwi::data::DataProperty::PtrType additionalData) {
+    lsst::daf::base::DataProperty::PtrType additionalData) {
     return Persistable::Ptr(
         unsafeRetrieve(persistableType, storageList, additionalData));
 }
@@ -172,9 +172,9 @@ Persistable::Ptr Persistence::retrieve(
  * \return Pointer to a Persistence instance
  */
 Persistence::Ptr Persistence::getPersistence(
-    lsst::mwi::policy::Policy::Ptr policy) {
+    lsst::pex::policy::Policy::Ptr policy) {
     return Persistence::Ptr(new Persistence(policy));
 }
 
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

@@ -1,32 +1,32 @@
 // -*- lsst-c++ -*-
 
 // Instantiates a boost::shared_ptr with transparent support for
-// dynamic down casts from boost::shared_ptr<lsst::mwi::persistence::Persistable>
+// dynamic down casts from boost::shared_ptr<lsst::daf::persistence::Persistable>
 %define %lsst_persistable_shared_ptr(PtrName, CppType...)
 
     %delobject CppType::swigConvert;
     %newobject CppType::swigConvert;
 
     %extend CppType {
-        static CppType* swigConvert(lsst::mwi::persistence::Persistable* p) {
+        static CppType* swigConvert(lsst::daf::persistence::Persistable* p) {
             if (!p) {
-                throw lsst::mwi::exceptions::Runtime("Cannot convert null Persistable pointer");
+                throw lsst::pex::exceptions::Runtime("Cannot convert null Persistable pointer");
             }
             CppType* ptr = dynamic_cast<CppType*>(p);
             if (!ptr) {
-                throw lsst::mwi::exceptions::Runtime("Persistable was not of the expected type associated with smart pointer " # PtrName);
+                throw lsst::pex::exceptions::Runtime("Persistable was not of the expected type associated with smart pointer " # PtrName);
             }
             return ptr;
         }
     }
 
-    // Convert boost::shared_ptr<lsst::mwi::persistence::Persistable> arguments to boost::shared_ptr<CppType >
+    // Convert boost::shared_ptr<lsst::daf::persistence::Persistable> arguments to boost::shared_ptr<CppType >
     %typemap(in) boost::shared_ptr<CppType > const & (boost::shared_ptr<CppType > temp) {
         void* argp = 0;
-        int res = SWIG_ConvertPtr($input, &argp, $descriptor(boost::shared_ptr<lsst::mwi::persistence::Persistable> *), 0);
+        int res = SWIG_ConvertPtr($input, &argp, $descriptor(boost::shared_ptr<lsst::daf::persistence::Persistable> *), 0);
         if (SWIG_IsOK(res)) {
             temp = boost::dynamic_pointer_cast<CppType >(*
-                reinterpret_cast<boost::shared_ptr<lsst::mwi::persistence::Persistable> *>(argp)
+                reinterpret_cast<boost::shared_ptr<lsst::daf::persistence::Persistable> *>(argp)
             );
             if (!temp) {
                 SWIG_exception_fail(SWIG_TypeError, "bad boost::dynamic_pointer_cast");
@@ -41,12 +41,12 @@
         }
     }
 
-    // Convert lsst::mwi::persistence::Persistable* arguments to CppType*
+    // Convert lsst::daf::persistence::Persistable* arguments to CppType*
     %typemap(in) CppType* (CppType* temp) {
         void* argp = 0;
-        int res = SWIG_ConvertPtr($input, &argp, $descriptor(lsst::mwi::persistence::Persistable*), 0);
+        int res = SWIG_ConvertPtr($input, &argp, $descriptor(lsst::daf::persistence::Persistable*), 0);
         if (SWIG_IsOK(res)) {
-            temp = dynamic_cast<CppType*>(reinterpret_cast<lsst::mwi::persistence::Persistable*>(argp));
+            temp = dynamic_cast<CppType*>(reinterpret_cast<lsst::daf::persistence::Persistable*>(argp));
             if (!temp) {
                 SWIG_exception_fail(SWIG_TypeError, "bad dynamic_cast from Persistable*");
             }
@@ -62,9 +62,9 @@
 
     %typemap(in) CppType* DISOWN (CppType* temp) {
         void* argp = 0;
-        int res = SWIG_ConvertPtr($input, &argp, $descriptor(lsst::mwi::persistence::Persistable*), SWIG_POINTER_DISOWN);
+        int res = SWIG_ConvertPtr($input, &argp, $descriptor(lsst::daf::persistence::Persistable*), SWIG_POINTER_DISOWN);
         if (SWIG_IsOK(res)) {
-            temp = dynamic_cast<CppType*>(reinterpret_cast<lsst::mwi::persistence::Persistable*>(argp));
+            temp = dynamic_cast<CppType*>(reinterpret_cast<lsst::daf::persistence::Persistable*>(argp));
             if (!temp) {
                 SWIG_exception_fail(SWIG_TypeError, "bad dynamic_cast from Persistable*");
             }
@@ -78,11 +78,11 @@
         }
     }
 
-    // To get SWIG to dispatch boost::shared_ptr<lsst::mwi::persistence::Persistable> properly,
+    // To get SWIG to dispatch boost::shared_ptr<lsst::daf::persistence::Persistable> properly,
     // we have to pretend it has the same type as boost::shared_ptr<CppType >
     %typecheck(SWIG_TYPECHECK_POINTER) boost::shared_ptr<CppType > const & {
         void* ptr = 0;
-        if (SWIG_IsOK(SWIG_ConvertPtr($input, &ptr, $descriptor(boost::shared_ptr<lsst::mwi::persistence::Persistable> *), 0))) {
+        if (SWIG_IsOK(SWIG_ConvertPtr($input, &ptr, $descriptor(boost::shared_ptr<lsst::daf::persistence::Persistable> *), 0))) {
             $1 = 1;
         } else if (SWIG_IsOK(SWIG_ConvertPtr($input, &ptr, $1_descriptor, 0))) {
             $1 = 1;
@@ -91,11 +91,11 @@
         }
     }
 
-    // To get SWIG to dispatch lsst::mwi::persistence::Persistable* properly,
+    // To get SWIG to dispatch lsst::daf::persistence::Persistable* properly,
     // we have to pretend it has the same type as CppType*
     %typecheck(SWIG_TYPECHECK_POINTER) CppType* {
         void* ptr = 0;
-        if (SWIG_IsOK(SWIG_ConvertPtr($input, &ptr, $descriptor(lsst::mwi::persistence::Persistable*), 0))) {
+        if (SWIG_IsOK(SWIG_ConvertPtr($input, &ptr, $descriptor(lsst::daf::persistence::Persistable*), 0))) {
             $1 = 1;
         } else if (SWIG_IsOK(SWIG_ConvertPtr($input, &ptr, $1_descriptor, 0))) {
             $1 = 1;

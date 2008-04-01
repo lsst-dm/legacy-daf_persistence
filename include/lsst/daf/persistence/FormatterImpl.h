@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_FORMATTERIMPL_H
 
 /** @file
- * @ingroup mwi
+ * @ingroup daf_persistence
  *
  * @brief Auxiliary global template function for Formatter subclasses.
  *
@@ -15,7 +15,7 @@
  */
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class Persistable;
@@ -25,7 +25,7 @@ class Persistable;
   * @param[in] version Version of the Persistable class.
   * @param[in,out] persistable Pointer to the Persistable instance.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 template <class FormatterType, class Archive>
 inline void delegateSerialize(Archive& ar, unsigned int const version,
@@ -33,6 +33,6 @@ inline void delegateSerialize(Archive& ar, unsigned int const version,
     FormatterType::delegateSerialize(ar, version, persistable);
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

@@ -11,7 +11,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -19,13 +19,14 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/DbStorage.h"
+#include "lsst/daf/base/DateTime.h"
+#include "lsst/daf/persistence/DbStorage.h"
+#include "lsst/daf/persistence/DbStorageImpl.h"
 
-#include "lsst/mwi/persistence/DateTime.h"
-#include "lsst/mwi/persistence/DbStorageImpl.h"
+using lsst::daf::base::DateTime;
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
@@ -48,7 +49,7 @@ DbStorage::~DbStorage(void) {
 /** Allow a policy to be used to configure the DbStorage.
  * \param[in] policy
  */
-void DbStorage::setPolicy(lsst::mwi::policy::Policy::Ptr policy) {
+void DbStorage::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
     _impl->setPolicy(policy);
 }
 
@@ -291,4 +292,4 @@ template bool const& DbStorage::getColumnByPos<>(int pos);
 template DateTime const& DbStorage::getColumnByPos<>(int pos);
 //! \endcond
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

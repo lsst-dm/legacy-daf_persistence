@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,22 +17,22 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Default constructor.
  */
 LogicalLocation::LogicalLocation(void) :
-    lsst::mwi::data::Citizen(typeid(*this)) {
+    lsst::daf::base::Citizen(typeid(*this)) {
 }
 
 /** Constructor from string.
  */
 LogicalLocation::LogicalLocation(std::string const& locString) :
-    lsst::mwi::data::Citizen(typeid(*this)), _locString(locString) {
+    lsst::daf::base::Citizen(typeid(*this)), _locString(locString) {
 }
 
 /** Accessor.
@@ -41,4 +41,4 @@ std::string const& LogicalLocation::locString(void) const {
     return _locString;
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

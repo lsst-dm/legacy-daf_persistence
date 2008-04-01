@@ -11,7 +11,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -19,7 +19,7 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/DbStorageImpl.h"
+#include "lsst/daf/persistence/DbStorageImpl.h"
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
@@ -43,13 +43,15 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "RelationalAccess/RelationalServiceException.h"
 #include "SealKernel/ComponentLoader.h"
 
-#include "lsst/mwi/exceptions.h"
-#include "lsst/mwi/persistence/DbStorageLocation.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
-#include "lsst/mwi/persistence/DateTime.h"
+#include "lsst/pex/exceptions.h"
+#include "lsst/daf/persistence/DbStorageLocation.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
+#include "lsst/daf/base/DateTime.h"
+
+using lsst::daf::base::DateTime;
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 // Static member variables
@@ -60,7 +62,7 @@ seal::Handle<seal::ComponentLoader> DbStorageImpl::loader(0);
 
 // Helper conversion functions
 
-/** Convert an lsst::mwi::persistence::DateTime to a coral::TimeStamp.
+/** Convert an lsst::daf::base::DateTime to a coral::TimeStamp.
  * Since the representation is identical, use a reinterpret_cast.
  * \param value Const reference to a DateTime
  * \return Const reference to a TimeStamp
@@ -69,7 +71,7 @@ static coral::TimeStamp const& dt2ts(DateTime const& value) {
     return *(reinterpret_cast<coral::TimeStamp const*>(&value));
 }
 
-/** Convert a coral::TimeStamp to an lsst::mwi::persistence::DateTime.
+/** Convert a coral::TimeStamp to an lsst::daf::base::DateTime.
  * Since the representation is identical, use a reinterpret_cast.
  * \param value Const reference to a TimeStamp
  * \return Const reference to a DateTime
@@ -83,7 +85,7 @@ static DateTime const& ts2dt(coral::TimeStamp const& value) {
  * Initialize SEAL plugin manager and load CORAL relational service if not
  * already setup.
  */
-DbStorageImpl::DbStorageImpl(void) : lsst::mwi::data::Citizen(typeid(*this)) {
+DbStorageImpl::DbStorageImpl(void) : lsst::daf::base::Citizen(typeid(*this)) {
     if (initialized == UNINITIALIZED) {
         initialized = PENDING;
         context = new seal::Context;
@@ -119,7 +121,7 @@ DbStorageImpl::~DbStorageImpl(void) {
 /** Allow a Policy to be used to configure the DbStorage.
  * \param[in] policy
  */
-void DbStorageImpl::setPolicy(lsst::mwi::policy::Policy::Ptr policy) {
+void DbStorageImpl::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
 }
 
 /** Start a database session.
@@ -140,7 +142,7 @@ void DbStorageImpl::startSession(std::string const& location,
     std::vector< seal::IHandle<coral::IRelationalService> > svcList;
     context->query(svcList);
     if (svcList.empty()) {
-        throw lsst::mwi::exceptions::Runtime("Unable to locate CORAL RelationalService");
+        throw lsst::pex::exceptions::Runtime("Unable to locate CORAL RelationalService");
     }
 
     // Use the connection string to get the relational domain.
@@ -157,19 +159,19 @@ void DbStorageImpl::startSession(std::string const& location,
         domain.decodeUserConnectionString(connString);
     _connection.reset(domain.newConnection(databaseAndSchema.first));
     if (_connection == 0) {
-        throw lsst::mwi::exceptions::Runtime(
+        throw lsst::pex::exceptions::Runtime(
             "Unable to connect to database with string: " + connString);
     }
 
     // Create a session with the appropriate access mode and login.
     _session.reset(_connection->newSession(databaseAndSchema.second, am));
     if (_session == 0) {
-        throw lsst::mwi::exceptions::Runtime("Unable to start database session");
+        throw lsst::pex::exceptions::Runtime("Unable to start database session");
     }
     _session->startUserSession(dbloc.getUsername(),
                                dbloc.getPassword());
     if (!_connection->isConnected()) {
-        throw lsst::mwi::exceptions::Runtime(
+        throw lsst::pex::exceptions::Runtime(
             "Unable to login to database with username: " +
             dbloc.getUsername());
     }
@@ -192,14 +194,14 @@ void DbStorageImpl::setRetrieveLocation(LogicalLocation const& location) {
 /** Start a transaction.
  */
 void DbStorageImpl::startTransaction(void) {
-    if (_session == 0) throw lsst::mwi::exceptions::Runtime("Database session not initialized in DbStorage::startTransaction()");
+    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::startTransaction()");
     _session->transaction().start();
 }
 
 /** Start a transaction.
  */
 void DbStorageImpl::endTransaction(void) {
-    if (_session == 0) throw lsst::mwi::exceptions::Runtime("Database session not initialized in DbStorage::endTransaction()");
+    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::endTransaction()");
     _session->transaction().commit();
 }
 
@@ -216,7 +218,7 @@ void DbStorageImpl::createTableFromTemplate(std::string const& tableName,
     DbStorageLocation dbloc(_location);
     MYSQL* db = mysql_init(0);
     if (db == 0) {
-        throw lsst::mwi::exceptions::Runtime(
+        throw lsst::pex::exceptions::Runtime(
             "Unable to allocate MySQL connection: " + _location);
     }
     unsigned int port = strtoul(dbloc.getPort().c_str(), 0, 10);
@@ -226,7 +228,7 @@ void DbStorageImpl::createTableFromTemplate(std::string const& tableName,
                            dbloc.getPassword().c_str(),
                            dbloc.getDbName().c_str(),
                            port, 0, 0) == 0) {
-        throw lsst::mwi::exceptions::Runtime(
+        throw lsst::pex::exceptions::Runtime(
             "Unable to connect to MySQL database: " + _location);
     }
 
@@ -240,7 +242,7 @@ void DbStorageImpl::createTableFromTemplate(std::string const& tableName,
 
     if (mysql_query(db, query.c_str()) != 0) {
         mysql_close(db);
-        throw lsst::mwi::exceptions::Runtime("Unable to create new table: " +
+        throw lsst::pex::exceptions::Runtime("Unable to create new table: " +
                                              tableName + " LIKE " +
                                              templateName);
     }
@@ -265,7 +267,7 @@ void DbStorageImpl::truncateTable(std::string const& tableName) {
  * \param[in] tableName Name of the table
  */
 void DbStorageImpl::setTableForInsert(std::string const& tableName) {
-    if (_session == 0) throw lsst::mwi::exceptions::Runtime("Database session not initialized in DbStorage::setTableForInsert()");
+    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::setTableForInsert()");
     _table = &(_session->nominalSchema().tableHandle(tableName));
     _table->dataEditor().rowBuffer(_rowBuffer);
 }
@@ -295,7 +297,7 @@ void DbStorageImpl::setColumnToNull(std::string const& columnName) {
  * Row values must have been set with setColumn() calls.
  */
 void DbStorageImpl::insertRow(void) {
-    if (_table == 0) throw lsst::mwi::exceptions::Runtime("Insert table not initialized in DbStorage::insertRow()");
+    if (_table == 0) throw lsst::pex::exceptions::Runtime("Insert table not initialized in DbStorage::insertRow()");
     _table->dataEditor().insertRow(_rowBuffer);
     for(std::size_t i = 0; i < _rowBuffer.size(); ++i) {
         _rowBuffer[i].setNull(false);
@@ -307,9 +309,9 @@ void DbStorageImpl::insertRow(void) {
  * \param[in] tableName Name of the table
  */
 void DbStorageImpl::setTableForQuery(std::string const& tableName) {
-    if (_session == 0) throw lsst::mwi::exceptions::Runtime("Database session not initialized in DbStorage::setTableForQuery()");
+    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::setTableForQuery()");
     _query.reset(_session->nominalSchema().newQuery());
-    if (_query == 0) throw lsst::mwi::exceptions::Runtime("Unable to create new query in DbStorage::setTableForQuery()");
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Unable to create new query in DbStorage::setTableForQuery()");
     _query->addToTableList(tableName);
     _condAttributeList.reset(new coral::AttributeList);
     _outAttributeList.reset(new coral::AttributeList);
@@ -320,9 +322,9 @@ void DbStorageImpl::setTableForQuery(std::string const& tableName) {
  */
 void DbStorageImpl::setTableListForQuery(
     std::vector<std::string> const& tableNameList) {
-    if (_session == 0) throw lsst::mwi::exceptions::Runtime("Database session not initialized in DbStorage::setTableListForQuery()");
+    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::setTableListForQuery()");
     _query.reset(_session->nominalSchema().newQuery());
-    if (_query == 0) throw lsst::mwi::exceptions::Runtime("Unable to create new query in DbStorage::setTableListForQuery()");
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Unable to create new query in DbStorage::setTableListForQuery()");
     for (std::vector<std::string>::const_iterator i = tableNameList.begin();
          i != tableNameList.end(); ++i) {
         _query->addToTableList(*i);
@@ -338,7 +340,7 @@ void DbStorageImpl::setTableListForQuery(
  * row.  Use either outColumn() or outParam() but not both.
  */
 void DbStorageImpl::outColumn(std::string const& columnName) {
-    if (_query == 0) throw lsst::mwi::exceptions::Runtime("Query not initialized in DbStorage::outColumn()");
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::outColumn()");
     _query->addToOutputList(columnName);
 }
 
@@ -351,9 +353,9 @@ void DbStorageImpl::outColumn(std::string const& columnName) {
  */
 template <typename T>
 void DbStorageImpl::outParam(std::string const& columnName, T* location) {
-    if (_query == 0) throw lsst::mwi::exceptions::Runtime("Query not initialized in DbStorage::outParam()");
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::outParam()");
     _query->addToOutputList(columnName);
-    if (_outAttributeList == 0) throw lsst::mwi::exceptions::Runtime("Output attribute list not initialized in DbStorage::outParam()");
+    if (_outAttributeList == 0) throw lsst::pex::exceptions::Runtime("Output attribute list not initialized in DbStorage::outParam()");
     _outAttributeList->extend<T>(columnName);
     (*_outAttributeList)[_outAttributeList->size() - 1].template bind<T>(*location);
 }
@@ -361,9 +363,9 @@ void DbStorageImpl::outParam(std::string const& columnName, T* location) {
 template<>
 void DbStorageImpl::outParam<DateTime>(std::string const& columnName,
                                         DateTime* location) {
-    if (_query == 0) throw lsst::mwi::exceptions::Runtime("Query not initialized in DbStorage::outParam()");
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::outParam()");
     _query->addToOutputList(columnName);
-    if (_outAttributeList == 0) throw lsst::mwi::exceptions::Runtime("Output attribute list not initialized in DbStorage::outParam()");
+    if (_outAttributeList == 0) throw lsst::pex::exceptions::Runtime("Output attribute list not initialized in DbStorage::outParam()");
     _outAttributeList->extend<coral::TimeStamp>(columnName);
     (*_outAttributeList)[_outAttributeList->size() - 1].bind<coral::TimeStamp>(
         *(reinterpret_cast<coral::TimeStamp*>(location)));
@@ -376,7 +378,7 @@ void DbStorageImpl::outParam<DateTime>(std::string const& columnName,
  */
 template <typename T>
 void DbStorageImpl::condParam(std::string const& paramName, T const& value) {
-    if (_condAttributeList == 0) throw lsst::mwi::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
+    if (_condAttributeList == 0) throw lsst::pex::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
     _condAttributeList->extend<T>(paramName);
     (*_condAttributeList)[_condAttributeList->size() - 1].template data<T>() =
         value;
@@ -384,7 +386,7 @@ void DbStorageImpl::condParam(std::string const& paramName, T const& value) {
 
 template<>
 void DbStorageImpl::condParam<DateTime>(std::string const& paramName, DateTime const& value) {
-    if (_condAttributeList == 0) throw lsst::mwi::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
+    if (_condAttributeList == 0) throw lsst::pex::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
     _condAttributeList->extend<coral::TimeStamp>(paramName);
     (*_condAttributeList)[_condAttributeList->size() - 1].data<coral::TimeStamp>() = dt2ts(value);
 }
@@ -410,15 +412,15 @@ void DbStorageImpl::groupBy(std::string const& expression) {
  * May include join conditions.
  */
 void DbStorageImpl::setQueryWhere(std::string const& whereClause) {
-    if (_query == 0) throw lsst::mwi::exceptions::Runtime("Query not initialized in DbStorage::setQueryWhere()");
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::setQueryWhere()");
     _query->setCondition(whereClause, *_condAttributeList);
 }
 
 /** Execute the query.
  */
 void DbStorageImpl::query(void) {
-    if (_outAttributeList == 0) throw lsst::mwi::exceptions::Runtime("Output attribute list not initialized in DbStorage::query()");
-    if (_query == 0) throw lsst::mwi::exceptions::Runtime("Query not initialized in DbStorage::query()");
+    if (_outAttributeList == 0) throw lsst::pex::exceptions::Runtime("Output attribute list not initialized in DbStorage::query()");
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::query()");
     if (_outAttributeList->size() > 0) {
         _query->defineOutput(*_outAttributeList);
     }
@@ -429,7 +431,7 @@ void DbStorageImpl::query(void) {
  * \return false if no more rows
  */
 bool DbStorageImpl::next(void) {
-    if (_cursor == 0) throw lsst::mwi::exceptions::Runtime("Cursor not initialized in DbStorage::next()");
+    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::next()");
     return _cursor->next();
 }
 
@@ -439,13 +441,13 @@ bool DbStorageImpl::next(void) {
  */
 template <typename T>
 T const& DbStorageImpl::getColumnByPos(int pos) {
-    if (_cursor == 0) throw lsst::mwi::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
+    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
     return _cursor->currentRow()[pos].template data<T>();
 }
 
 template<>
 DateTime const& DbStorageImpl::getColumnByPos(int pos) {
-    if (_cursor == 0) throw lsst::mwi::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
+    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
     return ts2dt(_cursor->currentRow()[pos].data<coral::TimeStamp>());
 }
 
@@ -454,7 +456,7 @@ DateTime const& DbStorageImpl::getColumnByPos(int pos) {
  * \return true if value is NULL
  */
 bool DbStorageImpl::columnIsNull(int pos) {
-    if (_cursor == 0) throw lsst::mwi::exceptions::Runtime("Cursor not initialized in DbStorage::columnIsNull()");
+    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::columnIsNull()");
     return _cursor->currentRow()[pos].isNull();
 }
 
@@ -513,4 +515,4 @@ template bool const& DbStorageImpl::getColumnByPos<>(int pos);
 template DateTime const& DbStorageImpl::getColumnByPos<>(int pos);
 //! \endcond
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

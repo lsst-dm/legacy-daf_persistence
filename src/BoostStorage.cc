@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,14 +17,14 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/BoostStorage.h"
+#include "lsst/daf/persistence/BoostStorage.h"
 
 #include <fstream>
 
-#include "lsst/mwi/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
@@ -41,7 +41,7 @@ BoostStorage::~BoostStorage(void) {
 /** Allow a Policy to be used to configure the BoostStorage.
  * \param[in] policy
  */
-void BoostStorage::setPolicy(lsst::mwi::policy::Policy::Ptr policy) {
+void BoostStorage::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
 }
 
 /** Set the destination of the serialization file for persistence.
@@ -91,4 +91,4 @@ boost::archive::text_iarchive& BoostStorage::getIArchive(void) {
     return *_iarchive;
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

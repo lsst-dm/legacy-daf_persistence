@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,12 +17,12 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/Formatter.h"
+#include "lsst/daf/persistence/Formatter.h"
 
-#include "lsst/mwi/persistence/FormatterRegistry.h"
+#include "lsst/daf/persistence/FormatterRegistry.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.  Registers Formatter subclass factory function.
@@ -43,7 +43,7 @@ FormatterRegistration::FormatterRegistration(
  * \param[in] type typeid() of subclass
  */
 Formatter::Formatter(std::type_info const& type) :
-    lsst::mwi::data::Citizen(type) {
+    lsst::daf::base::Citizen(type) {
 }
 
 /** Minimal destructor.
@@ -59,7 +59,7 @@ Formatter::~Formatter(void) {
  * Returned pointer is not owned and should not be deleted.
  */
 Formatter::Ptr Formatter::lookupFormatter(
-    std::string const& name, lsst::mwi::policy::Policy::Ptr policy) {
+    std::string const& name, lsst::pex::policy::Policy::Ptr policy) {
     return FormatterRegistry::getInstance().lookupFormatter(name, policy);
 }
 
@@ -69,8 +69,8 @@ Formatter::Ptr Formatter::lookupFormatter(
  * \return Shared pointer to Formatter instance
  */
 Formatter::Ptr Formatter::lookupFormatter(
-    std::type_info const& type, lsst::mwi::policy::Policy::Ptr policy) {
+    std::type_info const& type, lsst::pex::policy::Policy::Ptr policy) {
     return FormatterRegistry::getInstance().lookupFormatter(type, policy);
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

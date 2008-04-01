@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_DBSTORAGEIMPL_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for DbStorageImpl class
   *
@@ -12,13 +12,13 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::DbStorageImpl
+/** @class lsst::daf::persistence::DbStorageImpl
   * @brief Class for implementation of database storage.
   *
   * Implements database using Coral library for DBMS-independence.
   * Use via DbStorage class only.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 #include <boost/scoped_ptr.hpp>
@@ -29,8 +29,8 @@
 #include "CoralBase/AttributeList.h"
 #include "RelationalAccess/AccessMode.h"
 
-#include "lsst/mwi/data/Citizen.h"
-#include "lsst/mwi/policy/Policy.h"
+#include "lsst/daf/base/Citizen.h"
+#include "lsst/pex/policy/Policy.h"
 
 namespace coral {
     class IConnection;
@@ -41,12 +41,12 @@ namespace coral {
 } // namespace coral
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class LogicalLocation;
 
-class DbStorageImpl : private lsst::mwi::data::Citizen {
+class DbStorageImpl : private lsst::daf::base::Citizen {
 public:
     virtual ~DbStorageImpl(void);
 
@@ -56,7 +56,7 @@ private:
 
     DbStorageImpl(void);
 
-    virtual void setPolicy(lsst::mwi::policy::Policy::Ptr policy);
+    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy);
     virtual void setPersistLocation(LogicalLocation const& location);
     virtual void setRetrieveLocation(LogicalLocation const& location);
 
@@ -124,6 +124,6 @@ private:
                                         ///< Seal component loader.
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

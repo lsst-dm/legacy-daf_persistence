@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_DBSTORAGELOCATION_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for DbStorageLocation class
   *
@@ -12,27 +12,27 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::DbStorageLocation
+/** @class lsst::daf::persistence::DbStorageLocation
   * @brief Location of a persisted Persistable instance in a database
   *
   * Provides database connection information for DbStorage.  Can be initialized
   * with either an all-in-one URL containing username and password information
   * or a CORAL-style connection string URL with separate username and password.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-#include "lsst/mwi/data/Citizen.h"
-#include "lsst/mwi/persistence/DbAuth.h"
+#include "lsst/daf/base/Citizen.h"
+#include "lsst/daf/persistence/DbAuth.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
-class DbStorageLocation : public lsst::mwi::data::Citizen {
+class DbStorageLocation : public lsst::daf::base::Citizen {
 public:
     typedef boost::shared_ptr<DbStorageLocation> Ptr;
 
@@ -60,6 +60,6 @@ private:
     std::string _dbName;    ///< Database (not server) name.
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

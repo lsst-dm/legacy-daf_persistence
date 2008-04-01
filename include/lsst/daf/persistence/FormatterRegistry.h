@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_FORMATTERREGISTRY_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for FormatterRegistry class.
   *
@@ -12,30 +12,30 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::FormatterRegistry
+/** @class lsst::daf::persistence::FormatterRegistry
   * @brief Class that registers all Formatter subclasses.
   *
   * Allows lookup by Persistable type_info or name.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
-#include "lsst/mwi/data/Citizen.h"
-#include "lsst/mwi/persistence/Formatter.h"
+#include "lsst/daf/base/Citizen.h"
+#include "lsst/daf/persistence/Formatter.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
-class FormatterRegistry : public lsst::mwi::data::Citizen {
+class FormatterRegistry : public lsst::daf::base::Citizen {
 public:
     void registerFormatter(std::string const& persistableName,
                            std::type_info const& persistableType,
                            Formatter::FactoryPtr factory);
     Formatter::Ptr lookupFormatter(std::type_info const& persistableType,
-                                   lsst::mwi::policy::Policy::Ptr policy);
+                                   lsst::pex::policy::Policy::Ptr policy);
     Formatter::Ptr lookupFormatter(std::string const& persistableName,
-                                   lsst::mwi::policy::Policy::Ptr policy);
+                                   lsst::pex::policy::Policy::Ptr policy);
 
     static FormatterRegistry& getInstance(void);
 
@@ -56,6 +56,6 @@ private:
         ///< Registry of Persistable names by std::type_info::name().
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

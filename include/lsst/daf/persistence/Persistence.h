@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_PERSISTENCE_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for Persistence class
   *
@@ -12,7 +12,7 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::Persistence
+/** @class lsst::daf::persistence::Persistence
   * @brief Class implementing object persistence.
   *
   * This class persists and retrieves objects by calling Formatter subclasses
@@ -21,7 +21,7 @@
   * per-Storage transactions, detecting failures, and causing the Storage
   * subclasses to roll back if necessary.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 #include <boost/shared_ptr.hpp>
@@ -29,20 +29,20 @@
 #include <string>
 #include <vector>
 
-#include "lsst/mwi/data/Citizen.h"
-#include "lsst/mwi/data/DataProperty.h"
-#include "lsst/mwi/policy/Policy.h"
-#include "lsst/mwi/persistence/Persistable.h"
-#include "lsst/mwi/persistence/Storage.h"
+#include "lsst/daf/base/Citizen.h"
+#include "lsst/daf/base/DataProperty.h"
+#include "lsst/pex/policy/Policy.h"
+#include "lsst/daf/persistence/Persistable.h"
+#include "lsst/daf/persistence/Storage.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 // Forward declaration
 class LogicalLocation;
 
-class Persistence : public lsst::mwi::data::Citizen {
+class Persistence : public lsst::daf::base::Citizen {
 public:
     typedef boost::shared_ptr<Persistence> Ptr;
 
@@ -54,18 +54,18 @@ public:
                                             LogicalLocation const& location);
     virtual void persist(
         Persistable const& persistable, Storage::List const& storageList,
-        lsst::mwi::data::DataProperty::PtrType additionalData);
+        lsst::daf::base::DataProperty::PtrType additionalData);
     virtual Persistable::Ptr retrieve(
         std::string const& persistableType, Storage::List const& storageList,
-        lsst::mwi::data::DataProperty::PtrType additionalData);
+        lsst::daf::base::DataProperty::PtrType additionalData);
     virtual Persistable* unsafeRetrieve(
         std::string const& persistableType, Storage::List const& storageList,
-        lsst::mwi::data::DataProperty::PtrType additionalData);
+        lsst::daf::base::DataProperty::PtrType additionalData);
 
-    static Ptr getPersistence(lsst::mwi::policy::Policy::Ptr policy);
+    static Ptr getPersistence(lsst::pex::policy::Policy::Ptr policy);
 
 private:
-    explicit Persistence(lsst::mwi::policy::Policy::Ptr policy);
+    explicit Persistence(lsst::pex::policy::Policy::Ptr policy);
 
     // Do not copy or assign Persistence objects
     Persistence(Persistence const&);
@@ -75,10 +75,10 @@ private:
                              LogicalLocation const& location,
                              bool persist);
 
-    lsst::mwi::policy::Policy::Ptr _policy;
+    lsst::pex::policy::Policy::Ptr _policy;
         ///< Pointer to Policy used to configure Persistence.
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

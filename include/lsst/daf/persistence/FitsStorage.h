@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_FITSSTORAGE_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for FitsStorage class
   *
@@ -12,18 +12,18 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::FitsStorage
+/** @class lsst::daf::persistence::FitsStorage
   * @brief Class for FITS file storage.
   *
   * Merely maintains pathname and HDU number for Formatter subclasses to use.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
-#include "lsst/mwi/persistence/Storage.h"
+#include "lsst/daf/persistence/Storage.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class FitsStorage : public Storage {
@@ -33,7 +33,7 @@ public:
     FitsStorage(void);
     virtual ~FitsStorage(void);
 
-    virtual void setPolicy(lsst::mwi::policy::Policy::Ptr policy);
+    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy);
     virtual void setPersistLocation(LogicalLocation const& location);
     virtual void setRetrieveLocation(LogicalLocation const& location);
 
@@ -48,7 +48,7 @@ private:
     int _hdu;
 };
 
-}}} // lsst::mwi::persistence
+}}} // lsst::daf::persistence
 
 
 #endif

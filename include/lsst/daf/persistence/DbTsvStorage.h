@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_DBTSVSTORAGE_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for DbTsvStorage class
   *
@@ -12,7 +12,7 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::DbTsvStorage
+/** @class lsst::daf::persistence::DbTsvStorage
   * @brief Class for database storage with data loading from TSV files.
   *
   * Subclass of DbStorage, overriding persistence methods.
@@ -21,11 +21,11 @@
   * performance.  Provides methods for writing rows to a table and retrieving
   * rows from a query.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 
-#include "lsst/mwi/persistence/DbStorage.h"
+#include "lsst/daf/persistence/DbStorage.h"
 
 #include <boost/scoped_ptr.hpp>
 #include <fstream>
@@ -34,10 +34,10 @@
 #include <string>
 #include <vector>
 
-#include "lsst/mwi/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class DbTsvStorage : public DbStorage {
@@ -47,7 +47,7 @@ public:
     DbTsvStorage(void);
     ~DbTsvStorage(void);
 
-    virtual void setPolicy(lsst::mwi::policy::Policy::Ptr policy);
+    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy);
     virtual void setPersistLocation(LogicalLocation const& location);
     virtual void setRetrieveLocation(LogicalLocation const& location);
 
@@ -88,6 +88,6 @@ private:
     int _getColumnIndex(std::string const& columnName);
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

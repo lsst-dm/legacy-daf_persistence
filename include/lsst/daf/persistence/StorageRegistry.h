@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_STORAGEREGISTRY_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for StorageRegistry class
   *
@@ -12,26 +12,26 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::StorageRegistry
+/** @class lsst::daf::persistence::StorageRegistry
   * @brief Class to register Storage subclasses.
   *
   * A registry so that subclasses can be looked up by name.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-#include "lsst/mwi/data/Citizen.h"
-#include "lsst/mwi/persistence/Storage.h"
+// #include "lsst/daf/base/Citizen.h"
+#include "lsst/daf/persistence/Storage.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class StorageRegistry {
-    // : private lsst::mwi::data::Citizen
+    // : private lsst::daf::base::Citizen
 public:
     Storage::Ptr createInstance(std::string const& name);
 
@@ -46,7 +46,7 @@ private:
     StorageRegistry& operator=(StorageRegistry const&);
 };
 
-}}} // lsst::mwi::persistence
+}}} // lsst::daf::persistence
 
 
 #endif

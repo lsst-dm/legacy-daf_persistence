@@ -1,60 +1,60 @@
 // -*- lsst-c++ -*-
 %define persistence_DOCSTRING
 "
-Access to the persistence classes from the mwi library
+Access to the lsst::daf::persistence classes
 "
 %enddef
 
 %feature("autodoc", "1");
-%module(package="lsst.mwi", docstring=persistence_DOCSTRING) persistence
+%module(package="lsst.daf.persistence", docstring=persistence_DOCSTRING) persistence
 
 %{
-#include "lsst/mwi/persistence/DateTime.h"
-#include "lsst/mwi/persistence/DbAuth.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
-#include "lsst/mwi/persistence/Persistable.h"
-#include "lsst/mwi/persistence/Persistence.h"
-#include "lsst/mwi/persistence/Storage.h"
-#include "lsst/mwi/persistence/DbStorage.h"
+#include "lsst/daf/base.h"
+#include "lsst/daf/persistence/DbAuth.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/Persistable.h"
+#include "lsst/daf/persistence/Persistence.h"
+#include "lsst/daf/persistence/Storage.h"
+#include "lsst/daf/persistence/DbStorage.h"
 %}
 
 %inline %{
-namespace lsst { namespace mwi { namespace persistence { } } }
+namespace lsst { namespace daf { namespace persistence { } } }
 namespace boost { namespace filesystem { } }
 
-using namespace lsst::mwi::persistence;
+using namespace lsst::daf::persistence;
 %}
 
 %include "p_lsstSwig.i"
 
-%include "lsst/mwi/data/Citizen.h"
+%include "lsst/daf/base/Citizen.h"
 
-%include "lsst/mwi/persistence/DateTime.h"
-%include "lsst/mwi/persistence/DbAuth.h"
-%include "lsst/mwi/persistence/LogicalLocation.h"
-%include "lsst/mwi/persistence/Persistable.h"
+%include "lsst/daf/base.h"
+%include "lsst/daf/persistence/DbAuth.h"
+%include "lsst/daf/persistence/LogicalLocation.h"
+%include "lsst/daf/persistence/Persistable.h"
 
-%newobject lsst::mwi::persistence::Persistence::getPersistence;
-%newobject lsst::mwi::persistence::Persistence::getPersistStorage;
-%newobject lsst::mwi::persistence::Persistence::getRetrieveStorage;
-%newobject lsst::mwi::persistence::Persistence::unsafeRetrieve;
-%include "lsst/mwi/persistence/Persistence.h"
+%newobject lsst::daf::persistence::Persistence::getPersistence;
+%newobject lsst::daf::persistence::Persistence::getPersistStorage;
+%newobject lsst::daf::persistence::Persistence::getRetrieveStorage;
+%newobject lsst::daf::persistence::Persistence::unsafeRetrieve;
+%include "lsst/daf/persistence/Persistence.h"
 
-%include "lsst/mwi/persistence/Storage.h"
-%include "lsst/mwi/persistence/DbStorage.h"
+%include "lsst/daf/persistence/Storage.h"
+%include "lsst/daf/persistence/DbStorage.h"
 
 // Next two needed for typedefs.
-%import "lsst/mwi/data/DataProperty.h"
-%import "lsst/mwi/policy/Policy.h"
+%import "lsst/daf/base/DataProperty.h"
+%import "lsst/pex/policy/Policy.h"
 typedef long long int64_t;
 
-%boost_shared_ptr(PersistableSharedPtr, lsst::mwi::persistence::Persistable)
-%boost_shared_ptr(PersistenceSharedPtr, lsst::mwi::persistence::Persistence);
-%boost_shared_ptr(StorageSharedPtr, lsst::mwi::persistence::Storage);
-%template(StorageList) std::vector<boost::shared_ptr<lsst::mwi::persistence::Storage> >;
+%boost_shared_ptr(PersistableSharedPtr, lsst::daf::persistence::Persistable)
+%boost_shared_ptr(PersistenceSharedPtr, lsst::daf::persistence::Persistence);
+%boost_shared_ptr(StorageSharedPtr, lsst::daf::persistence::Storage);
+%template(StorageList) std::vector<boost::shared_ptr<lsst::daf::persistence::Storage> >;
 %template(TableList) std::vector<std::string>;
 
-%extend lsst::mwi::persistence::DbStorage {
+%extend lsst::daf::persistence::DbStorage {
 
 
     %template(setColumnChar) setColumn<char>;

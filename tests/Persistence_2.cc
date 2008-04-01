@@ -9,14 +9,14 @@
 #include <string>
 #include <stdexcept>
 #include <sys/time.h>
-#include "lsst/mwi/persistence/BoostStorage.h"
-#include "lsst/mwi/persistence/DbStorage.h"
-#include "lsst/mwi/persistence/Formatter.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
-#include "lsst/mwi/persistence/Persistence.h"
-#include "lsst/mwi/exceptions.h"
+#include "lsst/daf/persistence/BoostStorage.h"
+#include "lsst/daf/persistence/DbStorage.h"
+#include "lsst/daf/persistence/Formatter.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/Persistence.h"
+#include "lsst/pex/exceptions.h"
 
-using namespace lsst::mwi::persistence;
+using namespace lsst::daf::persistence;
 
 #define Assert(b, m) tattle(b, m, __LINE__)
 
@@ -49,29 +49,29 @@ private:
 class MyFormatter : public Formatter {
 public:
     MyFormatter(void) : Formatter(typeid(*this)) { };
-    virtual void write(Persistable const* persistable, Storage::Ptr storage, lsst::mwi::data::DataProperty::PtrType additionalData);
-    virtual Persistable* read(Storage::Ptr storage, lsst::mwi::data::DataProperty::PtrType additionalData);
-    virtual void update(Persistable* persistable, Storage::Ptr storage, lsst::mwi::data::DataProperty::PtrType additionalData);
+    virtual void write(Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
+    virtual Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
+    virtual void update(Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, Persistable* persistable);
 private:
-    static Formatter::Ptr createInstance(lsst::mwi::policy::Policy::Ptr policy);
+    static Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
     static FormatterRegistration registration;
 };
 
 // Include this file when implementing a Formatter.
-#include "lsst/mwi/persistence/FormatterImpl.h"
+#include "lsst/daf/persistence/FormatterImpl.h"
 
 // Register the formatter factory function.
 FormatterRegistration MyFormatter::registration("MyPersistable", typeid(MyPersistable), createInstance);
 
 // The definition of the factory function.
-Formatter::Ptr MyFormatter::createInstance(lsst::mwi::policy::Policy::Ptr policy) {
+Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy) {
     return Formatter::Ptr(new MyFormatter);
 }
 
 // Persistence for MyPersistables.
 // Supports BoostStorage and DbStorage.
-void MyFormatter::write(Persistable const* persistable, Storage::Ptr storage, lsst::mwi::data::DataProperty::PtrType additionalData) {
+void MyFormatter::write(Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
     Assert(persistable != 0, "Persisting null");
     Assert(storage, "No Storage provided");
     long long testId = boost::any_cast<long long>(additionalData->findUnique("visitId")->getValue());
@@ -98,7 +98,7 @@ void MyFormatter::write(Persistable const* persistable, Storage::Ptr storage, ls
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-Persistable* MyFormatter::read(Storage::Ptr storage, lsst::mwi::data::DataProperty::PtrType additionalData) {
+Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
     MyPersistable* mp = new MyPersistable;
 
     long long testId = boost::any_cast<long long>(additionalData->findUnique("visitId")->getValue());
@@ -129,7 +129,7 @@ Persistable* MyFormatter::read(Storage::Ptr storage, lsst::mwi::data::DataProper
     return mp;
 }
 
-void MyFormatter::update(Persistable* persistable, Storage::Ptr storage, lsst::mwi::data::DataProperty::PtrType additionalData) {
+void MyFormatter::update(Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
     MyPersistable* mp = dynamic_cast<MyPersistable*>(persistable);
     long long testId = boost::any_cast<long long>(additionalData->findUnique("visitId")->getValue());
     if (typeid(*storage) == typeid(BoostStorage)) {
@@ -175,7 +175,7 @@ void test(void) {
     std::cout << "Initial setup" << std::endl;
 
     // Define a blank Policy.
-    lsst::mwi::policy::Policy::Ptr policy(new lsst::mwi::policy::Policy);
+    lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
 
     // Get a unique id for this test.
     struct timeval tv;
@@ -186,9 +186,9 @@ void test(void) {
     os << testId;
     std::string testIdString = os.str();
 
-    lsst::mwi::data::DataProperty::PtrType additionalData = lsst::mwi::data::SupportFactory::createPropertyNode("info");
-    lsst::mwi::data::DataProperty::PtrType child1(new lsst::mwi::data::DataProperty("visitId", testId));
-    lsst::mwi::data::DataProperty::PtrType child2(new lsst::mwi::data::DataProperty("sliceId", 0));
+    lsst::daf::base::DataProperty::PtrType additionalData = lsst::daf::data::SupportFactory::createPropertyNode("info");
+    lsst::daf::base::DataProperty::PtrType child1(new lsst::daf::base::DataProperty("visitId", testId));
+    lsst::daf::base::DataProperty::PtrType child2(new lsst::daf::base::DataProperty("sliceId", 0));
     additionalData->addProperty(child1);
     additionalData->addProperty(child2);
 
@@ -229,12 +229,12 @@ int main(void) {
     test();
 
     // Check for memory leaks.
-    if (lsst::mwi::data::Citizen::census(0) == 0) {
+    if (lsst::daf::base::Citizen::census(0) == 0) {
         std::cerr << "No leaks detected" << std::endl;
     }
     else {
         std::cerr << "Leaked memory blocks:" << std::endl;
-        lsst::mwi::data::Citizen::census(std::cerr);
+        lsst::daf::base::Citizen::census(std::cerr);
         Assert(false, "Had memory leaks");
     }
 

@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_BOOSTSTORAGE_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for BoostStorage class
   *
@@ -12,16 +12,16 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::BoostStorage
+/** @class lsst::daf::persistence::BoostStorage
   * @brief Class for boost::serialization storage.
   *
   * Uses boost::serialization to persist to files.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 
-#include "lsst/mwi/persistence/Storage.h"
+#include "lsst/daf/persistence/Storage.h"
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -29,7 +29,7 @@
 #include <fstream>
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class BoostStorage : public Storage {
@@ -39,7 +39,7 @@ public:
     BoostStorage(void);
     virtual ~BoostStorage(void);
 
-    virtual void setPolicy(lsst::mwi::policy::Policy::Ptr policy);
+    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy);
     virtual void setPersistLocation(LogicalLocation const& location);
     virtual void setRetrieveLocation(LogicalLocation const& location);
 
@@ -58,7 +58,7 @@ private:
         ///< boost::serialization archive wrapper for input stream.
 };
 
-}}} // lsst::mwi::persistence
+}}} // lsst::daf::persistence
 
 
 #endif

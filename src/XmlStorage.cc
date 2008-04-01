@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,13 +17,13 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/XmlStorage.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/XmlStorage.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
 
 #include <fstream>
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
@@ -42,7 +42,7 @@ XmlStorage::~XmlStorage(void) {
 /** Allow a Policy to be used to configure the Storage.
  * \param[in] policy
  */
-void XmlStorage::setPolicy(lsst::mwi::policy::Policy::Ptr policy) {
+void XmlStorage::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
 }
 
 /** Set the destination to persist to.
@@ -92,4 +92,4 @@ boost::archive::xml_iarchive& XmlStorage::getIArchive(void) {
     return *_iarchive;
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

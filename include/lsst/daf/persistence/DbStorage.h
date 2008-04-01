@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_DBSTORAGE_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for DbStorage class
   *
@@ -13,24 +13,24 @@
   *
   */
 
-/** @class lsst::mwi::persistence::DbStorage
+/** @class lsst::daf::persistence::DbStorage
   * @brief Class for database storage.
   *
   * Persists data to a database.  Provides methods for writing rows to a
   * table and retrieving rows from a query.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 
-#include "lsst/mwi/persistence/Storage.h"
+#include "lsst/daf/persistence/Storage.h"
 
 #include <string>
 #include <vector>
 #include <boost/scoped_ptr.hpp>
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 // Forward declarations
@@ -44,7 +44,7 @@ public:
     DbStorage(void);
     ~DbStorage(void);
 
-    virtual void setPolicy(lsst::mwi::policy::Policy::Ptr policy);
+    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy);
     virtual void setPersistLocation(LogicalLocation const& location);
     virtual void setRetrieveLocation(LogicalLocation const& location);
 
@@ -88,6 +88,6 @@ private:
         ///< Implementation class for isolation.
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,15 +17,15 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/DbAuth.h"
+#include "lsst/daf/persistence/DbAuth.h"
 
 #include <cstdlib>
 #include <fstream>
 
-#include "lsst/mwi/exceptions.h"
+#include "lsst/pex/exceptions.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Name of environment variable containing authenticator.
@@ -35,7 +35,7 @@ static char const* const envVarName = "LSST_DB_AUTH";
 /** Set the authenticator pathname via Policy.
  * \param[in] policy Pointer to a Policy
  */
-void DbAuth::setPolicy(lsst::mwi::policy::Policy::Ptr policy) {
+void DbAuth::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
     if (policy->exists("DbAuthPath")) {
         pathName() = policy->getString("DbAuthPath");
     }
@@ -72,7 +72,7 @@ std::string const& DbAuth::authString(void) {
         else {
             authenticator = getenv(envVarName);
             if (authenticator == 0) {
-                throw lsst::mwi::exceptions::Runtime("No database authenticator found");
+                throw lsst::pex::exceptions::Runtime("No database authenticator found");
             }
         }
         auth = std::string(authenticator);
@@ -117,4 +117,4 @@ std::string& DbAuth::pathName(void) {
 }
 
 
-}}} // lsst::mwi::persistence
+}}} // lsst::daf::persistence

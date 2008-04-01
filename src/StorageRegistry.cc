@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,7 +17,7 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/StorageRegistry.h"
+#include "lsst/daf/persistence/StorageRegistry.h"
 
 // Using LSST exceptions has problems due to the use of DataProperty, which is
 // a Persistable, in them.
@@ -25,20 +25,20 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 // All Storage subclasses must be included here.
 
-#include "lsst/mwi/persistence/BoostStorage.h"
-#include "lsst/mwi/persistence/DbStorage.h"
-#include "lsst/mwi/persistence/DbTsvStorage.h"
-#include "lsst/mwi/persistence/FitsStorage.h"
-#include "lsst/mwi/persistence/XmlStorage.h"
+#include "lsst/daf/persistence/BoostStorage.h"
+#include "lsst/daf/persistence/DbStorage.h"
+#include "lsst/daf/persistence/DbTsvStorage.h"
+#include "lsst/daf/persistence/FitsStorage.h"
+#include "lsst/daf/persistence/XmlStorage.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
  */
 StorageRegistry::StorageRegistry(void) {
-    // : lsst::mwi::data::Citizen(typeid(this))
+    // : lsst::daf::base::Citizen(typeid(this))
 }
 
 /** Minimal destructor.  Do not destroy the Storage subclasses in case they
@@ -83,4 +83,4 @@ StorageRegistry& StorageRegistry::getRegistry(void) {
     return *registry;
 }
 
-}}} // lsst::mwi::persistence
+}}} // lsst::daf::persistence

@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_FORMATTER_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for Formatter abstract base class
   *
@@ -12,7 +12,7 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::Formatter
+/** @class lsst::daf::persistence::Formatter
   * @brief Abstract base class for all formatters.
   *
   * Formatters map Persistable subclasses into an appropriate form for output
@@ -27,20 +27,20 @@
   * implement a public static delegateSerialize() template (or a set of
   * static delegateSerialize() functions for each supported archive type).
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <typeinfo>
 
-#include "lsst/mwi/data/Citizen.h"
-#include "lsst/mwi/data/DataProperty.h"
-#include "lsst/mwi/persistence/Storage.h"
-#include "lsst/mwi/policy/Policy.h"
+#include "lsst/daf/base/Citizen.h"
+#include "lsst/daf/base/DataProperty.h"
+#include "lsst/daf/persistence/Storage.h"
+#include "lsst/pex/policy/Policy.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 // Forward declarations.
@@ -48,13 +48,13 @@ class LogicalLocation;
 class Persistable;
 
 
-class Formatter : public lsst::mwi::data::Citizen {
+class Formatter : public lsst::daf::base::Citizen {
 public:
     typedef boost::shared_ptr<Formatter> Ptr;
 
     /** Pointer to a (static) factory function for a Formatter subclass.
       */
-    typedef Ptr (*FactoryPtr)(lsst::mwi::policy::Policy::Ptr);
+    typedef Ptr (*FactoryPtr)(lsst::pex::policy::Policy::Ptr);
 
 
     virtual ~Formatter(void);
@@ -67,7 +67,7 @@ public:
       */
     virtual void write(
         Persistable const* persistable, Storage::Ptr storage,
-        lsst::mwi::data::DataProperty::PtrType additionalData) = 0;
+        lsst::daf::base::DataProperty::PtrType additionalData) = 0;
 
     /** Read a Persistable instance from a Storage instance.
       * @param[in] storage Pointer to the Storage instance.
@@ -77,7 +77,7 @@ public:
       */
     virtual Persistable* read(
         Storage::Ptr storage,
-        lsst::mwi::data::DataProperty::PtrType additionalData) = 0;
+        lsst::daf::base::DataProperty::PtrType additionalData) = 0;
 
     /** Update an existing Persistable instance with information from
       * an additional Storage instance.
@@ -88,14 +88,14 @@ public:
       */
     virtual void update(
         Persistable* persistable, Storage::Ptr storage,
-        lsst::mwi::data::DataProperty::PtrType additionalData) = 0;
+        lsst::daf::base::DataProperty::PtrType additionalData) = 0;
 
     static Formatter::Ptr lookupFormatter(
         std::string const& persistableType,
-        lsst::mwi::policy::Policy::Ptr policy);
+        lsst::pex::policy::Policy::Ptr policy);
     static Formatter::Ptr lookupFormatter(
         std::type_info const& persistableType,
-        lsst::mwi::policy::Policy::Ptr policy);
+        lsst::pex::policy::Policy::Ptr policy);
 
 protected:
     explicit Formatter(std::type_info const& type);
@@ -105,7 +105,7 @@ protected:
   * @brief Construct a static instance of this helper class to register a
   * Formatter subclass in the FormatterRegistry.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 class FormatterRegistration {
 public:
@@ -114,6 +114,6 @@ public:
                           Formatter::FactoryPtr factory);
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

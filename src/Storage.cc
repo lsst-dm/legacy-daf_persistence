@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,23 +17,23 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/Storage.h"
+#include "lsst/daf/persistence/Storage.h"
 
 #include <cerrno>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "lsst/mwi/exceptions.h"
-#include "lsst/mwi/persistence/StorageRegistry.h"
+#include "lsst/pex/exceptions.h"
+#include "lsst/daf/persistence/StorageRegistry.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
  * \param[in] type typeid() of subclass
  */
-Storage::Storage(std::type_info const& type) : lsst::mwi::data::Citizen(type) {
+Storage::Storage(std::type_info const& type) : lsst::daf::base::Citizen(type) {
 }
 
 /** Minimal destructor
@@ -50,7 +50,7 @@ Storage::~Storage(void) {
  */
 Storage::Ptr Storage::createInstance(
     std::string const& name, LogicalLocation const& location, bool persist,
-    lsst::mwi::policy::Policy::Ptr policy) {
+    lsst::pex::policy::Policy::Ptr policy) {
     Storage::Ptr storage = StorageRegistry::getRegistry().createInstance(name);
     storage->setPolicy(policy);
     if (persist) {
@@ -84,29 +84,29 @@ void Storage::verifyPathName(std::string const& name) {
 
         // If it already exists, we're OK; otherwise, throw an exception.
         if (ret == -1 && errno != EEXIST) {
-            lsst::mwi::exceptions::ExceptionData exdata("data");
+            lsst::pex::exceptions::ExceptionData exdata("data");
             exdata <<
-                lsst::mwi::data::SupportFactory::createLeafProperty("errno",
+                lsst::daf::data::SupportFactory::createLeafProperty("errno",
                                                                     errno);
-            throw lsst::mwi::exceptions::Runtime(exdata,
+            throw lsst::pex::exceptions::Runtime(exdata,
                 "Error creating directory: " + dirName +
                 " = " + strerror(errno));
         }
     }
     else if (ret == -1) {
         // We couldn't read the (existing) directory for some reason.
-        lsst::mwi::exceptions::ExceptionData exdata("data");
-        exdata << lsst::mwi::data::SupportFactory::createLeafProperty("errno",
+        lsst::pex::exceptions::ExceptionData exdata("data");
+        exdata << lsst::daf::data::SupportFactory::createLeafProperty("errno",
                                                                       errno);
-        throw lsst::mwi::exceptions::Runtime(exdata,
+        throw lsst::pex::exceptions::Runtime(exdata,
             "Error searching for directory: " + dirName +
             " = " + strerror(errno));
     }
     else if (!S_ISDIR(buf.st_mode)) {
         // It's not a directory.
-        throw lsst::mwi::exceptions::Runtime(
+        throw lsst::pex::exceptions::Runtime(
             "Non-directory in path: " + dirName);
     }
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

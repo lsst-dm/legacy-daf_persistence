@@ -8,11 +8,11 @@
 #include <stdexcept>
 #include <string>
 #include <sys/time.h>
-#include "lsst/mwi/persistence/DbStorage.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
-#include "lsst/mwi/exceptions.h"
+#include "lsst/daf/persistence/DbStorage.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
+#include "lsst/pex/exceptions.h"
 
-using namespace lsst::mwi::persistence;
+using namespace lsst::daf::persistence;
 
 #define Assert(b, m) tattle(b, m, __LINE__)
 
@@ -27,7 +27,7 @@ static void tattle(bool mustBeTrue, std::string const& failureMsg, int line) {
 
 void test(void) {
     std::cout << "Initial setup" << std::endl;
-    lsst::mwi::policy::Policy::Ptr policy(new lsst::mwi::policy::Policy);
+    lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
 
     struct timeval tv;
     gettimeofday(&tv, 0); 
@@ -126,12 +126,12 @@ int main(void) {
 
     test();
 
-    if (lsst::mwi::data::Citizen::census(0) == 0) {
+    if (lsst::daf::base::Citizen::census(0) == 0) {
         std::cerr << "No leaks detected" << std::endl;
     }
     else {
         std::cerr << "Leaked memory blocks:" << std::endl;
-        lsst::mwi::data::Citizen::census(std::cerr);
+        lsst::daf::base::Citizen::census(std::cerr);
         Assert(false, "Had memory leaks");
     }
 

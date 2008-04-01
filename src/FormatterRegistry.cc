@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,12 +17,12 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/FormatterRegistry.h"
+#include "lsst/daf/persistence/FormatterRegistry.h"
 
-#include "lsst/mwi/exceptions.h"
+#include "lsst/pex/exceptions.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Get a reference to the singleton instance of the FormatterRegistry.
@@ -57,10 +57,10 @@ void FormatterRegistry::registerFormatter(
  */
 Formatter::Ptr FormatterRegistry::lookupFormatter(
     std::type_info const& persistableType,
-    lsst::mwi::policy::Policy::Ptr policy) {
+    lsst::pex::policy::Policy::Ptr policy) {
     StringMap::const_iterator it = _nameForType.find(persistableType.name());
     if (it == _nameForType.end()) {
-        throw lsst::mwi::exceptions::InvalidParameter(
+        throw lsst::pex::exceptions::InvalidParameter(
             std::string("No Formatter registered for Persistable type: ") +
             persistableType.name());
     }
@@ -75,14 +75,14 @@ Formatter::Ptr FormatterRegistry::lookupFormatter(
  */
 Formatter::Ptr FormatterRegistry::lookupFormatter(
     std::string const& persistableName,
-    lsst::mwi::policy::Policy::Ptr policy) {
+    lsst::pex::policy::Policy::Ptr policy) {
     FactoryMap::const_iterator it = _byName.find(persistableName);
     if (it == _byName.end()) {
-        throw lsst::mwi::exceptions::InvalidParameter(
+        throw lsst::pex::exceptions::InvalidParameter(
             "No Formatter registered for Persistable name: " +
             persistableName);
     }
-    lsst::mwi::policy::Policy::Ptr formatterPolicy;
+    lsst::pex::policy::Policy::Ptr formatterPolicy;
     if (policy && policy->exists(persistableName)) {
         formatterPolicy = policy->getPolicy(persistableName);
     }
@@ -92,7 +92,7 @@ Formatter::Ptr FormatterRegistry::lookupFormatter(
 /** Default constructor.
  */
 FormatterRegistry::FormatterRegistry(void) :
-    lsst::mwi::data::Citizen(typeid(*this)) {
+    lsst::daf::base::Citizen(typeid(*this)) {
     markPersistent();
 }
 
@@ -101,4 +101,4 @@ FormatterRegistry::FormatterRegistry(void) :
 FormatterRegistry::~FormatterRegistry(void) {
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

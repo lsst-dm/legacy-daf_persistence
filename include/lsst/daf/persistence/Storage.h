@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_STORAGE_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for Storage abstract base class
   *
@@ -12,12 +12,12 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::Storage
+/** @class lsst::daf::persistence::Storage
   * @brief Abstract base class for storage implementations.
   *
   * All subclasses of this base class must be added to StorageRegistry.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 #include <boost/shared_ptr.hpp>
@@ -25,16 +25,16 @@
 #include <string>
 #include <typeinfo>
 
-#include "lsst/mwi/data/Citizen.h"
-#include "lsst/mwi/policy/Policy.h"
+#include "lsst/daf/base/Citizen.h"
+#include "lsst/pex/policy/Policy.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class LogicalLocation;
 
-class Storage : public lsst::mwi::data::Citizen {
+class Storage : public lsst::daf::base::Citizen {
 public:
     typedef boost::shared_ptr<Storage> Ptr;
     typedef std::vector<Ptr> List;
@@ -46,7 +46,7 @@ public:
       *
       * Should be called first, after construction.
       */
-    virtual void setPolicy(lsst::mwi::policy::Policy::Ptr policy) = 0;
+    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy) = 0;
 
     /** Set the destination for persistence.
       * @param[in] location Location to persist to.
@@ -72,7 +72,7 @@ public:
     static Ptr createInstance(std::string const& name,
                               LogicalLocation const& location,
                               bool persist,
-                              lsst::mwi::policy::Policy::Ptr policy);
+                              lsst::pex::policy::Policy::Ptr policy);
 
 protected:
     explicit Storage(std::type_info const& type);
@@ -85,7 +85,7 @@ private:
     Storage& operator=(Storage const&);
 };
 
-}}} // lsst::mwi::persistence
+}}} // lsst::daf::persistence
 
 
 #endif

@@ -2,13 +2,14 @@
 #include <iostream>
 #include <sys/time.h>
 
-#include "lsst/mwi/persistence/DateTime.h"
-#include "lsst/mwi/persistence/DbStorage.h"
-#include "lsst/mwi/persistence/DbTsvStorage.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
+#include "lsst/daf/base/DateTime.h"
+#include "lsst/daf/persistence/DbStorage.h"
+#include "lsst/daf/persistence/DbTsvStorage.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
 
-using namespace lsst::mwi::persistence;
+using lsst::daf::base::DateTime;
 
+using namespace lsst::daf::persistence;
 
 // Test writing DateTime objects to the database.
 void test(DbStorage* dbs, long long now) {
@@ -95,7 +96,7 @@ int main(void) {
     now -= 1000000000LL;
 
     DbTsvStorage dbts;
-    lsst::mwi::policy::Policy::Ptr pol(new lsst::mwi::policy::Policy);
+    lsst::pex::policy::Policy::Ptr pol(new lsst::pex::policy::Policy);
     pol->set("SaveTemp", true);
     dbts.setPolicy(pol);
     test(&dbts, now);

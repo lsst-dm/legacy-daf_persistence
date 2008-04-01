@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_LOGICALLOCATION_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for LogicalLocation class
   *
@@ -12,25 +12,25 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::LogicalLocation
+/** @class lsst::daf::persistence::LogicalLocation
   * @brief Class for logical location of a persisted Persistable instance.
   *
   * Implemented as a minimal string representing a pathname or a database
   * connection string.  Interpreted by Storage subclasses.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-#include "lsst/mwi/data/Citizen.h"
+#include "lsst/daf/base/Citizen.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
-class LogicalLocation : public lsst::mwi::data::Citizen {
+class LogicalLocation : public lsst::daf::base::Citizen {
 public:
     typedef boost::shared_ptr<LogicalLocation> Ptr;
 
@@ -42,6 +42,6 @@ private:
     std::string _locString; ///< The location string.
 };
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
 
 #endif

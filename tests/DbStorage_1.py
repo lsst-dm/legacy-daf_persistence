@@ -1,25 +1,26 @@
 #!/usr/bin/env python
 
-import lsst.mwi.persistence as P
-import lsst.mwi.policy as POL
 import sys
 import time
 
-if not P.DbAuth.available():
+import lsst.daf.persistence as dafPers
+import lsst.pex.policy
+
+if not dafPers.DbAuth.available():
     print "*** WARNING*** Database authenticator unavailable.  Skipping test."
     sys.exit()
 
 testId = long(time.time() * 1000000000L);
 print testId
 
-db = P.DbStorage()
-policy = POL.PolicyPtr()
+db = dafPers.DbStorage()
+policy = lsst.pex.policy.PolicyPtr()
 
 db.setPolicy(policy)
 
 # Write a row
 
-loc = P.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+loc = dafPers.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
 db.setPersistLocation(loc)
 
 db.startTransaction()

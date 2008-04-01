@@ -11,7 +11,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -19,7 +19,7 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/DbTsvStorage.h"
+#include "lsst/daf/persistence/DbTsvStorage.h"
 
 #include <iomanip>
 #include <stdlib.h>
@@ -29,12 +29,14 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include <mysql/mysql.h>
 
 #include "lsst/mwi/exceptions.h"
-#include "lsst/mwi/persistence/DateTime.h"
-#include "lsst/mwi/persistence/DbStorageLocation.h"
-#include "lsst/mwi/persistence/LogicalLocation.h"
+#include "lsst/daf/base/DateTime.h"
+#include "lsst/daf/persistence/DbStorageLocation.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
+
+using lsst::daf::base::DateTime;
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
@@ -50,7 +52,7 @@ DbTsvStorage::~DbTsvStorage(void) {
 /** Allow a policy to be used to configure the DbTsvStorage.
  * \param[in] policy
  */
-void DbTsvStorage::setPolicy(lsst::mwi::policy::Policy::Ptr policy) {
+void DbTsvStorage::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
     _tempPath = "/tmp";
     if (policy && policy->exists("TempPath")) {
         _tempPath = policy->getString("TempPath");
@@ -393,4 +395,4 @@ template bool const& DbTsvStorage::getColumnByPos<>(int pos);
 template DateTime const& DbTsvStorage::getColumnByPos<>(int pos);
 //! \endcond
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

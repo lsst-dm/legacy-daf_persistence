@@ -3,7 +3,7 @@
 #define LSST_MWI_PERSISTENCE_XMLSTORAGE_H
 
 /** @file
-  * @ingroup mwi
+  * @ingroup daf_persistence
   *
   * @brief Interface for XmlStorage class
   *
@@ -12,15 +12,15 @@
   * @date $Date$
   */
 
-/** @class lsst::mwi::persistence::XmlStorage
+/** @class lsst::daf::persistence::XmlStorage
   * @brief Class for XML file storage.
   *
   * Provides Boost XML archives for Formatter subclasses to use.
   *
-  * @ingroup mwi
+  * @ingroup daf_persistence
   */
 
-#include "lsst/mwi/persistence/Storage.h"
+#include "lsst/daf/persistence/Storage.h"
 
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
@@ -28,7 +28,7 @@
 #include <fstream>
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 class XmlStorage : public Storage {
@@ -38,7 +38,7 @@ public:
     XmlStorage(void);
     virtual ~XmlStorage(void);
 
-    virtual void setPolicy(lsst::mwi::policy::Policy::Ptr policy);
+    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy);
     virtual void setPersistLocation(LogicalLocation const& location);
     virtual void setRetrieveLocation(LogicalLocation const& location);
 
@@ -59,7 +59,7 @@ private:
         ///< Boost XML input archive.
 };
 
-}}} // lsst::mwi::persistence
+}}} // lsst::daf::persistence
 
 
 #endif

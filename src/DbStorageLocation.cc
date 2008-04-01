@@ -8,7 +8,7 @@
  * \date $Date$
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -16,21 +16,21 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/DbStorageLocation.h"
+#include "lsst/daf/persistence/DbStorageLocation.h"
 
 #include <boost/regex.hpp>
 
-#include "lsst/mwi/exceptions.h"
-#include "lsst/mwi/persistence/DbAuth.h"
+#include "lsst/pex/exceptions.h"
+#include "lsst/daf/persistence/DbAuth.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Default constructor.
  */
 DbStorageLocation::DbStorageLocation(void) :
-    lsst::mwi::data::Citizen(typeid(*this)),
+    lsst::daf::base::Citizen(typeid(*this)),
     _dbType(), _hostname(), _port(), _username(), _password(), _dbName() {
 }
 
@@ -43,7 +43,7 @@ DbStorageLocation::DbStorageLocation(void) :
 DbStorageLocation::DbStorageLocation(std::string const& url,
                                      std::string const& userName,
                                      std::string const& password) :
-    lsst::mwi::data::Citizen(typeid(*this)),
+    lsst::daf::base::Citizen(typeid(*this)),
     _username(userName), _password(password) {
     boost::smatch what;
     boost::regex
@@ -55,7 +55,7 @@ DbStorageLocation::DbStorageLocation(std::string const& url,
         _dbName = what[4];
     }
     else {
-        throw lsst::mwi::exceptions::InvalidParameter(
+        throw lsst::pex::exceptions::InvalidParameter(
             "Unparseable connection string passed to DbStorageLocation: " +
             url);
     }
@@ -124,4 +124,4 @@ std::string const& DbStorageLocation::getDbName(void) const {
     return _dbName;
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence

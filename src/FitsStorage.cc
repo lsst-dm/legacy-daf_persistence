@@ -9,7 +9,7 @@
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup mwi
+ * \ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -17,14 +17,14 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/mwi/persistence/FitsStorage.h"
+#include "lsst/daf/persistence/FitsStorage.h"
 
 #include <fstream>
 
-#include "lsst/mwi/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/LogicalLocation.h"
 
 namespace lsst {
-namespace mwi {
+namespace daf {
 namespace persistence {
 
 /** Constructor.
@@ -40,7 +40,7 @@ FitsStorage::~FitsStorage(void) {
 /** Allow a Policy to be used to configure the FitsStorage.
  * \param[in] policy
  */
-void FitsStorage::setPolicy(lsst::mwi::policy::Policy::Ptr policy) {
+void FitsStorage::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
 }
 
 /** Set the destination of the FITS file for persistence.
@@ -94,4 +94,4 @@ int FitsStorage::getHdu(void) {
     return _hdu;
 }
 
-}}} // namespace lsst::mwi::persistence
+}}} // namespace lsst::daf::persistence
