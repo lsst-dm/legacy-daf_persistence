@@ -1,5 +1,4 @@
 import lsst.daf.base as dafBase
-import lsst.daf.data as dafData
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy as pexPolicy
 
@@ -8,21 +7,19 @@ def test1():
     Test DataProperty persistence to database without policy.
     """
 
-    dp = dafData.SupportFactory.createPropertyNode("foo")
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("intField", 1))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("doubleField", 1.2))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("varcharField", \
-        "Testing"))
+    dp = dafBase.DataProperty.createPropertyNode("foo")
+    dp.addProperty(dafBase.DataProperty("intField", 1))
+    dp.addProperty(dafBase.DataProperty("doubleField", 1.2))
+    dp.addProperty(dafBase.DataProperty("varcharField", "Testing"))
     dp.addProperty(dafBase.DataProperty.createBoolDataProperty("boolField", True))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("int64Field", \
-        9876543210L))
+    dp.addProperty(dafBase.DataProperty("int64Field", 9876543210L))
     dp.addProperty(dafBase.DataProperty.createFloatDataProperty("floatField", \
         3.14))
 
     pol = pexPolicy.PolicyPtr()
 
-    additionalData = dafData.SupportFactory.createPropertyNode("additionalData")
-    additionalData.addProperty(dafData.SupportFactory.createLeafProperty( \
+    additionalData = dafBase.DataProperty.createPropertyNode("additionalData")
+    additionalData.addProperty(dafBase.DataProperty( \
             "itemName", "Persistence_Test_2"))
 
     loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
@@ -40,14 +37,13 @@ def test2():
     database table name.
     """
 
-    dp = dafData.SupportFactory.createPropertyNode("foo2")
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("intField", 2))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("doubleField", 2.3))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("varcharField", \
-            "gnitseT"))
+    dp = dafBase.DataProperty.createPropertyNode("foo2")
+    dp.addProperty(dafBase.DataProperty("intField", 2))
+    dp.addProperty(dafBase.DataProperty("doubleField", 2.3))
+    dp.addProperty(dafBase.DataProperty("varcharField", "gnitseT"))
     dp.addProperty(dafBase.DataProperty.createBoolDataProperty("boolField", \
             False))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("int64Field", \
+    dp.addProperty(dafBase.DataProperty("int64Field", \
             9988776655L))
     dp.addProperty(dafBase.DataProperty.createFloatDataProperty("floatField", \
             2.718))
@@ -57,9 +53,8 @@ def test2():
     itemPol.set("TableName", "Persistence_Test_2")
     pol.set("Formatter.DataProperty.testItem", itemPol)
 
-    additionalData = dafData.SupportFactory.createPropertyNode("additionalData")
-    additionalData.addProperty(dafData.SupportFactory.createLeafProperty( \
-            "itemName", "testItem"))
+    additionalData = dafBase.DataProperty.createPropertyNode("additionalData")
+    additionalData.addProperty(dafBase.DataProperty("itemName", "testItem"))
 
     loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
 
@@ -76,12 +71,12 @@ def test3():
     database table name and mapping property keys to table columns.
     """
 
-    dp = dafData.SupportFactory.createPropertyNode("foo3")
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("i", 3))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("d", 3.4))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("v", "LastOne"))
+    dp = dafBase.DataProperty.createPropertyNode("foo3")
+    dp.addProperty(dafBase.DataProperty("i", 3))
+    dp.addProperty(dafBase.DataProperty("d", 3.4))
+    dp.addProperty(dafBase.DataProperty("v", "LastOne"))
     dp.addProperty(dafBase.DataProperty.createBoolDataProperty("b", True))
-    dp.addProperty(dafData.SupportFactory.createLeafProperty("I", 9998887776L))
+    dp.addProperty(dafBase.DataProperty("I", 9998887776L))
     dp.addProperty(dafBase.DataProperty.createFloatDataProperty("f", 1.414))
 
     pol = pexPolicy.PolicyPtr()
@@ -95,9 +90,8 @@ def test3():
     itemPol.add("KeyList", "intField=i")
     pol.set("Formatter.DataProperty.testItem", itemPol)
 
-    additionalData = dafData.SupportFactory.createPropertyNode("additionalData")
-    additionalData.addProperty(dafData.SupportFactory.createLeafProperty( \
-            "itemName", "testItem"))
+    additionalData = dafBase.DataProperty.createPropertyNode("additionalData")
+    additionalData.addProperty(dafBase.DataProperty("itemName", "testItem"))
 
     loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
 
