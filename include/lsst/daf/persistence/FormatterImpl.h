@@ -16,9 +16,13 @@
 
 namespace lsst {
 namespace daf {
-namespace persistence {
+namespace base {
 
 class Persistable;
+
+} // namespace lsst::daf::base
+
+namespace persistence {
 
 /** Template function that serializes a Persistable using boost::serialization.
   * @param[in,out] ar Reference to a boost::archive.
@@ -29,7 +33,7 @@ class Persistable;
   */
 template <class FormatterType, class Archive>
 inline void delegateSerialize(Archive& ar, unsigned int const version,
-                              Persistable* persistable) {
+                              lsst::daf::base::Persistable* persistable) {
     FormatterType::delegateSerialize(ar, version, persistable);
 }
 

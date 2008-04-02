@@ -41,11 +41,16 @@
 
 namespace lsst {
 namespace daf {
+namespace base {
+
+class Persistable;
+
+} // namespace lsst::daf::base
+
 namespace persistence {
 
 // Forward declarations.
 class LogicalLocation;
-class Persistable;
 
 
 class Formatter : public lsst::daf::base::Citizen {
@@ -66,7 +71,7 @@ public:
       * place to put the instance into the Storage.
       */
     virtual void write(
-        Persistable const* persistable, Storage::Ptr storage,
+        lsst::daf::base::Persistable const* persistable, Storage::Ptr storage,
         lsst::daf::base::DataProperty::PtrType additionalData) = 0;
 
     /** Read a Persistable instance from a Storage instance.
@@ -75,7 +80,7 @@ public:
       * instance within the Storage.
       * @return Shared pointer to the new Persistable instance.
       */
-    virtual Persistable* read(
+    virtual lsst::daf::base::Persistable* read(
         Storage::Ptr storage,
         lsst::daf::base::DataProperty::PtrType additionalData) = 0;
 
@@ -87,7 +92,7 @@ public:
       * instance within the Storage.
       */
     virtual void update(
-        Persistable* persistable, Storage::Ptr storage,
+        lsst::daf::base::Persistable* persistable, Storage::Ptr storage,
         lsst::daf::base::DataProperty::PtrType additionalData) = 0;
 
     static Formatter::Ptr lookupFormatter(

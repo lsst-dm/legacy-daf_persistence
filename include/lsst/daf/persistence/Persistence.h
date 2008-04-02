@@ -31,8 +31,8 @@
 
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/DataProperty.h"
+#include "lsst/daf/base/Persistable.h"
 #include "lsst/pex/policy/Policy.h"
-#include "lsst/daf/persistence/Persistable.h"
 #include "lsst/daf/persistence/Storage.h"
 
 namespace lsst {
@@ -53,12 +53,12 @@ public:
     virtual Storage::Ptr getRetrieveStorage(std::string const& storageType,
                                             LogicalLocation const& location);
     virtual void persist(
-        Persistable const& persistable, Storage::List const& storageList,
+        lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
         lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual Persistable::Ptr retrieve(
+    virtual lsst::daf::base::Persistable::Ptr retrieve(
         std::string const& persistableType, Storage::List const& storageList,
         lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual Persistable* unsafeRetrieve(
+    virtual lsst::daf::base::Persistable* unsafeRetrieve(
         std::string const& persistableType, Storage::List const& storageList,
         lsst::daf::base::DataProperty::PtrType additionalData);
 
