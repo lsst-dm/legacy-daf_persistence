@@ -23,7 +23,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/Formatter.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
-#include "lsst/daf/persistence/Persistable.h"
+#include "lsst/daf/base/Persistable.h"
 #include "lsst/pex/policy/Policy.h"
 #include "lsst/daf/persistence/Storage.h"
 
@@ -87,7 +87,7 @@ Storage::Ptr Persistence::getRetrieveStorage(std::string const& storageType,
  * correct place to put data in any of the Storages
  */
 void Persistence::persist(
-    Persistable const& persistable, Storage::List const& storageList,
+    lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
     lsst::daf::base::DataProperty::PtrType additionalData) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
@@ -122,7 +122,7 @@ void Persistence::persist(
  * correct data from any of the Storages
  * \return Bare pointer to new Persistable instance
  */
-Persistable* Persistence::unsafeRetrieve(
+lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
     std::string const& persistableType, Storage::List const& storageList,
     lsst::daf::base::DataProperty::PtrType additionalData) {
     // Get the policies for all Formatters, if present
@@ -135,7 +135,7 @@ Persistable* Persistence::unsafeRetrieve(
     Formatter::Ptr f = Formatter::lookupFormatter(persistableType, policyPtr);
     // Use the Formatter instance to read from the first Storage; then update
     // from each additional Storage in turn.
-    Persistable* persistable = 0;
+    lsst::daf::base::Persistable* persistable = 0;
     for (Storage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
         (*it)->startTransaction();
@@ -160,10 +160,10 @@ Persistable* Persistence::unsafeRetrieve(
  * correct data from any of the Storages
  * \return Shared pointer to new Persistable instance
  */
-Persistable::Ptr Persistence::retrieve(
+lsst::daf::base::Persistable::Ptr Persistence::retrieve(
     std::string const& persistableType, Storage::List const& storageList,
     lsst::daf::base::DataProperty::PtrType additionalData) {
-    return Persistable::Ptr(
+    return lsst::daf::base::Persistable::Ptr(
         unsafeRetrieve(persistableType, storageList, additionalData));
 }
 
