@@ -6,13 +6,12 @@ Access to the lsst::daf::persistence classes
 %enddef
 
 %feature("autodoc", "1");
-%module(docstring=persistenceLib_DOCSTRING) persistenceLib
+%module(package="lsst.daf.persistence", docstring=persistenceLib_DOCSTRING) persistenceLib
 
 %{
 #include "lsst/daf/base.h"
 #include "lsst/daf/persistence/DbAuth.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
-#include "lsst/daf/persistence/Persistable.h"
 #include "lsst/daf/persistence/Persistence.h"
 #include "lsst/daf/persistence/Storage.h"
 #include "lsst/daf/persistence/DbStorage.h"
@@ -25,14 +24,13 @@ namespace boost { namespace filesystem { } }
 using namespace lsst::daf::persistence;
 %}
 
-%include "p_lsstSwig.i"
+%include "lsst/p_lsstSwig.i"
 
 %include "lsst/daf/base/Citizen.h"
 
 %include "lsst/daf/base.h"
 %include "lsst/daf/persistence/DbAuth.h"
 %include "lsst/daf/persistence/LogicalLocation.h"
-%include "lsst/daf/persistence/Persistable.h"
 
 %newobject lsst::daf::persistence::Persistence::getPersistence;
 %newobject lsst::daf::persistence::Persistence::getPersistStorage;
@@ -48,7 +46,6 @@ using namespace lsst::daf::persistence;
 %import "lsst/pex/policy/Policy.h"
 typedef long long int64_t;
 
-%boost_shared_ptr(PersistableSharedPtr, lsst::daf::persistence::Persistable)
 %boost_shared_ptr(PersistenceSharedPtr, lsst::daf::persistence::Persistence);
 %boost_shared_ptr(StorageSharedPtr, lsst::daf::persistence::Storage);
 %template(StorageList) std::vector<boost::shared_ptr<lsst::daf::persistence::Storage> >;
