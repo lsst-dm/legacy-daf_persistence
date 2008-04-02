@@ -36,7 +36,7 @@ static void tattle(bool mustBeTrue, std::string const& failureMsg, int line) {
 // Forward declaration may be needed with gcc 4+.
 class MyFormatter;
 
-class MyPersistable : public Persistable {
+class MyPersistable : public lsst::daf::base::Persistable {
 public:
     typedef boost::shared_ptr<MyPersistable> Ptr;
     MyPersistable(double ra = 0.0, double decl = 0.0) : _ra(ra), _decl(decl) { };
@@ -54,10 +54,10 @@ BOOST_CLASS_EXPORT(MyPersistable);
 class MyFormatter : public Formatter {
 public:
     MyFormatter(void) : Formatter(typeid(*this)) { };
-    virtual void write(Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual void update(Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
-    template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, Persistable* persistable);
+    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
+    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
+    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
+    template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, lsst::daf::base::Persistable* persistable);
 private:
     static Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
     static FormatterRegistration registration;
@@ -76,27 +76,27 @@ Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy
 
 // Persistence for MyPersistables.
 // Supports BoostStorage only.
-void MyFormatter::write(Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+void MyFormatter::write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
     Assert(false, "write() called unexpectedly");
 
 }
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage only.
-Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+lsst::daf::base::Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
     Assert(false, "read() called unexpectedly");
     return 0;
 }
 
-void MyFormatter::update(Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+void MyFormatter::update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
     Assert(false, "update() called unexpectedly");
 }
 
 // Actually serialize the MyPersistable.
 // Send/get the RA and declination to/from the archive.
-template <class Archive> void MyFormatter::delegateSerialize(Archive& ar, unsigned int const version, Persistable* persistable) {
+template <class Archive> void MyFormatter::delegateSerialize(Archive& ar, unsigned int const version, lsst::daf::base::Persistable* persistable) {
     MyPersistable* mp = dynamic_cast<MyPersistable*>(persistable);
-    ar & boost::serialization::base_object<Persistable>(*mp);
+    ar & boost::serialization::base_object<lsst::daf::base::Persistable>(*mp);
     ar & mp->_ra;
     ar & mp->_decl;
 };
@@ -118,15 +118,15 @@ void test(void) {
     os << testId;
     std::string testIdString = os.str();
 
-    lsst::daf::base::DataProperty::PtrType additionalData = lsst::daf::data::SupportFactory::createPropertyNode("info");
+    lsst::daf::base::DataProperty::PtrType additionalData = lsst::daf::base::DataProperty::createPropertyNode("info");
     lsst::daf::base::DataProperty::PtrType child1(new lsst::daf::base::DataProperty("visitId", testId));
     lsst::daf::base::DataProperty::PtrType child2(new lsst::daf::base::DataProperty("sliceId", 0));
     additionalData->addProperty(child1);
     additionalData->addProperty(child2);
 
 
-    Persistable::Ptr ppOrig(new MyPersistable(1.73205, 1.61803));
-    lsst::daf::base::DataProperty::PtrType theProperty = lsst::daf::data::SupportFactory::createLeafProperty("prop", ppOrig);
+    lsst::daf::base::Persistable::Ptr ppOrig(new MyPersistable(1.73205, 1.61803));
+    lsst::daf::base::DataProperty::PtrType theProperty(new lsst::daf::base::DataProperty("prop", ppOrig));
 
     LogicalLocation pathLoc("MyPersistable.boost." + testIdString);
 
@@ -141,16 +141,16 @@ void test(void) {
         Persistence::Ptr persist = Persistence::getPersistence(policy);
         Storage::List storageList;
         storageList.push_back(persist->getRetrieveStorage("BoostStorage", pathLoc));
-        Persistable::Ptr pp = persist->retrieve("DataProperty", storageList, additionalData);
+        lsst::daf::base::Persistable::Ptr pp = persist->retrieve("DataProperty", storageList, additionalData);
         Assert(pp != 0, "Didn't get a Persistable");
         Assert(typeid(*pp) == typeid(lsst::daf::base::DataProperty), "Didn't get DataProperty");
-        lsst::daf::base::DataProperty::PtrType dp = boost::dynamic_pointer_cast<lsst::daf::base::DataProperty, Persistable>(pp);
+        lsst::daf::base::DataProperty::PtrType dp = boost::dynamic_pointer_cast<lsst::daf::base::DataProperty, lsst::daf::base::Persistable>(pp);
         Assert(dp, "Couldn't cast to DataProperty");
         Assert(dp != theProperty, "Got same DataProperty");
-        Persistable::Ptr pp1 = boost::any_cast<Persistable::Ptr>(dp->getValue());
+        lsst::daf::base::Persistable::Ptr pp1 = boost::any_cast<lsst::daf::base::Persistable::Ptr>(dp->getValue());
         Assert(pp1, "Couldn't retrieve Persistable");
         Assert(typeid(*pp1) == typeid(MyPersistable), "Not a MyPersistable");
-        MyPersistable::Ptr mp = boost::dynamic_pointer_cast<MyPersistable, Persistable>(pp1);
+        MyPersistable::Ptr mp = boost::dynamic_pointer_cast<MyPersistable, lsst::daf::base::Persistable>(pp1);
         Assert(mp, "Couldn't retrieve MyPersistable");
         Assert(mp->getRa() == 1.73205, "RA is incorrect");
         Assert(mp->getDecl() == 1.61803, "Decl is incorrect");
