@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <stdexcept>
+#include "lsst/daf/base/Persistable.h"
 #include "lsst/daf/persistence/FormatterRegistry.h"
 #include "lsst/pex/exceptions.h"
 
@@ -23,7 +24,7 @@ static void tattle(bool mustBeTrue, std::string const& failureMsg, int line) {
 }
 
 // A (very) minimal Persistable.
-class MyPersistable : public Persistable {
+class MyPersistable : public lsst::daf::base::Persistable {
 };
 
 // A minimal Formatter.
@@ -32,9 +33,9 @@ public:
     MyFormatter(void) : Formatter(typeid(*this)) { };
     // Normally, the following functions would do something.  For testing,
     // they do nothing.
-    virtual void write(Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
-    virtual Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { return 0; };
-    virtual void update(Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
+    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
+    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { return 0; };
+    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
 private:
     static Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
     static FormatterRegistration registration;
@@ -53,9 +54,9 @@ Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy
 class YourFormatter : public Formatter {
 public:
     YourFormatter(void) : Formatter(typeid(*this)) { };
-    virtual void write(Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
-    virtual Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { return 0; };
-    virtual void update(Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
+    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
+    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { return 0; };
+    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
 };
 
 // External factory function for YourFormatters.  This would normally be a
