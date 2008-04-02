@@ -85,9 +85,7 @@ void Storage::verifyPathName(std::string const& name) {
         // If it already exists, we're OK; otherwise, throw an exception.
         if (ret == -1 && errno != EEXIST) {
             lsst::pex::exceptions::ExceptionData exdata("data");
-            exdata <<
-                lsst::daf::data::SupportFactory::createLeafProperty("errno",
-                                                                    errno);
+            exdata << lsst::daf::base::DataProperty::PtrType(new lsst::daf::base::DataProperty("errno", errno));
             throw lsst::pex::exceptions::Runtime(exdata,
                 "Error creating directory: " + dirName +
                 " = " + strerror(errno));
@@ -96,8 +94,7 @@ void Storage::verifyPathName(std::string const& name) {
     else if (ret == -1) {
         // We couldn't read the (existing) directory for some reason.
         lsst::pex::exceptions::ExceptionData exdata("data");
-        exdata << lsst::daf::data::SupportFactory::createLeafProperty("errno",
-                                                                      errno);
+        exdata << lsst::daf::base::DataProperty::PtrType(new lsst::daf::base::DataProperty("errno", errno));
         throw lsst::pex::exceptions::Runtime(exdata,
             "Error searching for directory: " + dirName +
             " = " + strerror(errno));
