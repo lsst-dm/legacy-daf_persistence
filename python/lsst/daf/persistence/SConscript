@@ -1,6 +1,6 @@
 # -*- python -*-
 Import("env")
 
-env.CheckSwig("python", ilang="c++")
+env.CheckSwig("python", ilang="c++", includedProducts="utils")
 lsstLibs = "daf_base pex_exceptions pex_policy".split()
-env.LoadableModuleIncomplete("_persistenceLib", Split("persistenceLib.i"), LIBS=env.libs["boost"] + lsstLibs)
+env.LoadableModuleIncomplete("_persistenceLib", Split("persistenceLib.i"), LIBS=env.libs["boost"] + lsstLibs + env.libs["coral"] + env.libs["seal"] + env.libs["mysqlclient"] + ["daf_persistence"])
