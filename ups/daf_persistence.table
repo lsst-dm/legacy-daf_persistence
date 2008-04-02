@@ -1,5 +1,5 @@
 setupRequired(scons)
-setupRequired(core >= 1.2)
+setupRequired(base)
 setupRequired(boost >= 1.34.1)
 setupRequired(jaula)
 setupRequired(coral >= 1_9_0+1)
