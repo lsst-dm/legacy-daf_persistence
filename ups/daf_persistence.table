@@ -1,16 +1,5 @@
-setupRequired(scons)
-setupRequired(base)
-setupRequired(boost >= 1.34.1)
-setupRequired(jaula)
-setupRequired(coral >= 1_9_0+1)
-setupRequired(seal >= 1_9_2+1)
-setupRequired(mysqlclient >= 5.0.0)
-setupRequired(daf_base)
-setupRequired(pex_exceptions)
 setupRequired(pex_policy)
-
-setupOptional("swig")
-setupOptional("doxygen")
+setupRequired(coral >= 1_9_0+1)
 
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envAppend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
