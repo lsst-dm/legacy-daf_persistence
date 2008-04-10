@@ -1,12 +1,13 @@
 # -*- python -*-
 Import("env")
 
-env.Program(["DbStorage_1.cc"], LIBS=env.libs["boost"] + ["daf_persistence"])
-env.Program(["FormatterRegistry_1.cc"], LIBS=env.libs["boost"] + ["daf_persistence"])
-env.Program(["Persistence_1.cc"], LIBS=env.libs["boost"] + ["daf_persistence"])
-env.Program(["Persistence_2.cc"], LIBS=env.libs["boost"] + ["daf_persistence"])
-env.Program(["Persistence_3.cc"], LIBS=env.libs["boost"] + ["daf_persistence"])
-env.Program(["DataProperty_3.cc"], LIBS=env.libs["boost"] + ["daf_persistence"])
+LIBS = env.getlibs("boost daf_persistence utils daf_base pex_exceptions pex_logging pex_policy")
+env.Program(["DbStorage_1.cc"], LIBS=LIBS)
+env.Program(["FormatterRegistry_1.cc"], LIBS=LIBS)
+env.Program(["Persistence_1.cc"], LIBS=LIBS)
+env.Program(["Persistence_2.cc"], LIBS=LIBS)
+env.Program(["Persistence_3.cc"], LIBS=LIBS)
+env.Program(["DataProperty_3.cc"], LIBS=LIBS)
 
 env.CheckSwig("python", ilang="c++")
 env.Append(SWIGFLAGS=" -Ipython")
