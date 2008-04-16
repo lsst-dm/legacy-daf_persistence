@@ -19,16 +19,21 @@ Access to the lsst::daf::persistence classes
 
 %inline %{
 namespace lsst { namespace daf { namespace persistence { } } }
-namespace boost { namespace filesystem { } }
+namespace boost {
+    namespace filesystem { }
+    class bad_any_cast;
+}
 
 using namespace lsst::daf::persistence;
 %}
 
 %include "lsst/p_lsstSwig.i"
 
-%include "lsst/daf/base/Citizen.h"
+%import "lsst/daf/base/Citizen.h"
+%import "lsst/daf/base/DateTime.h"
+%import "lsst/daf/base/Persistable.h"
+%import "lsst/daf/base/DataProperty.h"
 
-%include "lsst/daf/base.h"
 %include "lsst/daf/persistence/DbAuth.h"
 %include "lsst/daf/persistence/LogicalLocation.h"
 
