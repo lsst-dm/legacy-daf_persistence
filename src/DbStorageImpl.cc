@@ -397,7 +397,7 @@ void DbStorageImpl::outParam<long>(std::string const& columnName,
     }
     else if (sizeof(long) == sizeof(int)) {
         _outAttributeList->extend<int>(columnName);
-        (*_outAttributeList)[_outAttributeList->size() - 1].bind<long long>(
+        (*_outAttributeList)[_outAttributeList->size() - 1].bind<int>(
             *(reinterpret_cast<int*>(location)));
     }
     else {
@@ -437,7 +437,7 @@ void DbStorageImpl::condParam<long>(std::string const& paramName, long const &va
     }
     else if (sizeof(long) == sizeof(int)) {
         _condAttributeList->extend<int>(paramName);
-        (*_condAttributeList)[_condAttributeList->size() - 1].data<long long>() =
+        (*_condAttributeList)[_condAttributeList->size() - 1].data<int>() =
             static_cast<int>(value);
     }
     else {
