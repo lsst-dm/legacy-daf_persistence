@@ -286,6 +286,19 @@ void DbStorageImpl::setColumn(std::string const& columnName, DateTime const& val
     _rowBuffer[columnName].data<coral::TimeStamp>() = dt2ts(value);
 }
 
+template<>
+void DbStorageImpl::setColumn<long>(std::string const& columnName, long const& value) {
+    if (sizeof(long) == sizeof(long long)) {
+        _rowBuffer[columnName].data<long long>() = static_cast<long>(value);
+    }
+    else if (sizeof(long) == sizeof(int)) {
+        _rowBuffer[columnName].data<int>() = static_cast<int>(value); 
+    }
+    else {
+        _rowBuffer[columnName].data<long>() = value;
+    }
+}
+
 /** Set a given column to NULL.
  * \param[in] columnName Name of the column
  */
@@ -371,6 +384,29 @@ void DbStorageImpl::outParam<DateTime>(std::string const& columnName,
         *(reinterpret_cast<coral::TimeStamp*>(location)));
 }
 
+template<>
+void DbStorageImpl::outParam<long>(std::string const& columnName,
+                                   long* location) {
+    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::outParam()");
+    _query->addToOutputList(columnName);
+    if (_outAttributeList == 0) throw lsst::pex::exceptions::Runtime("Output attribute list not initialized in DbStorage::outParam()");
+    if (sizeof(long) == sizeof(long long)) {
+        _outAttributeList->extend<long long>(columnName);
+        (*_outAttributeList)[_outAttributeList->size() - 1].bind<long long>(
+            *(reinterpret_cast<long long*>(location)));
+    }
+    else if (sizeof(long) == sizeof(int)) {
+        _outAttributeList->extend<int>(columnName);
+        (*_outAttributeList)[_outAttributeList->size() - 1].bind<long long>(
+            *(reinterpret_cast<int*>(location)));
+    }
+    else {
+        _outAttributeList->extend<long>(columnName);
+        (*_outAttributeList)[_outAttributeList->size() - 1].bind<long>(
+            *(reinterpret_cast<long*>(location)));
+    }
+}
+
 /** Bind a value to a WHERE condition parameter.
  * \param[in] paramName Name of the parameter (prefixed by ":" in the WHERE
  * clause)
@@ -389,6 +425,25 @@ void DbStorageImpl::condParam<DateTime>(std::string const& paramName, DateTime c
     if (_condAttributeList == 0) throw lsst::pex::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
     _condAttributeList->extend<coral::TimeStamp>(paramName);
     (*_condAttributeList)[_condAttributeList->size() - 1].data<coral::TimeStamp>() = dt2ts(value);
+}
+
+template<>
+void DbStorageImpl::condParam<long>(std::string const& paramName, long const &value) {
+    if (_condAttributeList == 0) throw lsst::pex::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
+    if (sizeof(long) == sizeof(long long)) {
+        _condAttributeList->extend<long long>(paramName);
+        (*_condAttributeList)[_condAttributeList->size() - 1].data<long long>() =
+            static_cast<long long>(value);
+    }
+    else if (sizeof(long) == sizeof(int)) {
+        _condAttributeList->extend<int>(paramName);
+        (*_condAttributeList)[_condAttributeList->size() - 1].data<long long>() =
+            static_cast<int>(value);
+    }
+    else {
+        _condAttributeList->extend<long>(paramName);
+        (*_condAttributeList)[_condAttributeList->size() - 1].data<long>() = value;
+    }
 }
 
 /** Request that the query output be sorted by an expression.  Multiple
@@ -449,6 +504,20 @@ template<>
 DateTime const& DbStorageImpl::getColumnByPos(int pos) {
     if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
     return ts2dt(_cursor->currentRow()[pos].data<coral::TimeStamp>());
+}
+
+template<>
+long const& DbStorageImpl::getColumnByPos(int pos) {
+    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
+    if (sizeof(long) == sizeof(long long)) {
+        return *reinterpret_cast<long const*>(&_cursor->currentRow()[pos].data<long long>());
+    }
+    else if (sizeof(long) == sizeof(int)) {
+        return *reinterpret_cast<long const *>(&_cursor->currentRow()[pos].data<int>());
+    }
+    else {
+        return _cursor->currentRow()[pos].data<long>();
+    }
 }
 
 /** Determine if the value of a column is NULL.

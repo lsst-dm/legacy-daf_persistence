@@ -161,9 +161,13 @@ void DataPropertyFormatter::write(lsst::daf::base::Persistable const* persistabl
             else if (type == typeid(int)) {
                 db->setColumn<int>(colName, boost::any_cast<int>(value));
             }
-            else if (type == typeid(int64_t)) {
-                db->setColumn<int64_t>(
-                    colName, boost::any_cast<int64_t>(value));
+            else if (type == typeid(long)) {
+                db->setColumn<long>(
+                    colName, boost::any_cast<long>(value));
+            }
+            else if (type == typeid(long long)) {
+                db->setColumn<long long>(
+                    colName, boost::any_cast<long long>(value));
             }
             else if (type == typeid(float)) {
                 db->setColumn<float>(colName, boost::any_cast<float>(value));
