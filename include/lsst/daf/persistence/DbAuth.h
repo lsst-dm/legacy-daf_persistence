@@ -17,7 +17,8 @@
   *
   * Provides access to username and password to be used to authenticate to a
   * database.  Actual username and password come from a well-known environment
-  * variable or a well-known file or a file specified by Policy.
+  * variable or a well-known file or a file specified by Policy.  The format
+  * for the authenticator string in any location is "username:password".
   *
   * @ingroup daf_persistence
   */
