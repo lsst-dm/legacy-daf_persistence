@@ -1,17 +1,17 @@
 // -*- lsst-c++ -*-
 
-/** \file
- * \brief Implementation of DbStorageImpl class
+/** @file
+ * @brief Implementation of DbStorageImpl class
  *
- * Uses Coral library for DBMS-independence.
+ * Uses MySQL C API directly.
  *
- * \author $Author$
- * \version $Revision$
- * \date $Date$
+ * @author $Author$
+ * @version $Revision$
+ * @date $Date$
  *
  * Contact: Kian-Tat Lim (ktl@slac.stanford.edu)
  *
- * \ingroup daf_persistence
+ * @ingroup daf_persistence
  */
 
 #ifndef __GNUC__
@@ -26,493 +26,539 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include <mysql/mysql.h>
 
-#include "CoralBase/Attribute.h"
-#include "CoralBase/TimeStamp.h"
-#include "PluginManager/PluginManager.h"
-#include "RelationalAccess/AccessMode.h"
-#include "RelationalAccess/IConnection.h"
-#include "RelationalAccess/ICursor.h"
-#include "RelationalAccess/IQuery.h"
-#include "RelationalAccess/IRelationalDomain.h"
-#include "RelationalAccess/IRelationalService.h"
-#include "RelationalAccess/ISchema.h"
-#include "RelationalAccess/ISession.h"
-#include "RelationalAccess/ITable.h"
-#include "RelationalAccess/ITableDataEditor.h"
-#include "RelationalAccess/ITransaction.h"
-#include "RelationalAccess/RelationalServiceException.h"
-#include "SealKernel/ComponentLoader.h"
-
 #include "lsst/pex/exceptions.h"
 #include "lsst/daf/persistence/DbStorageLocation.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 #include "lsst/daf/base/DateTime.h"
 
-using lsst::daf::base::DateTime;
+namespace dafPer = lsst::daf::persistence;
+namespace dafBase = lsst::daf::base;
+namespace pexExcept = lsst::pex::exceptions;
+namespace pexPolicy = lsst::pex::policy;
 
 namespace lsst {
 namespace daf {
 namespace persistence {
 
-// Static member variables
-DbStorageImpl::State DbStorageImpl::initialized = DbStorageImpl::UNINITIALIZED;
-seal::Handle<seal::Context> DbStorageImpl::context(0);
-seal::Handle<seal::ComponentLoader> DbStorageImpl::loader(0);
+template <typename T>
+struct BoundVarTraits {
+public:
+    static enum_field_types mysqlType;
+    static bool isUnsigned;
+};
+
+}}} // namespace lsst::daf::persistence
+
+template<> enum_field_types dafPer::BoundVarTraits<char>::mysqlType = MYSQL_TYPE_TINY;
+template<> bool dafPer::BoundVarTraits<char>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<signed char>::mysqlType = MYSQL_TYPE_TINY;
+template<> bool dafPer::BoundVarTraits<signed char>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<unsigned char>::mysqlType = MYSQL_TYPE_TINY;
+template<> bool dafPer::BoundVarTraits<unsigned char>::isUnsigned = true;
+
+template<> enum_field_types dafPer::BoundVarTraits<short>::mysqlType = MYSQL_TYPE_SHORT;
+template<> bool dafPer::BoundVarTraits<short>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<unsigned short>::mysqlType = MYSQL_TYPE_SHORT;
+template<> bool dafPer::BoundVarTraits<unsigned short>::isUnsigned = true;
+
+template<> enum_field_types dafPer::BoundVarTraits<int>::mysqlType = MYSQL_TYPE_LONG;
+template<> bool dafPer::BoundVarTraits<int>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<unsigned int>::mysqlType = MYSQL_TYPE_LONG;
+template<> bool dafPer::BoundVarTraits<unsigned int>::isUnsigned = true;
+
+template<> enum_field_types dafPer::BoundVarTraits<long long>::mysqlType = MYSQL_TYPE_LONGLONG;
+template<> bool dafPer::BoundVarTraits<long long>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<unsigned long long>::mysqlType = MYSQL_TYPE_LONGLONG;
+template<> bool dafPer::BoundVarTraits<unsigned long long>::isUnsigned = true;
+
+template<> enum_field_types dafPer::BoundVarTraits<float>::mysqlType = MYSQL_TYPE_FLOAT;
+template<> bool dafPer::BoundVarTraits<float>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<double>::mysqlType = MYSQL_TYPE_DOUBLE;
+template<> bool dafPer::BoundVarTraits<double>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<dafBase::DateTime>::mysqlType = MYSQL_TYPE_DATETIME;
+template<> bool dafPer::BoundVarTraits<dafBase::DateTime>::isUnsigned = false;
+
+template<> enum_field_types dafPer::BoundVarTraits<std::string>::mysqlType = MYSQL_TYPE_STRING;
+template<> bool dafPer::BoundVarTraits<std::string>::isUnsigned = false;
 
 
-// Helper conversion functions
-
-/** Convert an lsst::daf::base::DateTime to a coral::TimeStamp.
- * Since the representation is identical, use a reinterpret_cast.
- * \param value Const reference to a DateTime
- * \return Const reference to a TimeStamp
+/** Constructor.
  */
-static coral::TimeStamp const& dt2ts(DateTime const& value) {
-    return *(reinterpret_cast<coral::TimeStamp const*>(&value));
-}
-
-/** Convert a coral::TimeStamp to an lsst::daf::base::DateTime.
- * Since the representation is identical, use a reinterpret_cast.
- * \param value Const reference to a TimeStamp
- * \return Const reference to a DateTime
- */
-static DateTime const& ts2dt(coral::TimeStamp const& value) {
-    return *(reinterpret_cast<DateTime const*>(&value));
+dafPer::BoundVar::BoundVar(size_t size) :
+    lsst::daf::base::Citizen(typeid(*this)), _data(new char[size]) {
 }
 
 
 /** Constructor.
- * Initialize SEAL plugin manager and load CORAL relational service if not
- * already setup.
  */
-DbStorageImpl::DbStorageImpl(void) : lsst::daf::base::Citizen(typeid(*this)) {
-    if (initialized == UNINITIALIZED) {
-        initialized = PENDING;
-        context = new seal::Context;
-
-        seal::PluginManager* pm = seal::PluginManager::get();
-        pm->initialise(); // note British/Canadian spelling
-        loader = new seal::ComponentLoader(context.get());
-        loader->load("CORAL/Services/RelationalService");
-        initialized = INITIALIZED;
-    } else {
-        while (initialized != INITIALIZED) {
-            sleep(1);
-        }
-    }
+dafPer::DbStorageImpl::DbStorageImpl(void) :
+    lsst::daf::base::Citizen(typeid(*this)), _db(0) {
 }
-
 
 /** Destructor.
  * End session if present.
  */
-DbStorageImpl::~DbStorageImpl(void) {
-    if (_session) {
-       // if a transaction is active, preemptively roll it back to avoid deadlock in CORAL
-       if (_session->transaction().isActive()) {
-           _session->transaction().rollback();
-       }
-       _session.reset(0);
+dafPer::DbStorageImpl::~DbStorageImpl(void) {
+    if (_db) {
+        mysql_close(_db);
+        _db = 0;
     }
-    // Note the CORAL session is destroyed before the connection that created it
-    _connection.reset(0);
 }
 
 /** Allow a Policy to be used to configure the DbStorage.
- * \param[in] policy
+ * @param[in] policy
  */
-void DbStorageImpl::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
+void dafPer::DbStorageImpl::setPolicy(pexPolicy::Policy::Ptr policy) {
 }
 
 /** Start a database session.
- * \param[in] location Physical database location
- * \param[in] am Access mode for the database (ReadOnly or Update)
+ * @param[in] location Physical database location
+ * @param[in] am Access mode for the database (ReadOnly or Update)
  */
-void DbStorageImpl::startSession(std::string const& location,
-                                 coral::AccessMode am) {
-    // Save the storage location for later use (by MySQL for now).
-    _location = location;
-
+void dafPer::DbStorageImpl::startSession(std::string const& location) {
     // Set the timezone for any DATE/TIME/TIMESTAMP fields.
     setenv("TZ", "UTC", 1);
 
     DbStorageLocation dbloc(location);
 
-    // Query for the relational service.
-    std::vector< seal::IHandle<coral::IRelationalService> > svcList;
-    context->query(svcList);
-    if (svcList.empty()) {
-        throw lsst::pex::exceptions::Runtime("Unable to locate CORAL RelationalService");
+    if (_db) {
+        mysql_close(_db);
     }
+    _db = mysql_init(0);
 
-    // Use the connection string to get the relational domain.
-    std::string connString(dbloc.getConnString());
-    coral::IRelationalDomain& domain =
-        svcList.front()->domainForConnection(connString);
-
-    // first destroy old session, then old connection (at least in MySQLAccess/, the session
-    // object has references to state that is internal to connection)
-    _session.reset(0);
-    
-    // Use the domain to decode the connection string and create a connection.
-    std::pair<std::string, std::string> databaseAndSchema =
-        domain.decodeUserConnectionString(connString);
-    _connection.reset(domain.newConnection(databaseAndSchema.first));
-    if (_connection == 0) {
-        throw lsst::pex::exceptions::Runtime(
-            "Unable to connect to database with string: " + connString);
-    }
-
-    // Create a session with the appropriate access mode and login.
-    _session.reset(_connection->newSession(databaseAndSchema.second, am));
-    if (_session == 0) {
-        throw lsst::pex::exceptions::Runtime("Unable to start database session");
-    }
-    _session->startUserSession(dbloc.getUsername(),
-                               dbloc.getPassword());
-    if (!_connection->isConnected()) {
-        throw lsst::pex::exceptions::Runtime(
-            "Unable to login to database with username: " +
-            dbloc.getUsername());
-    }
-}
-
-/** Set the database location to persist to.
- * \param[in] location Database connection string to insert into
- */
-void DbStorageImpl::setPersistLocation(LogicalLocation const& location) {
-    startSession(location.locString(), coral::Update);
-}
-
-/** Set the database location to retrieve from.
- * \param[in] location Database connection string to query
- */
-void DbStorageImpl::setRetrieveLocation(LogicalLocation const& location) {
-    startSession(location.locString(), coral::ReadOnly);
-}
-
-/** Start a transaction.
- */
-void DbStorageImpl::startTransaction(void) {
-    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::startTransaction()");
-    _session->transaction().start();
-}
-
-/** Start a transaction.
- */
-void DbStorageImpl::endTransaction(void) {
-    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::endTransaction()");
-    _session->transaction().commit();
-}
-
-/** Create a new table from an existing template table.
- * \param[in] tableName Name of the new table
- * \param[in] templateName Name of the existing template table
- * \param[in] mayAlreadyExist False (default) if the table must not be present
- *
- * Note: currently works with MySQL only.
- */
-void DbStorageImpl::createTableFromTemplate(std::string const& tableName,
-                                        std::string const& templateName,
-                                        bool mayAlreadyExist) {
-    DbStorageLocation dbloc(_location);
-    MYSQL* db = mysql_init(0);
-    if (db == 0) {
-        throw lsst::pex::exceptions::Runtime(
-            "Unable to allocate MySQL connection: " + _location);
-    }
     unsigned int port = strtoul(dbloc.getPort().c_str(), 0, 10);
-    if (mysql_real_connect(db,
+    if (mysql_real_connect(_db,
                            dbloc.getHostname().c_str(),
                            dbloc.getUsername().c_str(),
                            dbloc.getPassword().c_str(),
                            dbloc.getDbName().c_str(),
                            port, 0, 0) == 0) {
-        throw lsst::pex::exceptions::Runtime(
+        throw pexExcept::Runtime(
             "Unable to connect to MySQL database: " + _location);
     }
+}
 
+/** Set the database location to persist to.
+ * @param[in] location Database connection string to insert into
+ */
+void dafPer::DbStorageImpl::setPersistLocation(LogicalLocation const& location) {
+    startSession(location.locString());
+    _readonly = false;
+}
+
+/** Set the database location to retrieve from.
+ * @param[in] location Database connection string to query
+ */
+void dafPer::DbStorageImpl::setRetrieveLocation(LogicalLocation const& location) {
+    startSession(location.locString());
+    _readonly = true;
+}
+
+/** Start a transaction.
+ */
+void dafPer::DbStorageImpl::startTransaction(void) {
+    // autocommit(off)
+    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::startTransaction()");
+    if (mysql_autocommit(_db, false)) throw pexExcept::Runtime("Unable to turn off autocommit");
+}
+
+/** End a transaction.
+ */
+void dafPer::DbStorageImpl::endTransaction(void) {
+    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::endTransaction()");
+    if (mysql_commit(_db)) throw pexExcept::Runtime("Unable to commit transaction");
+    if (mysql_autocommit(_db, true)) throw pexExcept::Runtime("Unable to turn on autocommit");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// UTILITIES
+///////////////////////////////////////////////////////////////////////////////
+
+/** Execute a query string.
+  */
+void dafPer::DbStorageImpl::executeQuery(std::string const& query) {
+    if (_db == 0) {
+        throw pexExcept::Runtime(
+            "No DB connection for query: " + query);
+    }
+    if (mysql_query(_db, query.c_str()) != 0) {
+        mysql_close(_db);
+        _db = 0;
+        throw pexExcept::Runtime("Unable to execute query: " +
+                                             query);
+    }
+}
+
+/** Quote a name in ANSI-standard fashion.
+  */
+std::string dafPer::DbStorageImpl::quote(std::string const& name) {
+    return '`' + name + '`';
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// TABLE OPERATIONS
+///////////////////////////////////////////////////////////////////////////////
+
+/** Create a new table from an existing template table.
+ * @param[in] tableName Name of the new table
+ * @param[in] templateName Name of the existing template table
+ * @param[in] mayAlreadyExist False (default) if the table must not be present
+ */
+void dafPer::DbStorageImpl::createTableFromTemplate(std::string const& tableName,
+                                        std::string const& templateName,
+                                        bool mayAlreadyExist) {
     std::string query = "CREATE TABLE ";
     if (mayAlreadyExist) query += "IF NOT EXISTS ";
-    query += "`";
-    query += tableName;
-    query += "` LIKE `";
-    query += templateName;
-    query += "`";
-
-    if (mysql_query(db, query.c_str()) != 0) {
-        mysql_close(db);
-        throw lsst::pex::exceptions::Runtime("Unable to create new table: " +
-                                             tableName + " LIKE " +
-                                             templateName);
-    }
-    mysql_close(db);
+    query += quote(tableName) + " LIKE " + quote(templateName);
+    executeQuery(query);
 }
 
 /** Drop a table.
- * \param[in] tableName Name of the table to drop
+ * @param[in] tableName Name of the table to drop
  */
-void DbStorageImpl::dropTable(std::string const& tableName) {
-    _session->nominalSchema().dropTable(tableName);
+void dafPer::DbStorageImpl::dropTable(std::string const& tableName) {
+    executeQuery("DROP TABLE " + quote(tableName));
 }
 
 /** Truncate a table.
- * \param[in] tableName Name of the table to truncate
+ * @param[in] tableName Name of the table to truncate
  */
-void DbStorageImpl::truncateTable(std::string const& tableName) {
-    _session->nominalSchema().truncateTable(tableName);
+void dafPer::DbStorageImpl::truncateTable(std::string const& tableName) {
+    executeQuery("TRUNCATE TABLE " + quote(tableName));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// PERSISTENCE
+///////////////////////////////////////////////////////////////////////////////
+
 /** Set the table to insert rows into.
- * \param[in] tableName Name of the table
+ * @param[in] tableName Name of the table
  */
-void DbStorageImpl::setTableForInsert(std::string const& tableName) {
-    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::setTableForInsert()");
-    _table = &(_session->nominalSchema().tableHandle(tableName));
-    _table->dataEditor().rowBuffer(_rowBuffer);
+void dafPer::DbStorageImpl::setTableForInsert(std::string const& tableName) {
+    if (_readonly) {
+        throw pexExcept::Runtime("Attempt to insert into read-only database");
+    }
+    _insertTable = tableName;
+    _inputVars.clear();
 }
 
 /** Set the value to insert in a given column.
- * \param[in] columnName Name of the column
- * \param[in] value Value to set in the column
+ * @param[in] columnName Name of the column
+ * @param[in] value Value to set in the column
  */
 template <typename T>
-void DbStorageImpl::setColumn(std::string const& columnName, T const& value) {
-    _rowBuffer[columnName].template data<T>() = value;
+void dafPer::DbStorageImpl::setColumn(std::string const& columnName, T const& value) {
+    BoundVarMap::iterator bv = _inputVars.find(columnName);
+    size_t size = sizeof(T);
+    if (bv == _inputVars.end()) {
+       bv = _inputVars.insert(
+            BoundVarMap::value_type(columnName, BoundVar(size))).first;
+    }
+    else if (bv->second._length != size) {
+        bv->second._data.reset(new char[size]);
+    }
+    bv->second._type = BoundVarTraits<T>::mysqlType;
+    bv->second._isNull = false;
+    bv->second._isUnsigned = BoundVarTraits<T>::isUnsigned;
+    bv->second._length = size;
+    memcpy(bv->second._data.get(), &value, size);
 }
 
-template<>
-void DbStorageImpl::setColumn(std::string const& columnName, DateTime const& value) {
-    _rowBuffer[columnName].data<coral::TimeStamp>() = dt2ts(value);
+namespace lsst {
+namespace daf {
+namespace persistence {
+
+template <>
+void DbStorageImpl::setColumn(std::string const& columnName, std::string const& value) {
+    BoundVarMap::iterator bv = _inputVars.find(columnName);
+    size_t size = value.length();
+    if (bv == _inputVars.end()) {
+       bv = _inputVars.insert(
+            BoundVarMap::value_type(columnName, BoundVar(size))).first;
+    }
+    else if (bv->second._length != size) {
+        bv->second._data.reset(new char[size]);
+    }
+    bv->second._type = BoundVarTraits<std::string>::mysqlType;
+    bv->second._isNull = false;
+    bv->second._isUnsigned = BoundVarTraits<std::string>::isUnsigned;
+    bv->second._length = size;
+    memcpy(bv->second._data.get(), value.data(), size);
 }
+
+}}} // namespace lsst::daf::persistence
 
 /** Set a given column to NULL.
- * \param[in] columnName Name of the column
+ * @param[in] columnName Name of the column
  */
-void DbStorageImpl::setColumnToNull(std::string const& columnName) {
-    _rowBuffer[columnName].setNull();
+void dafPer::DbStorageImpl::setColumnToNull(std::string const& columnName) {
+    BoundVarMap::iterator bv = _inputVars.find(columnName);
+    if (bv == _inputVars.end()) {
+       bv = _inputVars.insert(
+            BoundVarMap::value_type(columnName, BoundVar(1))).first;
+    }
+    bv->second._isNull = true;
+    bv->second._length = 1;
 }
 
 /** Insert the row.
  * Row values must have been set with setColumn() calls.
  */
-void DbStorageImpl::insertRow(void) {
-    if (_table == 0) throw lsst::pex::exceptions::Runtime("Insert table not initialized in DbStorage::insertRow()");
-    _table->dataEditor().insertRow(_rowBuffer);
-    for(std::size_t i = 0; i < _rowBuffer.size(); ++i) {
-        _rowBuffer[i].setNull(false);
+void dafPer::DbStorageImpl::insertRow(void) {
+    if (_readonly) {
+        throw pexExcept::Runtime("Attempt to insert into read-only database");
     }
+    if (_insertTable.empty()) throw pexExcept::Runtime("Insert table not initialized in DbStorage::insertRow()");
+    if (_inputVars.empty()) throw pexExcept::Runtime("No values to insert");
+
+    std::string query = "INSERT INTO " + quote(_insertTable) = " (";
+
+    std::auto_ptr<MYSQL_BIND> binder(new MYSQL_BIND[_inputVars.size()]);
+
+    int j = 0;
+    for (BoundVarMap::const_iterator it = _inputVars.begin();
+         it != _inputVars.end(); ++it) {
+        if (it != _inputVars.begin()) {
+            query += ", ";
+        }
+        query += quote(it->first);
+
+        // Bind variables
+        MYSQL_BIND* bind = binder.get() + j;
+        bind->buffer_type = it->second._type;
+        bind->buffer = it->second._data.get();
+        bind->buffer_length = it->second._length;
+        bind->length = const_cast<unsigned long*>(&(it->second._length));
+        bind->is_null = const_cast<my_bool*>(
+            reinterpret_cast<my_bool const*>(&(it->second._isNull)));
+        bind->is_unsigned = it->second._isUnsigned;
+        bind->error = 0;
+        ++j;
+    }
+    query += " VALUES (";
+    for (size_t i = 0; i < _inputVars.size(); ++i) {
+        if (i != 0) {
+            query += ", ";
+        }
+        query += "?";
+    }
+
+    // Execute statement
+    MYSQL_STMT* statement = mysql_stmt_init(_db);
+    mysql_stmt_prepare(statement, query.c_str(), query.length());
+    mysql_stmt_bind_param(statement, binder.get());
+    mysql_stmt_execute(statement);
+    mysql_stmt_close(statement);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// RETRIEVAL
+///////////////////////////////////////////////////////////////////////////////
 
 /** Set the table to query (single-table queries only).
- * \param[in] tableName Name of the table
+ * @param[in] tableName Name of the table
  */
-void DbStorageImpl::setTableForQuery(std::string const& tableName) {
-    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::setTableForQuery()");
-    _query.reset(_session->nominalSchema().newQuery());
-    if (_query == 0) throw lsst::pex::exceptions::Runtime("Unable to create new query in DbStorage::setTableForQuery()");
-    _query->addToTableList(tableName);
-    _condAttributeList.reset(new coral::AttributeList);
-    _outAttributeList.reset(new coral::AttributeList);
+void dafPer::DbStorageImpl::setTableForQuery(std::string const& tableName) {
+    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::setTableForQuery()");
+    _queryTables.clear();
+    _queryTables.push_back(tableName);
+    _inputVars.clear();
+    _outputVars.clear();
+    _groupBy.clear();
+    _orderBy.clear();
 }
 
 /** Set a list of tables to query (multiple-table queries).
- * \param[in] tableNameList Vector of names of tables
+ * @param[in] tableNameList Vector of names of tables
  */
-void DbStorageImpl::setTableListForQuery(
+void dafPer::DbStorageImpl::setTableListForQuery(
     std::vector<std::string> const& tableNameList) {
-    if (_session == 0) throw lsst::pex::exceptions::Runtime("Database session not initialized in DbStorage::setTableListForQuery()");
-    _query.reset(_session->nominalSchema().newQuery());
-    if (_query == 0) throw lsst::pex::exceptions::Runtime("Unable to create new query in DbStorage::setTableListForQuery()");
-    for (std::vector<std::string>::const_iterator i = tableNameList.begin();
-         i != tableNameList.end(); ++i) {
-        _query->addToTableList(*i);
-    }
-    _condAttributeList.reset(new coral::AttributeList);
-    _outAttributeList.reset(new coral::AttributeList);
+    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::setTableListForQuery()");
+    _queryTables = tableNameList;
+    _inputVars.clear();
+    _outputVars.clear();
+    _groupBy.clear();
+    _orderBy.clear();
 }
 
 /** Request a column in the query output.
- * \param[in] columnName Name of the column
+ * @param[in] columnName Name of the column
  *
  * The order of outColumn() calls is the order of appearance in the output
  * row.  Use either outColumn() or outParam() but not both.
  */
-void DbStorageImpl::outColumn(std::string const& columnName) {
-    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::outColumn()");
-    _query->addToOutputList(columnName);
+void dafPer::DbStorageImpl::outColumn(std::string const& columnName) {
+    // Bind output variable (with what size?)
 }
 
 /** Request a column in the query output and bind a destination location.
- * \param[in] columnName Name of the column
- * \param[in] location Pointer to the destination
+ * @param[in] columnName Name of the column
+ * @param[in] location Pointer to the destination
  *
  * The order of outParam() calls is the order of appearance in the output row.
  * Use either outColumn() or outParam() but not both.
  */
 template <typename T>
-void DbStorageImpl::outParam(std::string const& columnName, T* location) {
-    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::outParam()");
-    _query->addToOutputList(columnName);
-    if (_outAttributeList == 0) throw lsst::pex::exceptions::Runtime("Output attribute list not initialized in DbStorage::outParam()");
-    _outAttributeList->extend<T>(columnName);
-    (*_outAttributeList)[_outAttributeList->size() - 1].template bind<T>(*location);
-}
-
-template<>
-void DbStorageImpl::outParam<DateTime>(std::string const& columnName,
-                                        DateTime* location) {
-    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::outParam()");
-    _query->addToOutputList(columnName);
-    if (_outAttributeList == 0) throw lsst::pex::exceptions::Runtime("Output attribute list not initialized in DbStorage::outParam()");
-    _outAttributeList->extend<coral::TimeStamp>(columnName);
-    (*_outAttributeList)[_outAttributeList->size() - 1].bind<coral::TimeStamp>(
-        *(reinterpret_cast<coral::TimeStamp*>(location)));
+void dafPer::DbStorageImpl::outParam(std::string const& columnName, T* location) {
+    size_t size = sizeof(T);
+    if (typeid(T) == typeid(std::string)) {
+        size = 4096;
+    }
+    BoundVarMap::iterator bv = _inputVars.insert(
+        BoundVarMap::value_type(columnName, BoundVar(size))).first;
+    // ... more binding stuff
 }
 
 /** Bind a value to a WHERE condition parameter.
- * \param[in] paramName Name of the parameter (prefixed by ":" in the WHERE
+ * @param[in] paramName Name of the parameter (prefixed by ":" in the WHERE
  * clause)
- * \param[in] value Value to be bound to the parameter.
+ * @param[in] value Value to be bound to the parameter.
  */
 template <typename T>
-void DbStorageImpl::condParam(std::string const& paramName, T const& value) {
-    if (_condAttributeList == 0) throw lsst::pex::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
-    _condAttributeList->extend<T>(paramName);
-    (*_condAttributeList)[_condAttributeList->size() - 1].template data<T>() =
-        value;
-}
-
-template<>
-void DbStorageImpl::condParam<DateTime>(std::string const& paramName, DateTime const& value) {
-    if (_condAttributeList == 0) throw lsst::pex::exceptions::Runtime("Condition attribute list not initialized in DbStorage::condParam()");
-    _condAttributeList->extend<coral::TimeStamp>(paramName);
-    (*_condAttributeList)[_condAttributeList->size() - 1].data<coral::TimeStamp>() = dt2ts(value);
+void dafPer::DbStorageImpl::condParam(std::string const& paramName, T const& value) {
+    // add to _inputVars
 }
 
 /** Request that the query output be sorted by an expression.  Multiple
  * expressions may be specified, in order.
- * \param[in] expression Text of the SQL expression
+ * @param[in] expression Text of the SQL expression
  */
-void DbStorageImpl::orderBy(std::string const& expression) {
-    _query->addToOrderList(expression);
+void dafPer::DbStorageImpl::orderBy(std::string const& expression) {
+    if (!_orderBy.empty()) {
+        _orderBy += ", ";
+    }
+    _orderBy += expression;
 }
 
 /** Request that the query output be grouped by an expression.
- * \param[in] expression Text of the SQL expression
+ * @param[in] expression Text of the SQL expression
  */
-void DbStorageImpl::groupBy(std::string const& expression) {
-    _query->groupBy(expression);
+void dafPer::DbStorageImpl::groupBy(std::string const& expression) {
+    if (!_groupBy.empty()) {
+        _groupBy += ", ";
+    }
+    _groupBy += expression;
 }
 
 /** Set the condition for the WHERE clause of the query.
- * \param[in] whereClause SQL text of the WHERE clause
+ * @param[in] whereClause SQL text of the WHERE clause
  *
  * May include join conditions.
  */
-void DbStorageImpl::setQueryWhere(std::string const& whereClause) {
-    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::setQueryWhere()");
-    _query->setCondition(whereClause, *_condAttributeList);
+void dafPer::DbStorageImpl::setQueryWhere(std::string const& whereClause) {
+    // Go through whereClause looking for bound variables
+    // Set up MYSQL_BIND array using information from inputVars
 }
 
 /** Execute the query.
  */
-void DbStorageImpl::query(void) {
-    if (_outAttributeList == 0) throw lsst::pex::exceptions::Runtime("Output attribute list not initialized in DbStorage::query()");
-    if (_query == 0) throw lsst::pex::exceptions::Runtime("Query not initialized in DbStorage::query()");
-    if (_outAttributeList->size() > 0) {
-        _query->defineOutput(*_outAttributeList);
-    }
-    _cursor = &(_query->execute());
+void dafPer::DbStorageImpl::query(void) {
+    if (_outputVars.empty()) throw pexExcept::Runtime("Output attribute list not initialized in DbStorage::query()");
+    // SELECT outVars FROM queryTables WHERE whereClause GROUP BY groupBy
+    // ORDER BY orderBy
+    std::string query = "SELECT ";
+    // add outVars (quoted)
+    query += " FROM ";
+    // add queryTables (quoted)
+    query += " WHERE ";
+    // add whereClause
+    if (!_groupBy.empty()) query += " GROUP BY " + _groupBy;
+    if (!_orderBy.empty()) query += " ORDER BY " + _orderBy;
+
+    MYSQL_STMT* statement = mysql_stmt_init(_db);
+    mysql_stmt_prepare(statement, query.c_str(), query.length());
+    mysql_stmt_bind_param(statement, binder.get());
+    mysql_stmt_bind_result(statement, outBinder.get());
+    mysql_stmt_execute(statement);
+    mysql_stmt_close(statement);
+    // mysql_store_result etc.
 }
 
 /** Move to the next (first) row of the query result.
- * \return false if no more rows
+ * @return false if no more rows
  */
-bool DbStorageImpl::next(void) {
-    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::next()");
+bool dafPer::DbStorageImpl::next(void) {
+    if (_cursor == 0) throw pexExcept::Runtime("Cursor not initialized in DbStorage::next()");
     return _cursor->next();
 }
 
 /** Get the value of a column of the query result row by position.
- * \param[in] pos Position of the column (starts at 0)
- * \return Reference to the value of the column
+ * @param[in] pos Position of the column (starts at 0)
+ * @return Reference to the value of the column
  */
 template <typename T>
-T const& DbStorageImpl::getColumnByPos(int pos) {
-    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
+T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
+    if (_cursor == 0) throw pexExcept::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
     return _cursor->currentRow()[pos].template data<T>();
 }
 
-template<>
-DateTime const& DbStorageImpl::getColumnByPos(int pos) {
-    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
-    return ts2dt(_cursor->currentRow()[pos].data<coral::TimeStamp>());
-}
-
 /** Determine if the value of a column is NULL.
- * \param[in] pos Position of the column (starts at 0)
- * \return true if value is NULL
+ * @param[in] pos Position of the column (starts at 0)
+ * @return true if value is NULL
  */
-bool DbStorageImpl::columnIsNull(int pos) {
-    if (_cursor == 0) throw lsst::pex::exceptions::Runtime("Cursor not initialized in DbStorage::columnIsNull()");
+bool dafPer::DbStorageImpl::columnIsNull(int pos) {
+    if (_cursor == 0) throw pexExcept::Runtime("Cursor not initialized in DbStorage::columnIsNull()");
     return _cursor->currentRow()[pos].isNull();
 }
 
 /** Indicate that query processing is finished.
  */
-void DbStorageImpl::finishQuery(void) {
-    _query.reset();
+void dafPer::DbStorageImpl::finishQuery(void) {
+    // Clean up if needed
 }
 
 
 // Explicit template member function instantiations
 // Ignore for doxygen processing.
-//! \cond
-template void DbStorageImpl::setColumn<>(std::string const& columnName, char const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, short const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, int const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, long const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, long long const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, float const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, double const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, std::string const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, bool const& value);
-template void DbStorageImpl::setColumn<>(std::string const& columnName, DateTime const& value);
+//! @cond
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, char const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, short const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, int const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, long const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, long long const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, float const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, double const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, std::string const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, bool const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, dafBase::DateTime const& value);
 
-template void DbStorageImpl::outParam<>(std::string const& columnName, char* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, short* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, int* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, long* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, long long* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, float* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, double* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, std::string* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, bool* location);
-template void DbStorageImpl::outParam<>(std::string const& columnName, DateTime* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, char* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, short* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, int* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long long* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, float* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, double* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, std::string* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, bool* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, dafBase::DateTime* location);
 
-template void DbStorageImpl::condParam<>(std::string const& paramName, char const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, short const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, int const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, long const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, long long const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, float const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, double const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, std::string const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, bool const& value);
-template void DbStorageImpl::condParam<>(std::string const& paramName, DateTime const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, char const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, short const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, int const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, long const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, long long const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, float const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, double const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, std::string const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, bool const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, dafBase::DateTime const& value);
 
-template char const& DbStorageImpl::getColumnByPos<>(int pos);
-template short const& DbStorageImpl::getColumnByPos<>(int pos);
-template int const& DbStorageImpl::getColumnByPos<>(int pos);
-template long const& DbStorageImpl::getColumnByPos<>(int pos);
-template long long const& DbStorageImpl::getColumnByPos<>(int pos);
-template float const& DbStorageImpl::getColumnByPos<>(int pos);
-template double const& DbStorageImpl::getColumnByPos<>(int pos);
-template std::string const& DbStorageImpl::getColumnByPos<>(int pos);
-template bool const& DbStorageImpl::getColumnByPos<>(int pos);
-template DateTime const& DbStorageImpl::getColumnByPos<>(int pos);
-//! \endcond
-
-}}} // namespace lsst::daf::persistence
+template char const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template short const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template int const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template long const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template long long const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template float const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template double const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template std::string const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template bool const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+//! @endcond
