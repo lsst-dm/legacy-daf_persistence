@@ -8,6 +8,6 @@ lsstLibs = "daf_base pex_logging pex_exceptions pex_policy".split()
 env.SharedLibrary(
     'daf_persistence',
     sourceFiles,
-    LIBS=env.getlibs("boost jaula coral seal mysqlclient") + lsstLibs,
+    LIBS=env.getlibs("boost jaula mysqlclient") + lsstLibs,
 )
 
