@@ -198,7 +198,6 @@ void dafPer::DbStorageImpl::setRetrieveLocation(LogicalLocation const& location)
 /** Start a transaction.
  */
 void dafPer::DbStorageImpl::startTransaction(void) {
-    // autocommit(off)
     if (_db == 0) error("Database session not initialized "
                         "in DbStorage::startTransaction()", false);
     if (mysql_autocommit(_db, false)) error("Unable to turn off autocommit");
@@ -234,9 +233,13 @@ std::string dafPer::DbStorageImpl::quote(std::string const& name) {
     return '`' + name + '`';
 }
 
+void dafPer::DbStorageImpl::stError(std::string const& text) {
+    error(text + " - * " + mysql_stmt_error(_statement), false);
+}
+
 void dafPer::DbStorageImpl::error(std::string const& text, bool mysqlCause) {
     if (mysqlCause) {
-        throw pexExcept::Runtime(text + ": " + mysql_error(_db));
+        throw pexExcept::Runtime(text + " - * " + mysql_error(_db));
     }
     else {
         throw pexExcept::Runtime(text);
@@ -355,12 +358,13 @@ void dafPer::DbStorageImpl::insertRow(void) {
     if (_insertTable.empty()) error("Insert table not initialized in DbStorage::insertRow()", false);
     if (_inputVars.empty()) error("No values to insert", false);
 
-    std::string query = "INSERT INTO " + quote(_insertTable) = " (";
+    std::string query = "INSERT INTO " + quote(_insertTable) + " (";
 
-    std::vector<MYSQL_BIND> binder(_inputVars.size());
+    boost::scoped_array<MYSQL_BIND> binder(new MYSQL_BIND[_inputVars.size()]);
+    memset(binder.get(), 0, _inputVars.size() * sizeof(MYSQL_BIND));
 
-    int j = 0;
-    for (BoundVarMap::const_iterator it = _inputVars.begin();
+    int i = 0;
+    for (BoundVarMap::iterator it = _inputVars.begin();
          it != _inputVars.end(); ++it) {
         if (it != _inputVars.begin()) {
             query += ", ";
@@ -368,33 +372,48 @@ void dafPer::DbStorageImpl::insertRow(void) {
         query += quote(it->first);
 
         // Bind variables
-        MYSQL_BIND* bind = &(binder.at(j));
-        bind->buffer_type = it->second._type;
-        bind->buffer = it->second._data.get();
-        bind->buffer_length = it->second._length;
-        bind->length = const_cast<unsigned long*>(&(it->second._length));
-        bind->is_null = const_cast<my_bool*>(
-            reinterpret_cast<my_bool const*>(&(it->second._isNull)));
-        bind->is_unsigned = it->second._isUnsigned;
-        bind->error = 0;
-        ++j;
+        MYSQL_BIND& bind(binder[i]);
+        BoundVar& bv(it->second);
+        if (bv._isNull) {
+            bind.buffer_type = MYSQL_TYPE_NULL;
+        }
+        else {
+            bind.buffer_type = bv._type;
+            bind.buffer = bv._data.get();
+            bind.buffer_length = bv._length;
+            bind.length = &(bv._length);
+            bind.is_null = 0;
+            bind.is_unsigned = bv._isUnsigned;
+            bind.error = 0;
+        }
+        ++i;
     }
-    query += " VALUES (";
+    query += ") VALUES (";
     for (size_t i = 0; i < _inputVars.size(); ++i) {
         if (i != 0) {
             query += ", ";
         }
         query += "?";
     }
+    query += ")";
 
     // Execute statement
     // Guard statement with mysql_stmt_close()
-    // Check return values
-    MYSQL_STMT* statement = mysql_stmt_init(_db);
-    mysql_stmt_prepare(statement, query.c_str(), query.length());
-    mysql_stmt_bind_param(statement, &(binder.front()));
-    mysql_stmt_execute(statement);
-    mysql_stmt_close(statement);
+    _statement = mysql_stmt_init(_db);
+    if (_statement == 0) {
+        error("Unable to initialize statement: " + query);
+    }
+    if (mysql_stmt_prepare(_statement, query.c_str(), query.length()) != 0) {
+        stError("Unable to prepare statement: " + query);
+    }
+    if (mysql_stmt_bind_param(_statement, binder.get())) {
+        stError("Unable to bind variables in: " + query);
+    }
+    if (mysql_stmt_execute(_statement) != 0) {
+        stError("Unable to execute statement: " + query);
+    }
+    mysql_stmt_close(_statement);
+    _statement = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -457,7 +476,7 @@ void dafPer::DbStorageImpl::outParam(std::string const& columnName,
     size_t size = sizeof(T);
     std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
         BoundVarMap::value_type(columnName, BoundVar(location)));
-    if (pair.second) {
+    if (!pair.second) {
         error("Duplicate column name requested: " + columnName, false);
     }
     BoundVar& bv = pair.first->second;
@@ -475,7 +494,7 @@ void dafPer::DbStorageImpl::outParam(std::string const& columnName,
     std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
         BoundVarMap::value_type(columnName,
                                 BoundVar(size + sizeof(std::string*))));
-    if (pair.second) {
+    if (!pair.second) {
         error("Duplicate column name requested: " + columnName, false);
     }
     BoundVar& bv = pair.first->second;
@@ -557,7 +576,7 @@ void dafPer::DbStorageImpl::query(void) {
     // WHERE clause
     std::vector<std::string> whereBindings;
     if (!_whereClause.empty()) {
-        boost::regex re("\b\?([A-Za-z_]+)\b");
+        boost::regex re(":([A-Za-z_]+)");
         std::string result;
         std::back_insert_iterator<std::string> out(result);
         boost::regex_iterator<std::string::iterator> m; 
@@ -570,7 +589,7 @@ void dafPer::DbStorageImpl::query(void) {
             assert(m->size() == 2);
             whereBindings.push_back(m->str(1));
         }
-        if (m == boost::regex_iterator<std::string::iterator>()) {
+        if (m != boost::regex_iterator<std::string::iterator>()) {
             std::copy(m->suffix().first, m->suffix().second, out);
         }
         else {
@@ -616,7 +635,7 @@ void dafPer::DbStorageImpl::query(void) {
     }
 
     if (mysql_stmt_prepare(_statement, query.c_str(), query.length()) != 0) {
-        error("Unable to prepare statement: " + query);
+        stError("Unable to prepare statement: " + query);
     }
 
 
@@ -633,14 +652,14 @@ void dafPer::DbStorageImpl::query(void) {
                   false);
         }
         if (mysql_stmt_bind_param(_statement, inBinder.get())) {
-            error("Unable to bind WHERE parameters: " + query);
+            stError("Unable to bind WHERE parameters: " + query);
         }
     }
 
     // Check number of result columns
     MYSQL_RES* queryMetadata = mysql_stmt_result_metadata(_statement);
     if (!queryMetadata) {
-        error("No query metadata: " + query);
+        stError("No query metadata: " + query);
     }
     _numResultFields = mysql_num_fields(queryMetadata);
     if (static_cast<unsigned int>(_numResultFields) != _outColumns.size()) {
@@ -651,7 +670,7 @@ void dafPer::DbStorageImpl::query(void) {
     // Execute query
 
     if (mysql_stmt_execute(_statement) != 0) {
-        error("MySQL query failed");
+        stError("MySQL query failed: " + query);
     }
 
 
@@ -667,7 +686,7 @@ void dafPer::DbStorageImpl::query(void) {
     for (int i = 0; i < _numResultFields; ++i) {
         MYSQL_BIND& bind(outBinder[i]);
         if (_outputVars.empty()) {
-            bind.buffer_type = _resultFields[i].type;
+            bind.buffer_type = MYSQL_TYPE_STRING;
             bind.buffer = 0;
             bind.buffer_length = 0;
             bind.length = &(_fieldLengths[i]);
@@ -691,15 +710,15 @@ void dafPer::DbStorageImpl::query(void) {
                 bind.buffer = bv._data.get();
             }
             bind.buffer_length = bv._length;
-            bind.length = &(bv._length);
-            bind.is_null = const_cast<my_bool*>(
-                reinterpret_cast<my_bool const*>(&(bv._isNull)));
+            bind.length = &(_fieldLengths[i]);
+            bind.is_null = &(_fieldNulls[i]);
             bind.is_unsigned = bv._isUnsigned;
             bind.error = 0;
         }
     }
-    mysql_stmt_bind_result(_statement, outBinder.get());
-
+    if (mysql_stmt_bind_result(_statement, outBinder.get())) {
+        stError("Unable to bind results: " + query);
+    }
 }
 
 /** Move to the next (first) row of the query result.
@@ -729,7 +748,8 @@ bool dafPer::DbStorageImpl::next(void) {
         return true;
     }
     if (ret == MYSQL_NO_DATA) return false;
-    error("Error fetching next row", false);
+    if (ret == MYSQL_DATA_TRUNCATED && _outputVars.empty()) return true;
+    stError("Error fetching next row");
     return false;
 }
 
@@ -743,14 +763,17 @@ T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
         error("Nonexistent column: " + pos, false);
     }
     MYSQL_BIND bind;
-    T t;
+    memset(&bind, 0, sizeof(MYSQL_BIND));
+    static T t;
     bind.buffer_type = BoundVarTraits<T>::mysqlType;
     bind.is_unsigned = BoundVarTraits<T>::isUnsigned;
     bind.buffer = &t;
     bind.buffer_length = sizeof(T);
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
-    mysql_stmt_fetch_column(_statement, &bind, pos, 0);
+    if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
+        stError("Error fetching column: " + pos);
+    }
     return t;
 }
 
@@ -769,8 +792,11 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     bind.buffer_length = _fieldLengths[pos];
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
-    mysql_stmt_fetch_column(_statement, &bind, pos, 0);
-    std::string s(t.get());
+    if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
+        stError("Error fetching string column: " + pos);
+    }
+    static std::string s;
+    s = std::string(t.get());
     return s;
 }
 
@@ -789,6 +815,7 @@ bool dafPer::DbStorageImpl::columnIsNull(int pos) {
  */
 void dafPer::DbStorageImpl::finishQuery(void) {
     mysql_stmt_close(_statement);
+    _statement = 0;
 }
 
 
