@@ -23,6 +23,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
+#include <vector>
 
 #include <mysql/mysql.h>
 
@@ -48,6 +49,9 @@ public:
 };
 
 }}} // namespace lsst::daf::persistence
+
+template<> enum_field_types dafPer::BoundVarTraits<bool>::mysqlType = MYSQL_TYPE_LONG;
+template<> bool dafPer::BoundVarTraits<bool>::isUnsigned = true;
 
 template<> enum_field_types dafPer::BoundVarTraits<char>::mysqlType = MYSQL_TYPE_TINY;
 template<> bool dafPer::BoundVarTraits<char>::isUnsigned = false;
@@ -85,18 +89,45 @@ template<> bool dafPer::BoundVarTraits<double>::isUnsigned = false;
 template<> enum_field_types dafPer::BoundVarTraits<dafBase::DateTime>::mysqlType = MYSQL_TYPE_DATETIME;
 template<> bool dafPer::BoundVarTraits<dafBase::DateTime>::isUnsigned = false;
 
-template<> enum_field_types dafPer::BoundVarTraits<std::string>::mysqlType = MYSQL_TYPE_STRING;
+template<> enum_field_types dafPer::BoundVarTraits<std::string>::mysqlType = MYSQL_TYPE_VAR_STRING;
 template<> bool dafPer::BoundVarTraits<std::string>::isUnsigned = false;
 
+///////////////////////////////////////////////////////////////////////////////
+// BoundVar
+///////////////////////////////////////////////////////////////////////////////
 
-/** Constructor.
+/** Default constructor.
+ */
+dafPer::BoundVar::BoundVar(void) :
+    lsst::daf::base::Citizen(typeid(*this)), _data(reinterpret_cast<char*>(0)) {
+}
+
+/** Constructor from size.
  */
 dafPer::BoundVar::BoundVar(size_t size) :
     lsst::daf::base::Citizen(typeid(*this)), _data(new char[size]) {
 }
 
+/** Constructor from pointer.
+  */
+dafPer::BoundVar::BoundVar(void* location) :
+    lsst::daf::base::Citizen(typeid(*this)),
+    _data(reinterpret_cast<char*>(location)) {
+}
 
-/** Constructor.
+/** Copy constructor.
+  */
+dafPer::BoundVar::BoundVar(BoundVar const& src) :
+    lsst::daf::base::Citizen(typeid(*this)),
+    _type(src._type), _isNull(src._isNull), _isUnsigned(src._isUnsigned),
+    _length(src._length), _data(src._data) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// CONSTRUCTORS
+///////////////////////////////////////////////////////////////////////////////
+
+/** Default constructor.
  */
 dafPer::DbStorageImpl::DbStorageImpl(void) :
     lsst::daf::base::Citizen(typeid(*this)), _db(0) {
@@ -117,6 +148,10 @@ dafPer::DbStorageImpl::~DbStorageImpl(void) {
  */
 void dafPer::DbStorageImpl::setPolicy(pexPolicy::Policy::Ptr policy) {
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SESSIONS
+///////////////////////////////////////////////////////////////////////////////
 
 /** Start a database session.
  * @param[in] location Physical database location
@@ -140,8 +175,7 @@ void dafPer::DbStorageImpl::startSession(std::string const& location) {
                            dbloc.getPassword().c_str(),
                            dbloc.getDbName().c_str(),
                            port, 0, 0) == 0) {
-        throw pexExcept::Runtime(
-            "Unable to connect to MySQL database: " + _location);
+        error("Unable to connect to MySQL database: " + _location);
     }
 }
 
@@ -165,16 +199,18 @@ void dafPer::DbStorageImpl::setRetrieveLocation(LogicalLocation const& location)
  */
 void dafPer::DbStorageImpl::startTransaction(void) {
     // autocommit(off)
-    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::startTransaction()");
-    if (mysql_autocommit(_db, false)) throw pexExcept::Runtime("Unable to turn off autocommit");
+    if (_db == 0) error("Database session not initialized "
+                        "in DbStorage::startTransaction()", false);
+    if (mysql_autocommit(_db, false)) error("Unable to turn off autocommit");
 }
 
 /** End a transaction.
  */
 void dafPer::DbStorageImpl::endTransaction(void) {
-    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::endTransaction()");
-    if (mysql_commit(_db)) throw pexExcept::Runtime("Unable to commit transaction");
-    if (mysql_autocommit(_db, true)) throw pexExcept::Runtime("Unable to turn on autocommit");
+    if (_db == 0) error("Database session not initialized "
+                        "in DbStorage::endTransaction()", false);
+    if (mysql_commit(_db)) error("Unable to commit transaction");
+    if (mysql_autocommit(_db, true)) error("Unable to turn on autocommit");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,14 +221,10 @@ void dafPer::DbStorageImpl::endTransaction(void) {
   */
 void dafPer::DbStorageImpl::executeQuery(std::string const& query) {
     if (_db == 0) {
-        throw pexExcept::Runtime(
-            "No DB connection for query: " + query);
+        error("No DB connection for query: " + query, false);
     }
     if (mysql_query(_db, query.c_str()) != 0) {
-        mysql_close(_db);
-        _db = 0;
-        throw pexExcept::Runtime("Unable to execute query: " +
-                                             query);
+        error("Unable to execute query: " + query);
     }
 }
 
@@ -200,6 +232,15 @@ void dafPer::DbStorageImpl::executeQuery(std::string const& query) {
   */
 std::string dafPer::DbStorageImpl::quote(std::string const& name) {
     return '`' + name + '`';
+}
+
+void dafPer::DbStorageImpl::error(std::string const& text, bool mysqlCause) {
+    if (mysqlCause) {
+        throw pexExcept::Runtime(text + ": " + mysql_error(_db));
+    }
+    else {
+        throw pexExcept::Runtime(text);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,7 +284,7 @@ void dafPer::DbStorageImpl::truncateTable(std::string const& tableName) {
  */
 void dafPer::DbStorageImpl::setTableForInsert(std::string const& tableName) {
     if (_readonly) {
-        throw pexExcept::Runtime("Attempt to insert into read-only database");
+        error("Attempt to insert into read-only database", false);
     }
     _insertTable = tableName;
     _inputVars.clear();
@@ -254,7 +295,8 @@ void dafPer::DbStorageImpl::setTableForInsert(std::string const& tableName) {
  * @param[in] value Value to set in the column
  */
 template <typename T>
-void dafPer::DbStorageImpl::setColumn(std::string const& columnName, T const& value) {
+void dafPer::DbStorageImpl::setColumn(std::string const& columnName,
+                                      T const& value) {
     BoundVarMap::iterator bv = _inputVars.find(columnName);
     size_t size = sizeof(T);
     if (bv == _inputVars.end()) {
@@ -271,12 +313,9 @@ void dafPer::DbStorageImpl::setColumn(std::string const& columnName, T const& va
     memcpy(bv->second._data.get(), &value, size);
 }
 
-namespace lsst {
-namespace daf {
-namespace persistence {
-
 template <>
-void DbStorageImpl::setColumn(std::string const& columnName, std::string const& value) {
+void dafPer::DbStorageImpl::setColumn(std::string const& columnName,
+                                      std::string const& value) {
     BoundVarMap::iterator bv = _inputVars.find(columnName);
     size_t size = value.length();
     if (bv == _inputVars.end()) {
@@ -292,8 +331,6 @@ void DbStorageImpl::setColumn(std::string const& columnName, std::string const& 
     bv->second._length = size;
     memcpy(bv->second._data.get(), value.data(), size);
 }
-
-}}} // namespace lsst::daf::persistence
 
 /** Set a given column to NULL.
  * @param[in] columnName Name of the column
@@ -313,14 +350,14 @@ void dafPer::DbStorageImpl::setColumnToNull(std::string const& columnName) {
  */
 void dafPer::DbStorageImpl::insertRow(void) {
     if (_readonly) {
-        throw pexExcept::Runtime("Attempt to insert into read-only database");
+        error("Attempt to insert into read-only database", false);
     }
-    if (_insertTable.empty()) throw pexExcept::Runtime("Insert table not initialized in DbStorage::insertRow()");
-    if (_inputVars.empty()) throw pexExcept::Runtime("No values to insert");
+    if (_insertTable.empty()) error("Insert table not initialized in DbStorage::insertRow()", false);
+    if (_inputVars.empty()) error("No values to insert", false);
 
     std::string query = "INSERT INTO " + quote(_insertTable) = " (";
 
-    std::auto_ptr<MYSQL_BIND> binder(new MYSQL_BIND[_inputVars.size()]);
+    std::vector<MYSQL_BIND> binder(_inputVars.size());
 
     int j = 0;
     for (BoundVarMap::const_iterator it = _inputVars.begin();
@@ -331,7 +368,7 @@ void dafPer::DbStorageImpl::insertRow(void) {
         query += quote(it->first);
 
         // Bind variables
-        MYSQL_BIND* bind = binder.get() + j;
+        MYSQL_BIND* bind = &(binder.at(j));
         bind->buffer_type = it->second._type;
         bind->buffer = it->second._data.get();
         bind->buffer_length = it->second._length;
@@ -351,9 +388,11 @@ void dafPer::DbStorageImpl::insertRow(void) {
     }
 
     // Execute statement
+    // Guard statement with mysql_stmt_close()
+    // Check return values
     MYSQL_STMT* statement = mysql_stmt_init(_db);
     mysql_stmt_prepare(statement, query.c_str(), query.length());
-    mysql_stmt_bind_param(statement, binder.get());
+    mysql_stmt_bind_param(statement, &(binder.front()));
     mysql_stmt_execute(statement);
     mysql_stmt_close(statement);
 }
@@ -366,13 +405,16 @@ void dafPer::DbStorageImpl::insertRow(void) {
  * @param[in] tableName Name of the table
  */
 void dafPer::DbStorageImpl::setTableForQuery(std::string const& tableName) {
-    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::setTableForQuery()");
+    if (_db == 0) error("Database session not initialized in DbStorage::setTableForQuery()", false);
     _queryTables.clear();
     _queryTables.push_back(tableName);
     _inputVars.clear();
     _outputVars.clear();
+    _outColumns.clear();
+    _whereClause.clear();
     _groupBy.clear();
     _orderBy.clear();
+    _statement = 0;
 }
 
 /** Set a list of tables to query (multiple-table queries).
@@ -380,12 +422,15 @@ void dafPer::DbStorageImpl::setTableForQuery(std::string const& tableName) {
  */
 void dafPer::DbStorageImpl::setTableListForQuery(
     std::vector<std::string> const& tableNameList) {
-    if (_db == 0) throw pexExcept::Runtime("Database session not initialized in DbStorage::setTableListForQuery()");
+    if (_db == 0) error("Database session not initialized in DbStorage::setTableListForQuery()", false);
     _queryTables = tableNameList;
     _inputVars.clear();
     _outputVars.clear();
+    _outColumns.clear();
+    _whereClause.clear();
     _groupBy.clear();
     _orderBy.clear();
+    _statement = 0;
 }
 
 /** Request a column in the query output.
@@ -395,7 +440,7 @@ void dafPer::DbStorageImpl::setTableListForQuery(
  * row.  Use either outColumn() or outParam() but not both.
  */
 void dafPer::DbStorageImpl::outColumn(std::string const& columnName) {
-    // Bind output variable (with what size?)
+    _outColumns.push_back(columnName);
 }
 
 /** Request a column in the query output and bind a destination location.
@@ -406,14 +451,39 @@ void dafPer::DbStorageImpl::outColumn(std::string const& columnName) {
  * Use either outColumn() or outParam() but not both.
  */
 template <typename T>
-void dafPer::DbStorageImpl::outParam(std::string const& columnName, T* location) {
+void dafPer::DbStorageImpl::outParam(std::string const& columnName,
+                                     T* location) {
+    _outColumns.push_back(columnName);
     size_t size = sizeof(T);
-    if (typeid(T) == typeid(std::string)) {
-        size = 4096;
+    std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
+        BoundVarMap::value_type(columnName, BoundVar(location)));
+    if (pair.second) {
+        error("Duplicate column name requested: " + columnName, false);
     }
-    BoundVarMap::iterator bv = _inputVars.insert(
-        BoundVarMap::value_type(columnName, BoundVar(size))).first;
-    // ... more binding stuff
+    BoundVar& bv = pair.first->second;
+    bv._type = BoundVarTraits<T>::mysqlType;
+    bv._isNull = false;
+    bv._isUnsigned = BoundVarTraits<T>::isUnsigned;
+    bv._length = size;
+}
+
+template <>
+void dafPer::DbStorageImpl::outParam(std::string const& columnName,
+                                     std::string* location) {
+    _outColumns.push_back(columnName);
+    size_t size = 4096;
+    std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
+        BoundVarMap::value_type(columnName,
+                                BoundVar(size + sizeof(std::string*))));
+    if (pair.second) {
+        error("Duplicate column name requested: " + columnName, false);
+    }
+    BoundVar& bv = pair.first->second;
+    memcpy(bv._data.get(), &location, sizeof(std::string*));
+    bv._type = BoundVarTraits<std::string>::mysqlType;
+    bv._isNull = false;
+    bv._isUnsigned = BoundVarTraits<std::string>::isUnsigned;
+    bv._length = size;
 }
 
 /** Bind a value to a WHERE condition parameter.
@@ -423,7 +493,7 @@ void dafPer::DbStorageImpl::outParam(std::string const& columnName, T* location)
  */
 template <typename T>
 void dafPer::DbStorageImpl::condParam(std::string const& paramName, T const& value) {
-    // add to _inputVars
+    setColumn<T>(paramName, value);
 }
 
 /** Request that the query output be sorted by an expression.  Multiple
@@ -453,40 +523,214 @@ void dafPer::DbStorageImpl::groupBy(std::string const& expression) {
  * May include join conditions.
  */
 void dafPer::DbStorageImpl::setQueryWhere(std::string const& whereClause) {
-    // Go through whereClause looking for bound variables
-    // Set up MYSQL_BIND array using information from inputVars
+    _whereClause = whereClause;
 }
 
 /** Execute the query.
  */
 void dafPer::DbStorageImpl::query(void) {
-    if (_outputVars.empty()) throw pexExcept::Runtime("Output attribute list not initialized in DbStorage::query()");
+    if (_outColumns.empty()) error("No output columns for query", false);
+
     // SELECT outVars FROM queryTables WHERE whereClause GROUP BY groupBy
     // ORDER BY orderBy
+
+    // SELECT clause
     std::string query = "SELECT ";
-    // add outVars (quoted)
+    for (std::vector<std::string>::const_iterator it = _outColumns.begin();
+         it != _outColumns.end(); ++it) {
+        if (it != _outColumns.begin()) {
+            query += ", ";
+        }
+        query += quote(*it);
+    }
+
+    // FROM clause
     query += " FROM ";
-    // add queryTables (quoted)
-    query += " WHERE ";
-    // add whereClause
+    for (std::vector<std::string>::const_iterator it = _queryTables.begin();
+         it != _queryTables.end(); ++it) {
+        if (it != _queryTables.begin()) {
+            query += ", ";
+        }
+        query += quote(*it);
+    }
+
+    // WHERE clause
+    std::vector<std::string> whereBindings;
+    if (!_whereClause.empty()) {
+        boost::regex re("\b\?([A-Za-z_]+)\b");
+        std::string result;
+        std::back_insert_iterator<std::string> out(result);
+        boost::regex_iterator<std::string::iterator> m; 
+        for (boost::regex_iterator<std::string::iterator> i(
+                _whereClause.begin(), _whereClause.end(), re);
+             i != boost::regex_iterator<std::string::iterator>(); ++i) {
+            m = i;
+            std::copy(m->prefix().first, m->prefix().second, out);
+            *out++ = '?';
+            assert(m->size() == 2);
+            whereBindings.push_back(m->str(1));
+        }
+        if (m == boost::regex_iterator<std::string::iterator>()) {
+            std::copy(m->suffix().first, m->suffix().second, out);
+        }
+        else {
+            std::copy(_whereClause.begin(), _whereClause.end(), out);
+        }
+        query += " WHERE " + result;
+    }
+
+    // GROUP BY clause
     if (!_groupBy.empty()) query += " GROUP BY " + _groupBy;
+
+    // ORDER BY clause
     if (!_orderBy.empty()) query += " ORDER BY " + _orderBy;
 
-    MYSQL_STMT* statement = mysql_stmt_init(_db);
-    mysql_stmt_prepare(statement, query.c_str(), query.length());
-    mysql_stmt_bind_param(statement, binder.get());
-    mysql_stmt_bind_result(statement, outBinder.get());
-    mysql_stmt_execute(statement);
-    mysql_stmt_close(statement);
-    // mysql_store_result etc.
+
+    // Create bindings for input WHERE clause variables, if any
+
+    boost::scoped_array<MYSQL_BIND> inBinder(
+        new MYSQL_BIND[whereBindings.size()]);
+    memset(inBinder.get(), 0, whereBindings.size() * sizeof(MYSQL_BIND));
+    for (size_t i = 0; i < whereBindings.size(); ++i) {
+        MYSQL_BIND& bind(inBinder[i]);
+        BoundVarMap::iterator it = _inputVars.find(whereBindings[i]);
+        if (it == _inputVars.end()) {
+            error("Unbound variable in WHERE clause: " + whereBindings[i],
+                  false);
+        }
+        BoundVar& bv = it->second;
+        bind.buffer_type = bv._type;
+        bind.buffer = bv._data.get();
+        bind.buffer_length = bv._length;
+        bind.is_null = 0;
+        bind.is_unsigned = bv._isUnsigned;
+        bind.error = 0;
+    }
+
+
+    // Initialize and prepare statement
+
+    _statement = mysql_stmt_init(_db);
+    if (!_statement) {
+        error("Unable to initialize prepared statement");
+    }
+
+    if (mysql_stmt_prepare(_statement, query.c_str(), query.length()) != 0) {
+        error("Unable to prepare statement: " + query);
+    }
+
+
+    // Check number of input parameters and bind them
+    unsigned int params = mysql_stmt_param_count(_statement);
+    if (_whereClause.empty()) {
+        if (params != 0) {
+            error("Unbound WHERE clause parameters: " + query, false);
+        }
+    }
+    else {
+        if (params != whereBindings.size()) {
+            error("Mismatch in number of WHERE clause parameters: " + query,
+                  false);
+        }
+        if (mysql_stmt_bind_param(_statement, inBinder.get())) {
+            error("Unable to bind WHERE parameters: " + query);
+        }
+    }
+
+    // Check number of result columns
+    MYSQL_RES* queryMetadata = mysql_stmt_result_metadata(_statement);
+    if (!queryMetadata) {
+        error("No query metadata: " + query);
+    }
+    _numResultFields = mysql_num_fields(queryMetadata);
+    if (static_cast<unsigned int>(_numResultFields) != _outColumns.size()) {
+        error("Mismatch in number of SELECT items: " + query, false);
+    }
+
+
+    // Execute query
+
+    if (mysql_stmt_execute(_statement) != 0) {
+        error("MySQL query failed");
+    }
+
+
+    // Create bindings for output variables
+
+    _resultFields = mysql_fetch_fields(queryMetadata);
+
+    boost::scoped_array<MYSQL_BIND> outBinder(new MYSQL_BIND[_numResultFields]);
+    memset(outBinder.get(), 0, _numResultFields * sizeof(MYSQL_BIND));
+    _fieldLengths.reset(new unsigned long[_numResultFields]);
+    _fieldNulls.reset(new my_bool[_numResultFields]);
+
+    for (int i = 0; i < _numResultFields; ++i) {
+        MYSQL_BIND& bind(outBinder[i]);
+        if (_outputVars.empty()) {
+            bind.buffer_type = _resultFields[i].type;
+            bind.buffer = 0;
+            bind.buffer_length = 0;
+            bind.length = &(_fieldLengths[i]);
+            bind.is_null = &(_fieldNulls[i]);
+            bind.is_unsigned = (_resultFields[i].flags & UNSIGNED_FLAG) != 0;
+            bind.error = 0;
+        }
+        else {
+            BoundVarMap::iterator it = _outputVars.find(_outColumns[i]);
+            if (it == _outputVars.end()) {
+                error("Unbound variable in SELECT clause: " + _outColumns[i],
+                      false);
+            }
+            BoundVar& bv = it->second;
+
+            bind.buffer_type = bv._type;
+            if (bv._type == BoundVarTraits<std::string>::mysqlType) {
+                bind.buffer = bv._data.get() + sizeof(std::string*);
+            }
+            else {
+                bind.buffer = bv._data.get();
+            }
+            bind.buffer_length = bv._length;
+            bind.length = &(bv._length);
+            bind.is_null = const_cast<my_bool*>(
+                reinterpret_cast<my_bool const*>(&(bv._isNull)));
+            bind.is_unsigned = bv._isUnsigned;
+            bind.error = 0;
+        }
+    }
+    mysql_stmt_bind_result(_statement, outBinder.get());
+
 }
 
 /** Move to the next (first) row of the query result.
  * @return false if no more rows
  */
 bool dafPer::DbStorageImpl::next(void) {
-    if (_cursor == 0) throw pexExcept::Runtime("Cursor not initialized in DbStorage::next()");
-    return _cursor->next();
+    if (_statement == 0) {
+        error("Statement not initialized in DbStorage::next()", false);
+    }
+    int ret = mysql_stmt_fetch(_statement);
+    if (ret == 0) {
+        // Fix up strings
+        if (!_outputVars.empty()) {
+            for (std::vector<std::string>::const_iterator it =
+                 _outColumns.begin(); it != _outColumns.end(); ++it) {
+                BoundVarMap::iterator bvit = _outputVars.find(*it);
+                if (bvit == _outputVars.end()) {
+                    error("Unbound variable in SELECT clause: " + *it, false);
+                }
+                BoundVar& bv = bvit->second;
+                if (bv._type == BoundVarTraits<std::string>::mysqlType) {
+                    **reinterpret_cast<std::string**>(bv._data.get()) =
+                        std::string(bv._data.get() + sizeof(std::string*));
+                }
+            }
+        }
+        return true;
+    }
+    if (ret == MYSQL_NO_DATA) return false;
+    error("Error fetching next row", false);
+    return false;
 }
 
 /** Get the value of a column of the query result row by position.
@@ -495,8 +739,39 @@ bool dafPer::DbStorageImpl::next(void) {
  */
 template <typename T>
 T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
-    if (_cursor == 0) throw pexExcept::Runtime("Cursor not initialized in DbStorage::getColumnByPos()");
-    return _cursor->currentRow()[pos].template data<T>();
+    if (pos > _numResultFields) {
+        error("Nonexistent column: " + pos, false);
+    }
+    MYSQL_BIND bind;
+    T t;
+    bind.buffer_type = BoundVarTraits<T>::mysqlType;
+    bind.is_unsigned = BoundVarTraits<T>::isUnsigned;
+    bind.buffer = &t;
+    bind.buffer_length = sizeof(T);
+    bind.length = &(_fieldLengths[pos]);
+    bind.is_null = &(_fieldNulls[pos]);
+    mysql_stmt_fetch_column(_statement, &bind, pos, 0);
+    return t;
+}
+
+template <>
+std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
+    if (pos > _numResultFields) {
+        error("Nonexistent column: " + pos, false);
+    }
+    MYSQL_BIND bind;
+    if (_resultFields[pos].type != MYSQL_TYPE_VAR_STRING &&
+        _resultFields[pos].type != MYSQL_TYPE_STRING) {
+        error("Invalid type for string retrieval", false);
+    }
+    boost::scoped_array<char> t(new char[_fieldLengths[pos]]);
+    bind.buffer = t.get();
+    bind.buffer_length = _fieldLengths[pos];
+    bind.length = &(_fieldLengths[pos]);
+    bind.is_null = &(_fieldNulls[pos]);
+    mysql_stmt_fetch_column(_statement, &bind, pos, 0);
+    std::string s(t.get());
+    return s;
 }
 
 /** Determine if the value of a column is NULL.
@@ -504,14 +779,16 @@ T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
  * @return true if value is NULL
  */
 bool dafPer::DbStorageImpl::columnIsNull(int pos) {
-    if (_cursor == 0) throw pexExcept::Runtime("Cursor not initialized in DbStorage::columnIsNull()");
-    return _cursor->currentRow()[pos].isNull();
+    if (pos > _numResultFields) {
+        error("Nonexistent column: " + pos, false);
+    }
+    return _fieldNulls[pos];
 }
 
 /** Indicate that query processing is finished.
  */
 void dafPer::DbStorageImpl::finishQuery(void) {
-    // Clean up if needed
+    mysql_stmt_close(_statement);
 }
 
 
@@ -521,7 +798,6 @@ void dafPer::DbStorageImpl::finishQuery(void) {
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, char const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, short const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, int const& value);
-template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, long const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, long long const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, float const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, double const& value);
@@ -532,7 +808,6 @@ template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, 
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, char* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, short* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, int* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long long* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, float* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, double* location);
@@ -543,7 +818,6 @@ template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, d
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, char const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, short const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, int const& value);
-template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, long const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, long long const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, float const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, double const& value);
@@ -554,7 +828,6 @@ template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, d
 template char const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template short const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template int const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
-template long const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template long long const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template float const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template double const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);

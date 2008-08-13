@@ -20,7 +20,7 @@
   * @ingroup daf_persistence
   */
 
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_array.hpp>
 #include <mysql/mysql.h>
 #include <string>
 #include <vector>
@@ -38,7 +38,10 @@ class LogicalLocation;
 
 class BoundVar : public lsst::daf::base::Citizen {
 public:
-    BoundVar(size_t size);
+    BoundVar(void);
+    explicit BoundVar(size_t size);
+    explicit BoundVar(void* location);
+    BoundVar(BoundVar const& src);
 
     enum_field_types _type;
     bool _isNull;
@@ -98,6 +101,7 @@ private:
     // MySQL-specific functions for implementation.
     void executeQuery(std::string const& query);
     std::string quote(std::string const& name);
+    void error(std::string const& text, bool mysqlCaused = true);
 
     bool _readonly;
         ///< Remember if we are supposed to be read-only.
@@ -118,10 +122,33 @@ private:
         ///< Output variable bindings.
 
     // Parts of SQL statement.
+    std::vector<std::string> _outColumns;
     std::string _whereClause;
     std::string _groupBy;
     std::string _orderBy;
+
+    MYSQL_STMT* _statement;
+        ///< Prepared query statement.
+    MYSQL_FIELD* _resultFields;
+        ///< Query result field metadata.
+    int _numResultFields;
+        ///< Number of result fields.
+    boost::shared_array<unsigned long> _fieldLengths;
+        ///< Space for lengths of result fields.
+    boost::shared_array<my_bool> _fieldNulls;
+        ///< Space for null flags of result fields.
 };
+
+template <>
+void DbStorageImpl::setColumn<std::string>(std::string const& columnName,
+                                           std::string const& value);
+
+template <>
+void DbStorageImpl::outParam<std::string>(std::string const& columnName,
+                                          std::string* location);
+
+template <>
+std::string const& DbStorageImpl::getColumnByPos<std::string>(int pos);
 
 }}} // namespace lsst::daf::persistence
 
