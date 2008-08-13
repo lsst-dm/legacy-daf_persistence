@@ -353,7 +353,6 @@ T const& DbTsvStorage::getColumnByPos(int pos) {
 template void DbTsvStorage::setColumn<>(std::string const& columnName, char const& value);
 template void DbTsvStorage::setColumn<>(std::string const& columnName, short const& value);
 template void DbTsvStorage::setColumn<>(std::string const& columnName, int const& value);
-template void DbTsvStorage::setColumn<>(std::string const& columnName, long const& value);
 template void DbTsvStorage::setColumn<>(std::string const& columnName, long long const& value);
 template void DbTsvStorage::setColumn<>(std::string const& columnName, float const& value);
 template void DbTsvStorage::setColumn<>(std::string const& columnName, double const& value);
@@ -364,7 +363,6 @@ template void DbTsvStorage::setColumn<>(std::string const& columnName, DateTime 
 template void DbTsvStorage::outParam<>(std::string const& columnName, char* location);
 template void DbTsvStorage::outParam<>(std::string const& columnName, short* location);
 template void DbTsvStorage::outParam<>(std::string const& columnName, int* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, long* location);
 template void DbTsvStorage::outParam<>(std::string const& columnName, long long* location);
 template void DbTsvStorage::outParam<>(std::string const& columnName, float* location);
 template void DbTsvStorage::outParam<>(std::string const& columnName, double* location);
@@ -375,7 +373,6 @@ template void DbTsvStorage::outParam<>(std::string const& columnName, DateTime* 
 template void DbTsvStorage::condParam<>(std::string const& paramName, char const& value);
 template void DbTsvStorage::condParam<>(std::string const& paramName, short const& value);
 template void DbTsvStorage::condParam<>(std::string const& paramName, int const& value);
-template void DbTsvStorage::condParam<>(std::string const& paramName, long const& value);
 template void DbTsvStorage::condParam<>(std::string const& paramName, long long const& value);
 template void DbTsvStorage::condParam<>(std::string const& paramName, float const& value);
 template void DbTsvStorage::condParam<>(std::string const& paramName, double const& value);
@@ -386,7 +383,6 @@ template void DbTsvStorage::condParam<>(std::string const& paramName, DateTime c
 template char const& DbTsvStorage::getColumnByPos<>(int pos);
 template short const& DbTsvStorage::getColumnByPos<>(int pos);
 template int const& DbTsvStorage::getColumnByPos<>(int pos);
-template long const& DbTsvStorage::getColumnByPos<>(int pos);
 template long long const& DbTsvStorage::getColumnByPos<>(int pos);
 template float const& DbTsvStorage::getColumnByPos<>(int pos);
 template double const& DbTsvStorage::getColumnByPos<>(int pos);
