@@ -101,6 +101,7 @@ private:
     // MySQL-specific functions for implementation.
     void executeQuery(std::string const& query);
     std::string quote(std::string const& name);
+    void stError(std::string const& text);
     void error(std::string const& text, bool mysqlCaused = true);
 
     bool _readonly;
