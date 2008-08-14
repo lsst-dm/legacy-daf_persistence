@@ -250,6 +250,7 @@ void DbStorage::finishQuery(void) {
 template void DbStorage::setColumn<>(std::string const& columnName, char const& value);
 template void DbStorage::setColumn<>(std::string const& columnName, short const& value);
 template void DbStorage::setColumn<>(std::string const& columnName, int const& value);
+template void DbStorage::setColumn<>(std::string const& columnName, long const& value);
 template void DbStorage::setColumn<>(std::string const& columnName, long long const& value);
 template void DbStorage::setColumn<>(std::string const& columnName, float const& value);
 template void DbStorage::setColumn<>(std::string const& columnName, double const& value);
@@ -260,6 +261,7 @@ template void DbStorage::setColumn<>(std::string const& columnName, DateTime con
 template void DbStorage::outParam<>(std::string const& columnName, char* location);
 template void DbStorage::outParam<>(std::string const& columnName, short* location);
 template void DbStorage::outParam<>(std::string const& columnName, int* location);
+template void DbStorage::outParam<>(std::string const& columnName, long* location);
 template void DbStorage::outParam<>(std::string const& columnName, long long* location);
 template void DbStorage::outParam<>(std::string const& columnName, float* location);
 template void DbStorage::outParam<>(std::string const& columnName, double* location);
@@ -270,6 +272,7 @@ template void DbStorage::outParam<>(std::string const& columnName, DateTime* loc
 template void DbStorage::condParam<>(std::string const& paramName, char const& value);
 template void DbStorage::condParam<>(std::string const& paramName, short const& value);
 template void DbStorage::condParam<>(std::string const& paramName, int const& value);
+template void DbStorage::condParam<>(std::string const& paramName, long const& value);
 template void DbStorage::condParam<>(std::string const& paramName, long long const& value);
 template void DbStorage::condParam<>(std::string const& paramName, float const& value);
 template void DbStorage::condParam<>(std::string const& paramName, double const& value);
@@ -280,6 +283,7 @@ template void DbStorage::condParam<>(std::string const& paramName, DateTime cons
 template char const& DbStorage::getColumnByPos<>(int pos);
 template short const& DbStorage::getColumnByPos<>(int pos);
 template int const& DbStorage::getColumnByPos<>(int pos);
+template long const& DbStorage::getColumnByPos<>(int pos);
 template long long const& DbStorage::getColumnByPos<>(int pos);
 template float const& DbStorage::getColumnByPos<>(int pos);
 template double const& DbStorage::getColumnByPos<>(int pos);

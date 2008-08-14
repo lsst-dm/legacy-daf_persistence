@@ -41,6 +41,12 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
+template <size_t N>
+struct IntegerTypeTraits {
+public:
+    static enum_field_types mysqlType;
+};
+
 template <typename T>
 struct BoundVarTraits {
 public:
@@ -50,46 +56,49 @@ public:
 
 }}} // namespace lsst::daf::persistence
 
-template<> enum_field_types dafPer::BoundVarTraits<bool>::mysqlType = MYSQL_TYPE_LONG;
+template<> enum_field_types
+    dafPer::IntegerTypeTraits<1>::mysqlType = MYSQL_TYPE_TINY;
+template<> enum_field_types
+    dafPer::IntegerTypeTraits<2>::mysqlType = MYSQL_TYPE_SHORT;
+template<> enum_field_types
+    dafPer::IntegerTypeTraits<4>::mysqlType = MYSQL_TYPE_LONG;
+template<> enum_field_types
+    dafPer::IntegerTypeTraits<8>::mysqlType = MYSQL_TYPE_LONGLONG;
+
+template <typename N> enum_field_types
+    dafPer::BoundVarTraits<N>::mysqlType =
+    dafPer::IntegerTypeTraits<sizeof(N)>::mysqlType;
+
+template<> enum_field_types
+    dafPer::BoundVarTraits<bool>::mysqlType = MYSQL_TYPE_LONG;
 template<> bool dafPer::BoundVarTraits<bool>::isUnsigned = true;
 
-template<> enum_field_types dafPer::BoundVarTraits<char>::mysqlType = MYSQL_TYPE_TINY;
 template<> bool dafPer::BoundVarTraits<char>::isUnsigned = false;
-
-template<> enum_field_types dafPer::BoundVarTraits<signed char>::mysqlType = MYSQL_TYPE_TINY;
 template<> bool dafPer::BoundVarTraits<signed char>::isUnsigned = false;
-
-template<> enum_field_types dafPer::BoundVarTraits<unsigned char>::mysqlType = MYSQL_TYPE_TINY;
 template<> bool dafPer::BoundVarTraits<unsigned char>::isUnsigned = true;
-
-template<> enum_field_types dafPer::BoundVarTraits<short>::mysqlType = MYSQL_TYPE_SHORT;
 template<> bool dafPer::BoundVarTraits<short>::isUnsigned = false;
-
-template<> enum_field_types dafPer::BoundVarTraits<unsigned short>::mysqlType = MYSQL_TYPE_SHORT;
 template<> bool dafPer::BoundVarTraits<unsigned short>::isUnsigned = true;
-
-template<> enum_field_types dafPer::BoundVarTraits<int>::mysqlType = MYSQL_TYPE_LONG;
 template<> bool dafPer::BoundVarTraits<int>::isUnsigned = false;
-
-template<> enum_field_types dafPer::BoundVarTraits<unsigned int>::mysqlType = MYSQL_TYPE_LONG;
 template<> bool dafPer::BoundVarTraits<unsigned int>::isUnsigned = true;
-
-template<> enum_field_types dafPer::BoundVarTraits<long long>::mysqlType = MYSQL_TYPE_LONGLONG;
+template<> bool dafPer::BoundVarTraits<long>::isUnsigned = false;
+template<> bool dafPer::BoundVarTraits<unsigned long>::isUnsigned = true;
 template<> bool dafPer::BoundVarTraits<long long>::isUnsigned = false;
-
-template<> enum_field_types dafPer::BoundVarTraits<unsigned long long>::mysqlType = MYSQL_TYPE_LONGLONG;
 template<> bool dafPer::BoundVarTraits<unsigned long long>::isUnsigned = true;
 
-template<> enum_field_types dafPer::BoundVarTraits<float>::mysqlType = MYSQL_TYPE_FLOAT;
+template<> enum_field_types
+    dafPer::BoundVarTraits<float>::mysqlType = MYSQL_TYPE_FLOAT;
 template<> bool dafPer::BoundVarTraits<float>::isUnsigned = false;
 
-template<> enum_field_types dafPer::BoundVarTraits<double>::mysqlType = MYSQL_TYPE_DOUBLE;
+template<> enum_field_types
+    dafPer::BoundVarTraits<double>::mysqlType = MYSQL_TYPE_DOUBLE;
 template<> bool dafPer::BoundVarTraits<double>::isUnsigned = false;
 
-template<> enum_field_types dafPer::BoundVarTraits<dafBase::DateTime>::mysqlType = MYSQL_TYPE_DATETIME;
+template<> enum_field_types
+    dafPer::BoundVarTraits<dafBase::DateTime>::mysqlType = MYSQL_TYPE_DATETIME;
 template<> bool dafPer::BoundVarTraits<dafBase::DateTime>::isUnsigned = false;
 
-template<> enum_field_types dafPer::BoundVarTraits<std::string>::mysqlType = MYSQL_TYPE_VAR_STRING;
+template<> enum_field_types
+    dafPer::BoundVarTraits<std::string>::mysqlType = MYSQL_TYPE_VAR_STRING;
 template<> bool dafPer::BoundVarTraits<std::string>::isUnsigned = false;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -830,6 +839,7 @@ void dafPer::DbStorageImpl::finishQuery(void) {
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, char const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, short const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, int const& value);
+template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, long const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, long long const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, float const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, double const& value);
@@ -840,6 +850,7 @@ template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, 
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, char* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, short* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, int* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long long* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, float* location);
 template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, double* location);
@@ -850,6 +861,7 @@ template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, d
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, char const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, short const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, int const& value);
+template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, long const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, long long const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, float const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, double const& value);
@@ -860,6 +872,7 @@ template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, d
 template char const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template short const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template int const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
+template long const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template long long const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template float const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
 template double const& dafPer::DbStorageImpl::getColumnByPos<>(int pos);
