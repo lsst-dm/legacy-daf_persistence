@@ -39,7 +39,6 @@ class LogicalLocation;
 class BoundVar : public lsst::daf::base::Citizen {
 public:
     BoundVar(void);
-    explicit BoundVar(size_t size);
     explicit BoundVar(void* location);
     BoundVar(BoundVar const& src);
 
@@ -47,7 +46,7 @@ public:
     bool _isNull;
     bool _isUnsigned;
     unsigned long _length;
-    boost::shared_ptr<char> _data;
+    void* _data;
 };
 
 class DbStorageImpl : public lsst::daf::base::Citizen {
@@ -104,6 +103,8 @@ private:
     void stError(std::string const& text);
     void error(std::string const& text, bool mysqlCaused = true);
 
+    void* allocateMemory(size_t size);
+
     bool _readonly;
         ///< Remember if we are supposed to be read-only.
     std::string _location;
@@ -121,6 +122,8 @@ private:
         ///< Input variable bindings.
     BoundVarMap _outputVars;
         ///< Output variable bindings.
+    std::vector< boost::shared_array<char> > _bindingMemory;
+        ///< Memory for bound variables.
 
     // Parts of SQL statement.
     std::vector<std::string> _outColumns;

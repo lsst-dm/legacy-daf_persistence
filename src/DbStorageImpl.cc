@@ -99,20 +99,13 @@ template<> bool dafPer::BoundVarTraits<std::string>::isUnsigned = false;
 /** Default constructor.
  */
 dafPer::BoundVar::BoundVar(void) :
-    lsst::daf::base::Citizen(typeid(*this)), _data(reinterpret_cast<char*>(0)) {
-}
-
-/** Constructor from size.
- */
-dafPer::BoundVar::BoundVar(size_t size) :
-    lsst::daf::base::Citizen(typeid(*this)), _data(new char[size]) {
+    lsst::daf::base::Citizen(typeid(*this)), _data(0) {
 }
 
 /** Constructor from pointer.
   */
 dafPer::BoundVar::BoundVar(void* location) :
-    lsst::daf::base::Citizen(typeid(*this)),
-    _data(reinterpret_cast<char*>(location)) {
+    lsst::daf::base::Citizen(typeid(*this)), _data(location) {
 }
 
 /** Copy constructor.
@@ -246,6 +239,12 @@ void dafPer::DbStorageImpl::error(std::string const& text, bool mysqlCause) {
     }
 }
 
+void* dafPer::DbStorageImpl::allocateMemory(size_t size) {
+    boost::shared_array<char> mem(new char[size]);
+    _bindingMemory.push_back(mem);
+    return mem.get();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // TABLE OPERATIONS
 ///////////////////////////////////////////////////////////////////////////////
@@ -304,16 +303,17 @@ void dafPer::DbStorageImpl::setColumn(std::string const& columnName,
     size_t size = sizeof(T);
     if (bv == _inputVars.end()) {
        bv = _inputVars.insert(
-            BoundVarMap::value_type(columnName, BoundVar(size))).first;
+            BoundVarMap::value_type(columnName,
+                                    BoundVar(allocateMemory(size)))).first;
     }
     else if (bv->second._length != size) {
-        bv->second._data.reset(new char[size]);
+        bv->second._data = allocateMemory(size);
     }
     bv->second._type = BoundVarTraits<T>::mysqlType;
     bv->second._isNull = false;
     bv->second._isUnsigned = BoundVarTraits<T>::isUnsigned;
     bv->second._length = size;
-    memcpy(bv->second._data.get(), &value, size);
+    memcpy(bv->second._data, &value, size);
 }
 
 template <>
@@ -323,16 +323,17 @@ void dafPer::DbStorageImpl::setColumn(std::string const& columnName,
     size_t size = value.length();
     if (bv == _inputVars.end()) {
        bv = _inputVars.insert(
-            BoundVarMap::value_type(columnName, BoundVar(size))).first;
+            BoundVarMap::value_type(columnName,
+                                    BoundVar(allocateMemory(size)))).first;
     }
     else if (bv->second._length != size) {
-        bv->second._data.reset(new char[size]);
+        bv->second._data = allocateMemory(size);
     }
     bv->second._type = BoundVarTraits<std::string>::mysqlType;
     bv->second._isNull = false;
     bv->second._isUnsigned = BoundVarTraits<std::string>::isUnsigned;
     bv->second._length = size;
-    memcpy(bv->second._data.get(), value.data(), size);
+    memcpy(bv->second._data, value.data(), size);
 }
 
 /** Set a given column to NULL.
@@ -342,7 +343,8 @@ void dafPer::DbStorageImpl::setColumnToNull(std::string const& columnName) {
     BoundVarMap::iterator bv = _inputVars.find(columnName);
     if (bv == _inputVars.end()) {
        bv = _inputVars.insert(
-            BoundVarMap::value_type(columnName, BoundVar(1))).first;
+            BoundVarMap::value_type(columnName,
+                                    BoundVar(allocateMemory(1)))).first;
     }
     bv->second._isNull = true;
     bv->second._length = 1;
@@ -379,7 +381,7 @@ void dafPer::DbStorageImpl::insertRow(void) {
         }
         else {
             bind.buffer_type = bv._type;
-            bind.buffer = bv._data.get();
+            bind.buffer = bv._data;
             bind.buffer_length = bv._length;
             bind.length = &(bv._length);
             bind.is_null = 0;
@@ -492,13 +494,14 @@ void dafPer::DbStorageImpl::outParam(std::string const& columnName,
     _outColumns.push_back(columnName);
     size_t size = 4096;
     std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
-        BoundVarMap::value_type(columnName,
-                                BoundVar(size + sizeof(std::string*))));
+        BoundVarMap::value_type(
+            columnName,
+            BoundVar(allocateMemory(size + sizeof(std::string*)))));
     if (!pair.second) {
         error("Duplicate column name requested: " + columnName, false);
     }
     BoundVar& bv = pair.first->second;
-    memcpy(bv._data.get(), &location, sizeof(std::string*));
+    memcpy(bv._data, &location, sizeof(std::string*));
     bv._type = BoundVarTraits<std::string>::mysqlType;
     bv._isNull = false;
     bv._isUnsigned = BoundVarTraits<std::string>::isUnsigned;
@@ -619,7 +622,7 @@ void dafPer::DbStorageImpl::query(void) {
         }
         BoundVar& bv = it->second;
         bind.buffer_type = bv._type;
-        bind.buffer = bv._data.get();
+        bind.buffer = bv._data;
         bind.buffer_length = bv._length;
         bind.is_null = 0;
         bind.is_unsigned = bv._isUnsigned;
@@ -704,10 +707,11 @@ void dafPer::DbStorageImpl::query(void) {
 
             bind.buffer_type = bv._type;
             if (bv._type == BoundVarTraits<std::string>::mysqlType) {
-                bind.buffer = bv._data.get() + sizeof(std::string*);
+                bind.buffer = reinterpret_cast<char*>(bv._data) +
+                    sizeof(std::string*);
             }
             else {
-                bind.buffer = bv._data.get();
+                bind.buffer = bv._data;
             }
             bind.buffer_length = bv._length;
             bind.length = &(_fieldLengths[i]);
@@ -732,16 +736,17 @@ bool dafPer::DbStorageImpl::next(void) {
     if (ret == 0) {
         // Fix up strings
         if (!_outputVars.empty()) {
-            for (std::vector<std::string>::const_iterator it =
-                 _outColumns.begin(); it != _outColumns.end(); ++it) {
-                BoundVarMap::iterator bvit = _outputVars.find(*it);
+            for (size_t i = 0; i < _outColumns.size(); ++i) {
+                BoundVarMap::iterator bvit = _outputVars.find(_outColumns[i]);
                 if (bvit == _outputVars.end()) {
-                    error("Unbound variable in SELECT clause: " + *it, false);
+                    error("Unbound variable in SELECT clause: " +
+                          _outColumns[i], false);
                 }
                 BoundVar& bv = bvit->second;
                 if (bv._type == BoundVarTraits<std::string>::mysqlType) {
-                    **reinterpret_cast<std::string**>(bv._data.get()) =
-                        std::string(bv._data.get() + sizeof(std::string*));
+                    **reinterpret_cast<std::string**>(bv._data) =
+                        std::string(reinterpret_cast<char*>(bv._data) +
+                                    sizeof(std::string*), _fieldLengths[i]);
                 }
             }
         }
@@ -796,7 +801,7 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
         stError("Error fetching string column: " + pos);
     }
     static std::string s;
-    s = std::string(t.get());
+    s = std::string(t.get(), _fieldLengths[pos]);
     return s;
 }
 
