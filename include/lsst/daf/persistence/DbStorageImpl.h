@@ -15,30 +15,20 @@
 /** @class lsst::daf::persistence::DbStorageImpl
   * @brief Class for implementation of database storage.
   *
-  * Implements database using Coral library for DBMS-independence.
   * Use via DbStorage class only.
   *
   * @ingroup daf_persistence
   */
 
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_array.hpp>
+#include <mysql/mysql.h>
 #include <string>
 #include <vector>
 
-#include "SealKernel/ComponentLoader.h"
-#include "CoralBase/AttributeList.h"
-#include "RelationalAccess/AccessMode.h"
 
+#include "lsst/tr1/unordered_map.h"
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/pex/policy/Policy.h"
-
-namespace coral {
-    class IConnection;
-    class ISession;
-    class ITable;
-    class IQuery;
-    class ICursor;
-} // namespace coral
 
 namespace lsst {
 namespace daf {
@@ -46,7 +36,20 @@ namespace persistence {
 
 class LogicalLocation;
 
-class DbStorageImpl : private lsst::daf::base::Citizen {
+class BoundVar : public lsst::daf::base::Citizen {
+public:
+    BoundVar(void);
+    explicit BoundVar(void* location);
+    BoundVar(BoundVar const& src);
+
+    enum_field_types _type;
+    bool _isNull;
+    bool _isUnsigned;
+    unsigned long _length;
+    void* _data;
+};
+
+class DbStorageImpl : public lsst::daf::base::Citizen {
 public:
     virtual ~DbStorageImpl(void);
 
@@ -63,8 +66,7 @@ private:
     virtual void startTransaction(void);
     virtual void endTransaction(void);
 
-    virtual void startSession(std::string const& location,
-                              coral::AccessMode am);
+    virtual void startSession(std::string const& location);
 
     virtual void createTableFromTemplate(std::string const& tableName,
                                          std::string const& templateName,
@@ -95,34 +97,62 @@ private:
     bool columnIsNull(int pos);
     virtual void finishQuery(void);
 
+    // MySQL-specific functions for implementation.
+    void executeQuery(std::string const& query);
+    std::string quote(std::string const& name);
+    void stError(std::string const& text);
+    void error(std::string const& text, bool mysqlCaused = true);
+
+    void* allocateMemory(size_t size);
+
+    bool _readonly;
+        ///< Remember if we are supposed to be read-only.
     std::string _location;
         ///< Database location string saved for use by raw MySQL interface.
+    MYSQL* _db;
+        ///< MySQL database connection pointer.
 
-    boost::scoped_ptr<coral::IConnection> _connection;
-        ///< Coral database connection.
-    boost::scoped_ptr<coral::ISession> _session;
-        ///< Coral database session.
+    std::string _insertTable;
+        ///< Name of table into which to insert.
+    std::vector<std::string> _queryTables;
+        ///< Names of tables to select from.
 
-    coral::AttributeList _rowBuffer;    ///< Row buffer for writing.
-    coral::ITable* _table;              ///< Table pointer for writing.
+    typedef std::tr1::unordered_map<std::string, BoundVar> BoundVarMap;
+    BoundVarMap _inputVars;
+        ///< Input variable bindings.
+    BoundVarMap _outputVars;
+        ///< Output variable bindings.
+    std::vector< boost::shared_array<char> > _bindingMemory;
+        ///< Memory for bound variables.
 
-    boost::scoped_ptr<coral::IQuery> _query;
-                                        ///< Query object pointer for reading.
-    coral::ICursor* _cursor;            ///< Cursor pointer for reading.
-    boost::scoped_ptr<coral::AttributeList> _condAttributeList;
-        ///< List of bound variables for WHERE clause (input).
-    boost::scoped_ptr<coral::AttributeList> _outAttributeList;
-        ///< List of bound variables for SELECT clause (output).
+    // Parts of SQL statement.
+    std::vector<std::string> _outColumns;
+    std::string _whereClause;
+    std::string _groupBy;
+    std::string _orderBy;
 
-
-    enum State { UNINITIALIZED, PENDING, INITIALIZED };
-        ///< Possible states of underlying Seal/Coral infrastructure.
-
-    static State initialized;           ///< Seal/Coral initialization state.
-    static seal::Handle<seal::Context> context; ///< Seal context.
-    static seal::Handle<seal::ComponentLoader> loader;
-                                        ///< Seal component loader.
+    MYSQL_STMT* _statement;
+        ///< Prepared query statement.
+    MYSQL_FIELD* _resultFields;
+        ///< Query result field metadata.
+    int _numResultFields;
+        ///< Number of result fields.
+    boost::shared_array<unsigned long> _fieldLengths;
+        ///< Space for lengths of result fields.
+    boost::shared_array<my_bool> _fieldNulls;
+        ///< Space for null flags of result fields.
 };
+
+template <>
+void DbStorageImpl::setColumn<std::string>(std::string const& columnName,
+                                           std::string const& value);
+
+template <>
+void DbStorageImpl::outParam<std::string>(std::string const& columnName,
+                                          std::string* location);
+
+template <>
+std::string const& DbStorageImpl::getColumnByPos<std::string>(int pos);
 
 }}} // namespace lsst::daf::persistence
 

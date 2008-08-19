@@ -2,5 +2,6 @@
 Import("env")
 
 env.CheckSwig("python", ilang="c++", includedProducts="utils")
+LIBS = env.getlibs("boost utils daf_base pex_logging pex_exceptions pex_policy mysqlclient daf_persistence")
 env.LoadableModuleIncomplete("_persistenceLib", Split("persistenceLib.i"),
-                             LIBS=env.getlibs("boost utils daf_base pex_exceptions pex_policy coral seal mysqlclient daf_persistence pex_logging"))
+	LIBS=LIBS)
