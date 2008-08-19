@@ -1,6 +1,5 @@
 setupRequired(pex_policy)
 setupRequired(mysqlclient)
-setupRequired(coral >= 1_9_0+1)
 
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envAppend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
