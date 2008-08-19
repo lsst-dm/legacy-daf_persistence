@@ -17,7 +17,6 @@ env.Append(SWIGFLAGS=" -Ipython")
 #
 import lsst.tests
 import os
-env['ENV']['SEAL_PLUGINS'] = os.environ['SEAL_PLUGINS']
 
 tests = lsst.tests.Control(env, verbose = True)
 tests.run("FormatterRegistry_*.cc")
