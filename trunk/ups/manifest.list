@@ -1,0 +1,12 @@
+>merge: build
+>merge: base
+>merge: boost
+>merge: jaula
+>merge: mysqlclient
+>merge: swig
+>merge: doxygen
+>merge: daf_base
+>merge: pex_exceptions
+>merge: pex_policy
+>self
+
