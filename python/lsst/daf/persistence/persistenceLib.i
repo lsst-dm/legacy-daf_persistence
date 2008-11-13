@@ -25,6 +25,7 @@ Access to the lsst::daf::persistence classes
 %import "lsst/pex/policy/policyLib.i"
 
 SWIG_SHARED_PTR(Persistence, lsst::daf::persistence::Persistence)
+SWIG_SHARED_PTR(LogicalLocation, lsst::daf::persistence::LogicalLocation)
 SWIG_SHARED_PTR(Storage, lsst::daf::persistence::Storage)
 SWIG_SHARED_PTR_DERIVED(DbStorage, lsst::daf::persistence::Storage, lsst::daf::persistence::DbStorage)
 
