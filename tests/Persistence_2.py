@@ -16,7 +16,7 @@ def test1():
     dp.addProperty(dafBase.DataProperty.createFloatDataProperty("floatField", \
         3.14))
 
-    pol = pexPolicy.PolicyPtr()
+    pol = pexPolicy.Policy()
 
     additionalData = dafBase.DataProperty.createPropertyNode("additionalData")
     additionalData.addProperty(dafBase.DataProperty( \
@@ -29,7 +29,7 @@ def test1():
     storageList = dafPersist.StorageList()
     storage = persistence.getPersistStorage("DbStorage", loc)
     storageList.append(storage)
-    persistence.persist(dp.get(), storageList, additionalData)
+    persistence.persist(dp, storageList, additionalData)
 
 def test2():
     """
@@ -48,8 +48,8 @@ def test2():
     dp.addProperty(dafBase.DataProperty.createFloatDataProperty("floatField", \
             2.718))
 
-    pol = pexPolicy.PolicyPtr()
-    itemPol = pexPolicy.PolicyPtr()
+    pol = pexPolicy.Policy()
+    itemPol = pexPolicy.Policy()
     itemPol.set("TableName", "Persistence_Test_2")
     pol.set("Formatter.DataProperty.testItem", itemPol)
 
@@ -63,7 +63,7 @@ def test2():
     storageList = dafPersist.StorageList()
     storage = persistence.getPersistStorage("DbStorage", loc)
     storageList.append(storage)
-    persistence.persist(dp.get(), storageList, additionalData)
+    persistence.persist(dp, storageList, additionalData)
 
 def test3():
     """
@@ -79,8 +79,8 @@ def test3():
     dp.addProperty(dafBase.DataProperty("I", 9998887776L))
     dp.addProperty(dafBase.DataProperty.createFloatDataProperty("f", 1.414))
 
-    pol = pexPolicy.PolicyPtr()
-    itemPol = pexPolicy.PolicyPtr()
+    pol = pexPolicy.Policy()
+    itemPol = pexPolicy.Policy()
     itemPol.set("TableName", "Persistence_Test_2")
     itemPol.add("KeyList", "floatField=f")
     itemPol.add("KeyList", "int64Field=I")
@@ -100,7 +100,7 @@ def test3():
     storageList = dafPersist.StorageList()
     storage = persistence.getPersistStorage("DbStorage", loc)
     storageList.append(storage)
-    persistence.persist(dp.get(), storageList, additionalData)
+    persistence.persist(dp, storageList, additionalData)
 
 test1()
 test2()

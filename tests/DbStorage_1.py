@@ -14,7 +14,7 @@ testId = long(time.time() * 1000000000L);
 print testId
 
 db = dafPers.DbStorage()
-policy = lsst.pex.policy.PolicyPtr()
+policy = lsst.pex.policy.Policy()
 
 db.setPolicy(policy)
 
