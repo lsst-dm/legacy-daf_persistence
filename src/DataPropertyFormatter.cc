@@ -29,6 +29,8 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
+#include <boost/mpi/packed_oarchive.hpp>
+#include <boost/mpi/packed_iarchive.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/shared_ptr.hpp>
@@ -295,6 +297,19 @@ void DataPropertyFormatter::delegateSerialize(
     }
     execTrace("DataPropertyFormatter delegateSerialize end");
 }
+
+template
+void lsst::daf::persistence::DataPropertyFormatter::delegateSerialize<boost::mpi::packed_oarchive>(
+        boost::mpi::packed_oarchive& ar,
+        unsigned int const version,
+        lsst::daf::base::Persistable* persistable);
+
+template
+void lsst::daf::persistence::DataPropertyFormatter::delegateSerialize<boost::mpi::packed_iarchive>(
+        boost::mpi::packed_iarchive& ar,
+        unsigned int const version,
+        lsst::daf::base::Persistable* persistable);
+
 
 /** Factory method for DataPropertyFormatter.
  * \param[in] policy Policy for configuring the DataPropertyFormatter

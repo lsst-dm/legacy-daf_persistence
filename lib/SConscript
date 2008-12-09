@@ -3,7 +3,7 @@ Import('env')
 import os
 
 sourceFiles = ["../src/" + fn for fn in os.listdir("../src/") if fn.endswith(".cc")]
-lsstLibs = "utils daf_base pex_logging pex_exceptions pex_policy".split()
+lsstLibs = "utils daf_base pex_logging pex_exceptions pex_policy mpich".split()
 
 env.SharedLibrary(
     'daf_persistence',
