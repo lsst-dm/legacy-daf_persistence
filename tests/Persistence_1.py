@@ -4,7 +4,7 @@ import lsst.pex.policy
 
 dp = dafBase.DataProperty("foo", 3)
 
-pol = lsst.pex.policy.PolicyPtr()
+pol = lsst.pex.policy.Policy()
 
 additionalData = dafBase.DataProperty.createPropertyNode("additionalData")
 additionalData.addProperty(dafBase.DataProperty("sliceId", 5))
