@@ -10,6 +10,8 @@ Access to the lsst::daf::persistence classes
 
 %{
 #include "lsst/daf/base.h"
+#include "lsst/pex/policy/Policy.h"
+#include "lsst/pex/policy/PolicyFile.h"
 #include "lsst/daf/persistence/DbAuth.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 #include "lsst/daf/persistence/Persistence.h"
@@ -17,25 +19,22 @@ Access to the lsst::daf::persistence classes
 #include "lsst/daf/persistence/DbStorage.h"
 %}
 
-%inline %{
-namespace lsst { namespace daf { namespace persistence { } } }
-namespace boost {
-    namespace filesystem { }
-    class bad_any_cast;
-}
-
-using namespace lsst::daf::persistence;
-%}
-
 %include "lsst/p_lsstSwig.i"
 
-%import "lsst/daf/base/Citizen.h"
-%import "lsst/daf/base/DateTime.h"
-%import "lsst/daf/base/Persistable.h"
-%import "lsst/daf/base/DataProperty.h"
+%import "lsst/daf/base/baseLib.i"
+%import "lsst/pex/policy/policyLib.i"
+
+SWIG_SHARED_PTR(Persistence, lsst::daf::persistence::Persistence)
+SWIG_SHARED_PTR(LogicalLocation, lsst::daf::persistence::LogicalLocation)
+SWIG_SHARED_PTR(Storage, lsst::daf::persistence::Storage)
+SWIG_SHARED_PTR_DERIVED(DbStorage, lsst::daf::persistence::Storage, lsst::daf::persistence::DbStorage)
+
+%lsst_exceptions();
 
 %include "lsst/daf/persistence/DbAuth.h"
 %include "lsst/daf/persistence/LogicalLocation.h"
+%include "lsst/daf/persistence/Storage.h"
+%include "lsst/daf/persistence/DbStorage.h"
 
 %newobject lsst::daf::persistence::Persistence::getPersistence;
 %newobject lsst::daf::persistence::Persistence::getPersistStorage;
@@ -43,21 +42,12 @@ using namespace lsst::daf::persistence;
 %newobject lsst::daf::persistence::Persistence::unsafeRetrieve;
 %include "lsst/daf/persistence/Persistence.h"
 
-%include "lsst/daf/persistence/Storage.h"
-%include "lsst/daf/persistence/DbStorage.h"
-
-// Next two needed for typedefs.
-%import "lsst/daf/base/DataProperty.h"
-%import "lsst/pex/policy/Policy.h"
 typedef long long int64_t;
 
-%boost_shared_ptr(PersistenceSharedPtr, lsst::daf::persistence::Persistence);
-%boost_shared_ptr(StorageSharedPtr, lsst::daf::persistence::Storage);
 %template(StorageList) std::vector<boost::shared_ptr<lsst::daf::persistence::Storage> >;
 %template(TableList) std::vector<std::string>;
 
 %extend lsst::daf::persistence::DbStorage {
-
 
     %template(setColumnChar) setColumn<char>;
     %template(setColumnShort) setColumn<short>;
