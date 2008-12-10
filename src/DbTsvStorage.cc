@@ -99,7 +99,7 @@ void DbTsvStorage::endTransaction(void) {
 
     MYSQL* db = mysql_init(0);
     if (db == 0) {
-        throw lsst::pex::exceptions::Runtime("Unable to allocate MySQL connection");
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, "Unable to allocate MySQL connection");
     }
     DbStorageLocation dbLoc(_location);
     unsigned int port = strtoul(dbLoc.getPort().c_str(), 0, 10);
@@ -110,7 +110,7 @@ void DbTsvStorage::endTransaction(void) {
                            dbLoc.getDbName().c_str(),
                            port, 0,
                            CLIENT_COMPRESS | CLIENT_LOCAL_FILES) == 0) {
-        throw lsst::pex::exceptions::Runtime(
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
             "Unable to connect to MySQL database: " + _location);
     }
 
@@ -134,7 +134,7 @@ void DbTsvStorage::endTransaction(void) {
 
     if (mysql_query(db, query.c_str()) != 0) {
         mysql_close(db);
-        throw lsst::pex::exceptions::Runtime(
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
             "Unable to load data into database table: " + _tableName);
     }
     mysql_close(db);

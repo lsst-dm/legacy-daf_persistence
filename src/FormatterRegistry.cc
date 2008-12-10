@@ -60,7 +60,7 @@ Formatter::Ptr FormatterRegistry::lookupFormatter(
     lsst::pex::policy::Policy::Ptr policy) {
     StringMap::const_iterator it = _nameForType.find(persistableType.name());
     if (it == _nameForType.end()) {
-        throw lsst::pex::exceptions::InvalidParameter(
+        throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterException,
             std::string("No Formatter registered for Persistable type: ") +
             persistableType.name());
     }
@@ -78,7 +78,7 @@ Formatter::Ptr FormatterRegistry::lookupFormatter(
     lsst::pex::policy::Policy::Ptr policy) {
     FactoryMap::const_iterator it = _byName.find(persistableName);
     if (it == _byName.end()) {
-        throw lsst::pex::exceptions::InvalidParameter(
+        throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterException,
             "No Formatter registered for Persistable name: " +
             persistableName);
     }
