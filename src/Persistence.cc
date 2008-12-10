@@ -88,7 +88,7 @@ Storage::Ptr Persistence::getRetrieveStorage(std::string const& storageType,
  */
 void Persistence::persist(
     lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
-    lsst::daf::base::DataProperty::PtrType additionalData) {
+    lsst::daf::base::PropertySet::Ptr additionalData) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
     lsst::pex::policy::Policy::Ptr policyPtr;
@@ -124,7 +124,7 @@ void Persistence::persist(
  */
 lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
     std::string const& persistableType, Storage::List const& storageList,
-    lsst::daf::base::DataProperty::PtrType additionalData) {
+    lsst::daf::base::PropertySet::Ptr additionalData) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
     lsst::pex::policy::Policy::Ptr policyPtr;
@@ -162,7 +162,7 @@ lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
  */
 lsst::daf::base::Persistable::Ptr Persistence::retrieve(
     std::string const& persistableType, Storage::List const& storageList,
-    lsst::daf::base::DataProperty::PtrType additionalData) {
+    lsst::daf::base::PropertySet::Ptr additionalData) {
     return lsst::daf::base::Persistable::Ptr(
         unsafeRetrieve(persistableType, storageList, additionalData));
 }

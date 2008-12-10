@@ -30,7 +30,7 @@
 #include <vector>
 
 #include "lsst/daf/base/Citizen.h"
-#include "lsst/daf/base/DataProperty.h"
+#include "lsst/daf/base/PropertySet.h"
 #include "lsst/daf/base/Persistable.h"
 #include "lsst/pex/policy/Policy.h"
 #include "lsst/daf/persistence/Storage.h"
@@ -54,13 +54,13 @@ public:
                                             LogicalLocation const& location);
     virtual void persist(
         lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
-        lsst::daf::base::DataProperty::PtrType additionalData);
+        lsst::daf::base::PropertySet::Ptr additionalData);
     virtual lsst::daf::base::Persistable::Ptr retrieve(
         std::string const& persistableType, Storage::List const& storageList,
-        lsst::daf::base::DataProperty::PtrType additionalData);
+        lsst::daf::base::PropertySet::Ptr additionalData);
     virtual lsst::daf::base::Persistable* unsafeRetrieve(
         std::string const& persistableType, Storage::List const& storageList,
-        lsst::daf::base::DataProperty::PtrType additionalData);
+        lsst::daf::base::PropertySet::Ptr additionalData);
 
     static Ptr getPersistence(lsst::pex::policy::Policy::Ptr policy);
 

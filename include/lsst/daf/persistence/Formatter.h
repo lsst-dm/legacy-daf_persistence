@@ -35,7 +35,7 @@
 #include <typeinfo>
 
 #include "lsst/daf/base/Citizen.h"
-#include "lsst/daf/base/DataProperty.h"
+#include "lsst/daf/base/PropertySet.h"
 #include "lsst/daf/persistence/Storage.h"
 #include "lsst/pex/policy/Policy.h"
 
@@ -72,7 +72,7 @@ public:
       */
     virtual void write(
         lsst::daf::base::Persistable const* persistable, Storage::Ptr storage,
-        lsst::daf::base::DataProperty::PtrType additionalData) = 0;
+        lsst::daf::base::PropertySet::Ptr additionalData) = 0;
 
     /** Read a Persistable instance from a Storage instance.
       * @param[in] storage Pointer to the Storage instance.
@@ -82,7 +82,7 @@ public:
       */
     virtual lsst::daf::base::Persistable* read(
         Storage::Ptr storage,
-        lsst::daf::base::DataProperty::PtrType additionalData) = 0;
+        lsst::daf::base::PropertySet::Ptr additionalData) = 0;
 
     /** Update an existing Persistable instance with information from
       * an additional Storage instance.
@@ -93,7 +93,7 @@ public:
       */
     virtual void update(
         lsst::daf::base::Persistable* persistable, Storage::Ptr storage,
-        lsst::daf::base::DataProperty::PtrType additionalData) = 0;
+        lsst::daf::base::PropertySet::Ptr additionalData) = 0;
 
     static Formatter::Ptr lookupFormatter(
         std::string const& persistableType,
