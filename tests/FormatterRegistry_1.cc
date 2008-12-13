@@ -33,9 +33,9 @@ public:
     MyFormatter(void) : Formatter(typeid(*this)) { };
     // Normally, the following functions would do something.  For testing,
     // they do nothing.
-    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
-    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { return 0; };
-    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
+    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
+    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
 private:
     static Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
     static FormatterRegistration registration;
@@ -54,9 +54,9 @@ Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy
 class YourFormatter : public Formatter {
 public:
     YourFormatter(void) : Formatter(typeid(*this)) { };
-    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
-    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { return 0; };
-    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) { };
+    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
+    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
 };
 
 // External factory function for YourFormatters.  This would normally be a
@@ -102,14 +102,14 @@ int main(void) {
         Formatter::Ptr fp5 = Formatter::lookupFormatter("FooBar", policy);
         Assert(!fp5, "Got an invalid Formatter for FooBar");
     }
-    catch (lsst::pex::exceptions::InvalidParameter) {
+    catch (lsst::pex::exceptions::InvalidParameterException) {
         std::cout << "Caught proper exception" << std::endl;
     }
     try {
         Formatter::Ptr fp5 = Formatter::lookupFormatter(typeid(double), policy);
         Assert(!fp5, "Got an invalid Formatter for double");
     }
-    catch (lsst::pex::exceptions::InvalidParameter) {
+    catch (lsst::pex::exceptions::InvalidParameterException) {
         std::cout << "Caught proper exception" << std::endl;
     }
 
