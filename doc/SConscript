@@ -1,4 +1,4 @@
 # -*- python -*-
 Import('env')
 
-doxy = env.Doxygen("doxygen.conf")
+env.Doxygen("doxygen.conf")

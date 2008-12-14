@@ -1,6 +1,6 @@
 # -*- python -*-
 Import("env")
 
-env.CheckSwig("python", ilang="c++", includedProducts="utils daf_base pex_policy")
-LIBS = env.getlibs("boost utils daf_base pex_logging pex_exceptions pex_policy mysqlclient daf_persistence")
-env.LoadableModuleIncomplete("_persistenceLib", Split("persistenceLib.i"), LIBS=LIBS)
+pkg = env["eups_product"]
+env.CheckSwig("python", ilang="c++", includedProducts="utils pex_exceptions daf_base pex_logging pex_policy")
+env.LoadableModuleIncomplete("_persistenceLib", Split("persistenceLib.i"), LIBS=env.getlibs(pkg))
