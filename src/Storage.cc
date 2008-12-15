@@ -20,6 +20,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "lsst/daf/persistence/Storage.h"
 
 #include <cerrno>
+#include <cstring>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -85,13 +86,13 @@ void Storage::verifyPathName(std::string const& name) {
         // If it already exists, we're OK; otherwise, throw an exception.
         if (ret == -1 && errno != EEXIST) {
             throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
-                dirName + ": Error creating directory = " + strerror(errno));
+                dirName + ": Error creating directory = " + std::strerror(errno));
         }
     }
     else if (ret == -1) {
         // We couldn't read the (existing) directory for some reason.
         throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
-            dirName + ": Error searching for directory = " + strerror(errno));
+            dirName + ": Error searching for directory = " + std::strerror(errno));
     }
     else if (!S_ISDIR(buf.st_mode)) {
         // It's not a directory.
