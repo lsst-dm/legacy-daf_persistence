@@ -1,13 +1,7 @@
 # -*- python -*-
 Import('env')
-import os
+import glob
 
-sourceFiles = ["../src/" + fn for fn in os.listdir("../src/") if fn.endswith(".cc")]
-lsstLibs = "utils daf_base pex_logging pex_exceptions pex_policy mpich".split()
-
-env.SharedLibrary(
-    'daf_persistence',
-    sourceFiles,
-    LIBS=env.getlibs("boost mysqlclient") + lsstLibs,
-)
-
+pkg = env["eups_product"]
+env.SharedLibrary(pkg, glob.glob("../src/*.cc"),
+    LIBS=filter(lambda x: x != pkg, env.getlibs(pkg)))

@@ -2,14 +2,14 @@
  * \file Persistence_3.cc
  *
  * This test checks that Persistable objects can be persisted and retrieved
- * as components of DataProperty objects to and from BoostStorage.
+ * as components of PropertySet objects to and from BoostStorage.
  */
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <stdexcept>
 #include <sys/time.h>
-#include "lsst/daf/base/DataProperty.h"
+#include "lsst/daf/base/PropertySet.h"
 #include "lsst/daf/persistence/BoostStorage.h"
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/Formatter.h"
@@ -54,9 +54,9 @@ BOOST_CLASS_EXPORT(MyPersistable);
 class MyFormatter : public Formatter {
 public:
     MyFormatter(void) : Formatter(typeid(*this)) { };
-    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
+    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData);
+    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData);
+    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, lsst::daf::base::Persistable* persistable);
 private:
     static Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
@@ -76,19 +76,19 @@ Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy
 
 // Persistence for MyPersistables.
 // Supports BoostStorage only.
-void MyFormatter::write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+void MyFormatter::write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) {
     Assert(false, "write() called unexpectedly");
 
 }
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage only.
-lsst::daf::base::Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+lsst::daf::base::Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) {
     Assert(false, "read() called unexpectedly");
     return 0;
 }
 
-void MyFormatter::update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+void MyFormatter::update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) {
     Assert(false, "update() called unexpectedly");
 }
 
@@ -118,15 +118,14 @@ void test(void) {
     os << testId;
     std::string testIdString = os.str();
 
-    lsst::daf::base::DataProperty::PtrType additionalData = lsst::daf::base::DataProperty::createPropertyNode("info");
-    lsst::daf::base::DataProperty::PtrType child1(new lsst::daf::base::DataProperty("visitId", testId));
-    lsst::daf::base::DataProperty::PtrType child2(new lsst::daf::base::DataProperty("sliceId", 0));
-    additionalData->addProperty(child1);
-    additionalData->addProperty(child2);
+    lsst::daf::base::PropertySet::Ptr additionalData(new lsst::daf::base::PropertySet);
+    additionalData->add("info.visitId", testId);
+    additionalData->add("info.sliceId", 0);
 
 
     lsst::daf::base::Persistable::Ptr ppOrig(new MyPersistable(1.73205, 1.61803));
-    lsst::daf::base::DataProperty::PtrType theProperty(new lsst::daf::base::DataProperty("prop", ppOrig));
+    lsst::daf::base::PropertySet::Ptr theProperty(new lsst::daf::base::PropertySet);
+    theProperty->add("prop", ppOrig);
 
     LogicalLocation pathLoc("MyPersistable.boost." + testIdString);
 
@@ -141,13 +140,13 @@ void test(void) {
         Persistence::Ptr persist = Persistence::getPersistence(policy);
         Storage::List storageList;
         storageList.push_back(persist->getRetrieveStorage("BoostStorage", pathLoc));
-        lsst::daf::base::Persistable::Ptr pp = persist->retrieve("DataProperty", storageList, additionalData);
+        lsst::daf::base::Persistable::Ptr pp = persist->retrieve("PropertySet", storageList, additionalData);
         Assert(pp != 0, "Didn't get a Persistable");
-        Assert(typeid(*pp) == typeid(lsst::daf::base::DataProperty), "Didn't get DataProperty");
-        lsst::daf::base::DataProperty::PtrType dp = boost::dynamic_pointer_cast<lsst::daf::base::DataProperty, lsst::daf::base::Persistable>(pp);
-        Assert(dp, "Couldn't cast to DataProperty");
-        Assert(dp != theProperty, "Got same DataProperty");
-        lsst::daf::base::Persistable::Ptr pp1 = boost::any_cast<lsst::daf::base::Persistable::Ptr>(dp->getValue());
+        Assert(typeid(*pp) == typeid(lsst::daf::base::PropertySet), "Didn't get PropertySet");
+        lsst::daf::base::PropertySet::Ptr dp = boost::dynamic_pointer_cast<lsst::daf::base::PropertySet, lsst::daf::base::Persistable>(pp);
+        Assert(dp, "Couldn't cast to PropertySet");
+        Assert(dp != theProperty, "Got same PropertySet");
+        lsst::daf::base::Persistable::Ptr pp1 = dp->getAsPersistablePtr("prop");
         Assert(pp1, "Couldn't retrieve Persistable");
         Assert(typeid(*pp1) == typeid(MyPersistable), "Not a MyPersistable");
         MyPersistable::Ptr mp = boost::dynamic_pointer_cast<MyPersistable, lsst::daf::base::Persistable>(pp1);

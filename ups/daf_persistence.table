@@ -1,5 +1,9 @@
-setupRequired(pex_policy)
+setupRequired(daf_base)
 setupRequired(mysqlclient)
+setupRequired(pex_exceptions)
+setupRequired(pex_logging)
+setupRequired(pex_policy)
+setupRequired(utils)
 setupRequired(mpich2)
 
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)

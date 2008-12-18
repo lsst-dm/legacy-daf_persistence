@@ -49,9 +49,9 @@ private:
 class MyFormatter : public Formatter {
 public:
     MyFormatter(void) : Formatter(typeid(*this)) { };
-    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
-    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData);
+    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData);
+    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData);
+    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, lsst::daf::base::Persistable* persistable);
 private:
     static Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
@@ -71,10 +71,10 @@ Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy
 
 // Persistence for MyPersistables.
 // Supports BoostStorage and DbStorage.
-void MyFormatter::write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+void MyFormatter::write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) {
     Assert(persistable != 0, "Persisting null");
     Assert(storage, "No Storage provided");
-    long long testId = boost::any_cast<long long>(additionalData->findUnique("visitId")->getValue());
+    long long testId = additionalData->get<long long>("visitId");
     MyPersistable const* mp = dynamic_cast<MyPersistable const*>(persistable);
     Assert(mp != 0, "Persisting non-MyPersistable");
     if (typeid(*storage) == typeid(BoostStorage)) {
@@ -98,10 +98,10 @@ void MyFormatter::write(lsst::daf::base::Persistable const* persistable, Storage
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-lsst::daf::base::Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+lsst::daf::base::Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) {
     MyPersistable* mp = new MyPersistable;
 
-    long long testId = boost::any_cast<long long>(additionalData->findUnique("visitId")->getValue());
+    long long testId = additionalData->get<long long>("visitId");
     if (typeid(*storage) == typeid(BoostStorage)) {
         BoostStorage* boost = dynamic_cast<BoostStorage*>(storage.get());
         Assert(boost != 0, "Didn't get BoostStorage");
@@ -129,9 +129,9 @@ lsst::daf::base::Persistable* MyFormatter::read(Storage::Ptr storage, lsst::daf:
     return mp;
 }
 
-void MyFormatter::update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::DataProperty::PtrType additionalData) {
+void MyFormatter::update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) {
     MyPersistable* mp = dynamic_cast<MyPersistable*>(persistable);
-    long long testId = boost::any_cast<long long>(additionalData->findUnique("visitId")->getValue());
+    long long testId = additionalData->get<long long>("visitId");
     if (typeid(*storage) == typeid(BoostStorage)) {
         // BoostStorage replaces ra only
         BoostStorage* boost = dynamic_cast<BoostStorage*>(storage.get());
@@ -186,11 +186,9 @@ void test(void) {
     os << testId;
     std::string testIdString = os.str();
 
-    lsst::daf::base::DataProperty::PtrType additionalData = lsst::daf::base::DataProperty::createPropertyNode("info");
-    lsst::daf::base::DataProperty::PtrType child1(new lsst::daf::base::DataProperty("visitId", testId));
-    lsst::daf::base::DataProperty::PtrType child2(new lsst::daf::base::DataProperty("sliceId", 0));
-    additionalData->addProperty(child1);
-    additionalData->addProperty(child2);
+    lsst::daf::base::PropertySet::Ptr additionalData(new lsst::daf::base::PropertySet);
+    additionalData->add("visitId", testId);
+    additionalData->add("sliceId", 0);
 
 
     MyPersistable mp(1.73205, 1.61803);

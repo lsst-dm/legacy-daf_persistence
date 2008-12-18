@@ -20,6 +20,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "lsst/daf/persistence/Storage.h"
 
 #include <cerrno>
+#include <cstring>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -84,25 +85,19 @@ void Storage::verifyPathName(std::string const& name) {
 
         // If it already exists, we're OK; otherwise, throw an exception.
         if (ret == -1 && errno != EEXIST) {
-            lsst::pex::exceptions::ExceptionData exdata("data");
-            exdata << lsst::daf::base::DataProperty::PtrType(new lsst::daf::base::DataProperty("errno", errno));
-            throw lsst::pex::exceptions::Runtime(exdata,
-                "Error creating directory: " + dirName +
-                " = " + strerror(errno));
+            throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+                dirName + ": Error creating directory = " + std::strerror(errno));
         }
     }
     else if (ret == -1) {
         // We couldn't read the (existing) directory for some reason.
-        lsst::pex::exceptions::ExceptionData exdata("data");
-        exdata << lsst::daf::base::DataProperty::PtrType(new lsst::daf::base::DataProperty("errno", errno));
-        throw lsst::pex::exceptions::Runtime(exdata,
-            "Error searching for directory: " + dirName +
-            " = " + strerror(errno));
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+            dirName + ": Error searching for directory = " + std::strerror(errno));
     }
     else if (!S_ISDIR(buf.st_mode)) {
         // It's not a directory.
-        throw lsst::pex::exceptions::Runtime(
-            "Non-directory in path: " + dirName);
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+            dirName + ": Non-directory in path");
     }
 }
 

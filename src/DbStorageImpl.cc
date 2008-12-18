@@ -20,6 +20,7 @@
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/DbStorageImpl.h"
+#include "boost/regex.hpp"
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
@@ -241,10 +242,10 @@ void dafPer::DbStorageImpl::stError(std::string const& text) {
 
 void dafPer::DbStorageImpl::error(std::string const& text, bool mysqlCause) {
     if (mysqlCause) {
-        throw pexExcept::Runtime(text + " - * " + mysql_error(_db));
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, text + " - * " + mysql_error(_db));
     }
     else {
-        throw pexExcept::Runtime(text);
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, text);
     }
 }
 

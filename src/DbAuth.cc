@@ -72,7 +72,8 @@ std::string const& DbAuth::authString(void) {
         else {
             authenticator = getenv(envVarName);
             if (authenticator == 0) {
-                throw lsst::pex::exceptions::Runtime("No database authenticator found");
+                throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+                                  "No database authenticator found");
             }
         }
         auth = std::string(authenticator);

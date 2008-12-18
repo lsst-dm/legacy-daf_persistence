@@ -2,12 +2,13 @@ import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy
 
-dp = dafBase.DataProperty("foo", 3)
+dp = dafBase.PropertySet()
+dp.addInt("foo", 3)
 
 pol = lsst.pex.policy.Policy()
 
-additionalData = dafBase.DataProperty.createPropertyNode("additionalData")
-additionalData.addProperty(dafBase.DataProperty("sliceId", 5))
+additionalData = dafBase.PropertySet()
+additionalData.addInt("sliceId", 5)
 
 loc = dafPersist.LogicalLocation("test.boost")
 
@@ -22,8 +23,10 @@ storageList = dafPersist.StorageList()
 storage = persistence.getRetrieveStorage("BoostStorage", loc)
 storageList.append(storage)
 
-rdp = dafBase.DataProperty.swigConvert( \
-        persistence.unsafeRetrieve("DataProperty", storageList, \
+rdp = dafBase.PropertySet.swigConvert( \
+        persistence.unsafeRetrieve("PropertySet", storageList, \
             additionalData))
 
-print rdp.getName(), rdp.getValueInt()
+assert(rdp.nameCount() == 1)
+assert(rdp.exists("foo"))
+assert(rdp.getInt("foo") == 3)

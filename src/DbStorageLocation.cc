@@ -55,7 +55,7 @@ DbStorageLocation::DbStorageLocation(std::string const& url,
         _dbName = what[4];
     }
     else {
-        throw lsst::pex::exceptions::InvalidParameter(
+        throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterException,
             "Unparseable connection string passed to DbStorageLocation: " +
             url);
     }

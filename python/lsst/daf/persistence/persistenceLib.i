@@ -9,43 +9,45 @@ Access to the lsst::daf::persistence classes
 %module(package="lsst.daf.persistence", docstring=persistenceLib_DOCSTRING) persistenceLib
 
 %{
-#include "lsst/daf/base.h"
-#include "lsst/pex/policy/Policy.h"
-#include "lsst/pex/policy/PolicyFile.h"
 #include "lsst/daf/persistence/DbAuth.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 #include "lsst/daf/persistence/Persistence.h"
 #include "lsst/daf/persistence/Storage.h"
 #include "lsst/daf/persistence/DbStorage.h"
+#include "lsst/daf/persistence/DbTsvStorage.h"
 %}
 
 %include "lsst/p_lsstSwig.i"
 
-%import "lsst/daf/base/baseLib.i"
-%import "lsst/pex/policy/policyLib.i"
+%lsst_exceptions();
 
 SWIG_SHARED_PTR(Persistence, lsst::daf::persistence::Persistence)
 SWIG_SHARED_PTR(LogicalLocation, lsst::daf::persistence::LogicalLocation)
 SWIG_SHARED_PTR(Storage, lsst::daf::persistence::Storage)
 SWIG_SHARED_PTR_DERIVED(DbStorage, lsst::daf::persistence::Storage, lsst::daf::persistence::DbStorage)
+SWIG_SHARED_PTR_DERIVED(DbTsvStorage, lsst::daf::persistence::DbStorage, lsst::daf::persistence::DbTsvStorage)
 
-%lsst_exceptions();
-
-%include "lsst/daf/persistence/DbAuth.h"
-%include "lsst/daf/persistence/LogicalLocation.h"
-%include "lsst/daf/persistence/Storage.h"
-%include "lsst/daf/persistence/DbStorage.h"
+%import "lsst/pex/exceptions/exceptionsLib.i"
+%import "lsst/daf/base/baseLib.i"
+%import "lsst/pex/logging/loggingLib.i"
+%import "lsst/pex/policy/policyLib.i"
 
 %newobject lsst::daf::persistence::Persistence::getPersistence;
 %newobject lsst::daf::persistence::Persistence::getPersistStorage;
 %newobject lsst::daf::persistence::Persistence::getRetrieveStorage;
 %newobject lsst::daf::persistence::Persistence::unsafeRetrieve;
-%include "lsst/daf/persistence/Persistence.h"
-
-typedef long long int64_t;
 
 %template(StorageList) std::vector<boost::shared_ptr<lsst::daf::persistence::Storage> >;
 %template(TableList) std::vector<std::string>;
+
+%include "lsst/daf/persistence/DbAuth.h"
+%include "lsst/daf/persistence/LogicalLocation.h"
+%include "lsst/daf/persistence/Storage.h"
+%include "lsst/daf/persistence/DbStorage.h"
+%include "lsst/daf/persistence/DbTsvStorage.h"
+%include "lsst/daf/persistence/Persistence.h"
+
+typedef long long int64_t;
 
 %extend lsst::daf::persistence::DbStorage {
 
