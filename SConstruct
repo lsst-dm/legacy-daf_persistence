@@ -9,10 +9,13 @@ dependencies = "boost python mysqlclient utils daf_base pex_logging pex_exceptio
 
 env = scons.makeEnv("daf_persistence",
                     r"$HeadURL$",
-                    [["boost", "boost/serialization/serialization.hpp", "boost_serialization:C++"],
+                    [
+                     ["boost", "boost/regex.hpp", "boost_regex:C++"],
+                     ["boost", "boost/serialization/serialization.hpp", "boost_serialization:C++"],
+                     ["boost", "boost/version.hpp", "boost_system:C++"],
                      ["python", "Python.h"],
                      ["mysqlclient", "mysql/mysql.h", "mysqlclient_r:C"],
-                     ["utils", "lsst/tr1/unordered_map.h"],
+                     ["utils", "lsst/tr1/unordered_map.h", "utils:C++"],
                      ["daf_base", "lsst/daf/base.h", "daf_base:C++"],
                      ["pex_logging", "lsst/pex/logging/Trace.h", "pex_logging:C++"],
                      ["pex_exceptions", "lsst/pex/exceptions.h", "pex_exceptions:C++"],
