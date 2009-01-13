@@ -294,17 +294,16 @@ void dafPersist::PropertySetFormatter::delegateSerialize(
 }
 
 template
-void lsst::daf::persistence::PropertySetFormatter::delegateSerialize<boost::mpi::packed_oarchive>(
+void lsst::daf::persistence::delegateSerialize<lsst::daf::persistence::PropertySetFormatter, boost::mpi::packed_oarchive>(
         boost::mpi::packed_oarchive& ar,
         unsigned int const version,
         lsst::daf::base::Persistable* persistable);
 
 template
-void lsst::daf::persistence::PropertySetFormatter::delegateSerialize<boost::mpi::packed_iarchive>(
+void lsst::daf::persistence::delegateSerialize<lsst::daf::persistence::PropertySetFormatter, boost::mpi::packed_iarchive>(
         boost::mpi::packed_iarchive& ar,
         unsigned int const version,
         lsst::daf::base::Persistable* persistable);
-
 
 /** Factory method for PropertySetFormatter.
  * \param[in] policy Policy for configuring the PropertySetFormatter
