@@ -30,20 +30,22 @@ namespace persistence {
 
 namespace dafBase = lsst::daf::base;
 namespace pexPolicy = lsst::pex::policy;
+namespace dafPersist = lsst::daf::persistence;
 
 class PropertySetFormatter : public Formatter {
 public:
     virtual ~PropertySetFormatter(void);
 
     virtual void write(dafBase::Persistable const* persistable,
-        Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-
-    virtual dafBase::Persistable* read(Storage::Ptr storage,
+        dafPersist::Storage::Ptr storage,
         dafBase::PropertySet::Ptr additionalData);
 
-    virtual void update(lsst::daf::base::Persistable* persistable,
-        Storage::Ptr storage,
-        lsst::daf::base::PropertySet::Ptr additionalData);
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage,
+        dafBase::PropertySet::Ptr additionalData);
+
+    virtual void update(dafBase::Persistable* persistable,
+        dafPersist::Storage::Ptr storage,
+        dafBase::PropertySet::Ptr additionalData);
 
     template <class Archive>
     static void delegateSerialize(Archive& ar, unsigned int const version,

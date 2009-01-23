@@ -34,9 +34,12 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
+namespace dafBase = lsst::daf::base;
+namespace pexPolicy = lsst::pex::policy;
+
 class LogicalLocation;
 
-class BoundVar : public lsst::daf::base::Citizen {
+class BoundVar : public dafBase::Citizen {
 public:
     BoundVar(void);
     explicit BoundVar(void* location);
@@ -49,7 +52,7 @@ public:
     void* _data;
 };
 
-class DbStorageImpl : public lsst::daf::base::Citizen {
+class DbStorageImpl : public dafBase::Citizen {
 public:
     virtual ~DbStorageImpl(void);
 
@@ -59,7 +62,7 @@ private:
 
     DbStorageImpl(void);
 
-    virtual void setPolicy(lsst::pex::policy::Policy::Ptr policy);
+    virtual void setPolicy(pexPolicy::Policy::Ptr policy);
     virtual void setPersistLocation(LogicalLocation const& location);
     virtual void setRetrieveLocation(LogicalLocation const& location);
 
