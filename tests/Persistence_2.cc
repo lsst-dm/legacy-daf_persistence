@@ -18,7 +18,7 @@
 
 namespace test = boost::test_tools;
 namespace dafBase = lsst::daf::base;
-namespace dafPers = lsst::daf::persistence;
+namespace dafPersist = lsst::daf::persistence;
 
 // A small Persistable.
 
@@ -38,45 +38,45 @@ private:
 };
 
 // A small Formatter.
-class MyFormatter : public dafPers::Formatter {
+class MyFormatter : public dafPersist::Formatter {
 public:
-    MyFormatter(void) : dafPers::Formatter(typeid(*this)) { };
-    virtual void write(dafBase::Persistable const* persistable, dafPers::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual dafBase::Persistable* read(dafPers::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual void update(dafBase::Persistable* persistable, dafPers::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, dafBase::Persistable* persistable);
 private:
-    static dafPers::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
-    static dafPers::FormatterRegistration registration;
+    static dafPersist::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
+    static dafPersist::FormatterRegistration registration;
 };
 
 // Include this file when implementing a Formatter.
 #include "lsst/daf/persistence/FormatterImpl.h"
 
 // Register the formatter factory function.
-dafPers::FormatterRegistration MyFormatter::registration("MyPersistable", typeid(MyPersistable), createInstance);
+dafPersist::FormatterRegistration MyFormatter::registration("MyPersistable", typeid(MyPersistable), createInstance);
 
 // The definition of the factory function.
-dafPers::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy) {
-    return dafPers::Formatter::Ptr(new MyFormatter);
+dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy) {
+    return dafPersist::Formatter::Ptr(new MyFormatter);
 }
 
 // Persistence for MyPersistables.
 // Supports BoostStorage and DbStorage.
-void MyFormatter::write(dafBase::Persistable const* persistable, dafPers::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     BOOST_CHECK_MESSAGE(persistable != 0, "Persisting null");
     BOOST_CHECK_MESSAGE(storage, "No Storage provided");
     long long testId = additionalData->get<long long>("visitId");
     MyPersistable const* mp = dynamic_cast<MyPersistable const*>(persistable);
     BOOST_CHECK_MESSAGE(mp != 0, "Persisting non-MyPersistable");
-    if (typeid(*storage) == typeid(dafPers::BoostStorage)) {
-        dafPers::BoostStorage* boost = dynamic_cast<dafPers::BoostStorage*>(storage.get());
+    if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
+        dafPersist::BoostStorage* boost = dynamic_cast<dafPersist::BoostStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(boost != 0, "Didn't get BoostStorage");
         boost->getOArchive() & mp->_ra;
         return;
     }
-    else if (typeid(*storage) == typeid(dafPers::DbStorage)) {
-        dafPers::DbStorage* db = dynamic_cast<dafPers::DbStorage*>(storage.get());
+    else if (typeid(*storage) == typeid(dafPersist::DbStorage)) {
+        dafPersist::DbStorage* db = dynamic_cast<dafPersist::DbStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(db != 0, "Didn't get DbStorage");
         db->setTableForInsert("DbStorage_Test_2");
         db->setColumn<long long>("id", testId);
@@ -90,18 +90,18 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPers::Storag
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-dafBase::Persistable* MyFormatter::read(dafPers::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     MyPersistable* mp = new MyPersistable;
 
     long long testId = additionalData->get<long long>("visitId");
-    if (typeid(*storage) == typeid(dafPers::BoostStorage)) {
-        dafPers::BoostStorage* boost = dynamic_cast<dafPers::BoostStorage*>(storage.get());
+    if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
+        dafPersist::BoostStorage* boost = dynamic_cast<dafPersist::BoostStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(boost != 0, "Didn't get BoostStorage");
         boost->getIArchive() & mp->_ra;
         return mp;
     }
-    else if (typeid(*storage) == typeid(dafPers::DbStorage)) {
-        dafPers::DbStorage* db = dynamic_cast<dafPers::DbStorage*>(storage.get());
+    else if (typeid(*storage) == typeid(dafPersist::DbStorage)) {
+        dafPersist::DbStorage* db = dynamic_cast<dafPersist::DbStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(db != 0, "Didn't get DbStorage");
         db->setTableForQuery("DbStorage_Test_2");
         db->condParam<long long>("id", testId);
@@ -121,19 +121,19 @@ dafBase::Persistable* MyFormatter::read(dafPers::Storage::Ptr storage, dafBase::
     return mp;
 }
 
-void MyFormatter::update(dafBase::Persistable* persistable, dafPers::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     MyPersistable* mp = dynamic_cast<MyPersistable*>(persistable);
     long long testId = additionalData->get<long long>("visitId");
-    if (typeid(*storage) == typeid(dafPers::BoostStorage)) {
+    if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
         // BoostStorage replaces ra only
-        dafPers::BoostStorage* boost = dynamic_cast<dafPers::BoostStorage*>(storage.get());
+        dafPersist::BoostStorage* boost = dynamic_cast<dafPersist::BoostStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(boost != 0, "Didn't get BoostStorage");
         boost->getIArchive() & mp->_ra;
         return;
     }
-    else if (typeid(*storage) == typeid(dafPers::DbStorage)) {
+    else if (typeid(*storage) == typeid(dafPersist::DbStorage)) {
         // DbStorage replaces decl only
-        dafPers::DbStorage* db = dynamic_cast<dafPers::DbStorage*>(storage.get());
+        dafPersist::DbStorage* db = dynamic_cast<dafPersist::DbStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(db != 0, "Didn't get DbStorage");
         db->setTableForQuery("DbStorage_Test_2");
         db->condParam<long long>("id", testId);
@@ -185,20 +185,20 @@ BOOST_AUTO_TEST_CASE(Persistence2Test) {
 
     MyPersistable mp(1.73205, 1.61803);
 
-    dafPers::LogicalLocation pathLoc("tests/data/MyPersistable.boost." + testIdString);
-    dafPers::LogicalLocation dbLoc("mysql://lsst10.ncsa.uiuc.edu:3306/test");
+    dafPersist::LogicalLocation pathLoc("tests/data/MyPersistable.boost." + testIdString);
+    dafPersist::LogicalLocation dbLoc("mysql://lsst10.ncsa.uiuc.edu:3306/test");
 
     {
-        dafPers::Persistence::Ptr persist = dafPers::Persistence::getPersistence(policy);
-        dafPers::Storage::List storageList;
+        dafPersist::Persistence::Ptr persist = dafPersist::Persistence::getPersistence(policy);
+        dafPersist::Storage::List storageList;
         storageList.push_back(persist->getPersistStorage("BoostStorage", pathLoc));
         storageList.push_back(persist->getPersistStorage("DbStorage", dbLoc));
         persist->persist(mp, storageList, additionalData);
     }
 
     {
-        dafPers::Persistence::Ptr persist = dafPers::Persistence::getPersistence(policy);
-        dafPers::Storage::List storageList;
+        dafPersist::Persistence::Ptr persist = dafPersist::Persistence::getPersistence(policy);
+        dafPersist::Storage::List storageList;
         storageList.push_back(persist->getRetrieveStorage("BoostStorage", pathLoc));
         storageList.push_back(persist->getRetrieveStorage("DbStorage", dbLoc));
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);

@@ -1,5 +1,5 @@
 // -*- lsst-c++ -*-
-#include <lsst/daf/base/dafBase::PropertySet.h>
+#include <lsst/daf/base/PropertySet.h>
 #include <lsst/daf/base/Citizen.h>
 #include <lsst/pex/logging/Trace.h>
 #include <lsst/utils/Utils.h>
@@ -11,9 +11,9 @@
 #define BOOST_TEST_MODULE dafBase::PropertySetPersist
 #include "boost/test/included/unit_test.hpp"
 
-namespace test = boost::test::tools;
+namespace test = boost::test_tools;
 namespace dafBase = lsst::daf::base;
-namespace dafPers = lsst::daf::persistence;
+namespace dafPersist = lsst::daf::persistence;
 
 BOOST_AUTO_TEST_SUITE(PropertySetPersistSuite)
 
@@ -26,15 +26,15 @@ BOOST_AUTO_TEST_CASE(PersistToBoostAndXML) {
     root->add("name2", 4);
 
     lsst::pex::policy::Policy::Ptr policyPtr(new lsst::pex::policy::Policy);
-    dafPers::Persistence::Ptr persist =
-        dafPers::Persistence::getPersistence(policyPtr);
-    dafPers::Storage::List storageList;
+    dafPersist::Persistence::Ptr persist =
+        dafPersist::Persistence::getPersistence(policyPtr);
+    dafPersist::Storage::List storageList;
 
-    dafPers::LogicalLocation loc("tests/data/root.boost");
+    dafPersist::LogicalLocation loc("tests/data/root.boost");
     storageList.push_back(persist->getPersistStorage("BoostStorage", loc));
     persist->persist(*root, storageList, additionalData);
 
-    dafPers::LogicalLocation loc2("tests/data/root.xml");
+    dafPersist::LogicalLocation loc2("tests/data/root.xml");
     storageList[0] = persist->getPersistStorage("XmlStorage", loc2);
     persist->persist(*root, storageList, additionalData);
 }     
@@ -50,13 +50,13 @@ BOOST_AUTO_TEST_CASE(PersistDifferentTypes) {
     fooProp3->set("foo3", "This is a Fits string");
 
     lsst::pex::policy::Policy::Ptr policyPtr(new lsst::pex::policy::Policy);
-    dafPers::Persistence::Ptr persist =
-        dafPers::Persistence::getPersistence(policyPtr);
-    dafPers::Storage::List storageList;
+    dafPersist::Persistence::Ptr persist =
+        dafPersist::Persistence::getPersistence(policyPtr);
+    dafPersist::Storage::List storageList;
 
-    dafPers::LogicalLocation loc("tests/data/foo.boost");
-    dafPers::LogicalLocation loc2("tests/data/foo2.boost");
-    dafPers::LogicalLocation loc3("tests/data/foo3.boost");
+    dafPersist::LogicalLocation loc("tests/data/foo.boost");
+    dafPersist::LogicalLocation loc2("tests/data/foo2.boost");
+    dafPersist::LogicalLocation loc3("tests/data/foo3.boost");
 
     storageList.push_back(persist->getPersistStorage("BoostStorage", loc));
     persist->persist(*fooProp, storageList, additionalData);

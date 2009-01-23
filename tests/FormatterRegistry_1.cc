@@ -3,72 +3,66 @@
  *
  * This test tests the FormatterRegistry class.
  */
-#include <iostream>
 #include <sstream>
 #include <string>
-#include <stdexcept>
 #include "lsst/daf/base/Persistable.h"
 #include "lsst/daf/persistence/FormatterRegistry.h"
 #include "lsst/pex/exceptions.h"
 
-using namespace lsst::daf::persistence;
+#define BOOST_TEST_MODULE FormatterRegistry_1
+#include "boost/test/included/unit_test.hpp"
 
-#define Assert(b, m) tattle(b, m, __LINE__)
-
-static void tattle(bool mustBeTrue, std::string const& failureMsg, int line) {
-    if (! mustBeTrue) {
-        std::ostringstream msg;
-        msg << __FILE__ << ':' << line << ":\n" << failureMsg << std::ends;
-        throw std::runtime_error(msg.str());
-    }
-}
+namespace test = boost::test_tools;
+namespace dafBase = lsst::daf::base;
+namespace dafPersist = lsst::daf::persistence;
 
 // A (very) minimal Persistable.
-class MyPersistable : public lsst::daf::base::Persistable {
+class MyPersistable : public dafBase::Persistable {
 };
 
 // A minimal Formatter.
-class MyFormatter : public Formatter {
+class MyFormatter : public dafPersist::Formatter {
 public:
-    MyFormatter(void) : Formatter(typeid(*this)) { };
+    MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
     // Normally, the following functions would do something.  For testing,
     // they do nothing.
-    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
-    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { return 0; };
-    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 private:
-    static Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
-    static FormatterRegistration registration;
+    static dafPersist::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
+    static dafPersist::FormatterRegistration registration;
 };
 
 // Register the formatter factory function.
-FormatterRegistration MyFormatter::registration("MyPersistable", typeid(MyPersistable), createInstance);
+dafPersist::FormatterRegistration MyFormatter::registration("MyPersistable", typeid(MyPersistable), createInstance);
 
-Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy) {
-    return Formatter::Ptr(new MyFormatter);
+dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy) {
+    return dafPersist::Formatter::Ptr(new MyFormatter);
 }
 
 // Another minimal Formatter, this time without registration and an external
 // factory function.  This is not the normal way of writing Formatters; it is
 // here for test purposes only.
-class YourFormatter : public Formatter {
+class YourFormatter : public dafPersist::Formatter {
 public:
-    YourFormatter(void) : Formatter(typeid(*this)) { };
-    virtual void write(lsst::daf::base::Persistable const* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
-    virtual lsst::daf::base::Persistable* read(Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { return 0; };
-    virtual void update(lsst::daf::base::Persistable* persistable, Storage::Ptr storage, lsst::daf::base::PropertySet::Ptr additionalData) { };
+    YourFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 };
 
 // External factory function for YourFormatters.  This would normally be a
 // static member function as for MyFormatter above.
-static Formatter::Ptr factory(lsst::pex::policy::Policy::Ptr policy) {
-    return Formatter::Ptr(new YourFormatter);
+static dafPersist::Formatter::Ptr factory(lsst::pex::policy::Policy::Ptr policy) {
+    return dafPersist::Formatter::Ptr(new YourFormatter);
 }
 
-int main(void) {
-    std::cout << "Initial setup" << std::endl;
-    FormatterRegistry& f(FormatterRegistry::getInstance());
-    Formatter::FactoryPtr p = factory;
+BOOST_AUTO_TEST_SUITE(FormatterRegistrySuite)
+
+BOOST_AUTO_TEST_CASE(FormatterRegistry1) {
+    dafPersist::FormatterRegistry& f(dafPersist::FormatterRegistry::getInstance());
+    dafPersist::Formatter::FactoryPtr p = factory;
     lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
 
     // These tests are to ensure that the basic functionality of the
@@ -76,42 +70,27 @@ int main(void) {
     // of using the registry and are here for test purposes only.  In
     // particular, registering a Formatter for a built-in type does not make
     // any sense (but cannot be prevented without a lot of extra work).
-    std::cout << "Testing explicit registration" << std::endl;
     f.registerFormatter("YourPersistable", typeid(int), p);
-    Formatter::Ptr fp = Formatter::lookupFormatter(typeid(int), policy);
-    Assert(typeid(*fp) == typeid(YourFormatter), "Didn't get YourFormatter");
-    Formatter::Ptr fp2 = Formatter::lookupFormatter("YourPersistable", policy);
-    Assert(typeid(*fp2) == typeid(YourFormatter), "Didn't get YourFormatter");
-    Assert(fp != fp2, "Old YourFormatter returned");
+    dafPersist::Formatter::Ptr fp = dafPersist::Formatter::lookupFormatter(typeid(int), policy);
+    BOOST_CHECK_MESSAGE(typeid(*fp) == typeid(YourFormatter), "Didn't get YourFormatter");
+    dafPersist::Formatter::Ptr fp2 = dafPersist::Formatter::lookupFormatter("YourPersistable", policy);
+    BOOST_CHECK_MESSAGE(typeid(*fp2) == typeid(YourFormatter), "Didn't get YourFormatter");
+    BOOST_CHECK_MESSAGE(fp != fp2, "Old YourFormatter returned");
 
     // This is the normal way of using FormatterRegistry (i.e. implicitly
     // through Formatter and static FormatterRegistration members).
-    std::cout << "Testing static registration" << std::endl;
-    Formatter::Ptr fp3 = Formatter::lookupFormatter("MyPersistable", policy);
-    Assert(typeid(*fp3) == typeid(MyFormatter), "Didn't get MyFormatter");
-    Assert(fp != fp3 && fp2 != fp3, "Old MyFormatter returned");
-    Formatter::Ptr fp4 = Formatter::lookupFormatter(typeid(MyPersistable), policy);
-    Assert(typeid(*fp4) == typeid(MyFormatter), "Didn't get MyFormatter");
-    Assert(fp != fp4 && fp2 != fp4 && fp3 != fp4, "Old MyFormatter returned");
+    dafPersist::Formatter::Ptr fp3 = dafPersist::Formatter::lookupFormatter("MyPersistable", policy);
+    BOOST_CHECK_MESSAGE(typeid(*fp3) == typeid(MyFormatter), "Didn't get MyFormatter");
+    BOOST_CHECK_MESSAGE(fp != fp3 && fp2 != fp3, "Old MyFormatter returned");
+    dafPersist::Formatter::Ptr fp4 = dafPersist::Formatter::lookupFormatter(typeid(MyPersistable), policy);
+    BOOST_CHECK_MESSAGE(typeid(*fp4) == typeid(MyFormatter), "Didn't get MyFormatter");
+    BOOST_CHECK_MESSAGE(fp != fp4 && fp2 != fp4 && fp3 != fp4, "Old MyFormatter returned");
 
     // These tests look at failure cases, where we try to find a Formatter
     // that doesn't exist.  This should cause an InvalidParameter exception to
     // be thrown.
-    std::cout << "Testing unregistered Formatter" << std::endl;
-    try {
-        Formatter::Ptr fp5 = Formatter::lookupFormatter("FooBar", policy);
-        Assert(!fp5, "Got an invalid Formatter for FooBar");
-    }
-    catch (lsst::pex::exceptions::InvalidParameterException) {
-        std::cout << "Caught proper exception" << std::endl;
-    }
-    try {
-        Formatter::Ptr fp5 = Formatter::lookupFormatter(typeid(double), policy);
-        Assert(!fp5, "Got an invalid Formatter for double");
-    }
-    catch (lsst::pex::exceptions::InvalidParameterException) {
-        std::cout << "Caught proper exception" << std::endl;
-    }
-
-    return 0;
+    BOOST_CHECK_THROW(dafPersist::Formatter::lookupFormatter("FooBar", policy), lsst::pex::exceptions::InvalidParameterException);
+    BOOST_CHECK_THROW(dafPersist::Formatter::lookupFormatter(typeid(double), policy), lsst::pex::exceptions::InvalidParameterException);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
