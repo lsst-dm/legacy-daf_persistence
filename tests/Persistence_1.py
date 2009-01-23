@@ -10,7 +10,7 @@ pol = lsst.pex.policy.Policy()
 additionalData = dafBase.PropertySet()
 additionalData.addInt("sliceId", 5)
 
-loc = dafPersist.LogicalLocation("test.boost")
+loc = dafPersist.LogicalLocation("tests/data/test.boost")
 
 persistence = dafPersist.Persistence.getPersistence(pol)
 
