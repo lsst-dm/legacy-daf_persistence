@@ -293,6 +293,9 @@ void dafPersist::PropertySetFormatter::delegateSerialize(
     execTrace("PropertySetFormatter delegateSerialize end");
 }
 
+/// @cond
+// Explicit template instantiations are not well understood by doxygen.
+
 template
 void lsst::daf::persistence::delegateSerialize<lsst::daf::persistence::PropertySetFormatter, boost::mpi::packed_oarchive>(
         boost::mpi::packed_oarchive& ar,
@@ -304,6 +307,8 @@ void lsst::daf::persistence::delegateSerialize<lsst::daf::persistence::PropertyS
         boost::mpi::packed_iarchive& ar,
         unsigned int const version,
         lsst::daf::base::Persistable* persistable);
+
+/// @endcond
 
 /** Factory method for PropertySetFormatter.
  * \param[in] policy Policy for configuring the PropertySetFormatter
