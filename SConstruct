@@ -37,7 +37,8 @@ env.libs[pkg] += env.getlibs(" ".join(dependencies))
 # Build/install things
 #
 for d in Split("lib python/lsst/" + re.sub(r'_', "/", pkg) + " examples tests doc"):
-    SConscript(os.path.join(d, "SConscript"))
+    if os.path.isdir(d):
+        SConscript(os.path.join(d, "SConscript"))
 
 env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
 
