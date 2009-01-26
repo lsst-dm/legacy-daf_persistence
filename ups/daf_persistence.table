@@ -4,7 +4,7 @@ setupRequired(pex_exceptions >= 3.2)
 setupRequired(pex_logging >= 3.2)
 setupRequired(pex_policy >= 3.2)
 setupRequired(utils >= 3.4)
-setupRequired(mpich2 >= 1.0.5)
+setupRequired(mpich2 >= 1.0.5p4)
 
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envAppend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
