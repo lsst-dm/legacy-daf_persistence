@@ -2,7 +2,9 @@
  * This test tests much of the persistence framework, including Persistable,
  * Persistence, Formatter, BoostStorage, DbStorage, and DbTsvStorage.
  */
-
+extern "C" {
+#  include <sys/time.h>
+}
 #include "lsst/daf/persistence/BoostStorage.h"
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/DbTsvStorage.h"
