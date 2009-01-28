@@ -5,7 +5,7 @@
 import glob, os.path, re
 import lsst.SConsUtils as scons
 
-dependencies = "boost python mysqlclient utils daf_base pex_logging pex_exceptions pex_policy mpich".split()
+dependencies = "boost python mysqlclient utils daf_base pex_logging pex_exceptions pex_policy mpich2".split()
 
 env = scons.makeEnv("daf_persistence",
                     r"$HeadURL$",
@@ -13,7 +13,9 @@ env = scons.makeEnv("daf_persistence",
                      ["boost", "boost/regex.hpp", "boost_regex:C++"],
                      ["boost", "boost/serialization/serialization.hpp", "boost_serialization:C++"],
                      ["boost", "boost/version.hpp", "boost_system:C++"],
+                     ["mpich2", "mpi.h", "pmpich:C++"],
                      ["mpich2", "mpi.h", "mpich:C++"],
+                     ["mpich2", "mpi.h", "lmpe:C++"],
                      ["boost", "boost/mpi.hpp", "boost_mpi:C++"],
                      ["python", "Python.h"],
                      ["mysqlclient", "mysql/mysql.h", "mysqlclient_r:C"],
