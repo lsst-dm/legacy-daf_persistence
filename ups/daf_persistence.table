@@ -1,4 +1,4 @@
-setupRequired(boost >= 1.36.0+1)
+setupRequired(boost >= 1.37.0)
 setupRequired(daf_base >= 3.2)
 setupRequired(mysqlclient >= 5.0.45+1)
 setupRequired(pex_exceptions >= 3.2)
