@@ -15,7 +15,8 @@ tests.run("FormatterRegistry_*.cc")
 tests.run("Persistence_3.cc")
 tests.run("PropertySetPersist.cc")
 
-if os.environ.has_key('LSST_DB_AUTH') or os.path.exists("/tmp/lsst.db.auth"):
+if os.environ.has_key('LSST_DB_AUTH') or \
+        os.path.exists(os.path.join(os.environ['HOME'], ".lsst.db.auth")):
     if os.environ.has_key('LSST_DB_AUTH'):
         env['ENV']['LSST_DB_AUTH'] = os.environ['LSST_DB_AUTH']
     tests.run("DateTime_1.cc")

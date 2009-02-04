@@ -19,8 +19,16 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/DbAuth.h"
 
+#include "boost/scoped_array.hpp"
 #include <cstdlib>
 #include <fstream>
+
+extern "C" {
+    #include <pwd.h>
+    #include <sys/types.h>
+    #include <sys/stat.h>
+    #include <unistd.h>
+}
 
 #include "lsst/pex/exceptions.h"
 
@@ -113,7 +121,23 @@ std::string DbAuth::password(void) {
  * \return Reference to the pathname string
  */
 std::string& DbAuth::pathName(void) {
-    static std::string path("/tmp/lsst.db.auth");
+    static std::string path("/nosuchfile");
+    static bool homeDirChecked = false;
+    if (!homeDirChecked) {
+        passwd pwd;
+        passwd *pw;
+        long maxbuf = sysconf(_SC_GETPW_R_SIZE_MAX);
+        boost::scoped_array<char> buffer(new char[maxbuf]);
+        int ret = getpwuid_r(geteuid(), &pwd, buffer.get(), maxbuf, &pw);
+        if (ret == 0 && pw->pw_dir != 0) {
+            std::string filename = std::string(pw->pw_dir) + "/.lsst.db.auth";
+            struct stat st;
+            ret = stat(filename.c_str(), &st);
+            if (ret == 0 && (st.st_mode & (S_IRWXG | S_IRWXO)) == 0) {
+                path = filename;
+            }
+        }
+    }
     return path;
 }
 
