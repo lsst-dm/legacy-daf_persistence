@@ -30,6 +30,7 @@ db.setColumnInt64("id", testId)
 db.setColumnDouble("ra", 9.87654)
 db.setColumnDouble("decl", 1.23456)
 db.setColumnToNull("something")
+db.setColumnString("final", "foo")
 db.insertRow()
 
 db.endTransaction()
@@ -45,6 +46,7 @@ db.setTableForQuery("DbStorage_Test_1")
 db.outColumn("decl")
 db.outColumn("id")
 db.outColumn("something")
+db.outColumn("final")
 db.outColumn("ra")
 
 db.condParamInt64("id", testId)
@@ -58,9 +60,11 @@ assert db.columnIsNull(0) == False
 assert db.columnIsNull(1) == False
 assert db.columnIsNull(2) == True
 assert db.columnIsNull(3) == False
+assert db.columnIsNull(4) == False
 assert db.getColumnByPosInt64(1) == testId
 assert db.getColumnByPosDouble(0) == 1.23456
-assert db.getColumnByPosDouble(3) == 9.87654
+assert db.getColumnByPosString(3) == "foo"
+assert db.getColumnByPosDouble(4) == 9.87654
 
 assert not db.next()
 

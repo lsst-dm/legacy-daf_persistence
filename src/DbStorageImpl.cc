@@ -801,11 +801,14 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
         error("Nonexistent column: " + pos, false);
     }
     MYSQL_BIND bind;
+    memset(&bind, 0, sizeof(MYSQL_BIND));
     if (_resultFields[pos].type != MYSQL_TYPE_VAR_STRING &&
         _resultFields[pos].type != MYSQL_TYPE_STRING) {
         error("Invalid type for string retrieval", false);
     }
     boost::scoped_array<char> t(new char[_fieldLengths[pos]]);
+    bind.buffer_type = BoundVarTraits<std::string>::mysqlType;
+    bind.is_unsigned = BoundVarTraits<std::string>::isUnsigned;
     bind.buffer = t.get();
     bind.buffer_length = _fieldLengths[pos];
     bind.length = &(_fieldLengths[pos]);
