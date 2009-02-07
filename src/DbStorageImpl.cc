@@ -233,7 +233,10 @@ void dafPer::DbStorageImpl::executeQuery(std::string const& query) {
 /** Quote a name in ANSI-standard fashion.
   */
 std::string dafPer::DbStorageImpl::quote(std::string const& name) {
-    return '`' + name + '`';
+    std::string::size_type pos = name.find('.');
+    if (pos == std::string::npos) return '`' + name + '`';
+    return '`' + std::string(name, 0, pos) + "`.`" +
+        std::string(name, pos + 1) + '`';
 }
 
 void dafPer::DbStorageImpl::stError(std::string const& text) {

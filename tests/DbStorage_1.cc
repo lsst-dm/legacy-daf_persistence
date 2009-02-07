@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(DbStorage) {
     dbs.condParam<long long>("id", testId);
     dbs.setQueryWhere("id = :id");
     dbs.outColumn("decl");
-    dbs.outColumn("something");
+    dbs.outColumn("DbStorage_Test_1.something");
     dbs.outColumn("ra");
 
     dbs.query();
