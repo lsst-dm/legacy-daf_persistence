@@ -802,8 +802,7 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     }
     MYSQL_BIND bind;
     memset(&bind, 0, sizeof(MYSQL_BIND));
-    if (_resultFields[pos].type != MYSQL_TYPE_VAR_STRING &&
-        _resultFields[pos].type != MYSQL_TYPE_STRING) {
+    if (_resultFields[pos].type == MYSQL_TYPE_BIT) {
         error("Invalid type for string retrieval", false);
     }
     boost::scoped_array<char> t(new char[_fieldLengths[pos]]);
