@@ -14,6 +14,7 @@ tests = lsst.tests.Control(env, verbose = True)
 tests.run("FormatterRegistry_*.cc")
 tests.run("Persistence_3.cc")
 tests.run("PropertySetPersist.cc")
+tests.run("PropertySet_2.cc")
 
 if os.environ.has_key('LSST_DB_AUTH') or \
         os.path.exists(os.path.join(os.environ['HOME'], ".lsst.db.auth")):
