@@ -290,6 +290,14 @@ void dafPer::DbStorageImpl::truncateTable(std::string const& tableName) {
     executeQuery("TRUNCATE TABLE " + quote(tableName));
 }
 
+/** Execute an arbitrary SQL statement.  Use primarily to perform server-side
+ * computations or complex DDL.
+ * \param[in] sqlStatement SQL statement to be executed.  Must not end in ";".
+ */
+void dafPer::DbStorageImpl::executeSql(std::string const& sqlStatement) {
+    executeQuery(sqlStatement);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // PERSISTENCE
 ///////////////////////////////////////////////////////////////////////////////

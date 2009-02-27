@@ -106,6 +106,14 @@ void DbStorage::truncateTable(std::string const& tableName) {
     _impl->truncateTable(tableName);
 }
 
+/** Execute an arbitrary SQL statement.  Use primarily to perform server-side
+  * computations or complex DDL.
+ * \param[in] sqlStatement SQL statement to be executed.  Must not end in ";".
+ */
+void DbStorage::executeSql(std::string const& sqlStatement) {
+    _impl->executeSql(sqlStatement);
+}
+
 /** Set the table to insert rows into.
  * \param[in] tableName Name of the table
  */

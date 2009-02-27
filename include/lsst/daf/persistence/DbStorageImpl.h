@@ -77,6 +77,8 @@ private:
     virtual void dropTable(std::string const& tableName);
     virtual void truncateTable(std::string const& tableName);
 
+    virtual void executeSql(std::string const& sqlStatement);
+
     virtual void setTableForInsert(std::string const& tableName);
     template <typename T>
     void setColumn(std::string const& columnName, T const& value);
