@@ -285,7 +285,7 @@ void DbTsvStorage::setColumn(std::string const& columnName,
                              DateTime const& value) {
     int colIndex = _getColumnIndex(columnName);
     _convertStream.str(std::string());
-    struct tm t = value.utc2gmtime();
+    struct tm t = value.gmtime();
     char buf[20];
     strftime(buf, sizeof(buf), "%F %T", &t);
     _rowBuffer[colIndex] = std::string(buf);
