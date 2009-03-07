@@ -28,6 +28,7 @@
 
 #include "lsst/tr1/unordered_map.h"
 #include "lsst/daf/base/Citizen.h"
+#include "lsst/daf/base/DateTime.h"
 #include "lsst/pex/policy/Policy.h"
 
 namespace lsst {
@@ -151,13 +152,22 @@ private:
 template <>
 void DbStorageImpl::setColumn<std::string>(std::string const& columnName,
                                            std::string const& value);
+template <>
+void DbStorageImpl::setColumn<dafBase::DateTime>(std::string const& columnName,
+                                           dafBase::DateTime const& value);
 
 template <>
 void DbStorageImpl::outParam<std::string>(std::string const& columnName,
                                           std::string* location);
+template <>
+void DbStorageImpl::outParam<dafBase::DateTime>(std::string const& columnName,
+                                                dafBase::DateTime* location);
 
 template <>
 std::string const& DbStorageImpl::getColumnByPos<std::string>(int pos);
+template <>
+dafBase::DateTime const&
+DbStorageImpl::getColumnByPos<dafBase::DateTime>(int pos);
 
 }}} // namespace lsst::daf::persistence
 

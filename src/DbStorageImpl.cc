@@ -21,6 +21,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/DbStorageImpl.h"
 #include "boost/regex.hpp"
+#include <ctime>
 #include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
@@ -357,6 +358,36 @@ void dafPer::DbStorageImpl::setColumn(std::string const& columnName,
     memcpy(bv->second._data, value.data(), size);
 }
 
+template <>
+void dafPer::DbStorageImpl::setColumn(std::string const& columnName,
+                                      dafBase::DateTime const& value) {
+    BoundVarMap::iterator bv = _inputVars.find(columnName);
+    size_t size = sizeof(MYSQL_TIME);
+    if (bv == _inputVars.end()) {
+       bv = _inputVars.insert(
+            BoundVarMap::value_type(columnName,
+                                    BoundVar(allocateMemory(size)))).first;
+    }
+    else if (bv->second._length != size) {
+        bv->second._data = allocateMemory(size);
+    }
+    bv->second._type = BoundVarTraits<dafBase::DateTime>::mysqlType;
+    bv->second._isNull = false;
+    bv->second._isUnsigned = BoundVarTraits<dafBase::DateTime>::isUnsigned;
+    bv->second._length = size;
+    struct tm v = value.gmtime();
+    MYSQL_TIME* t = reinterpret_cast<MYSQL_TIME*>(bv->second._data);
+    t->year = v.tm_year + 1900;
+    t->month = v.tm_mon + 1;
+    t->day = v.tm_mday;
+    t->hour = v.tm_hour;
+    t->minute = v.tm_min;
+    t->second = v.tm_sec;
+    t->neg = false;
+    t->second_part =
+        static_cast<unsigned long>((value.nsecs() % 1000000000LL) / 1000);
+}
+
 /** Set a given column to NULL.
  * @param[in] columnName Name of the column
  */
@@ -522,10 +553,30 @@ void dafPer::DbStorageImpl::outParam(std::string const& columnName,
         error("Duplicate column name requested: " + columnName, false);
     }
     BoundVar& bv = pair.first->second;
-    memcpy(bv._data, &location, sizeof(std::string*));
+    *reinterpret_cast<std::string**>(bv._data) = location;
     bv._type = BoundVarTraits<std::string>::mysqlType;
     bv._isNull = false;
     bv._isUnsigned = BoundVarTraits<std::string>::isUnsigned;
+    bv._length = size;
+}
+
+template <>
+void dafPer::DbStorageImpl::outParam(std::string const& columnName,
+                                     dafBase::DateTime* location) {
+    _outColumns.push_back(columnName);
+    size_t size = sizeof(MYSQL_TIME);
+    std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
+        BoundVarMap::value_type(
+            columnName,
+            BoundVar(allocateMemory(size + sizeof(dafBase::DateTime*)))));
+    if (!pair.second) {
+        error("Duplicate column name requested: " + columnName, false);
+    }
+    BoundVar& bv = pair.first->second;
+    *reinterpret_cast<dafBase::DateTime**>(bv._data) = location;
+    bv._type = BoundVarTraits<dafBase::DateTime>::mysqlType;
+    bv._isNull = false;
+    bv._isUnsigned = BoundVarTraits<dafBase::DateTime>::isUnsigned;
     bv._length = size;
 }
 
@@ -731,6 +782,10 @@ void dafPer::DbStorageImpl::query(void) {
                 bind.buffer = reinterpret_cast<char*>(bv._data) +
                     sizeof(std::string*);
             }
+            else if (bv._type == BoundVarTraits<dafBase::DateTime>::mysqlType) {
+                bind.buffer = reinterpret_cast<char*>(bv._data) +
+                    sizeof(std::string*);
+            }
             else {
                 bind.buffer = bv._data;
             }
@@ -755,7 +810,7 @@ bool dafPer::DbStorageImpl::next(void) {
     }
     int ret = mysql_stmt_fetch(_statement);
     if (ret == 0) {
-        // Fix up strings
+        // Fix up strings and DateTimes
         if (!_outputVars.empty()) {
             for (size_t i = 0; i < _outColumns.size(); ++i) {
                 BoundVarMap::iterator bvit = _outputVars.find(_outColumns[i]);
@@ -768,6 +823,16 @@ bool dafPer::DbStorageImpl::next(void) {
                     **reinterpret_cast<std::string**>(bv._data) =
                         std::string(reinterpret_cast<char*>(bv._data) +
                                     sizeof(std::string*), _fieldLengths[i]);
+                }
+                else if (bv._type ==
+                         BoundVarTraits<dafBase::DateTime>::mysqlType) {
+                    char* cp = reinterpret_cast<char*>(bv._data) +
+                        sizeof(dafBase::DateTime*);
+                    MYSQL_TIME* t = reinterpret_cast<MYSQL_TIME*>(cp);
+                    **reinterpret_cast<dafBase::DateTime**>(bv._data) =
+                        dafBase::DateTime(t->year, t->month, t->day,
+                                          t->hour, t->minute, t->second,
+                                          dafBase::DateTime::UTC);
                 }
             }
         }
@@ -826,6 +891,35 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     static std::string s;
     s = std::string(t.get(), _fieldLengths[pos]);
     return s;
+}
+
+template <>
+dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
+    if (pos > _numResultFields) {
+        error("Nonexistent column: " + pos, false);
+    }
+    MYSQL_BIND bind;
+    memset(&bind, 0, sizeof(MYSQL_BIND));
+    if (_resultFields[pos].type != MYSQL_TYPE_TIME &&
+        _resultFields[pos].type != MYSQL_TYPE_DATE &&
+        _resultFields[pos].type != MYSQL_TYPE_DATETIME &&
+        _resultFields[pos].type != MYSQL_TYPE_TIMESTAMP) {
+        error("Invalid type for DateTime retrieval", false);
+    }
+    static MYSQL_TIME t;
+    bind.buffer_type = BoundVarTraits<dafBase::DateTime>::mysqlType;
+    bind.is_unsigned = BoundVarTraits<dafBase::DateTime>::isUnsigned;
+    bind.buffer = &t;
+    bind.buffer_length = sizeof(MYSQL_TIME);
+    bind.length = &(_fieldLengths[pos]);
+    bind.is_null = &(_fieldNulls[pos]);
+    if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
+        stError("Error fetching DateTime column: " + pos);
+    }
+    static dafBase::DateTime v;
+    v = dafBase::DateTime(t.year, t.month, t.day, t.hour, t.minute, t.second,
+                          dafBase::DateTime::UTC);
+    return v;
 }
 
 /** Determine if the value of a column is NULL.
