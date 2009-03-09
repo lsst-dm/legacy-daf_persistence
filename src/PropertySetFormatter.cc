@@ -122,7 +122,7 @@ void dafPersist::PropertySetFormatter::write(
 
         std::vector<std::string> list;
         if (itemPolicy && itemPolicy->exists("KeyList")) {
-            pexPolicy::Policy::StringPtrArray const& array(
+            pexPolicy::Policy::StringArray const& array(
                 itemPolicy->getStringArray("KeyList"));
             for (pexPolicy::Policy::StringPtrArray::const_iterator it =
                  array.begin(); it != array.end(); ++it) {
