@@ -22,7 +22,7 @@
 #include <lsst/daf/base/Persistable.h>
 #include <lsst/daf/persistence/Formatter.h>
 #include <lsst/daf/persistence/Storage.h>
-#include <lsst/pex/policy/Policy.h>
+#include <lsst/pex/policy.h>
 
 namespace lsst {
 namespace daf {

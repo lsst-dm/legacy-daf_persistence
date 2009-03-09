@@ -29,7 +29,7 @@
 #include "lsst/tr1/unordered_map.h"
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/DateTime.h"
-#include "lsst/pex/policy/Policy.h"
+#include "lsst/pex/policy.h"
 
 namespace lsst {
 namespace daf {

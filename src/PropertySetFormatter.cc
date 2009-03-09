@@ -124,9 +124,9 @@ void dafPersist::PropertySetFormatter::write(
         if (itemPolicy && itemPolicy->exists("KeyList")) {
             pexPolicy::Policy::StringArray const& array(
                 itemPolicy->getStringArray("KeyList"));
-            for (pexPolicy::Policy::StringPtrArray::const_iterator it =
+            for (pexPolicy::Policy::StringArray::const_iterator it =
                  array.begin(); it != array.end(); ++it) {
-                list.push_back(**it);
+                list.push_back(*it);
             }
         }
         else {

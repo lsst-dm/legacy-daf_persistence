@@ -37,7 +37,7 @@
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/PropertySet.h"
 #include "lsst/daf/persistence/Storage.h"
-#include "lsst/pex/policy/Policy.h"
+#include "lsst/pex/policy.h"
 
 namespace lsst {
 namespace daf {

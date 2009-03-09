@@ -26,7 +26,7 @@
 
 #include <string>
 
-#include "lsst/pex/policy/Policy.h"
+#include "lsst/pex/policy.h"
 
 namespace lsst {
 namespace daf {
