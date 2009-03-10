@@ -34,17 +34,12 @@ DbStorageLocation::DbStorageLocation(void) :
     _dbType(), _hostname(), _port(), _username(), _password(), _dbName() {
 }
 
-/** Constructor from CORAL-style URL plus separate username and password.
+/** Constructor from CORAL-style URL.
  * \param[in] url CORAL-style connection string (database type, hostname,
  * port, database name)
- * \param[in] userName User to connect as
- * \param[in] password Password for user
  */
-DbStorageLocation::DbStorageLocation(std::string const& url,
-                                     std::string const& userName,
-                                     std::string const& password) :
-    lsst::daf::base::Citizen(typeid(*this)),
-    _username(userName), _password(password) {
+DbStorageLocation::DbStorageLocation(std::string const& url) :
+    lsst::daf::base::Citizen(typeid(*this)) {
     boost::smatch what;
     boost::regex
         expression("(\\w+)://(\\S+):(\\d+)/(\\S+)");
@@ -53,6 +48,8 @@ DbStorageLocation::DbStorageLocation(std::string const& url,
         _hostname = what[2];
         _port = what[3];
         _dbName = what[4];
+        _username = DbAuth::username(_hostname, _port);
+        _password = DbAuth::password(_hostname, _port);
     }
     else {
         throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterException,

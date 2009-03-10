@@ -32,114 +32,113 @@ extern "C" {
 
 #include "lsst/pex/exceptions.h"
 
-namespace lsst {
-namespace daf {
-namespace persistence {
+namespace dafPersist = lsst::daf::persistence;
+namespace pexPolicy = lsst::pex::policy;
 
-/** Name of environment variable containing authenticator.
- */
-static char const* const envVarName = "LSST_DB_AUTH";
+static pexPolicy::Policy::Ptr authPolicy(static_cast<pexPolicy::Policy*>(0));
 
-/** Set the authenticator pathname via Policy.
- * \param[in] policy Pointer to a Policy
- */
-void DbAuth::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
-    if (policy->exists("DbAuthPath")) {
-        pathName() = policy->getString("DbAuthPath");
-    }
-}
-
-/** Determine whether an authenticator string is available for database
- * access.
- * \return True if authenticator is available
- */
-bool DbAuth::available(void) {
-    try {
-        std::string const& auth = DbAuth::authString();
-        if (auth.empty()) return false;
-    }
-    catch (...) {
-        return false;
-    }
-    return true;
-}
-
-/** Get the authenticator string for a database.
- * \return String with username:password
- */
-std::string const& DbAuth::authString(void) {
-    static std::string auth;
-    if (auth.empty()) {
-        char buffer[256];
-        char* authenticator = buffer;
-        std::ifstream istr(pathName().c_str());
-        if (!istr.fail()) {
-            istr.getline(buffer, sizeof(buffer));
-            istr.close();
-        }
-        else {
-            authenticator = getenv(envVarName);
-            if (authenticator == 0) {
-                throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
-                                  "No database authenticator found");
-            }
-        }
-        auth = std::string(authenticator);
-    }
-    return auth;
-}
-
-/** Get the username to use to authenticate to a database.
- * \return Username string
- */
-std::string DbAuth::username(void) {
-    std::string const& authenticator(DbAuth::authString());
-    size_t pos = authenticator.find(':');
-    if (pos != std::string::npos) {
-        return authenticator.substr(0, pos);
-    }
-    else {
-        return authenticator;
-    }
-}
-
-/** Get the password to use to authenticate to a database.
- * \return Password string
- */
-std::string DbAuth::password(void) {
-    std::string const& authenticator(DbAuth::authString());
-    size_t pos = authenticator.find(':');
-    if (pos != std::string::npos) {
-        return authenticator.substr(pos + 1);
-    }
-    else {
-        return std::string();
-    }
-}
-
-/** Get a reference to the pathname for the authenticator file.
- * \return Reference to the pathname string
- */
-std::string& DbAuth::pathName(void) {
-    static std::string path("/nosuchfile");
-    static bool homeDirChecked = false;
-    if (!homeDirChecked) {
+static std::pair<std::string, std::string>
+search(std::string const& host, std::string const& port) {
+    if (authPolicy == 0) {
         passwd pwd;
         passwd *pw;
         long maxbuf = sysconf(_SC_GETPW_R_SIZE_MAX);
         boost::scoped_array<char> buffer(new char[maxbuf]);
         int ret = getpwuid_r(geteuid(), &pwd, buffer.get(), maxbuf, &pw);
-        if (ret == 0 && pw->pw_dir != 0) {
-            std::string filename = std::string(pw->pw_dir) + "/.lsst.db.auth";
-            struct stat st;
-            ret = stat(filename.c_str(), &st);
-            if (ret == 0 && (st.st_mode & (S_IRWXG | S_IRWXO)) == 0) {
-                path = filename;
+        if (ret != 0 || pw->pw_dir == 0) {
+            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+                    "Could not get home directory");
+        }
+        std::string dir = std::string(pw->pw_dir) + "/.lsst";
+        std::string filename = dir + "/db-auth.paf";
+        struct stat st;
+        ret = stat(dir.c_str(), &st);
+        if (ret != 0 || (st.st_mode & (S_IRWXG | S_IRWXO)) != 0) {
+            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+                    dir + " directory is missing or accessible by others");
+        }
+        ret = stat(filename.c_str(), &st);
+        if (ret != 0 || (st.st_mode & (S_IRWXG | S_IRWXO)) != 0) {
+            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+                    filename + " is missing or accessible by others");
+        }
+        authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(filename));
+    }
+    int portNum = atoi(port.c_str());
+    pexPolicy::Policy::PolicyPtrArray authArray =
+        authPolicy->getPolicyArray("database.authInfo");
+    for (pexPolicy::Policy::PolicyPtrArray::const_iterator i =
+         authArray.begin(); i != authArray.end(); ++i) {
+        if ((*i)->getString("host") == host &&
+            (*i)->getInt("port") == portNum) {
+            std::string username = (*i)->getString("user");
+            std::string password = (*i)->getString("password");
+            if (username.empty()) {
+                throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+                        "Empty username for host/port: " + host + ":" + port);
             }
+            return std::pair<std::string, std::string>(username, password);
         }
     }
-    return path;
+    throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+            "No credentials found for host/port: " + host + ":" + port);
+    return std::pair<std::string, std::string>("", ""); // not reached
 }
 
+/** Set the authenticator Policy.
+ * \param[in] policy Pointer to a Policy
+ */
+void dafPersist::DbAuth::setPolicy(pexPolicy::Policy::Ptr policy) {
+    authPolicy = policy;
+}
 
-}}} // lsst::daf::persistence
+/** Determine whether an authenticator string is available for database
+ * access.
+ * \param[in] host Name of the host to connect to.
+ * \param[in] port Port number to connect to (as string).
+ * \return True if authenticator is available
+ */
+bool dafPersist::DbAuth::available(std::string const& host,
+                                   std::string const& port) {
+    try {
+        std::pair<std::string, std::string> result = search(host, port);
+        return true;
+    }
+    catch (...) {
+        return false;
+    }
+    return false; // not reached
+}
+
+/** Get the authenticator string for a database.
+ * \param[in] host Name of the host to connect to.
+ * \param[in] port Port number to connect to (as string).
+ * \return String with username:password
+ */
+std::string dafPersist::DbAuth::authString(std::string const& host,
+                                           std::string const& port) {
+    std::pair<std::string, std::string> result = search(host, port);
+    return result.first + ":" + result.second;
+}
+
+/** Get the username to use to authenticate to a database.
+ * \param[in] host Name of the host to connect to.
+ * \param[in] port Port number to connect to (as string).
+ * \return Username string
+ */
+std::string dafPersist::DbAuth::username(std::string const& host,
+                                         std::string const& port) {
+    std::pair<std::string, std::string> result = search(host, port);
+    return result.first;
+}
+
+/** Get the password to use to authenticate to a database.
+ * \param[in] host Name of the host to connect to.
+ * \param[in] port Port number to connect to (as string).
+ * \return Password string
+ */
+std::string dafPersist::DbAuth::password(std::string const& host,
+                                         std::string const& port) {
+    std::pair<std::string, std::string> result = search(host, port);
+    return result.second;
+}

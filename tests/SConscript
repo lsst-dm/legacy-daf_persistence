@@ -16,10 +16,7 @@ tests.run("Persistence_3.cc")
 tests.run("PropertySetPersist.cc")
 tests.run("PropertySet_2.cc")
 
-if os.environ.has_key('LSST_DB_AUTH') or \
-        os.path.exists(os.path.join(os.environ['HOME'], ".lsst.db.auth")):
-    if os.environ.has_key('LSST_DB_AUTH'):
-        env['ENV']['LSST_DB_AUTH'] = os.environ['LSST_DB_AUTH']
+if os.path.exists(os.path.join(os.environ['HOME'], ".lsst/db-auth.paf")):
     tests.run("DateTime_1.cc")
     tests.run("DbStorage_*.cc")
     tests.run("Persistence_1.cc")
@@ -29,6 +26,11 @@ else:
     print "WARNING: No fallback database authenticator seen"
     print "Database tests are being skipped"
 
-for target in [tests.run("DbStorage_1.py"), tests.run("Persistence_1.py")]:
+for target in [
+    tests.run("DbAuth.py"),
+    tests.run("DbStorage_1.py"),
+    tests.run("Persistence_1.py")
+    ]:
     env.Depends(target,
-                    "../python/lsst/daf/persistence/_persistenceLib%s" % (env['LDMODULESUFFIX']))
+            "../python/lsst/daf/persistence/_persistenceLib%s" %
+            (env['LDMODULESUFFIX']))
