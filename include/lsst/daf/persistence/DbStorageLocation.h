@@ -37,9 +37,7 @@ public:
     typedef boost::shared_ptr<DbStorageLocation> Ptr;
 
     DbStorageLocation(void);
-    DbStorageLocation(std::string const& url,
-                      std::string const& userName = DbAuth::username(),
-                      std::string const& password = DbAuth::password());
+    DbStorageLocation(std::string const& url);
     virtual ~DbStorageLocation(void);
     virtual std::string toString(void) const;
     virtual std::string getConnString(void) const;

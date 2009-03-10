@@ -1,0 +1,26 @@
+database = {
+    authInfo = {
+        host: lsst10.ncsa.uiuc.edu
+        port: 3307
+        username: boris
+        password: natasha
+    }
+    authInfo = {
+        host: lsst10.ncsa.uiuc.edu
+        port: 3306
+        username: test
+        password: globular.test
+    }
+    authInfo = {
+        host: lsst10.ncsa.uiuc.edu
+        port: 3306
+        username: nottest
+        password: notglobular.test
+    }
+    authInfo = {
+        host: lsst9.ncsa.uiuc.edu
+        port: 3306
+        username: rocky
+        password: squirrel
+    }
+}

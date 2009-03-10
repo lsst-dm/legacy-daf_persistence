@@ -35,12 +35,13 @@ namespace persistence {
 class DbAuth {
 public:
     static void setPolicy(lsst::pex::policy::Policy::Ptr policy);
-    static bool available(void);
-    static std::string const& authString(void);
-    static std::string username(void);
-    static std::string password(void);
-private:
-    static std::string& pathName(void);
+    static bool available(std::string const& host, std::string const& port);
+    static std::string authString(std::string const& host,
+                                  std::string const& port);
+    static std::string username(std::string const& host,
+                                std::string const& port);
+    static std::string password(std::string const& host,
+                                std::string const& port);
 };
 
 }}} // namespace lsst::daf::persistence
