@@ -1,26 +1,26 @@
-database = {
-    authInfo = {
+database: {
+    authInfo: {
         host: lsst10.ncsa.uiuc.edu
         port: 3307
-        username: boris
+        user: boris
         password: natasha
     }
-    authInfo = {
+    authInfo: {
         host: lsst10.ncsa.uiuc.edu
         port: 3306
-        username: test
+        user: test
         password: globular.test
     }
-    authInfo = {
+    authInfo: {
         host: lsst10.ncsa.uiuc.edu
         port: 3306
-        username: nottest
+        user: nottest
         password: notglobular.test
     }
-    authInfo = {
+    authInfo: {
         host: lsst9.ncsa.uiuc.edu
         port: 3306
-        username: rocky
+        user: rocky
         password: squirrel
     }
 }
