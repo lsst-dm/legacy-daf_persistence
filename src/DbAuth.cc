@@ -50,7 +50,7 @@ search(std::string const& host, std::string const& port) {
                     "Could not get home directory");
         }
         std::string dir = std::string(pw->pw_dir) + "/.lsst";
-        std::string filename = dir + "/lsst-db-auth.paf";
+        std::string filename = dir + "/db-auth.paf";
         struct stat st;
         ret = stat(dir.c_str(), &st);
         if (ret != 0 || (st.st_mode & (S_IRWXG | S_IRWXO)) != 0) {
