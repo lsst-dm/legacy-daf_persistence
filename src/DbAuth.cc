@@ -63,6 +63,7 @@ search(std::string const& host, std::string const& port) {
                     filename + " is missing or accessible by others");
         }
         authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(filename));
+        authPolicy->markPersistent();
     }
     int portNum = atoi(port.c_str());
     pexPolicy::Policy::PolicyPtrArray authArray =

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+import lsst.utils.tests as tests
 
 from lsst.daf.persistence import DbAuth
 from lsst.pex.policy import Policy
@@ -34,4 +35,9 @@ class DbAuthTestCase(unittest.TestCase):
                 "squirrel")
 
 if __name__ == '__main__':
-    unittest.main()
+    tests.init()
+    suites = []
+    suites.append(unittest.makeSuite(DbAuthTestCase))
+    suites.append(unittest.makeSuite(tests.MemoryTestCase))
+    tests.run(unittest.TestSuite(suites))
+
