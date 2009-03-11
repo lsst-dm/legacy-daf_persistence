@@ -19,26 +19,88 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/LogicalLocation.h"
 
-namespace lsst {
-namespace daf {
-namespace persistence {
+#include "boost/regex.hpp"
+#include "lsst/pex/exceptions.h"
+#include "lsst/pex/logging/Trace.h"
 
-/** Default constructor.
- */
-LogicalLocation::LogicalLocation(void) :
-    lsst::daf::base::Citizen(typeid(*this)) {
-}
+namespace dafBase = lsst::daf::base;
+namespace dafPersist = lsst::daf::persistence;
+namespace pexExcept = lsst::pex::exceptions;
+namespace pexLog = lsst::pex::logging;
 
-/** Constructor from string.
+dafBase::PropertySet::Ptr dafPersist::LogicalLocation::_map;
+
+/** Constructor from string and additional data.
  */
-LogicalLocation::LogicalLocation(std::string const& locString) :
-    lsst::daf::base::Citizen(typeid(*this)), _locString(locString) {
+dafPersist::LogicalLocation::LogicalLocation(
+    std::string const& locString, dafBase::PropertySet::Ptr additionalData) :
+    lsst::daf::base::Citizen(typeid(*this)), _locString() {
+    boost::regex expr("%\\((\\w+?)\\)");
+    boost::sregex_iterator i = make_regex_iterator(locString, expr);
+    boost::sregex_iterator last;
+    pexLog::TTrace<5>("daf.persistence.LogicalLocation",
+                      "Input string: " + locString);
+    while (i != boost::sregex_iterator()) {
+        last = i;
+        if ((*i).prefix().matched) {
+            _locString += (*i).prefix().str();
+        }
+        std::string key = (*i).str(1);
+        pexLog::TTrace<5>("daf.persistence.LogicalLocation", "Key: " + key);
+        if (_map && _map->exists(key)) {
+            if (_map->typeOf(key) == typeid(int)) {
+                int value = _map->getAsInt(key);
+                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
+                                  "Map Val: %d", value);
+                _locString += (boost::format("%1%") % value).str();
+            }
+            else {
+                std::string value = _map->getAsString(key);
+                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
+                                  "Map Val: " + value);
+                _locString += value;
+            }
+        }
+        else if (additionalData && additionalData->exists(key)) {
+            if (additionalData->typeOf(key) == typeid(int)) {
+                int value = additionalData->getAsInt(key);
+                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
+                                  "Map Val: %d", value);
+                _locString += (boost::format("%1%") % value).str();
+            }
+            else {
+                std::string value = additionalData->getAsString(key);
+                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
+                                  "Map Val: " + value);
+                _locString += value;
+            }
+        }
+        else {
+            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+                              "Unknown substitution: " + key);
+        }
+        ++i;
+    }
+    if (last == boost::sregex_iterator()) {
+        _locString = locString;
+        pexLog::TTrace<5>("daf.persistence.LogicalLocation",
+                          "Copy to: " + _locString);
+    }
+    else {
+        _locString += (*last).suffix().str();
+        pexLog::TTrace<5>("daf.persistence.LogicalLocation",
+                          "Result: " + _locString);
+    }
 }
 
 /** Accessor.
  */
-std::string const& LogicalLocation::locString(void) const {
+std::string const& dafPersist::LogicalLocation::locString(void) const {
     return _locString;
 }
 
-}}} // namespace lsst::daf::persistence
+/** Set the logical-to-less-logical map.
+  */
+void dafPersist::LogicalLocation::setLocationMap(dafBase::PropertySet::Ptr map) {
+    _map = map;
+}

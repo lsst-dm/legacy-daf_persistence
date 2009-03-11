@@ -26,11 +26,9 @@ else:
     print "WARNING: No fallback database authenticator seen"
     print "Database tests are being skipped"
 
-for target in [
-    tests.run("DbAuth.py"),
-    tests.run("DbStorage_1.py"),
-    tests.run("Persistence_1.py")
-    ]:
-    env.Depends(target,
-            "../python/lsst/daf/persistence/_persistenceLib%s" %
-            (env['LDMODULESUFFIX']))
+for test in glob.glob("*.py"):
+    if test != "Persistence_2.py":
+        target = tests.run(test)
+        env.Depends(target,
+                "../python/lsst/daf/persistence/_persistenceLib%s" %
+                (env['LDMODULESUFFIX']))

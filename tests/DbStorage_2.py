@@ -6,7 +6,7 @@ import time
 import lsst.daf.persistence as dafPers
 import lsst.pex.policy
 
-if not dafPers.DbAuth.available():
+if not dafPers.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
     print "*** WARNING*** Database authenticator unavailable.  Skipping test."
     sys.exit()
 

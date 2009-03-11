@@ -25,21 +25,28 @@
 #include <string>
 
 #include "lsst/daf/base/Citizen.h"
+#include "lsst/daf/base/PropertySet.h"
 
 namespace lsst {
 namespace daf {
 namespace persistence {
 
-class LogicalLocation : public lsst::daf::base::Citizen {
+namespace dafBase = lsst::daf::base;
+
+class LogicalLocation : public dafBase::Citizen {
 public:
     typedef boost::shared_ptr<LogicalLocation> Ptr;
 
-    LogicalLocation(void);
-    explicit LogicalLocation(std::string const& locString);
+    LogicalLocation(std::string const& locString,
+                    boost::shared_ptr<dafBase::PropertySet> additionalData =
+                    dafBase::PropertySet::Ptr());
     std::string const& locString(void) const;
+
+    static void setLocationMap(boost::shared_ptr<dafBase::PropertySet> map);
 
 private:
     std::string _locString; ///< The location string.
+    static dafBase::PropertySet::Ptr _map; ///< The logical-to-less-logical map.
 };
 
 }}} // namespace lsst::daf::persistence

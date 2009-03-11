@@ -30,6 +30,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include <mysql/mysql.h>
 
 #include "lsst/pex/exceptions.h"
+#include "lsst/pex/logging/Trace.h"
 #include "lsst/daf/persistence/DbStorageLocation.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 #include "lsst/daf/base/DateTime.h"
@@ -226,6 +227,8 @@ void dafPer::DbStorageImpl::executeQuery(std::string const& query) {
     if (_db == 0) {
         error("No DB connection for query: " + query, false);
     }
+    lsst::pex::logging::TTrace<5>("daf.persistence.DbStorage",
+                                  "Query: " + query);
     if (mysql_query(_db, query.c_str()) != 0) {
         error("Unable to execute query: " + query);
     }
