@@ -17,6 +17,7 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
+#include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/persistence/DbAuth.h"
 
 #include "boost/scoped_array.hpp"
@@ -32,6 +33,7 @@ extern "C" {
 
 #include "lsst/pex/exceptions.h"
 
+namespace dafBase = lsst::daf::base;
 namespace dafPersist = lsst::daf::persistence;
 namespace pexPolicy = lsst::pex::policy;
 
@@ -62,8 +64,10 @@ search(std::string const& host, std::string const& port) {
             throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
                     filename + " is missing or accessible by others");
         }
-        authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(filename));
-        authPolicy->markPersistent();
+        {
+            dafBase::PersistentCitizenScope scopeGuard;
+            authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(filename));
+        }
     }
     int portNum = atoi(port.c_str());
     pexPolicy::Policy::PolicyPtrArray authArray =
