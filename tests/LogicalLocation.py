@@ -20,6 +20,8 @@ class LogicalLocationTestCase(unittest.TestCase):
         self.assertEqual(l.locString(), "barxx")
         l = LogicalLocation("%(x)foo")
         self.assertEqual(l.locString(), "3foo")
+        l = LogicalLocation("yy%04d(x)yy")
+        self.assertEqual(l.locString(), "yy0003yy")
 
         ad2 = PropertySet()
         ad2.set("foo", "baz")
@@ -27,7 +29,7 @@ class LogicalLocationTestCase(unittest.TestCase):
         l = LogicalLocation("%(foo)%(x)%(y)", ad2)
         self.assertEqual(l.locString(), "bar32009")
         LogicalLocation.setLocationMap(PropertySet())
-        l = LogicalLocation("%(foo)%(y)", ad2)
+        l = LogicalLocation("%(foo)%3d(y)", ad2)
         self.assertEqual(l.locString(), "baz2009")
 
 if __name__ == '__main__':

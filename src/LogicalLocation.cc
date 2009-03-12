@@ -35,7 +35,7 @@ dafBase::PropertySet::Ptr dafPersist::LogicalLocation::_map;
 dafPersist::LogicalLocation::LogicalLocation(
     std::string const& locString, dafBase::PropertySet::Ptr additionalData) :
     lsst::daf::base::Citizen(typeid(*this)), _locString() {
-    boost::regex expr("%\\((\\w+?)\\)");
+    boost::regex expr("(%.*?)\\((\\w+?)\\)");
     boost::sregex_iterator i = make_regex_iterator(locString, expr);
     boost::sregex_iterator last;
     pexLog::TTrace<5>("daf.persistence.LogicalLocation",
@@ -45,14 +45,20 @@ dafPersist::LogicalLocation::LogicalLocation(
         if ((*i).prefix().matched) {
             _locString += (*i).prefix().str();
         }
-        std::string key = (*i).str(1);
+        std::string fmt = (*i).str(1);
+        std::string key = (*i).str(2);
         pexLog::TTrace<5>("daf.persistence.LogicalLocation", "Key: " + key);
         if (_map && _map->exists(key)) {
             if (_map->typeOf(key) == typeid(int)) {
                 int value = _map->getAsInt(key);
                 pexLog::TTrace<5>("daf.persistence.LogicalLocation",
                                   "Map Val: %d", value);
-                _locString += (boost::format("%1%") % value).str();
+                if (fmt == "%") {
+                    _locString += (boost::format("%1%") % value).str();
+                }
+                else {
+                    _locString += (boost::format(fmt) % value).str();
+                }
             }
             else {
                 std::string value = _map->getAsString(key);
@@ -66,7 +72,12 @@ dafPersist::LogicalLocation::LogicalLocation(
                 int value = additionalData->getAsInt(key);
                 pexLog::TTrace<5>("daf.persistence.LogicalLocation",
                                   "Map Val: %d", value);
-                _locString += (boost::format("%1%") % value).str();
+                if (fmt == "%") {
+                    _locString += (boost::format("%1%") % value).str();
+                }
+                else {
+                    _locString += (boost::format(fmt) % value).str();
+                }
             }
             else {
                 std::string value = additionalData->getAsString(key);
