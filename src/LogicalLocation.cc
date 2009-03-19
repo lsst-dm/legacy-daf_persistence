@@ -113,5 +113,10 @@ std::string const& dafPersist::LogicalLocation::locString(void) const {
 /** Set the logical-to-less-logical map.
   */
 void dafPersist::LogicalLocation::setLocationMap(dafBase::PropertySet::Ptr map) {
-    _map = map;
+    dafBase::PersistentCitizenScope scope;
+    if (map) {
+        _map = map->deepCopy();
+    } else {
+        _map.reset();
+    }
 }
