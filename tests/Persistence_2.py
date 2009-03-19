@@ -12,7 +12,7 @@ def test1():
     dp.addDouble("doubleField", 1.2)
     dp.addString("varcharField", "Testing")
     dp.addBool("boolField", True)
-    dp.addInt64("int64Field", 9876543210L)
+    dp.addLongLong("int64Field", 9876543210L)
     dp.addFloat("floatField", 3.14)
 
     pol = pexPolicy.Policy()
@@ -40,7 +40,7 @@ def test2():
     dp.addDouble("doubleField", 2.3)
     dp.addString("varcharField", "gnitseT")
     dp.addBool("boolField", False)
-    dp.addInt64("int64Field", 9988776655L)
+    dp.addLongLong("int64Field", 9988776655L)
     dp.addFloat("floatField", 2.718)
 
     pol = pexPolicy.Policy()
@@ -71,7 +71,7 @@ def test3():
     dp.addDouble("d", 3.4)
     dp.addString("v", "LastOne")
     dp.addBool("b", True)
-    dp.addInt64("I", 9998887776L)
+    dp.addLongLong("I", 9998887776L)
     dp.addFloat("f", 1.414)
 
     pol = pexPolicy.Policy()
