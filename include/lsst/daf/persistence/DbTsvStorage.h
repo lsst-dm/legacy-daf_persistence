@@ -68,7 +68,7 @@ public:
 
     // Templates for forwarding to the base class.
     template <typename T> void outParam(std::string const& columnName,
-                                        T* location);
+                                        T* location, bool isExpr = false);
     template <typename T> void condParam(std::string const& paramName,
                                          T const& value);
     template <typename T> T const& getColumnByPos(int pos);

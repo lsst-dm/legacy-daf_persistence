@@ -86,12 +86,12 @@ private:
     virtual void setColumnToNull(std::string const& columnName);
     virtual void insertRow(void);
 
-    virtual void setTableForQuery(std::string const& tableName);
+    virtual void setTableForQuery(std::string const& tableName, bool isExpr);
     virtual void setTableListForQuery(
         std::vector<std::string> const& tableNameList);
-    virtual void outColumn(std::string const& columnName);
+    virtual void outColumn(std::string const& columnName, bool isExpr);
     template <typename T> void outParam(std::string const& columnName,
-                                        T* location);
+                                        T* location, bool isExpr);
     template <typename T> void condParam(std::string const& paramName,
                                          T const& value);
     virtual void orderBy(std::string const& expression);
@@ -158,10 +158,11 @@ void DbStorageImpl::setColumn<dafBase::DateTime>(std::string const& columnName,
 
 template <>
 void DbStorageImpl::outParam<std::string>(std::string const& columnName,
-                                          std::string* location);
+                                          std::string* location, bool isExpr);
 template <>
 void DbStorageImpl::outParam<dafBase::DateTime>(std::string const& columnName,
-                                                dafBase::DateTime* location);
+                                                dafBase::DateTime* location,
+                                                bool isExpr);
 
 template <>
 std::string const& DbStorageImpl::getColumnByPos<std::string>(int pos);

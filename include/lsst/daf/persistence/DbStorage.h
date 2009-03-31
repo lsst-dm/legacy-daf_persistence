@@ -65,12 +65,13 @@ public:
     virtual void setColumnToNull(std::string const& columnName);
     virtual void insertRow(void);
 
-    virtual void setTableForQuery(std::string const& tableName);
+    virtual void setTableForQuery(std::string const& tableName,
+                                  bool isExpr = false);
     virtual void setTableListForQuery(
         std::vector<std::string> const& tableNameList);
-    virtual void outColumn(std::string const& columnName);
+    virtual void outColumn(std::string const& columnName, bool isExpr = false);
     template <typename T> void outParam(std::string const& columnName,
-                                        T* location);
+                                        T* location, bool isExpr = false);
     template <typename T> void condParam(std::string const& paramName,
                                          T const& value);
     virtual void orderBy(std::string const& expression);
