@@ -147,9 +147,10 @@ void DbStorage::insertRow(void) {
 
 /** Set the table to query (single-table queries only).
  * \param[in] tableName Name of the table
+ * \param[in] isExpr True if the name is actually a table expression
  */
-void DbStorage::setTableForQuery(std::string const& tableName) {
-    _impl->setTableForQuery(tableName);
+void DbStorage::setTableForQuery(std::string const& tableName, bool isExpr) {
+    _impl->setTableForQuery(tableName, isExpr);
 }
 
 /** Set a list of tables to query (multiple-table queries).
@@ -162,24 +163,27 @@ void DbStorage::setTableListForQuery(
 
 /** Request a column in the query output.
  * \param[in] columnName Name of the column
+ * \param[in] isExpr True if the name is actually an expression
  *
  * The order of outColumn() calls is the order of appearance in the output
  * row.  Use either outColumn() or outParam() but not both.
  */
-void DbStorage::outColumn(std::string const& columnName) {
-    _impl->outColumn(columnName);
+void DbStorage::outColumn(std::string const& columnName, bool isExpr) {
+    _impl->outColumn(columnName, isExpr);
 }
 
 /** Request a column in the query output and bind a destination location.
  * \param[in] columnName Name of the column
  * \param[in] location Pointer to the destination
+ * \param[in] isExpr True if the name is actually an expression
  *
  * The order of outParam() calls is the order of appearance in the output row.
  * Use either outColumn() or outParam() but not both.
  */
 template <typename T>
-void DbStorage::outParam(std::string const& columnName, T* location) {
-    _impl->outParam(columnName, location);
+void DbStorage::outParam(std::string const& columnName, T* location,
+                         bool isExpr) {
+    _impl->outParam(columnName, location, isExpr);
 }
 
 /** Bind a value to a WHERE condition parameter.
@@ -266,16 +270,16 @@ template void DbStorage::setColumn<>(std::string const& columnName, std::string 
 template void DbStorage::setColumn<>(std::string const& columnName, bool const& value);
 template void DbStorage::setColumn<>(std::string const& columnName, DateTime const& value);
 
-template void DbStorage::outParam<>(std::string const& columnName, char* location);
-template void DbStorage::outParam<>(std::string const& columnName, short* location);
-template void DbStorage::outParam<>(std::string const& columnName, int* location);
-template void DbStorage::outParam<>(std::string const& columnName, long* location);
-template void DbStorage::outParam<>(std::string const& columnName, long long* location);
-template void DbStorage::outParam<>(std::string const& columnName, float* location);
-template void DbStorage::outParam<>(std::string const& columnName, double* location);
-template void DbStorage::outParam<>(std::string const& columnName, std::string* location);
-template void DbStorage::outParam<>(std::string const& columnName, bool* location);
-template void DbStorage::outParam<>(std::string const& columnName, DateTime* location);
+template void DbStorage::outParam<>(std::string const& columnName, char* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, short* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, int* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, long* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, long long* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, float* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, double* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, std::string* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, bool* location, bool isExpr);
+template void DbStorage::outParam<>(std::string const& columnName, DateTime* location, bool isExpr);
 
 template void DbStorage::condParam<>(std::string const& paramName, char const& value);
 template void DbStorage::condParam<>(std::string const& paramName, short const& value);

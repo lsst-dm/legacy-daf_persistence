@@ -110,4 +110,45 @@ BOOST_AUTO_TEST_CASE(DbStorage) {
     dbs.endTransaction();
 }
 
+BOOST_AUTO_TEST_CASE(DbStorageExprs) {
+    lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
+
+    // Normally, we would create a DbStorage via
+    // Persistence::getRetrieveStorage().  For testing purposes, we create one
+    // ourselves.
+    dafPersist::DbStorage dbs;
+
+    dbs.setPolicy(policy);
+    dafPersist::LogicalLocation loc("mysql://lsst10.ncsa.uiuc.edu:3306/test");
+    dbs.setRetrieveLocation(loc);
+
+    dbs.startTransaction();
+    dbs.setTableForQuery("DUAL", true);
+    dbs.outColumn("1 + 1", true);
+    dbs.query();
+
+    BOOST_CHECK_MESSAGE(dbs.next() == true, "Failed to get row");
+    BOOST_CHECK_MESSAGE(dbs.columnIsNull(0) == false, "Null output column");
+    int result = dbs.getColumnByPos<int>(0);
+    BOOST_CHECK_MESSAGE(result == 2, "Result is incorrect");
+    BOOST_CHECK_MESSAGE(dbs.next() == false, "Got more than one row");
+
+    dbs.finishQuery();
+    dbs.endTransaction();
+
+    dbs.startTransaction();
+    dbs.setTableForQuery("DUAL", true);
+    result = 0;
+    dbs.outParam("2 + 2", &result, true);
+    dbs.query();
+
+    BOOST_CHECK_MESSAGE(dbs.next() == true, "Failed to get row");
+    BOOST_CHECK_MESSAGE(dbs.columnIsNull(0) == false, "Null output column");
+    BOOST_CHECK_MESSAGE(result == 4, "Result is incorrect");
+    BOOST_CHECK_MESSAGE(dbs.next() == false, "Got more than one row");
+
+    dbs.finishQuery();
+    dbs.endTransaction();
+}
+
 BOOST_AUTO_TEST_SUITE_END()

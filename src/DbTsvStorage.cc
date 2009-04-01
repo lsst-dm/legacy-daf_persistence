@@ -319,13 +319,15 @@ void DbTsvStorage::insertRow(void) {
 /** Request a column in the query output and bind a destination location.
  * \param[in] columnName Name of the column
  * \param[in] location Pointer to the destination
+ * \param[in] isExpr True if the name is actually an expression
  *
  * The order of outParam() calls is the order of appearance in the output row.
  * Use either outColumn() or outParam() but not both.
  */
 template <typename T>
-void DbTsvStorage::outParam(std::string const& columnName, T* location) {
-    DbStorage::outParam<T>(columnName, location);
+void DbTsvStorage::outParam(std::string const& columnName, T* location,
+                            bool isExpr) {
+    DbStorage::outParam<T>(columnName, location, isExpr);
 }
 
 /** Bind a value to a WHERE condition parameter.
@@ -361,16 +363,16 @@ template void DbTsvStorage::setColumn<>(std::string const& columnName, std::stri
 template void DbTsvStorage::setColumn<>(std::string const& columnName, bool const& value);
 template void DbTsvStorage::setColumn<>(std::string const& columnName, DateTime const& value);
 
-template void DbTsvStorage::outParam<>(std::string const& columnName, char* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, short* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, int* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, long* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, long long* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, float* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, double* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, std::string* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, bool* location);
-template void DbTsvStorage::outParam<>(std::string const& columnName, DateTime* location);
+template void DbTsvStorage::outParam<>(std::string const& columnName, char* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, short* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, int* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, long* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, long long* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, float* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, double* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, std::string* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, bool* location, bool isExpr);
+template void DbTsvStorage::outParam<>(std::string const& columnName, DateTime* location, bool isExpr);
 
 template void DbTsvStorage::condParam<>(std::string const& paramName, char const& value);
 template void DbTsvStorage::condParam<>(std::string const& paramName, short const& value);

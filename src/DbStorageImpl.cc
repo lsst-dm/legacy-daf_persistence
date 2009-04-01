@@ -479,11 +479,13 @@ void dafPer::DbStorageImpl::insertRow(void) {
 
 /** Set the table to query (single-table queries only).
  * @param[in] tableName Name of the table
+ * @param[in] isExpr True if the name is actually a table expression
  */
-void dafPer::DbStorageImpl::setTableForQuery(std::string const& tableName) {
+void dafPer::DbStorageImpl::setTableForQuery(std::string const& tableName,
+                                             bool isExpr) {
     if (_db == 0) error("Database session not initialized in DbStorage::setTableForQuery()", false);
     _queryTables.clear();
-    _queryTables.push_back(tableName);
+    _queryTables.push_back(isExpr ? tableName : quote(tableName));
     _inputVars.clear();
     _outputVars.clear();
     _outColumns.clear();
@@ -499,7 +501,10 @@ void dafPer::DbStorageImpl::setTableForQuery(std::string const& tableName) {
 void dafPer::DbStorageImpl::setTableListForQuery(
     std::vector<std::string> const& tableNameList) {
     if (_db == 0) error("Database session not initialized in DbStorage::setTableListForQuery()", false);
-    _queryTables = tableNameList;
+    for (std::vector<std::string>::const_iterator it = tableNameList.begin();
+         it != tableNameList.end(); ++it) {
+        _queryTables.push_back(quote(*it));
+    }
     _inputVars.clear();
     _outputVars.clear();
     _outColumns.clear();
@@ -511,28 +516,33 @@ void dafPer::DbStorageImpl::setTableListForQuery(
 
 /** Request a column in the query output.
  * @param[in] columnName Name of the column
+ * @param[in] isExpr True if the name is actually an expression
  *
  * The order of outColumn() calls is the order of appearance in the output
  * row.  Use either outColumn() or outParam() but not both.
  */
-void dafPer::DbStorageImpl::outColumn(std::string const& columnName) {
-    _outColumns.push_back(columnName);
+void dafPer::DbStorageImpl::outColumn(std::string const& columnName,
+                                      bool isExpr) {
+    std::string col = isExpr ? columnName : quote(columnName);
+    _outColumns.push_back(col);
 }
 
 /** Request a column in the query output and bind a destination location.
  * @param[in] columnName Name of the column
  * @param[in] location Pointer to the destination
+ * @param[in] isExpr True if the name is actually an expression
  *
  * The order of outParam() calls is the order of appearance in the output row.
  * Use either outColumn() or outParam() but not both.
  */
 template <typename T>
 void dafPer::DbStorageImpl::outParam(std::string const& columnName,
-                                     T* location) {
-    _outColumns.push_back(columnName);
+                                     T* location, bool isExpr) {
+    std::string col = isExpr ? columnName : quote(columnName);
+    _outColumns.push_back(col);
     size_t size = sizeof(T);
     std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
-        BoundVarMap::value_type(columnName, BoundVar(location)));
+        BoundVarMap::value_type(col, BoundVar(location)));
     if (!pair.second) {
         error("Duplicate column name requested: " + columnName, false);
     }
@@ -545,13 +555,13 @@ void dafPer::DbStorageImpl::outParam(std::string const& columnName,
 
 template <>
 void dafPer::DbStorageImpl::outParam(std::string const& columnName,
-                                     std::string* location) {
-    _outColumns.push_back(columnName);
+                                     std::string* location, bool isExpr) {
+    std::string col = isExpr ? columnName : quote(columnName);
+    _outColumns.push_back(col);
     size_t size = 4096;
     std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
         BoundVarMap::value_type(
-            columnName,
-            BoundVar(allocateMemory(size + sizeof(std::string*)))));
+            col, BoundVar(allocateMemory(size + sizeof(std::string*)))));
     if (!pair.second) {
         error("Duplicate column name requested: " + columnName, false);
     }
@@ -565,13 +575,14 @@ void dafPer::DbStorageImpl::outParam(std::string const& columnName,
 
 template <>
 void dafPer::DbStorageImpl::outParam(std::string const& columnName,
-                                     dafBase::DateTime* location) {
-    _outColumns.push_back(columnName);
+                                     dafBase::DateTime* location,
+                                     bool isExpr) {
+    std::string col = isExpr ? columnName : quote(columnName);
+    _outColumns.push_back(col);
     size_t size = sizeof(MYSQL_TIME);
     std::pair<BoundVarMap::iterator, bool> pair = _outputVars.insert(
         BoundVarMap::value_type(
-            columnName,
-            BoundVar(allocateMemory(size + sizeof(dafBase::DateTime*)))));
+            col, BoundVar(allocateMemory(size + sizeof(dafBase::DateTime*)))));
     if (!pair.second) {
         error("Duplicate column name requested: " + columnName, false);
     }
@@ -638,7 +649,7 @@ void dafPer::DbStorageImpl::query(void) {
         if (it != _outColumns.begin()) {
             query += ", ";
         }
-        query += quote(*it);
+        query += *it;
     }
 
     // FROM clause
@@ -648,7 +659,7 @@ void dafPer::DbStorageImpl::query(void) {
         if (it != _queryTables.begin()) {
             query += ", ";
         }
-        query += quote(*it);
+        query += *it;
     }
 
     // WHERE clause
@@ -958,16 +969,16 @@ template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, 
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, bool const& value);
 template void dafPer::DbStorageImpl::setColumn<>(std::string const& columnName, dafBase::DateTime const& value);
 
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, char* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, short* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, int* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long long* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, float* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, double* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, std::string* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, bool* location);
-template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, dafBase::DateTime* location);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, char* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, short* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, int* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, long long* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, float* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, double* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, std::string* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, bool* location, bool isExpr);
+template void dafPer::DbStorageImpl::outParam<>(std::string const& columnName, dafBase::DateTime* location, bool isExpr);
 
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, char const& value);
 template void dafPer::DbStorageImpl::condParam<>(std::string const& paramName, short const& value);
