@@ -1,0 +1,24 @@
+#<?cfg paf dictionary ?>
+
+target: CfhtMapper
+
+definitions: {
+    root: {
+        type: string
+        description: "The root directory of the CFHT raw image collection."
+        maxOccurs: 1
+        default: "/lsst/images/repository"
+    }
+    calibrationRoot: {
+        type: string
+        description: "The root directory of the CFHT calibration image collection."
+        maxOccurs: 1
+        default: "/lsst/images/repository/calib"
+    }
+    calibrationDb: {
+        type: string
+        description: "The location of the CFHT calibration database.  If not an absolute path, prefixed by calibrationRoot."
+        maxOccurs: 1
+        default: "calibDatabase4.paf"
+    }
+}

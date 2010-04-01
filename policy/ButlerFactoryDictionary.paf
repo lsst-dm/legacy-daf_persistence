@@ -1,0 +1,33 @@
+#<?cfg paf dictionary ?>
+
+target: ButlerFactory
+
+definitions: {
+    inputMapperName: {
+        type: string
+        description: "The name of the input mapper Python class."
+        maxOccurs: 1
+        default: "lsst.daf.persistence.CfhtMapper"
+    }
+    inputMapperPolicy: {
+        type: Policy
+        description: "An optional policy for the input mapper."
+        maxOccurs: 1
+    }
+    outputMapperName: {
+        type: string
+        description: "The name of the output mapper Python class."
+        maxOccurs: 1
+        default: "lsst.daf.persistence.LsstMapper"
+    }
+    outputMapperPolicy: {
+        type: Policy
+        description: "An optional policy for the output mapper."
+        maxOccurs: 1
+    }
+    persistencePolicy: {
+        type: Policy
+        description: "An optional policy to configure persistence."
+        maxOccurs: 1
+    }
+}
