@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- python -*-
 
-"""
-ReadProxy provides a lazy-loading object that is initialized by a callback
-function defined in the constructor.
-"""
+"""This module defines the ReadProxy class."""
 
 class ReadProxy(object):
+    """ReadProxy provides a lazy-loading object that is initialized by a
+    callback function set in ReadProxy's constructor."""
+
     __slots__ = ('__cache__', '__callback__', '__subject__')
 
     def __init__(self, func):
