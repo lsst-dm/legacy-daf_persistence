@@ -173,6 +173,10 @@ class Butler(object):
         for (storageName, locationString) in location.getStorageInfo():
             logLoc = LogicalLocation(locationString, additionalData)
             # self.log.log(Log.INFO, "loading %s as %s" % (item, logLoc.locString()))
+            if storageName == "PafStorage":
+                finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
+                return finalItem
+
             storage = self.persistence.getRetrieveStorage(storageName, logLoc)
             storageList.append(storage)
 
@@ -180,4 +184,4 @@ class Butler(object):
                 location.getCppType(), storageList, additionalData)
         finalItem = pythonType.swigConvert(itemData)
 
-        return self.inputMapper.standardize(pythonType, finalItem)
+        return finalItem
