@@ -5,7 +5,7 @@ import glob
 import os
 import re
 import lsst.pex.policy as pexPolicy
-from lsst.daf.persistence import ButlerLocation, Mapper
+from lsst.daf.persistence import ButlerFactory, ButlerLocation, Mapper
 import lsst.daf.base as dafBase
 import lsst.pex.exceptions as pexExcept
 
@@ -23,34 +23,51 @@ class Registry(object):
         return FsRegistry(location)
 
 class FsRegistry(Registry):
-    fileRegExps = {
-        "raw": r'raw-(?P<obsid>\d+)-e(?P<exposure>\d+)-c(?P<ccd>\d+)-a(?P<amp>\d+)\.fits'
-    }
-    fields = "D1 D2 D3 D4 W1 W2 W3 W4".split()
-
     def __init__(self, location):
         Registry.__init__(self)
-        pathList = glob.glob(os.path.join(location, "*", "*", "raw-*.fits"))
-        # TODO -- analyze pathList
+        pathList = glob.glob(os.path.join(location, "*", "*", "*", "raw-*.fits"))
+        self.tuples = []
+        self.fieldList = ["field", "obsid", "exposure", "ccd", "amp"]
+        for path in pathList:
+            m = re.search(
+                    r'/(\w+)/(\d+)/(\d+)/raw-\d+-e\d+-c(\d+)-a(\d+)\.fits',
+                    path)
+            dataId = list(m.groups())
+            for i in (1, 2, 3, 4):
+                dataId[i] = int(dataId[i])
+            self.tuples.append(tuple(dataId))
 
     def getCollection(self, keys, dataId):
         mappedFields = set()
         for k in dataId.keys():
-            if not k in fieldList:
+            if not k in self.fieldList:
                 mappedFields += k
+        # TODO -- handle mapped fields
         keySet = set()
-        for tuple in cache.tuples:
+        keyLocs = []
+        if isinstance(keys, str):
+            keyLocs.append(self.fieldList.index(keys))
+        else:
+            for k in keys:
+                keyLocs.append(self.fieldList.index(k))
+        for t in self.tuples:
             selected = True
             i = 0
-            while selected and i < len(fieldList):
-                field = fieldList[i]
-                value = tuple[i]
+            while selected and i < len(self.fieldList):
+                field = self.fieldList[i]
+                value = t[i]
                 i += 1
                 if dataId.has_key(field) and value != dataId[field]:
                     selected = False
             if selected:
-                keySet += tuple[key]
-        return keySet
+                if len(keyLocs) == 1:
+                    keySet.add(t[keyLocs[0]])
+                else:
+                    result = []
+                    for l in keyLocs:
+                        result.append(t[l])
+                    keySet.add(tuple(result))
+        return list(keySet)
 
 class DbRegistry(Registry):
     def __init__(self, location):
@@ -113,8 +130,8 @@ class CfhtMapper(Mapper):
         else:
             self.calibDb = None
 
-        if registry is None:
-            self.registry = FsRegistry(root)
+        if self.registry is None:
+            self.registry = FsRegistry(self.root)
         else:
             self.registry = Registry.create(self.registry)
 
@@ -247,12 +264,16 @@ class CfhtMapper(Mapper):
         internalId = {}
         internalId.update(dataId)
         if not internalId.has_key('exposure'):
-            internalId['exposure'] = 0
+            exposures = self.butler.getCollection('raw', 'exposure',
+                    internalId)
+            internalId['exposure'] = exposures[0]
         if not internalId.has_key('ccd'):
-            internalId['ccd'] = 0
+            ccds = self.butler.getCollection('raw', 'ccd', internalId)
+            internalId['ccd'] = ccds[0]
         if not internalId.has_key('amp'):
-            internalId['amp'] = 0
-        image = self.butler.get('raw', dataId)
+            amps = self.butler.getCollection('raw', 'amp', internalId)
+            internalId['amp'] = amps[0]
+        image = self.butler.get('raw', internalId)
         metadata = image.getMetadata()
         self.metadataCache[dataId['obsid']] = metadata
         return metadata

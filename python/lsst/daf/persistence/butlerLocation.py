@@ -16,7 +16,7 @@ class ButlerLocation(object):
         self.cppType = cppType
         self.storageInfoList = storageInfoList
         self.additionalData = dafBase.PropertySet()
-        for k, v in dataId:
+        for k, v in dataId.iteritems():
             self.additionalData.set(k, v)
 
     def __str__(self):
@@ -35,4 +35,4 @@ class ButlerLocation(object):
         return self.storageInfoList
 
     def getAdditionalData(self):
-        return additionalData
+        return self.additionalData

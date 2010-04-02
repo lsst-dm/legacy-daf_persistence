@@ -84,7 +84,7 @@ class Butler(object):
         """
 
         dataId = self._combineDicts(dataId, **rest)
-        self.inputMapper.getCollection(dataSetType, keys, dataId)
+        return self.inputMapper.getCollection(dataSetType, keys, dataId)
 
     def fileExists(self, dataSetType, dataId={}, **rest):
         """Determines if a data set file exists.
