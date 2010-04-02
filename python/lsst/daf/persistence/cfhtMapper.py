@@ -52,13 +52,11 @@ class FsRegistry(Registry):
                 keyLocs.append(self.fieldList.index(k))
         for t in self.tuples:
             selected = True
-            i = 0
-            while selected and i < len(self.fieldList):
+            for i in xrange(len(self.fieldList)):
                 field = self.fieldList[i]
-                value = t[i]
-                i += 1
-                if dataId.has_key(field) and value != dataId[field]:
+                if dataId.has_key(field) and t[i] != dataId[field]:
                     selected = False
+                    break
             if selected:
                 if len(keyLocs) == 1:
                     keySet.add(t[keyLocs[0]])
@@ -102,18 +100,23 @@ class CfhtMapper(Mapper):
     def __init__(self, policy=None, **rest):
         Mapper.__init__(self)
 
-        policyFile = pexPolicy.DefaultPolicyFile("daf_persistence",
+        mapperDict = pexPolicy.DefaultPolicyFile("daf_persistence",
                 "CfhtMapperDictionary.paf", "policy")
-        defaults = pexPolicy.Policy.createPolicy(policyFile,
-                policyFile.getRepositoryPath())
+        mapperDefaults = pexPolicy.Policy.createPolicy(mapperDict,
+                mapperDict.getRepositoryPath())
+        datatypePolicy = pexPolicy.DefaultPolicyFile("daf_persistence",
+                "cfhtDatatype.paf", "policy")
+        datatypeDefaults = pexPolicy.Policy.createPolicy(datatypePolicy,
+                datatypePolicy.getRepositoryPath())
         if policy is None:
             self.policy = pexPolicy.Policy()
         else:
             self.policy = policy
-        self.policy.mergeDefaults(defaults)
+        self.policy.mergeDefaults(datatypeDefaults)
+        self.policy.mergeDefaults(mapperDefaults)
 
         for key in ["root", "calibrationRoot", "calibrationDb", "rawTemplate",
-                "registry"]:
+                "registry", "datatypePolicy"]:
             # Explicit arguments override policy
             value = None
             if rest.has_key(key):
@@ -197,7 +200,7 @@ class CfhtMapper(Mapper):
                 dataId['ccd'], dataId['amp'], None, 0)
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
-                "lsst.afw.image.DecoratedImageF", "DecoratedImageF",
+                "lsst.afw.image.ExposureF", "ExposureF",
                 [("FitsStorage", path)], dataId)
 
     def map_dark(self, dataId):
@@ -210,7 +213,7 @@ class CfhtMapper(Mapper):
                 dataId['ccd'], dataId['amp'], None, expTime)
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
-                "lsst.afw.image.DecoratedImageF", "DecoratedImageF",
+                "lsst.afw.image.ExposureF", "ExposureF",
                 [("FitsStorage", path)], dataId)
 
     def map_defect(self, dataId):
@@ -232,7 +235,7 @@ class CfhtMapper(Mapper):
                 dataId['ccd'], dataId['amp'], filter)
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
-                "lsst.afw.image.DecoratedImageF", "DecoratedImageF",
+                "lsst.afw.image.ExposureF", "ExposureF",
                 [("FitsStorage", path)], dataId)
 
     def map_fringe(self, dataId):
@@ -245,7 +248,7 @@ class CfhtMapper(Mapper):
                 dataId['ccd'], dataId['amp'], filter)
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
-                "lsst.afw.image.DecoratedImageF", "DecoratedImageF",
+                "lsst.afw.image.ExposureF", "ExposureF",
                 [("FitsStorage", path)], dataId)
 
     def map_linearize(self, dataId):
@@ -283,7 +286,47 @@ class CfhtMapper(Mapper):
             metadata = item.getMetadata()
         except:
             return item
-        # TODO -- fix up metadata here
+        datatypePolicy = self.datatypePolicy
+        metadataPolicy = datatypePolicy.getPolicy("metadataPolicy")
+        paramNames = metadataPolicy.paramNames(1)
+        for paramName in paramNames:
+            if metadata.exists(paramName):
+                continue
+            keyword = metadataPolicy.getString(paramName)
+            if metadata.typeOf(keyword) == dafBase.PropertySet.TYPE_String:
+                val = metadata.getString(keyword).strip()
+                if paramName == "datasetId" and val.find(' ') > 0:
+                    val = val[:val.index(' ')]
+                metadata.set(paramName, val)
+            else:
+                metadata.copy(paramName, metadata, keyword)
+                metadata.copy(keyword+"_original", metadata, keyword)
+                metadata.remove(keyword)
+        if datatypePolicy.exists('convertDateobsToTai') and \
+                datatypePolicy.getBool('convertDateobsToTai'):
+            dateObs = metadata.getDouble('dateObs')
+            dateTime = dafBase.DateTime(dateObs, dafBase.DateTime.MJD,
+                    dafBase.DateTime.UTC)
+            dateObs = dateTime.get(dafBase.DateTime.MJD, dafBase.DateTime.TAI)
+            metadata.setDouble('dateObs', dateObs)
+        if datatypePolicy.exists('convertDateobsToMidExposure') and \
+                datatypePolicy.getBool('convertDateobsToMidExposure'):
+            dateObs += metadata.getDouble('expTime') * 0.5 / 3600. / 24.
+            metadata.setDouble('dateObs', dateObs)
+            dateTime = dafBase.DateTime(metadata.getDouble('dateObs'),
+                    dafBase.DateTime.MJD)
+            metadata.setDateTime('taiObs', dateTime)
+        if datatypePolicy.exists('trimFilterName') and \
+                datatypePolicy.getBool('trimFilterName'):
+            filter = metadata.getString('filter')
+            filter = re.sub(r'\..*', '', filter)
+            metadata.setString('filter', filter)
+        if datatypePolicy.exists('convertVisitIdToInt') and \
+                datatypePolicy.getBool('convertVisitIdToInt'):
+            visitId = metadata.getString('visitId')
+            metadata.setInt('visitId', int(visitId))
+
+        item.setMetadata(metadata)
         return item
 
 class CalibData(object):

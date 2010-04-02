@@ -5,6 +5,7 @@
 
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
+import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy
 
 class Butler(object):

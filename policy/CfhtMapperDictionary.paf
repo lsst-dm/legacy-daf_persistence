@@ -5,13 +5,13 @@ target: CfhtMapper
 definitions: {
     root: {
         type: string
-        description: "The root directory of the CFHT raw image collection."
+        description: "The root directory of the CFHT raw image collection.  May include LogicalLocation substitutions (set by Orca or dataId)."
         maxOccurs: 1
-        default: "/lsst/images/repository"
+        default: "%(input)"
     }
     calibrationRoot: {
         type: string
-        description: "The root directory of the CFHT calibration image collection."
+        description: "The root directory of the CFHT calibration image collection.  May include LogicalLocation substitutions."
         maxOccurs: 1
         default: "/lsst/images/repository/calib"
     }
@@ -20,5 +20,17 @@ definitions: {
         description: "The location of the CFHT calibration database.  If not an absolute path, prefixed by calibrationRoot."
         maxOccurs: 1
         default: "calibDatabase4.paf"
+    }
+    rawTemplate: {
+        type: string
+        description: "Template for raw image pathname.  May include Python substitutions."
+        maxOccurs: 1
+        default: "%(field)s/%(obsid)d/%(exposure)d/raw-%(obsid)06d-e%(exposure)03d-c%(ccd)03d-a%(amp)03d.fits"
+    }
+    datatypePolicy: {
+        type: Policy
+        description: "The policy describing the mapping of FITS keywords to fixed and flexible metadata."
+        maxOccurs: 1
+        dictionaryFile: "datatypeDictionary.paf"
     }
 }

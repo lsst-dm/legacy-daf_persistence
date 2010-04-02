@@ -1,0 +1,63 @@
+#<?cfg paf policy ?>
+
+datatypePolicy: {
+    convertVisitIdToInt: false
+    metadataPolicy: {
+# Policy configuration for CFHT metadata
+
+####
+# TO GENERATE THE EVENT
+
+# Unique visit ID
+visitId: OBSID
+
+# CCD Id
+ccdId: EXTVER
+
+# Amp Id
+ampId: LSSTAMP
+
+# Exposure Id
+exposureId: EXPID
+
+# Time of mid-observation in TAI
+dateObs: MJD-OBS
+
+# Exposure time in seconds
+expTime: EXPTIME
+
+# Filter
+filter: FILTER
+
+# Pointing Ra and Decl
+ra: RA_DEG
+decl: DEC_DEG
+# equinox: EQUINOX
+
+# Airmass of mid-exposure
+airmass: AIRMASS
+
+# Airmass of mid-exposure
+datasetId: OBJECT
+
+# Persisted name of file
+filename: FILENAME
+
+####
+# FOR THE ISR
+
+# For all data
+gain: GAIN
+saturation: SATURATE
+trimsec: DATASEC
+overscan: BIASSEC
+
+# For calibration data
+# meancounts: IMMODE
+# darkscale: EXPTIME
+# flatscale: IMMODE
+# illumscale: IMMODE
+
+# Not use in DC3a
+# fringesky: FRNG_SKY
+# fringeamp: FRNG_RNG
