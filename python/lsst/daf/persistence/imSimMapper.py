@@ -7,27 +7,27 @@ from lsst.daf.persistence import Registry, ButlerFactory, ButlerLocation, Mapper
 import lsst.daf.base as dafBase
 import lsst.pex.exceptions as pexExcept
 
-class CfhtMapper(Mapper):
+class ImSimMapper(Mapper):
     def __init__(self, policy=None, **rest):
         Mapper.__init__(self)
 
         mapperDict = pexPolicy.DefaultPolicyFile("daf_persistence",
-                "CfhtMapperDictionary.paf", "policy")
+                "LsstMapperDictionary.paf", "policy")
         mapperDefaults = pexPolicy.Policy.createPolicy(mapperDict,
                 mapperDict.getRepositoryPath())
-        defaultPolicy = pexPolicy.DefaultPolicyFile("daf_persistence",
-                "cfhtDefaults.paf", "policy")
-        cfhtDefaults = pexPolicy.Policy.createPolicy(defaultPolicy,
-                defaultPolicy.getRepositoryPath())
+        datatypePolicy = pexPolicy.DefaultPolicyFile("daf_persistence",
+                "imSimDatatype.paf", "policy")
+        datatypeDefaults = pexPolicy.Policy.createPolicy(datatypePolicy,
+                datatypePolicy.getRepositoryPath())
         if policy is None:
             self.policy = pexPolicy.Policy()
         else:
             self.policy = policy
-        self.policy.mergeDefaults(cfhtDefaults)
+        self.policy.mergeDefaults(datatypeDefaults)
         self.policy.mergeDefaults(mapperDefaults)
 
         for key in ["root", "calibrationRoot", "calibrationDb", "rawTemplate",
-                "registry", "datatypePolicy", "registryPolicy"]:
+                "registry", "datatypePolicy"]:
             # Explicit arguments override policy
             value = None
             if rest.has_key(key):
@@ -44,19 +44,18 @@ class CfhtMapper(Mapper):
         else:
             self.calibDb = None
 
-        registryPolicy = self.policy.getPolicy("registryPolicy")
         if self.registry is None:
-            self.registry = Registry.create(self.root, registryPolicy)
+            self.registry = Registry.create(self.root)
         else:
-            self.registry = Registry.create(self.registry, registryPolicy)
+            self.registry = Registry.create(self.registry)
 
         self.cache = {}
         self.butler = None
         self.metadataCache = {}
 
     def keys(self):
-        return ["field", "obsid", "exposure", "ccd", "amp", "filter",
-                "expTime", "skyTile"]
+        return ["visit", "obsid", "snap", "exposure", "raft", "ccd", "sensor",
+                "amp", "channel", "filter", "expTime", "skyTile"]
 
     def getCollection(self, dataSetType, keys, dataId):
         if dataSetType == "raw":
@@ -86,6 +85,45 @@ class CfhtMapper(Mapper):
                     tuple.append(getattr(c, k))
                 result.append(tuple)
         return result
+
+    def convertToCameraIds(self, dataId):
+        if dataId.has_key("visit"):
+            dataId["obsid"] = dataId["visit"]
+            del dataId["visit"]
+        if dataId.has_key("snap"):
+            dataId["exposure"] = dataId["snap"]
+            del dataId["snap"]
+        if dataId.has_key("ccd"):
+            dataId["raft"], dataId["sensor"] = \
+                    self.ccdToRaftSensor(dataId["ccd"])
+            del dataId["ccd"]
+        if dataId.has_key("amp"):
+            dataId["channel"] = dataId["amp"]
+            del dataId["amp"]
+
+    def convertToDmIds(self, dataId):
+        if dataId.has_key("obsid"):
+            dataId["visit"] = dataId["obsid"]
+            del dataId["obsid"]
+        if dataId.has_key("exposure"):
+            dataId["snap"] = dataId["exposure"]
+            del dataId["exposure"]
+        if dataId.has_key("raft") and dataId.has_key("sensor"):
+            dataId["ccd"] = self.raftSensorToCcd(
+                    dataId["raft"], dataId["sensor"])
+            del dataId["raft"]
+            del dataId["sensor"]
+        if dataId.has_key("channel"):
+            dataId["amp"] = dataId["channel"]
+            del dataId["channel"]
+
+    def ccdToRaftSensor(self, ccd):
+        raft = ccd // 9
+        sensor = ccd % 9
+        return (raft, sensor)
+
+    def raftSensorToCcd(self, raft, sensor):
+        return raft * 9 + sensor
 
     def map_raw(self, dataId):
         path = self.root

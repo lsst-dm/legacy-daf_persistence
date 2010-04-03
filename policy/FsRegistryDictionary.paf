@@ -1,0 +1,28 @@
+#<?cfg paf dictionary ?>
+
+target: FsRegistry
+
+definitions: {
+    globString: {
+        type: string
+        description: "String for globbing for input collection pathnames.  Should be relative to butler's root."
+        minOccurs: 1
+        maxOccurs: 1
+    }
+    fieldList: {
+        type: string
+        description: "List of field names (data id keys) corresponding to groups in pathTemplate."
+        minOccurs: 1
+    }
+    pathTemplate: {
+        type: string
+        description: "Regular expression matching pathnames returned from globComponents.  Groups in this expression are assigned to keys in fieldList."
+	minOccurs: 1
+        maxOccurs: 1
+    }
+    intFields: {
+        type: bool
+        description: "True if corresponding field should be converted to integer."
+        minOccurs: 1
+    }
+}

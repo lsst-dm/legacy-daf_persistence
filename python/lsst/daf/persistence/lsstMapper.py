@@ -7,27 +7,22 @@ from lsst.daf.persistence import Registry, ButlerFactory, ButlerLocation, Mapper
 import lsst.daf.base as dafBase
 import lsst.pex.exceptions as pexExcept
 
-class CfhtMapper(Mapper):
+class LsstMapper(Mapper):
     def __init__(self, policy=None, **rest):
         Mapper.__init__(self)
 
         mapperDict = pexPolicy.DefaultPolicyFile("daf_persistence",
-                "CfhtMapperDictionary.paf", "policy")
+                "LsstMapperDictionary.paf", "policy")
         mapperDefaults = pexPolicy.Policy.createPolicy(mapperDict,
                 mapperDict.getRepositoryPath())
-        defaultPolicy = pexPolicy.DefaultPolicyFile("daf_persistence",
-                "cfhtDefaults.paf", "policy")
-        cfhtDefaults = pexPolicy.Policy.createPolicy(defaultPolicy,
-                defaultPolicy.getRepositoryPath())
         if policy is None:
             self.policy = pexPolicy.Policy()
         else:
             self.policy = policy
-        self.policy.mergeDefaults(cfhtDefaults)
         self.policy.mergeDefaults(mapperDefaults)
 
         for key in ["root", "calibrationRoot", "calibrationDb", "rawTemplate",
-                "registry", "datatypePolicy", "registryPolicy"]:
+                "registry", "datatypePolicy"]:
             # Explicit arguments override policy
             value = None
             if rest.has_key(key):
@@ -44,19 +39,17 @@ class CfhtMapper(Mapper):
         else:
             self.calibDb = None
 
-        registryPolicy = self.policy.getPolicy("registryPolicy")
-        if self.registry is None:
-            self.registry = Registry.create(self.root, registryPolicy)
-        else:
-            self.registry = Registry.create(self.registry, registryPolicy)
+#         if self.registry is None:
+#             self.registry = Registry.create(self.root)
+#         else:
+#             self.registry = Registry.create(self.registry)
 
         self.cache = {}
         self.butler = None
         self.metadataCache = {}
 
     def keys(self):
-        return ["field", "obsid", "exposure", "ccd", "amp", "filter",
-                "expTime", "skyTile"]
+        return ["visit", "snap", "ccd", "amp", "filter", "expTime", "skyTile"]
 
     def getCollection(self, dataSetType, keys, dataId):
         if dataSetType == "raw":
