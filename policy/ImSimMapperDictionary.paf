@@ -1,0 +1,57 @@
+#<?cfg paf dictionary ?>
+
+target: CfhtMapper
+
+definitions: {
+    root: {
+        type: string
+        description: "The root directory of the CFHT raw image collection.  May include LogicalLocation substitutions (set by Orca or dataId)."
+        maxOccurs: 1
+        default: "%(input)"
+    }
+    calibrationRoot: {
+        type: string
+        description: "The root directory of the CFHT calibration image collection.  May include LogicalLocation substitutions."
+        maxOccurs: 1
+        default: "/lsst/images/repository/calib"
+    }
+    rawTemplate: {
+        type: string
+        description: "Template for raw image pathname.  May include Python substitutions."
+        maxOccurs: 1
+        default: "%(field)s/%(obsid)d/imsim_%(obsid)d_R%(raft)02d_S%(sensor)02d_C%(channel)02d_E%(exposure)03d.fits.gz"
+    }
+    biasTemplate: {
+        type: string
+        description: "Template for bias image pathname.  May include Python substitutions."
+        maxOccurs: 1
+        default: "bias/imsim_0_R%(raft)02d_S%(sensor)02d_C%(channel)02d_E%(exposure)03d.fits.gz"
+    }
+    darkTemplate: {
+        type: string
+        description: "Template for dark image pathname.  May include Python substitutions."
+        maxOccurs: 1
+        default: "dark/imsim_1_R%(raft)02d_S%(sensor)02d_C%(channel)02d_E%(exposure)03d.fits.gz"
+    }
+    flatTemplate: {
+        type: string
+        description: "Template for flat image pathname.  May include Python substitutions."
+        maxOccurs: 1
+        default: "flat_%(filter)s/imsim_2_R%(raft)02d_S%(sensor)02d_C%(channel)02d_E%(exposure)03d.fits"
+    }
+    datatypePolicy: {
+        type: Policy
+        description: "The policy describing the mapping of FITS keywords to fixed and flexible metadata."
+        maxOccurs: 1
+        dictionaryFile: "datatypeDictionary.paf"
+    }
+    registry: {
+        type: string
+        description: "The location of the registry of available data sets."
+        maxOccurs: 1
+    }
+    registryPolicy: {
+	type: Policy
+        maxOccurs: 1
+    }
+}

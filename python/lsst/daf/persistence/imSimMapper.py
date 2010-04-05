@@ -8,11 +8,15 @@ import lsst.daf.base as dafBase
 import lsst.pex.exceptions as pexExcept
 
 class ImSimMapper(Mapper):
+    raftNumbers = [1, 2, 3, 10, 11, 12, 13, 14, 20, 21, 22, 23, 24,
+            30, 31, 32, 33, 34, 41, 42, 43]
+    sensorNumbers = [0, 1, 2, 10, 11, 12, 20, 21, 22]
+
     def __init__(self, policy=None, **rest):
         Mapper.__init__(self)
 
         mapperDict = pexPolicy.DefaultPolicyFile("daf_persistence",
-                "LsstMapperDictionary.paf", "policy")
+                "ImSimMapperDictionary.paf", "policy")
         mapperDefaults = pexPolicy.Policy.createPolicy(mapperDict,
                 mapperDict.getRepositoryPath())
         datatypePolicy = pexPolicy.DefaultPolicyFile("daf_persistence",
@@ -27,7 +31,8 @@ class ImSimMapper(Mapper):
         self.policy.mergeDefaults(mapperDefaults)
 
         for key in ["root", "calibrationRoot", "calibrationDb", "rawTemplate",
-                "registry", "datatypePolicy"]:
+                "biasTemplate", "darkTemplate", "flatTemplate", "registry",
+                "datatypePolicy"]:
             # Explicit arguments override policy
             value = None
             if rest.has_key(key):
@@ -60,9 +65,8 @@ class ImSimMapper(Mapper):
     def getCollection(self, dataSetType, keys, dataId):
         if dataSetType == "raw":
             return self.registry.getCollection(keys, dataId)
-        dateTime = self.metadataForDataId(dataId).get('taiObs')
-        ccd = "CCD009"
-        if dataId.has_key("ccd"):
+        sensor = 9
+        if dataId.has_key("sensor"):
             ccd = dataId['ccd']
         amp = 1
         if dataId.has_key("amp"):
@@ -87,6 +91,12 @@ class ImSimMapper(Mapper):
         return result
 
     def convertToCameraIds(self, dataId):
+        if dataId.has_key("obsid") or \
+                dataId.has_key("exposure") or \
+                dataId.has_key("raft") or \
+                dataId.has_key("sensor") or \
+                dataId.has_key("channel"):
+            return
         if dataId.has_key("visit"):
             dataId["obsid"] = dataId["visit"]
             del dataId["visit"]
@@ -102,6 +112,11 @@ class ImSimMapper(Mapper):
             del dataId["amp"]
 
     def convertToDmIds(self, dataId):
+        if dataId.has_key("visit") or \
+                dataId.has_key("snap") or \
+                dataId.has_key("ccd") or \
+                dataId.has_key("amp"):
+            return
         if dataId.has_key("obsid"):
             dataId["visit"] = dataId["obsid"]
             del dataId["obsid"]
@@ -118,80 +133,47 @@ class ImSimMapper(Mapper):
             del dataId["channel"]
 
     def ccdToRaftSensor(self, ccd):
-        raft = ccd // 9
-        sensor = ccd % 9
+        raft = raftNumbers[ccd // 9]
+        sensor = sensorNumbers[ccd % 9]
         return (raft, sensor)
 
     def raftSensorToCcd(self, raft, sensor):
-        return raft * 9 + sensor
+        return raftNumbers.index(raft) * 9 + sensorNumbers.index(sensor)
 
     def map_raw(self, dataId):
-        path = self.root
-        path = os.path.join(path, self.rawTemplate % dataId)
+        self.convertToCameraIds(dataId)
+        path = os.path.join(self.root, self.rawTemplate % dataId)
         return ButlerLocation(
                 "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
                 [("FitsStorage", path)], dataId)
 
     def map_bias(self, dataId):
-        dateTime = self.metadataForDataId(dataId).get('taiObs')
-        path = self.calibDb.lookup(dateTime, 'bias',
-                dataId['ccd'], dataId['amp'], None, 0)
-        path = os.path.join(self.calibrationRoot, path)
+        self.convertToCameraIds(dataId)
+        path = os.path.join(self.calibrationRoot, self.biasTemplate % dataId)
         return ButlerLocation(
-                "lsst.afw.image.ExposureF", "ExposureF",
+                "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
                 [("FitsStorage", path)], dataId)
 
     def map_dark(self, dataId):
-        dateTime = self.metadataForDataId(dataId).get('taiObs')
-        if dataId.has_key('expTime'):
-            expTime = dataId['expTime']
-        else:
-            expTime = self.metadataForDataId(dataId).get('expTime')
-        path = self.calibDb.lookup(dateTime, 'dark',
-                dataId['ccd'], dataId['amp'], None, expTime)
-        path = os.path.join(self.calibrationRoot, path)
+        self.convertToCameraIds(dataId)
+        path = os.path.join(self.calibrationRoot, self.darkTemplate % dataId)
         return ButlerLocation(
-                "lsst.afw.image.ExposureF", "ExposureF",
+                "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
                 [("FitsStorage", path)], dataId)
-
-    def map_defect(self, dataId):
-        dateTime = self.metadataForDataId(dataId).get('taiObs')
-        path = self.calibDb.lookup(dateTime, 'defect',
-                dataId['ccd'], dataId['amp'], None)
-        path = os.path.join(self.calibrationRoot, path)
-        return ButlerLocation(
-                "lsst.pex.policy.Policy", "Policy",
-                [("PafStorage", path)], dataId)
 
     def map_flat(self, dataId):
-        dateTime = self.metadataForDataId(dataId).get('taiObs')
+        self.convertToCameraIds(dataId)
         if dataId.has_key('filter'):
             filter = dataId['filter']
         else:
             filter = self.metadataForDataId(dataId).get('filter')
-        path = self.calibDb.lookup(dateTime, 'flat',
-                dataId['ccd'], dataId['amp'], filter)
-        path = os.path.join(self.calibrationRoot, path)
+        path = os.path.join(self.calibrationRoot, self.flatTemplate % dataId)
         return ButlerLocation(
-                "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
-
-    def map_fringe(self, dataId):
-        dateTime = self.metadataForDataId(dataId).get('taiObs')
-        if dataId.has_key('filter'):
-            filter = dataId['filter']
-        else:
-            filter = self.metadataForDataId(dataId).get('filter')
-        path = self.calibDb.lookup(dateTime, 'fringe',
-                dataId['ccd'], dataId['amp'], filter)
-        path = os.path.join(self.calibrationRoot, path)
-        return ButlerLocation(
-                "lsst.afw.image.ExposureF", "ExposureF",
+                "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
                 [("FitsStorage", path)], dataId)
 
     def map_linearize(self, dataId):
-        path = self.calibDb.lookup(None, 'linearize')
-        path = os.path.join(self.calibrationRoot, path)
+        path = os.path.join(self.calibrationRoot, self.linearizeTemplate)
         return ButlerLocation(
                 "lsst.pex.policy.Policy", "Policy",
                 [("PafStorage", path)], dataId)
