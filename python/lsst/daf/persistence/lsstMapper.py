@@ -42,7 +42,7 @@ class LsstMapper(Mapper):
     def keys(self):
         return ["visit", "snap", "ccd", "amp", "filter", "skyTile"]
 
-    def getCollection(self, dataSetType, keys, dataId):
+    def getCollection(self, datasetType, keys, dataId):
         # TODO -- postIsr, ccd, visIm, icSrc, sci, sfmSrc, tmpl, diff,
         # diaSrc, movingObj, movingSrc, deep, chiSq, det, astroModel, newObj,
         # forcedDiaSrc, forcedSrc, multifitObj, finalObj
@@ -52,55 +52,55 @@ class LsstMapper(Mapper):
         path = os.path.join(root, self.templates['postIsr'] % dataId)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_ccd(self, dataId):
         path = os.path.join(root, self.templates['ccd'] % dataId)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_visIm(self, dataId):
         path = os.path.join(root, self.templates['visIm'] % dataId)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_icSrc(self, dataId):
         path = os.path.join(root, self.templates['icSrc'] % dataId)
         return ButlerLocation(
                 "lsst.afw.detection.SourceSet", "SourceSet",
-                [("BoostStorage", path)], dataId)
+                "BoostStorage", path, dataId)
 
     def map_sci(self, dataId):
         path = os.path.join(root, self.templates['sci'] % dataId)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_sfmSrc(self, dataId):
         path = os.path.join(root, self.templates['sfmSrc'] % dataId)
         return ButlerLocation(
                 "lsst.afw.detection.SourceSet", "SourceSet",
-                [("BoostStorage", path)], dataId)
+                "BoostStorage", path, dataId)
 
     def map_tmpl(self, dataId):
         path = os.path.join(root, self.templates['tmpl'] % dataId)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_diff(self, dataId):
         path = os.path.join(root, self.templates['diff'] % dataId)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_diaSrc(self, dataId):
         path = os.path.join(root, self.templates['diaSrc'] % dataId)
         return ButlerLocation(
                 "lsst.afw.detection.DiaSourceSet", "DiaSourceSet",
-                [("BoostStorage", path)], dataId)
+                "BoostStorage", path, dataId)
 
     def map_movingObj(self, dataId):
         self._unimplemented()

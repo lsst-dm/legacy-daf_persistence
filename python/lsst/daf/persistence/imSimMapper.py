@@ -62,8 +62,8 @@ class ImSimMapper(Mapper):
         return ["visit", "obsid", "snap", "exposure", "raft", "ccd", "sensor",
                 "amp", "channel", "filter", "expTime", "skyTile"]
 
-    def getCollection(self, dataSetType, keys, dataId):
-        if dataSetType == "raw":
+    def getCollection(self, datasetType, keys, dataId):
+        if datasetType == "raw":
             return self.registry.getCollection(keys, dataId)
         sensor = 9
         if dataId.has_key("sensor"):
@@ -77,7 +77,7 @@ class ImSimMapper(Mapper):
         expTime = None
         if dataId.has_key("expTime"):
             expTime = dataId['expTime']
-        calibs = self.calibDb.lookup(dateTime, dataSetType,
+        calibs = self.calibDb.lookup(dateTime, datasetType,
                 ccd, amp, filter, expTime, all=True)
         result = []
         for c in calibs:
@@ -145,21 +145,21 @@ class ImSimMapper(Mapper):
         path = os.path.join(self.root, self.rawTemplate % dataId)
         return ButlerLocation(
                 "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_bias(self, dataId):
         self.convertToCameraIds(dataId)
         path = os.path.join(self.calibrationRoot, self.biasTemplate % dataId)
         return ButlerLocation(
                 "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_dark(self, dataId):
         self.convertToCameraIds(dataId)
         path = os.path.join(self.calibrationRoot, self.darkTemplate % dataId)
         return ButlerLocation(
                 "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_flat(self, dataId):
         self.convertToCameraIds(dataId)
@@ -170,13 +170,13 @@ class ImSimMapper(Mapper):
         path = os.path.join(self.calibrationRoot, self.flatTemplate % dataId)
         return ButlerLocation(
                 "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_linearize(self, dataId):
         path = os.path.join(self.calibrationRoot, self.linearizeTemplate)
         return ButlerLocation(
                 "lsst.pex.policy.Policy", "Policy",
-                [("PafStorage", path)], dataId)
+                "PafStorage", path, dataId)
 
     def metadataForDataId(self, dataId):
         if self.metadataCache.has_key(dataId['obsid']):

@@ -7,10 +7,10 @@ class Mapper(object):
 
     Subclasses may define the following methods:
     
-    map_{dataSetType}(self, dataId)
+    map_{datasetType}(self, dataId)
         Map a data id for the given data set type into a ButlerLocation.
 
-    std_{dataSetType}(self, item)
+    std_{datasetType}(self, item)
         Standardize an object of the given data set type.
 
     Methods that must be overridden:
@@ -18,7 +18,7 @@ class Mapper(object):
     keys(self)
         Return a list of the keys that can be used in data ids.
 
-    getCollection(self, dataSetType, keys, dataId)
+    getCollection(self, datasetType, keys, dataId)
         Return a list of the values or tuples of values that are legal when
         combined with the given partial data id.
 
@@ -28,9 +28,9 @@ class Mapper(object):
 
     getDataSetTypes(self)
 
-    map(self, dataSetType, dataId)
+    map(self, datasetType, dataId)
 
-    standardize(self, dataSetType, item)
+    standardize(self, datasetType, item)
     """
 
     def __init__(self):
@@ -39,7 +39,7 @@ class Mapper(object):
     def keys(self):
         raise NotImplementedError("keys() unimplemented")
 
-    def getCollection(self, dataSetType, keys, dataId):
+    def getCollection(self, datasetType, keys, dataId):
         raise NotImplementedError("getCollection() unimplemented")
 
     def getDataSetTypes(self):
@@ -51,18 +51,18 @@ class Mapper(object):
                 list += attr[5:]
         return list
 
-    def map(self, dataSetType, dataId):
+    def map(self, datasetType, dataId):
         """Map a data id using the mapping method for its data set type."""
 
-        func = getattr(self, 'map_' + dataSetType)
+        func = getattr(self, 'map_' + datasetType)
         return func(dataId)
 
-    def standardize(self, dataSetType, item):
+    def standardize(self, datasetType, item):
         """Standardize an object using the standardization method for its data
         set type, if it exists."""
 
         try:
-            func = getattr(self, 'std_' + dataSetType)
+            func = getattr(self, 'std_' + datasetType)
             return func(item)
         except AttributeError:
             return item

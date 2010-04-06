@@ -58,8 +58,8 @@ class CfhtMapper(Mapper):
         return ["field", "obsid", "exposure", "ccd", "amp", "filter",
                 "expTime", "skyTile"]
 
-    def getCollection(self, dataSetType, keys, dataId):
-        if dataSetType == "raw":
+    def getCollection(self, datasetType, keys, dataId):
+        if datasetType == "raw":
             return self.registry.getCollection(keys, dataId)
         dateTime = self.metadataForDataId(dataId).get('taiObs')
         ccd = "CCD009"
@@ -74,7 +74,7 @@ class CfhtMapper(Mapper):
         expTime = None
         if dataId.has_key("expTime"):
             expTime = dataId['expTime']
-        calibs = self.calibDb.lookup(dateTime, dataSetType,
+        calibs = self.calibDb.lookup(dateTime, datasetType,
                 ccd, amp, filter, expTime, all=True)
         result = []
         for c in calibs:
@@ -92,7 +92,7 @@ class CfhtMapper(Mapper):
         path = os.path.join(path, self.rawTemplate % dataId)
         return ButlerLocation(
                 "lsst.afw.image.DecoratedImageU", "DecoratedImageU",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_bias(self, dataId):
         dateTime = self.metadataForDataId(dataId).get('taiObs')
@@ -101,7 +101,7 @@ class CfhtMapper(Mapper):
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_dark(self, dataId):
         dateTime = self.metadataForDataId(dataId).get('taiObs')
@@ -114,7 +114,7 @@ class CfhtMapper(Mapper):
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_defect(self, dataId):
         dateTime = self.metadataForDataId(dataId).get('taiObs')
@@ -123,7 +123,7 @@ class CfhtMapper(Mapper):
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
                 "lsst.pex.policy.Policy", "Policy",
-                [("PafStorage", path)], dataId)
+                "PafStorage", path, dataId)
 
     def map_flat(self, dataId):
         dateTime = self.metadataForDataId(dataId).get('taiObs')
@@ -136,7 +136,7 @@ class CfhtMapper(Mapper):
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_fringe(self, dataId):
         dateTime = self.metadataForDataId(dataId).get('taiObs')
@@ -149,14 +149,14 @@ class CfhtMapper(Mapper):
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
                 "lsst.afw.image.ExposureF", "ExposureF",
-                [("FitsStorage", path)], dataId)
+                "FitsStorage", path, dataId)
 
     def map_linearize(self, dataId):
         path = self.calibDb.lookup(None, 'linearize')
         path = os.path.join(self.calibrationRoot, path)
         return ButlerLocation(
                 "lsst.pex.policy.Policy", "Policy",
-                [("PafStorage", path)], dataId)
+                "PafStorage", path, dataId)
 
     def metadataForDataId(self, dataId):
         if self.metadataCache.has_key(dataId['obsid']):

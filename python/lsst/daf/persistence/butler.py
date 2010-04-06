@@ -46,13 +46,13 @@ class Butler(object):
 
     outputKeys(self)
 
-    getCollection(self, dataSetType, keys, dataId={}, **rest)
+    getCollection(self, datasetType, keys, dataId={}, **rest)
 
-    fileExists(self, dataSetType, dataId={}, **rest)
+    fileExists(self, datasetType, dataId={}, **rest)
 
-    get(self, dataSetType, dataId={}, **rest)
+    get(self, datasetType, dataId={}, **rest)
 
-    put(self, obj, dataSetType, dataId={}, **rest)
+    put(self, obj, datasetType, dataId={}, **rest)
     """
 
     def __init__(self, inputMapper, outputMapper, persistence, partialId={}):
@@ -73,11 +73,11 @@ class Butler(object):
 
         return self.outputMapper.keys()
 
-    def getCollection(self, dataSetType, keys, dataId={}, **rest):
+    def getCollection(self, datasetType, keys, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
         
-        @param dataSetType    the type of data set to inquire about.
+        @param datasetType    the type of data set to inquire about.
         @param keys           one or more keys to retrieve values for.
         @param dataId         the partial data id.
         @param **rest         keyword arguments for the partial data id.
@@ -85,19 +85,19 @@ class Butler(object):
         """
 
         dataId = self._combineDicts(dataId, **rest)
-        return self.inputMapper.getCollection(dataSetType, keys, dataId)
+        return self.inputMapper.getCollection(datasetType, keys, dataId)
 
-    def fileExists(self, dataSetType, dataId={}, **rest):
+    def fileExists(self, datasetType, dataId={}, **rest):
         """Determines if a data set file exists.
 
-        @param dataSetType    the type of data set to inquire about.
+        @param datasetType    the type of data set to inquire about.
         @param dataId         the data id of the data set.
         @param **rest         keyword arguments for the data id.
         @returns True if the data set is file-based and exists.
         """
 
         dataId = self._combineDicts(dataId, **rest)
-        location = self.inputMapper.map(dataSetType, dataId)
+        location = self.inputMapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
         for (storageName, locationString) in location.getStorageInfo():
             if storageName == 'BoostStorage' or storageName == 'FitsStorage':
@@ -105,16 +105,16 @@ class Butler(object):
                 return os.path.exists(logLoc.locString())
         return False
 
-    def get(self, dataSetType, dataId={}, **rest):
+    def get(self, datasetType, dataId={}, **rest):
         """Retrieves a data set given an input collection data id.
         
-        @param dataSetType    the type of data set to retrieve.
+        @param datasetType    the type of data set to retrieve.
         @param dataId         the data id.
         @param **rest         keyword arguments for the data id.
         @returns an object retrieved from the data set.
         """
         dataId = self._combineDicts(dataId, **rest)
-        location = self.inputMapper.map(dataSetType, dataId)
+        location = self.inputMapper.map(datasetType, dataId)
 
         # import this pythonType dynamically 
         pythonTypeTokenList = location.getPythonType().split('.')
@@ -124,20 +124,20 @@ class Butler(object):
         importType = __import__(importPackage, globals(), locals(), \
                 [importClassString], -1) 
         pythonType = getattr(importType, importClassString)
-        callback = lambda: self.inputMapper.standardize(dataSetType,
+        callback = lambda: self.inputMapper.standardize(datasetType,
                 self._read(pythonType, location))
         return ReadProxy(callback)
 
-    def put(self, obj, dataSetType, dataId={}, **rest):
+    def put(self, obj, datasetType, dataId={}, **rest):
         """Persists a data set given an output collection data id.
         
         @param obj            the object to persist.
-        @param dataSetType    the type of data set to persist.
+        @param datasetType    the type of data set to persist.
         @param dataId         the data id.
         @param **rest         keyword arguments for the data id.
         """
         dataId = self._combineDicts(dataId, **rest)
-        location = self.outputMapper.map(dataSetType, dataId)
+        location = self.outputMapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
 
         # Create a list of Storages for the item.
@@ -163,26 +163,35 @@ class Butler(object):
         finalId.update(rest)
         return finalId
 
-    def _map(self, mapper, dataSetType, dataId):
-        return mapper.map(dataSetType, dataId)
+    def _map(self, mapper, datasetType, dataId):
+        return mapper.map(datasetType, dataId)
 
     def _read(self, pythonType, location):
         # print "Loading", pythonType, "from", location
         additionalData = location.getAdditionalData()
         # Create a list of Storages for the item.
-        storageList = StorageList()
-        for (storageName, locationString) in location.getStorageInfo():
+        storageName = location.getStorageName()
+        results = []
+        locations = location.getLocations()
+        returnList = True
+        if not hasattr(locations, "__iter__"):
+            locations = [locations]
+            returnList = False
+
+        for locationString in location.getLocations():
             logLoc = LogicalLocation(locationString, additionalData)
             # self.log.log(Log.INFO, "loading %s as %s" % (item, logLoc.locString()))
             if storageName == "PafStorage":
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
-                return finalItem
+            else:
+                storageList = StorageList()
+                storage = self.persistence.getRetrieveStorage(storageName, logLoc)
+                storageList.append(storage)
+                itemData = self.persistence.unsafeRetrieve(
+                        location.getCppType(), storageList, additionalData)
+                finalItem = pythonType.swigConvert(itemData)
+            results.append(finalItem)
 
-            storage = self.persistence.getRetrieveStorage(storageName, logLoc)
-            storageList.append(storage)
-
-        itemData = self.persistence.unsafeRetrieve(
-                location.getCppType(), storageList, additionalData)
-        finalItem = pythonType.swigConvert(itemData)
-
-        return finalItem
+        if not returnList:
+            results = results[0]
+        return results

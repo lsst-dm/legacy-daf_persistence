@@ -9,12 +9,13 @@ class ButlerLocation(object):
     persist and retrieve an object using the LSST Persistence Framework.
     
     Mappers should create and return ButlerLocations from their
-    map_{dataSetType} methods."""
+    map_{datasetType} methods."""
 
-    def __init__(self, pythonType, cppType, storageInfoList, dataId):
+    def __init__(self, pythonType, cppType, storageName, locationList, dataId):
         self.pythonType = pythonType
         self.cppType = cppType
-        self.storageInfoList = storageInfoList
+        self.storageName = storageName
+        self.locationList = locationList
         self.additionalData = dafBase.PropertySet()
         for k, v in dataId.iteritems():
             self.additionalData.set(k, v)
@@ -31,8 +32,11 @@ class ButlerLocation(object):
     def getCppType(self):
         return self.cppType
 
-    def getStorageInfo(self):
-        return self.storageInfoList
+    def getStorageName(self):
+        return self.storageInfoName
+
+    def getLocations(self):
+        return self.locationList
 
     def getAdditionalData(self):
         return self.additionalData
