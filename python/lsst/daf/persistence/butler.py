@@ -55,23 +55,17 @@ class Butler(object):
     put(self, obj, datasetType, dataId={}, **rest)
     """
 
-    def __init__(self, inputMapper, outputMapper, persistence, partialId={}):
+    def __init__(self, mapper, persistence, partialId={}):
         """Construct the Butler.  Only called via the ButlerFactory."""
 
-        self.inputMapper = inputMapper
-        self.outputMapper = outputMapper
+        self.mapper = mapper
         self.persistence = persistence
         self.partialId = partialId
 
-    def inputKeys(self):
-        """Returns the valid data id keys for the input collection."""
+    def keys(self):
+        """Returns the valid data id keys for the dataset collection."""
 
-        return self.inputMapper.keys()
-
-    def outputKeys(self):
-        """Returns the valid data id keys for the output collection."""
-
-        return self.outputMapper.keys()
+        return self.mapper.keys()
 
     def getCollection(self, datasetType, keys, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
@@ -85,7 +79,7 @@ class Butler(object):
         """
 
         dataId = self._combineDicts(dataId, **rest)
-        return self.inputMapper.getCollection(datasetType, keys, dataId)
+        return self.mapper.getCollection(datasetType, keys, dataId)
 
     def fileExists(self, datasetType, dataId={}, **rest):
         """Determines if a data set file exists.
@@ -97,7 +91,7 @@ class Butler(object):
         """
 
         dataId = self._combineDicts(dataId, **rest)
-        location = self.inputMapper.map(datasetType, dataId)
+        location = self.mapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
         for (storageName, locationString) in location.getStorageInfo():
             if storageName == 'BoostStorage' or storageName == 'FitsStorage':
@@ -111,10 +105,10 @@ class Butler(object):
         @param datasetType    the type of data set to retrieve.
         @param dataId         the data id.
         @param **rest         keyword arguments for the data id.
-        @returns an object retrieved from the data set.
+        @returns an object retrieved from the data set (or a proxy for one).
         """
         dataId = self._combineDicts(dataId, **rest)
-        location = self.inputMapper.map(datasetType, dataId)
+        location = self.mapper.map(datasetType, dataId)
 
         # import this pythonType dynamically 
         pythonTypeTokenList = location.getPythonType().split('.')
@@ -124,8 +118,11 @@ class Butler(object):
         importType = __import__(importPackage, globals(), locals(), \
                 [importClassString], -1) 
         pythonType = getattr(importType, importClassString)
-        callback = lambda: self.inputMapper.standardize(datasetType,
-                self._read(pythonType, location))
+        if self.mapper.canStandardize(datasetType):
+            callback = lambda: self.mapper.standardize(datasetType,
+                    self._read(pythonType, location))
+        else:
+            callback = lambda: self._read(pythonType, location)
         return ReadProxy(callback)
 
     def put(self, obj, datasetType, dataId={}, **rest):

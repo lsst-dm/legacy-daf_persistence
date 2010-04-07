@@ -8,7 +8,12 @@ class Mapper(object):
     Subclasses may define the following methods:
     
     map_{datasetType}(self, dataId)
-        Map a data id for the given data set type into a ButlerLocation.
+        Map a dataset id for the given dataset type into a ButlerLocation.
+
+    coll_{datasetType}(self, fields, dataId)
+        Return the possible values for the given fields that would produce
+        datasets of the given type in combination with the provided partial
+        dataId.
 
     std_{datasetType}(self, item)
         Standardize an object of the given data set type.
@@ -17,10 +22,6 @@ class Mapper(object):
 
     keys(self)
         Return a list of the keys that can be used in data ids.
-
-    getCollection(self, datasetType, keys, dataId)
-        Return a list of the values or tuples of values that are legal when
-        combined with the given partial data id.
 
     Other public methods:
 
@@ -40,10 +41,13 @@ class Mapper(object):
         raise NotImplementedError("keys() unimplemented")
 
     def getCollection(self, datasetType, keys, dataId):
-        raise NotImplementedError("getCollection() unimplemented")
+        """Return possible values for keys given a partial data id."""
+
+        func = getattr(self, 'coll_' + datasetType)
+        return func(keys, dataId)
 
     def getDataSetTypes(self):
-        """Return a list of the mappable data set types."""
+        """Return a list of the mappable dataset types."""
 
         list = []
         for attr in dir(self):
@@ -52,17 +56,22 @@ class Mapper(object):
         return list
 
     def map(self, datasetType, dataId):
-        """Map a data id using the mapping method for its data set type."""
+        """Map a data id using the mapping method for its dataset type."""
 
         func = getattr(self, 'map_' + datasetType)
         return func(dataId)
+
+    def canStandardize(self, datasetType):
+        """Return true if this mapper can standardize an object of the given
+        dataset type."""
+
+        return hasattr(self, 'std_' + datasetType)
 
     def standardize(self, datasetType, item):
         """Standardize an object using the standardization method for its data
         set type, if it exists."""
 
-        try:
+        if hasattr(self, 'std_' + datasetType):
             func = getattr(self, 'std_' + datasetType)
             return func(item)
-        except AttributeError:
-            return item
+        return item
