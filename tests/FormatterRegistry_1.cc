@@ -27,7 +27,7 @@ public:
     // Normally, the following functions would do something.  For testing,
     // they do nothing.
     virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, int iter, int len) { };
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done) { *done = true; return 0; };
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool first, bool* done) { *done = true; return 0; };
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 private:
     static dafPersist::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
@@ -48,7 +48,7 @@ class YourFormatter : public dafPersist::Formatter {
 public:
     YourFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
     virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, int iter, int len) { };
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done) { *done = true; return 0; };
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool first, bool* done) { *done = true; return 0; };
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 };
 

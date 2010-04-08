@@ -41,7 +41,7 @@ class MyFormatter : public dafPersist::Formatter {
 public:
     MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
     virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, int iter, int len);
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done);
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool first, bool* done);
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, dafBase::Persistable* persistable);
 private:
@@ -105,7 +105,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done) {
+dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool first, bool* done) {
     MyPersistable* mp = new MyPersistable;
 
     long long testId = additionalData->get<long long>("visitId");
@@ -118,24 +118,30 @@ dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBas
     }
     else if (typeid(*storage) == typeid(dafPersist::DbStorage) ||
              typeid(*storage) == typeid(dafPersist::DbTsvStorage)) {
+        static MyPersistable bound;
         dafPersist::DbStorage* db =
             dynamic_cast<dafPersist::DbStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(db != 0, "Didn't get DbStorage");
-        db->setTableForQuery("DbStorage_Test_1");
-        db->condParam<long long>("id", testId);
-        db->setQueryWhere("id = :id");
-        db->outParam("decl", &(mp->_decl));
-        db->outParam("ra", &(mp->_ra));
+        if (first) {
+            db->setTableForQuery("DbStorage_Test_1");
+            db->condParam<long long>("id", testId);
+            db->setQueryWhere("id = :id");
+            db->outParam("decl", &(bound._decl));
+            db->outParam("ra", &(bound._ra));
+            db->query();
+            BOOST_CHECK_MESSAGE(db->next() == true, "Failed to get row");
+        }
 
-        db->query();
-
-        BOOST_CHECK_MESSAGE(db->next() == true, "Failed to get row");
         BOOST_CHECK_MESSAGE(db->columnIsNull(0) == false, "Null column 0");
         BOOST_CHECK_MESSAGE(db->columnIsNull(1) == false, "Null column 1");
-        BOOST_CHECK_MESSAGE(db->next() == false, "Got more than one row");
+        *mp = bound;
 
-        db->finishQuery();
-        *done = true;
+        *done = !db->next();
+        BOOST_CHECK_MESSAGE(*done == true, "Got more than one row");
+
+        if (*done) {
+            db->finishQuery();
+        }
         return mp;
     }
     BOOST_FAIL("Didn't recognize Storage type");

@@ -81,6 +81,7 @@ public:
       * @param[in] storage Pointer to the Storage instance.
       * @param[in] additionalData Additional data used to find the proper
       * instance within the Storage.
+      * @param[in] first True if this is the first read from this storage.
       * @param[in] done Pointer to boolean to set to true if this is the last
       * item to be retrieved from a sequence.
       * @return Shared pointer to the new Persistable instance.
@@ -88,7 +89,7 @@ public:
     virtual lsst::daf::base::Persistable* read(
         Storage::Ptr storage,
         lsst::daf::base::PropertySet::Ptr additionalData,
-        bool* done) = 0;
+        bool first, bool* done) = 0;
 
     /** Update an existing Persistable instance with information from
       * an additional Storage instance.

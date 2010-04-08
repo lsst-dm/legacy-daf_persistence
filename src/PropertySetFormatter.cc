@@ -196,7 +196,7 @@ void dafPersist::PropertySetFormatter::write(
 
 dafBase::Persistable* dafPersist::PropertySetFormatter::read(
     dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData,
-    bool* done) {
+    bool first, bool* done) {
     execTrace("PropertySetFormatter read start");
     dafBase::PropertySet* ps = new dafBase::PropertySet;
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {

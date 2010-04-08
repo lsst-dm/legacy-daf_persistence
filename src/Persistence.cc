@@ -147,7 +147,7 @@ lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
          it != storageList.end(); ++it) {
         (*it)->startTransaction();
         if (!persistable) {
-            persistable = f->read(*it, additionalData, &done);
+            persistable = f->read(*it, additionalData, true, &done);
         } else {
             f->update(persistable, *it, additionalData);
         }
@@ -188,17 +188,19 @@ Persistence::retrieveVector(
     }
     bool done = false;
     std::vector<boost::shared_ptr<lsst::daf::base::Persistable> > result;
+    bool first = true;
     while (!done) {
         persistable = 0;
         try {
             for (Storage::List::const_iterator it = storageList.begin();
                  it != storageList.end(); ++it) {
                 if (!persistable) {
-                    persistable = f->read(*it, additionalData, &done);
+                    persistable = f->read(*it, additionalData, first, &done);
                 } else {
                     f->update(persistable, *it, additionalData);
                 }
             }
+            first = false;
             result.push_back(
                 boost::shared_ptr<lsst::daf::base::Persistable>(persistable));
         }
