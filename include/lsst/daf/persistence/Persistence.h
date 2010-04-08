@@ -53,9 +53,14 @@ public:
     virtual Storage::Ptr getRetrieveStorage(std::string const& storageType,
                                             LogicalLocation const& location);
     virtual void persist(
-        lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
-        lsst::daf::base::PropertySet::Ptr additionalData);
+        lsst::daf::base::Persistable const& persistable,
+        Storage::List const& storageList,
+        lsst::daf::base::PropertySet::Ptr additionalData,
+        int iter=0, int len=1);
     virtual lsst::daf::base::Persistable::Ptr retrieve(
+        std::string const& persistableType, Storage::List const& storageList,
+        lsst::daf::base::PropertySet::Ptr additionalData);
+    virtual std::vector<lsst::daf::base::Persistable::Ptr> retrieveVector(
         std::string const& persistableType, Storage::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
     virtual lsst::daf::base::Persistable* unsafeRetrieve(

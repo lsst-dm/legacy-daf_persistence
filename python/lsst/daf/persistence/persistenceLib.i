@@ -39,6 +39,8 @@ SWIG_SHARED_PTR_DERIVED(DbTsvStorage, lsst::daf::persistence::DbStorage, lsst::d
 
 %template(StorageList) std::vector<boost::shared_ptr<lsst::daf::persistence::Storage> >;
 %template(TableList) std::vector<std::string>;
+%template(PersistableList) std::vector<lsst::daf::base::Persistable*>;
+%template(PersistablePtrList) std::vector<boost::shared_ptr<lsst::daf::base::Persistable> >;
 
 %include "lsst/daf/persistence/DbAuth.h"
 %include "lsst/daf/persistence/LogicalLocation.h"

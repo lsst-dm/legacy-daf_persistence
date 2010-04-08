@@ -81,7 +81,7 @@ dafPersist::PropertySetFormatter::~PropertySetFormatter(void) {
 void dafPersist::PropertySetFormatter::write(
     dafBase::Persistable const* persistable,
     dafPersist::Storage::Ptr storage,
-    dafBase::PropertySet::Ptr additionalData) {
+    dafBase::PropertySet::Ptr additionalData, int iter, int len) {
     execTrace("PropertySetFormatter write start");
     dafBase::PropertySet const* ps =
         dynamic_cast<dafBase::PropertySet const*>(persistable);
@@ -114,11 +114,13 @@ void dafPersist::PropertySetFormatter::write(
         pexPolicy::Policy::Ptr itemPolicy;
         if (_policy && _policy->exists(itemName)) {
             itemPolicy = _policy->getPolicy(itemName);
-            if (itemPolicy->exists("TableName")) {
+        }
+        if (iter == 0) {
+            if (itemPolicy && itemPolicy->exists("TableName")) {
                 tableName = itemPolicy->getString("TableName");
             }
+            db->setTableForInsert(tableName);
         }
-        db->setTableForInsert(tableName);
 
         std::vector<std::string> list;
         if (itemPolicy && itemPolicy->exists("KeyList")) {
@@ -193,7 +195,8 @@ void dafPersist::PropertySetFormatter::write(
 }
 
 dafBase::Persistable* dafPersist::PropertySetFormatter::read(
-    dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+    dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData,
+    bool* done) {
     execTrace("PropertySetFormatter read start");
     dafBase::PropertySet* ps = new dafBase::PropertySet;
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {

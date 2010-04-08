@@ -69,20 +69,26 @@ public:
       * @param[in] storage Shared pointer to the Storage instance.
       * @param[in] additionalData Additional data used to find the proper
       * place to put the instance into the Storage.
+      * @param[in] iter Number of instance if it is part of a list.
+      * @param[in] len Length of list this instance is part of.
       */
     virtual void write(
         lsst::daf::base::Persistable const* persistable, Storage::Ptr storage,
-        lsst::daf::base::PropertySet::Ptr additionalData) = 0;
+        lsst::daf::base::PropertySet::Ptr additionalData,
+        int iter, int len) = 0;
 
     /** Read a Persistable instance from a Storage instance.
       * @param[in] storage Pointer to the Storage instance.
       * @param[in] additionalData Additional data used to find the proper
       * instance within the Storage.
+      * @param[in] done Pointer to boolean to set to true if this is the last
+      * item to be retrieved from a sequence.
       * @return Shared pointer to the new Persistable instance.
       */
     virtual lsst::daf::base::Persistable* read(
         Storage::Ptr storage,
-        lsst::daf::base::PropertySet::Ptr additionalData) = 0;
+        lsst::daf::base::PropertySet::Ptr additionalData,
+        bool* done) = 0;
 
     /** Update an existing Persistable instance with information from
       * an additional Storage instance.

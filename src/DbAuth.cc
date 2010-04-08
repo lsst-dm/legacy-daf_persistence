@@ -93,7 +93,7 @@ search(std::string const& host, std::string const& port) {
 /** Set the authenticator Policy.
  * \param[in] policy Pointer to a Policy
  */
-void dafPersist::DbAuth::setPolicy(pexPolicy::Policy::Ptr policy) {
+void dafPersist::DbAuth::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
     authPolicy = policy;
 }
 

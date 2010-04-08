@@ -38,10 +38,10 @@ public:
 
     virtual void write(dafBase::Persistable const* persistable,
         dafPersist::Storage::Ptr storage,
-        dafBase::PropertySet::Ptr additionalData);
+        dafBase::PropertySet::Ptr additionalData, int iter, int len);
 
     virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage,
-        dafBase::PropertySet::Ptr additionalData);
+        dafBase::PropertySet::Ptr additionalData, bool* done);
 
     virtual void update(dafBase::Persistable* persistable,
         dafPersist::Storage::Ptr storage,

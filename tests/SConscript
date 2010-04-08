@@ -27,7 +27,7 @@ else:
     print "Database tests are being skipped"
 
 for test in glob.glob("*.py"):
-    if test != "Persistence_2.py":
+    if test != "Persistence_2.py" and test != "minMapper.py":
         target = tests.run(test)
         env.Depends(target,
                 "../python/lsst/daf/persistence/_persistenceLib%s" %

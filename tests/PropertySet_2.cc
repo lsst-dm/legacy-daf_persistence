@@ -39,8 +39,8 @@ private:
 class MyFormatter : public dafPersist::Formatter {
 public:
     MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, int iter, int len);
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done);
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, dafBase::Persistable* persistable);
 private:
@@ -61,7 +61,7 @@ dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy
 
 // Persistence for MyPersistables.
 // Supports BoostStorage only.
-void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, int iter, int len) {
     BOOST_CHECK_MESSAGE(persistable != 0, "Persisting null");
     BOOST_CHECK_MESSAGE(storage, "No Storage provided");
     MyPersistable const* mp = dynamic_cast<MyPersistable const*>(persistable);
@@ -79,7 +79,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage only.
-dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done) {
     MyPersistable* mp = new MyPersistable;
 
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {

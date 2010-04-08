@@ -85,10 +85,12 @@ Storage::Ptr Persistence::getRetrieveStorage(std::string const& storageType,
  * \param[in] storageList List of storages to persist to (in order)
  * \param[in] additionalData Additional information needed to determine the
  * correct place to put data in any of the Storages
+ * \param[in] iter Number of instance if it is part of a list
+ * \param[in] len Length of list this instance is part of
  */
 void Persistence::persist(
     lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
-    lsst::daf::base::PropertySet::Ptr additionalData) {
+    lsst::daf::base::PropertySet::Ptr additionalData, int iter, int len) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
     lsst::pex::policy::Policy::Ptr policyPtr;
@@ -103,13 +105,17 @@ void Persistence::persist(
     // complete.
     for (Storage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
-        (*it)->startTransaction();
-        f->write(&persistable, *it, additionalData);
+        if (iter == 0) {
+            (*it)->startTransaction();
+        }
+        f->write(&persistable, *it, additionalData, iter, len);
     }
     /// \todo Add in more transaction handling -- KTL 2007-06-26
-    for (Storage::List::const_iterator it = storageList.begin();
-         it != storageList.end(); ++it) {
-        (*it)->endTransaction();
+    if (iter == len - 1) {
+        for (Storage::List::const_iterator it = storageList.begin();
+             it != storageList.end(); ++it) {
+            (*it)->endTransaction();
+        }
     }
 }
 
@@ -136,11 +142,12 @@ lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
     // Use the Formatter instance to read from the first Storage; then update
     // from each additional Storage in turn.
     lsst::daf::base::Persistable* persistable = 0;
+    bool done;
     for (Storage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
         (*it)->startTransaction();
         if (!persistable) {
-            persistable = f->read(*it, additionalData);
+            persistable = f->read(*it, additionalData, &done);
         } else {
             f->update(persistable, *it, additionalData);
         }
@@ -150,6 +157,60 @@ lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
         (*it)->endTransaction();
     }
     return persistable;
+}
+
+/** Retrieve a vector of Persistable instances.
+ * \param[in] persistableType Name of Persistable type to be retrieved as
+ * registered by its Formatter
+ * \param[in] storageList List of storages to retrieve from (in order)
+ * \param[in] additionalData Additional information needed to select the
+ * correct data from any of the Storages
+ * \return Vector of shared pointers to new Persistable instances
+ */
+std::vector<boost::shared_ptr<lsst::daf::base::Persistable> >
+Persistence::retrieveVector(
+    std::string const& persistableType, Storage::List const& storageList,
+    lsst::daf::base::PropertySet::Ptr additionalData) {
+    // Get the policies for all Formatters, if present
+    std::string policyName = "Formatter";
+    lsst::pex::policy::Policy::Ptr policyPtr;
+    if (_policy && _policy->exists(policyName)) {
+        policyPtr = _policy->getPolicy(policyName);
+    }
+    // Find the appropriate Formatter.
+    Formatter::Ptr f = Formatter::lookupFormatter(persistableType, policyPtr);
+    // Use the Formatter instance to read from the first Storage; then update
+    // from each additional Storage in turn.
+    lsst::daf::base::Persistable* persistable;
+    for (Storage::List::const_iterator it = storageList.begin();
+         it != storageList.end(); ++it) {
+        (*it)->startTransaction();
+    }
+    bool done = false;
+    std::vector<boost::shared_ptr<lsst::daf::base::Persistable> > result;
+    while (!done) {
+        persistable = 0;
+        try {
+            for (Storage::List::const_iterator it = storageList.begin();
+                 it != storageList.end(); ++it) {
+                if (!persistable) {
+                    persistable = f->read(*it, additionalData, &done);
+                } else {
+                    f->update(persistable, *it, additionalData);
+                }
+            }
+            result.push_back(
+                boost::shared_ptr<lsst::daf::base::Persistable>(persistable));
+        }
+        catch (...) {
+            done = true;
+        }
+    }
+    for (Storage::List::const_iterator it = storageList.begin();
+         it != storageList.end(); ++it) {
+        (*it)->endTransaction();
+    }
+    return result;
 }
 
 /** Retrieve a Persistable instance.

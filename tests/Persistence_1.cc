@@ -40,8 +40,8 @@ private:
 class MyFormatter : public dafPersist::Formatter {
 public:
     MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, int iter, int len);
+    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done);
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, dafBase::Persistable* persistable);
 private:
@@ -62,7 +62,7 @@ dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy
 
 // Persistence for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, int iter, int len) {
     BOOST_CHECK_MESSAGE(persistable != 0, "Persisting null");
     BOOST_CHECK_MESSAGE(storage, "No Storage provided");
     long long testId = additionalData->get<long long>("visitId");
@@ -79,7 +79,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
         dafPersist::DbStorage* db =
             dynamic_cast<dafPersist::DbStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(db != 0, "Didn't get DbStorage");
-        db->setTableForInsert("DbStorage_Test_1");
+        if (iter == 0) db->setTableForInsert("DbStorage_Test_1");
         db->setColumn<long long>("id", testId);
         db->setColumn<double>("ra", mp->_ra);
         db->setColumn<double>("decl", mp->_decl);
@@ -91,7 +91,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
         dafPersist::DbTsvStorage* db =
             dynamic_cast<dafPersist::DbTsvStorage*>(storage.get());
         BOOST_CHECK_MESSAGE(db != 0, "Didn't get DbTsvStorage");
-        db->setTableForInsert("DbTsvStorage_Test_1");
+        if (iter == 0) db->setTableForInsert("DbTsvStorage_Test_1");
         db->setColumn<long long>("id", testId);
         db->setColumn<double>("ra", mp->_ra);
         db->setColumn<double>("decl", mp->_decl);
@@ -105,7 +105,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData, bool* done) {
     MyPersistable* mp = new MyPersistable;
 
     long long testId = additionalData->get<long long>("visitId");
@@ -135,6 +135,7 @@ dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBas
         BOOST_CHECK_MESSAGE(db->next() == false, "Got more than one row");
 
         db->finishQuery();
+        *done = true;
         return mp;
     }
     BOOST_FAIL("Didn't recognize Storage type");
