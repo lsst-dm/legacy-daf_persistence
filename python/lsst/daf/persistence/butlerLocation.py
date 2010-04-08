@@ -33,7 +33,7 @@ class ButlerLocation(object):
         return self.cppType
 
     def getStorageName(self):
-        return self.storageInfoName
+        return self.storageName
 
     def getLocations(self):
         return self.locationList

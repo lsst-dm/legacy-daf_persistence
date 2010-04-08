@@ -3,31 +3,19 @@
 target: ButlerFactory
 
 definitions: {
-    inputMapperName: {
+    mapperName: {
         type: string
-        description: "The name of the input mapper Python class."
-        maxOccurs: 1
-        default: "lsst.daf.persistence.CfhtMapper"
-    }
-    inputMapperPolicy: {
-        type: Policy
-        description: "An optional policy for the input mapper."
+        description: "The name of the mapper Python class."
         maxOccurs: 1
     }
-    outputMapperName: {
-        type: string
-        description: "The name of the output mapper Python class."
-        maxOccurs: 1
-        default: "lsst.daf.persistence.LsstMapper"
-    }
-    outputMapperPolicy: {
-        type: Policy
-        description: "An optional policy for the output mapper."
+    mapperPolicy: {
+        type: policy
+        # description: "An optional policy for the mapper."
         maxOccurs: 1
     }
     persistencePolicy: {
-        type: Policy
-        description: "An optional policy to configure persistence."
+        type: policy
+        # description: "An optional policy to configure persistence."
         maxOccurs: 1
     }
 }

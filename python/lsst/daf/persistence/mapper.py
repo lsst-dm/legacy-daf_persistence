@@ -10,10 +10,10 @@ class Mapper(object):
     map_{datasetType}(self, dataId)
         Map a dataset id for the given dataset type into a ButlerLocation.
 
-    coll_{datasetType}(self, fields, dataId)
-        Return the possible values for the given fields that would produce
-        datasets of the given type in combination with the provided partial
-        dataId.
+    query_{datasetType}(self, key, format, dataId)
+        Return the possible values for the format fields that would produce
+        datasets at the granularity of key in combination with the provided
+        partial dataId.
 
     std_{datasetType}(self, item)
         Standardize an object of the given data set type.
@@ -31,7 +31,9 @@ class Mapper(object):
 
     map(self, datasetType, dataId)
 
-    standardize(self, datasetType, item)
+    queryMetadata(self, datasetType, key, format, dataId)
+
+    standardize(self, datasetType, item, dataId)
     """
 
     def __init__(self):
@@ -40,11 +42,11 @@ class Mapper(object):
     def keys(self):
         raise NotImplementedError("keys() unimplemented")
 
-    def getCollection(self, datasetType, keys, dataId):
+    def queryMetadata(self, datasetType, key, format, dataId):
         """Return possible values for keys given a partial data id."""
 
         func = getattr(self, 'coll_' + datasetType)
-        return func(keys, dataId)
+        return func(key, format, dataId)
 
     def getDataSetTypes(self):
         """Return a list of the mappable dataset types."""
@@ -67,11 +69,11 @@ class Mapper(object):
 
         return hasattr(self, 'std_' + datasetType)
 
-    def standardize(self, datasetType, item):
+    def standardize(self, datasetType, item, dataId):
         """Standardize an object using the standardization method for its data
         set type, if it exists."""
 
         if hasattr(self, 'std_' + datasetType):
             func = getattr(self, 'std_' + datasetType)
-            return func(item)
+            return func(item, dataId)
         return item

@@ -65,7 +65,7 @@ class ButlerFactory(object):
                 subpolicy = self.policy.get('mapperPolicy')
             else:
                 subpolicy = pexPolicy.Policy()
-            self.mapper = self._importMapper(
+            self.mapper = _importMapper(
                     self.policy.get('mapperName'), subpolicy)
 
         if self.policy.exists('persistencePolicy'):
@@ -83,13 +83,13 @@ class ButlerFactory(object):
 
         return Butler(self.mapper, self.persistence, partialId)
 
-    def _importMapper(name, policy):
-        """Private function to import a mapper class and construct an instance."""
-        mapperTokenList = name.split('.')
-        importClassString = mapperTokenList.pop()
-        importClassString = importClassString.strip()
-        importPackage = ".".join(mapperTokenList)
-        module = __import__(importPackage, globals(), locals(), \
-                [importClassString], -1)
-        mapper = getattr(module, importClassString)
-        return mapper(policy)
+def _importMapper(name, policy):
+    """Private function to import a mapper class and construct an instance."""
+    mapperTokenList = name.split('.')
+    importClassString = mapperTokenList.pop()
+    importClassString = importClassString.strip()
+    importPackage = ".".join(mapperTokenList)
+    module = __import__(importPackage, globals(), locals(), \
+            [importClassString], -1)
+    mapper = getattr(module, importClassString)
+    return mapper(policy)

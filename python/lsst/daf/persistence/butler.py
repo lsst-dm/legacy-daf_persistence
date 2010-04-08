@@ -46,7 +46,7 @@ class Butler(object):
 
     outputKeys(self)
 
-    getCollection(self, datasetType, keys, dataId={}, **rest)
+    queryMetadata(self, datasetType, keys, format=None, dataId={}, **rest)
 
     fileExists(self, datasetType, dataId={}, **rest)
 
@@ -62,24 +62,29 @@ class Butler(object):
         self.persistence = persistence
         self.partialId = partialId
 
-    def keys(self):
+    def getKeys(self):
         """Returns the valid data id keys for the dataset collection."""
 
-        return self.mapper.keys()
+        return self.mapper.getKeys()
 
-    def getCollection(self, datasetType, keys, dataId={}, **rest):
+    def queryMetadata(self, datasetType, key, format=None, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
         
-        @param datasetType    the type of data set to inquire about.
-        @param keys           one or more keys to retrieve values for.
-        @param dataId         the partial data id.
-        @param **rest         keyword arguments for the partial data id.
-        @returns a list of valid values or tuples of valid values.
+        @param datasetType the type of data set to inquire about.
+        @param key         a key giving the level of granularity of the inquiry.
+        @param format      an optional key or tuple of keys to be returned. 
+        @param dataId      the partial data id.
+        @param **rest      keyword arguments for the partial data id.
+        @returns a list of valid values or tuples of valid values as specified
+        by the format (defaulting to the same as the key) at the key's level
+        of granularity.
         """
 
         dataId = self._combineDicts(dataId, **rest)
-        return self.mapper.getCollection(datasetType, keys, dataId)
+        if format is None:
+            format = key
+        return self.mapper.queryMetadata(datasetType, key, format, dataId)
 
     def fileExists(self, datasetType, dataId={}, **rest):
         """Determines if a data set file exists.
@@ -120,7 +125,7 @@ class Butler(object):
         pythonType = getattr(importType, importClassString)
         if self.mapper.canStandardize(datasetType):
             callback = lambda: self.mapper.standardize(datasetType,
-                    self._read(pythonType, location))
+                    self._read(pythonType, location), dataId)
         else:
             callback = lambda: self._read(pythonType, location)
         return ReadProxy(callback)
@@ -175,7 +180,7 @@ class Butler(object):
             locations = [locations]
             returnList = False
 
-        for locationString in location.getLocations():
+        for locationString in locations:
             logLoc = LogicalLocation(locationString, additionalData)
             # self.log.log(Log.INFO, "loading %s as %s" % (item, logLoc.locString()))
             if storageName == "PafStorage":
