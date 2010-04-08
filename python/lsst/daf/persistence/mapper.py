@@ -45,7 +45,7 @@ class Mapper(object):
     def queryMetadata(self, datasetType, key, format, dataId):
         """Return possible values for keys given a partial data id."""
 
-        func = getattr(self, 'coll_' + datasetType)
+        func = getattr(self, 'query_' + datasetType)
         return func(key, format, dataId)
 
     def getDataSetTypes(self):
