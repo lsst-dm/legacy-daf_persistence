@@ -94,7 +94,8 @@ search(std::string const& host, std::string const& port) {
  * \param[in] policy Pointer to a Policy
  */
 void dafPersist::DbAuth::setPolicy(pexPolicy::Policy::Ptr policy) {
-    authPolicy = policy;
+    dafBase::PersistentCitizenScope scopeGuard;
+    authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(*policy, true));
 }
 
 /** Determine whether an authenticator string is available for database

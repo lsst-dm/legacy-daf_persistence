@@ -56,10 +56,12 @@ class MemoryTestCase(unittest.TestCase):
 
             self.fail("Leaked %d blocks" % Citizen.census(0, memId0))
 
-if __name__ == '__main__':
+def run():
     tests.init()
     suites = []
     suites.append(unittest.makeSuite(DbAuthTestCase))
     suites.append(unittest.makeSuite(tests.MemoryTestCase))
     tests.run(unittest.TestSuite(suites))
 
+if __name__ == '__main__':
+    run()
