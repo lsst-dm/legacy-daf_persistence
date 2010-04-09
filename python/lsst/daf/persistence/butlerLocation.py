@@ -21,8 +21,8 @@ class ButlerLocation(object):
             self.additionalData.set(k, v)
 
     def __str__(self):
-        s = "%s at %s(%s)" % (self.pythonType, self.storageName, ",
-                ".join(self.locationList))
+        s = "%s at %s(%s)" % (self.pythonType, self.storageName,
+                ", ".join(self.locationList))
         return s
 
     def getPythonType(self):
