@@ -3,6 +3,7 @@
 import glob
 import os
 import re
+import sqlite3
 import lsst.pex.policy as pexPolicy
 
 class Registry(object):
