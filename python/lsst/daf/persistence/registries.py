@@ -99,83 +99,32 @@ class FsRegistry(Registry):
                     keySet.add(tuple(result))
         return list(keySet)
 
-class CalibRegistry(Registry):
+class SqliteRegistry(Registry):
     def __init__(self, location):
         Registry.__init__(self)
+        self.conn = sqlite3.connect(location)
 
-        self.calibDb = CalibDb(location)
+    def __del__(self):
+        self.conn.close()
 
-    def getFields(self):
-        return ["ccd", "amp", "filter", "expTime", "taiObs"]
-
-    def queryMetadata(self, datasetType, key, format, dataId):
-        # TODO fix below
-        ccd = "CCD009"
-        if dataId.has_key("ccd"):
-            ccd = dataId['ccd']
-        amp = 1
-        if dataId.has_key("amp"):
-            amp = dataId['amp']
-        filter = None
-        if dataId.has_key("filter"):
-            filter = dataId['filter']
-        expTime = None
-        if dataId.has_key("expTime"):
-            expTime = dataId['expTime']
-        calibs = self.calibDb.lookup(dateTime, datasetType,
-                ccd, amp, filter, expTime, all=True)
+    def executeQuery(self, returnFields, joinClause, whereFields, range):
+        cmd = "SELECT DISTINCT "
+        cmd += ", ".join(returnFields)
+        cmd += " FROM " + " NATURAL JOIN ".join(joinClause)
+        if whereFields: 
+            cmd += " WHERE "
+            first = true
+            for k, v in whereFields.iteritems():
+                if not first:
+                    cmd += " AND "
+                if isinstance(v, str):
+                    cmd += "(%s = '%s')" % (k, v)
+                else:
+                    cmd += "(%s = %s)" % (k, str(v))
+        if range:
+            cmd += " AND (%s BETWEEN %s AND %s)" % (range)
+        c = self.conn.execute(cmd)
         result = []
-        for c in calibs:
-            if len(keys) == 1:
-                result.append(getattr(c, k))
-            else:
-                tuple = []
-                for k in keys:
-                    tuple.append(getattr(c, k))
-                result.append(tuple)
+        for row in c:
+            result.append(row)
         return result
-
-    def getPath(self, datasetType, dataId):
-        ccd = "CCD009"
-        if dataId.has_key("ccd"):
-            ccd = dataId['ccd']
-        amp = 1
-        if dataId.has_key("amp"):
-            amp = dataId['amp']
-        filter = None
-        if dataId.has_key("filter"):
-            filter = dataId['filter']
-        expTime = None
-        if dataId.has_key("expTime"):
-            expTime = dataId['expTime']
-        return self.calibDb.lookup(dataId['taiObs'], datasetType, ccd, amp,
-                filter, expTime)
-
-class DbRegistry(Registry):
-    def __init__(self, location, policy):
-        Registry.__init__(self)
-        # TODO -- initialize registry
-        pass
-
-    def queryMetadata(self, keys, dataId):
-        # TODO -- select distinct keys from registry
-        pass
-
-class FileRegistry(Registry):
-    def __init__(self, location, policy):
-        Registry.__init__(self)
-        pass
-
-    def queryMetadata(self, keys, dataId):
-        pass
-
-
-# class SqliteRegistry(Registry):
-#     def __init__(self, location):
-#         Registry.__init__(self)
-#         # TODO -- initialize registry
-#         pass
-# 
-#     def queryMetadata(self, keys, dataId):
-#         # TODO -- select distinct keys from registry
-#         pass
