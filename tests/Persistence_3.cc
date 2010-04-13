@@ -46,7 +46,7 @@ BOOST_CLASS_EXPORT(MyPersistable);
 // A small Formatter.
 class MyFormatter : public dafPersist::Formatter {
 public:
-    MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
+    MyFormatter(void) : dafPersist::Formatter(typeid(this)) { };
     virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);

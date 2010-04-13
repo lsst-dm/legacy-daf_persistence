@@ -34,7 +34,7 @@ dafBase::PropertySet::Ptr dafPersist::LogicalLocation::_map;
  */
 dafPersist::LogicalLocation::LogicalLocation(
     std::string const& locString, dafBase::PropertySet::Ptr additionalData) :
-    lsst::daf::base::Citizen(typeid(*this)), _locString() {
+    lsst::daf::base::Citizen(typeid(this)), _locString() {
     boost::regex expr("(%.*?)\\((\\w+?)\\)");
     boost::sregex_iterator i = make_regex_iterator(locString, expr);
     boost::sregex_iterator last;

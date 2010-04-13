@@ -29,7 +29,7 @@ namespace persistence {
 
 /** Constructor.
  */
-BoostStorage::BoostStorage(void) : Storage(typeid(*this)),
+BoostStorage::BoostStorage(void) : Storage(typeid(this)),
     _ostream(0), _istream(0), _oarchive(0), _iarchive(0) {
 }
 

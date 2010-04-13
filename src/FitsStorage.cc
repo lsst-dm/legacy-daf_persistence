@@ -29,7 +29,7 @@ namespace persistence {
 
 /** Constructor.
  */
-FitsStorage::FitsStorage(void) : Storage(typeid(*this)) {
+FitsStorage::FitsStorage(void) : Storage(typeid(this)) {
 }
 
 /** Destructor.

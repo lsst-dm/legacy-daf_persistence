@@ -70,7 +70,7 @@ dafPersist::PropertySetFormatter::registration("PropertySet",
  */
 dafPersist::PropertySetFormatter::PropertySetFormatter(
     pexPolicy::Policy::Ptr policy) :
-    dafPersist::Formatter(typeid(*this)), _policy(policy) {
+    dafPersist::Formatter(typeid(this)), _policy(policy) {
 }
 
 /** Minimal destructor.

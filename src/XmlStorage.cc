@@ -28,7 +28,7 @@ namespace persistence {
 
 /** Constructor.
  */
-XmlStorage::XmlStorage(void) : Storage(typeid(*this)),
+XmlStorage::XmlStorage(void) : Storage(typeid(this)),
     _ostream(0), _istream(0), _oarchive(0), _iarchive(0) {
 }
 

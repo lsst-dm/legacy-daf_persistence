@@ -31,7 +31,7 @@ namespace persistence {
 
 /** Constructor.
 */
-DbStorage::DbStorage(void) : Storage(typeid(*this)), _impl(new DbStorageImpl) {
+DbStorage::DbStorage(void) : Storage(typeid(this)), _impl(new DbStorageImpl) {
 }
 
 /** Constructor with subclass type.

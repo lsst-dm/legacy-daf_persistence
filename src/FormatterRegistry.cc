@@ -92,7 +92,7 @@ Formatter::Ptr FormatterRegistry::lookupFormatter(
 /** Default constructor.
  */
 FormatterRegistry::FormatterRegistry(void) :
-    lsst::daf::base::Citizen(typeid(*this)) {
+    lsst::daf::base::Citizen(typeid(this)) {
     markPersistent();
 }
 

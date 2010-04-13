@@ -111,19 +111,19 @@ template<> bool dafPer::BoundVarTraits<std::string>::isUnsigned = false;
 /** Default constructor.
  */
 dafPer::BoundVar::BoundVar(void) :
-    lsst::daf::base::Citizen(typeid(*this)), _data(0) {
+    lsst::daf::base::Citizen(typeid(this)), _data(0) {
 }
 
 /** Constructor from pointer.
   */
 dafPer::BoundVar::BoundVar(void* location) :
-    lsst::daf::base::Citizen(typeid(*this)), _data(location) {
+    lsst::daf::base::Citizen(typeid(this)), _data(location) {
 }
 
 /** Copy constructor.
   */
 dafPer::BoundVar::BoundVar(BoundVar const& src) :
-    lsst::daf::base::Citizen(typeid(*this)),
+    lsst::daf::base::Citizen(typeid(this)),
     _type(src._type), _isNull(src._isNull), _isUnsigned(src._isUnsigned),
     _length(src._length), _data(src._data) {
 }
@@ -135,7 +135,7 @@ dafPer::BoundVar::BoundVar(BoundVar const& src) :
 /** Default constructor.
  */
 dafPer::DbStorageImpl::DbStorageImpl(void) :
-    lsst::daf::base::Citizen(typeid(*this)), _db(0) {
+    lsst::daf::base::Citizen(typeid(this)), _db(0) {
 }
 
 /** Destructor.

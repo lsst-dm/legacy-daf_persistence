@@ -35,7 +35,7 @@ namespace persistence {
  * \param[in] policy Policy to configure the Persistence object
  */
 Persistence::Persistence(lsst::pex::policy::Policy::Ptr policy) :
-    lsst::daf::base::Citizen(typeid(*this)), _policy(policy) {
+    lsst::daf::base::Citizen(typeid(this)), _policy(policy) {
 }
 
 /** Destructor.

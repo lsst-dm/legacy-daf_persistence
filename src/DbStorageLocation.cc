@@ -30,7 +30,7 @@ namespace persistence {
 /** Default constructor.
  */
 DbStorageLocation::DbStorageLocation(void) :
-    lsst::daf::base::Citizen(typeid(*this)),
+    lsst::daf::base::Citizen(typeid(this)),
     _dbType(), _hostname(), _port(), _username(), _password(), _dbName() {
 }
 
@@ -39,7 +39,7 @@ DbStorageLocation::DbStorageLocation(void) :
  * port, database name)
  */
 DbStorageLocation::DbStorageLocation(std::string const& url) :
-    lsst::daf::base::Citizen(typeid(*this)) {
+    lsst::daf::base::Citizen(typeid(this)) {
     boost::smatch what;
     boost::regex
         expression("(\\w+)://(\\S+):(\\d+)/(\\S+)");

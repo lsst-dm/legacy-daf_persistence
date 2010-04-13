@@ -23,7 +23,7 @@ class MyPersistable : public dafBase::Persistable {
 // A minimal Formatter.
 class MyFormatter : public dafPersist::Formatter {
 public:
-    MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
+    MyFormatter(void) : dafPersist::Formatter(typeid(this)) { };
     // Normally, the following functions would do something.  For testing,
     // they do nothing.
     virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
@@ -46,7 +46,7 @@ dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy
 // here for test purposes only.
 class YourFormatter : public dafPersist::Formatter {
 public:
-    YourFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
+    YourFormatter(void) : dafPersist::Formatter(typeid(this)) { };
     virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
     virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
