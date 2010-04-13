@@ -30,7 +30,7 @@ public:
     double getRa(void) const { return _ra; };
     double getDecl(void) const { return _decl; };
 private:
-    LSST_PERSIST_FORMATTER(MyFormatter);
+    LSST_PERSIST_FORMATTER(MyFormatter)
     double _ra;
     double _decl;
 };
@@ -38,7 +38,7 @@ private:
 // A small Formatter.
 class MyFormatter : public dafPersist::Formatter {
 public:
-    MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
+    MyFormatter(void) : dafPersist::Formatter(typeid(this)) { };
     virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
@@ -55,13 +55,13 @@ private:
 dafPersist::FormatterRegistration MyFormatter::registration("MyPersistable", typeid(MyPersistable), createInstance);
 
 // The definition of the factory function.
-dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr policy) {
+dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy::Ptr ) {
     return dafPersist::Formatter::Ptr(new MyFormatter);
 }
 
 // Persistence for MyPersistables.
 // Supports BoostStorage only.
-void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr) {
     BOOST_CHECK_MESSAGE(persistable != 0, "Persisting null");
     BOOST_CHECK_MESSAGE(storage, "No Storage provided");
     MyPersistable const* mp = dynamic_cast<MyPersistable const*>(persistable);
@@ -79,7 +79,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage only.
-dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr) {
     MyPersistable* mp = new MyPersistable;
 
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
@@ -93,18 +93,18 @@ dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBas
     return mp;
 }
 
-void MyFormatter::update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::update(dafBase::Persistable* , dafPersist::Storage::Ptr, dafBase::PropertySet::Ptr) {
     BOOST_FAIL("Shouldn't be updating");
 }
 
 // Actually serialize the MyPersistable.
 // Send/get the RA and declination to/from the archive.
-template <class Archive> void MyFormatter::delegateSerialize(Archive& ar, unsigned int const version, dafBase::Persistable* persistable) {
+template <class Archive> void MyFormatter::delegateSerialize(Archive& ar, unsigned int const, dafBase::Persistable* persistable) {
     MyPersistable* mp = dynamic_cast<MyPersistable*>(persistable);
     ar & boost::serialization::base_object<dafBase::Persistable>(*mp);
     ar & mp->_ra;
     ar & mp->_decl;
-};
+}
 
 BOOST_CLASS_EXPORT(MyPersistable)
 
