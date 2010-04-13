@@ -11,7 +11,7 @@ extern "C" {
 
 #include "boost/serialization/export.hpp"
 
-#define BOOST_TEST_MODULE Persistence_1
+#define BOOST_TEST_MODULE PropertySet_2
 #include "boost/test/included/unit_test.hpp"
 
 namespace test = boost::test_tools;
