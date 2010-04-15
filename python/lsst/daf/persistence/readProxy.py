@@ -5,7 +5,9 @@
 
 class ReadProxy(object):
     """ReadProxy provides a lazy-loading object that is initialized by a
-    callback function set in ReadProxy's constructor."""
+    callback function set in ReadProxy's constructor.  Adapted from
+    peak.util.proxies.LazyProxy, which was written by Phillip J. Eby
+    (peak@eby-sarna.com)."""
 
     __slots__ = ('__cache__', '__callback__', '__subject__')
 
