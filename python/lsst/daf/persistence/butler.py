@@ -143,7 +143,10 @@ class Butler(object):
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         locations = location.getLocations()
-        locationString = locations[0]
+        if hasattr(locations, "__iter__"):
+            locationString = locations[0]
+        else:
+            locationString = locations
 
         # Create a list of Storages for the item.
         storageList = StorageList()
