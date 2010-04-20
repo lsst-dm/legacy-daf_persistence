@@ -141,14 +141,16 @@ class Butler(object):
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
+        storageName = location.getStorageName()
+        locations = location.getLocations()
+        locationString = locations[0]
 
         # Create a list of Storages for the item.
         storageList = StorageList()
-        for storageName, locationString in location.getStorageInfo():
-            logLoc = LogicalLocation(locationString, additionalData)
-            # self.log.log(Log.INFO, "persisting %s as %s" % (item, logLoc.locString()))
-            storage = self.persistence.getPersistStorage(storageName, logLoc)
-            storageList.append(storage)
+        logLoc = LogicalLocation(locationString, additionalData)
+        # self.log.log(Log.INFO, "persisting %s as %s" % (item, logLoc.locString()))
+        storage = self.persistence.getPersistStorage(storageName, logLoc)
+        storageList.append(storage)
 
         # Persist the item.
         if '__deref__' in dir(obj):
