@@ -139,7 +139,7 @@ class Butler(object):
         @param **rest         keyword arguments for the data id.
         """
         dataId = self._combineDicts(dataId, **rest)
-        location = self.outputMapper.map(datasetType, dataId)
+        location = self.mapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
 
         # Create a list of Storages for the item.
