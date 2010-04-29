@@ -3,6 +3,7 @@
 
 """This module defines the Butler class."""
 
+import os
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
