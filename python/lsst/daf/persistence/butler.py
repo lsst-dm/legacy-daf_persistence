@@ -101,7 +101,10 @@ class Butler(object):
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         if storageName == 'BoostStorage' or storageName == 'FitsStorage':
-            for locationString in location.getLocations():
+            locations = location.getLocations()
+            if not hasattr(locations, "__iter__"):
+                locations = [locations]
+            for locationString in locations:
                 logLoc = LogicalLocation(locationString, additionalData)
                 if not os.path.exists(logLoc.locString()):
                     return False
