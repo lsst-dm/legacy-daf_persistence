@@ -98,10 +98,13 @@ class Butler(object):
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
-        for (storageName, locationString) in location.getStorageInfo():
-            if storageName == 'BoostStorage' or storageName == 'FitsStorage':
+        storageName = location.getStorageName()
+        if storageName == 'BoostStorage' or storageName == 'FitsStorage':
+            for locationString in location.getLocations():
                 logLoc = LogicalLocation(locationString, additionalData)
-                return os.path.exists(logLoc.locString())
+                if not os.path.exists(logLoc.locString()):
+                    return False
+            return True
         return False
 
     def get(self, datasetType, dataId={}, **rest):
