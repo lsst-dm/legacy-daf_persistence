@@ -14,16 +14,15 @@ class Butler(object):
 
     Butlers should always be created using ButlerFactory.create().
     
-    A Butler manages an input collection and an output collection.  Each
-    collection is composed of data sets.  Each data set has a type
-    representing its intended usage and a location.  Note that the data set
+    A Butler manages an collection of datasets.  Each dataset has a type
+    representing its intended usage and a location.  Note that the dataset
     type is not the same as the C++ or Python type of the object containing
     the data.  For example, an ExposureF object might be used to hold the data
     for a raw image, a post-ISR image, a calibrated science image, or a
-    difference image.  These would all be different data set types.
+    difference image.  These would all be different dataset types.
 
-    Each Butler is responsible for a subset of its input collection defined by
-    the partial data identifier used to create it.  A Butler can produce a
+    Each Butler is responsible for a subset of its collection defined by the
+    partial data identifier used to create it.  A Butler can produce a
     collection of possible values for a key (or tuples of values for multiple
     keys) if given a partial data identifier.  It can check for the existence
     of a file containing a data set given its type and data identifier.  The
@@ -43,9 +42,7 @@ class Butler(object):
 
     Public methods:
 
-    inputKeys(self)
-
-    outputKeys(self)
+    getKeys(self)
 
     queryMetadata(self, datasetType, keys, format=None, dataId={}, **rest)
 
