@@ -3,6 +3,7 @@
 
 """This module defines the Butler class."""
 
+import cPickle
 import os
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
@@ -97,7 +98,8 @@ class Butler(object):
         location = self.mapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
-        if storageName == 'BoostStorage' or storageName == 'FitsStorage':
+        if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
+                'PickleStorage'):
             locations = location.getLocations()
             if not hasattr(locations, "__iter__"):
                 locations = [locations]
@@ -119,14 +121,17 @@ class Butler(object):
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
 
-        # import this pythonType dynamically 
-        pythonTypeTokenList = location.getPythonType().split('.')
-        importClassString = pythonTypeTokenList.pop()
-        importClassString = importClassString.strip()
-        importPackage = ".".join(pythonTypeTokenList)
-        importType = __import__(importPackage, globals(), locals(), \
-                [importClassString], -1) 
-        pythonType = getattr(importType, importClassString)
+        if location.getPythonType() is not None:
+            # import this pythonType dynamically 
+            pythonTypeTokenList = location.getPythonType().split('.')
+            importClassString = pythonTypeTokenList.pop()
+            importClassString = importClassString.strip()
+            importPackage = ".".join(pythonTypeTokenList)
+            importType = __import__(importPackage, globals(), locals(), \
+                    [importClassString], -1) 
+            pythonType = getattr(importType, importClassString)
+        else:
+            pythonType = None
         if self.mapper.canStandardize(datasetType):
             callback = lambda: self.mapper.standardize(datasetType,
                     self._read(pythonType, location), dataId)
@@ -151,10 +156,18 @@ class Butler(object):
             locationString = locations[0]
         else:
             locationString = locations
+        logLoc = LogicalLocation(locationString, additionalData)
+
+        if storageName == "PickleStorage":
+            outfile = open(logLoc.locString(), "wb")
+            try:
+                cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+            finally:
+                outfile.close()
+            return
 
         # Create a list of Storages for the item.
         storageList = StorageList()
-        logLoc = LogicalLocation(locationString, additionalData)
         # self.log.log(Log.INFO, "persisting %s as %s" % (item, logLoc.locString()))
         storage = self.persistence.getPersistStorage(storageName, logLoc)
         storageList.append(storage)
@@ -194,6 +207,12 @@ class Butler(object):
             # self.log.log(Log.INFO, "loading %s as %s" % (item, logLoc.locString()))
             if storageName == "PafStorage":
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
+            elif storageName == "PickleStorage":
+                infile = open(logLoc.locString(), "rb")
+                try:
+                    finalItem = cPickle.load(infile)
+                finally:
+                    infile.close()
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
