@@ -33,6 +33,8 @@ class Mapper(object):
 
     queryMetadata(self, datasetType, key, format, dataId)
 
+    canStandardize(self, datasetType)
+
     standardize(self, datasetType, item, dataId)
     """
 
