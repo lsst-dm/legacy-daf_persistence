@@ -96,10 +96,6 @@ class Butler(object):
 
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
-        if location == []:
-            raise RuntimeError, \
-                    "No location for dataset type %s, keys = %s" % \
-                    (datasetType, str(dataId))
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
@@ -124,10 +120,6 @@ class Butler(object):
         """
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
-        if location == []:
-            raise RuntimeError, \
-                    "No location for dataset type %s, keys = %s" % \
-                    (datasetType, str(dataId))
 
         if location.getPythonType() is not None:
             # import this pythonType dynamically 
