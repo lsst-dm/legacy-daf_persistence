@@ -15,7 +15,10 @@ class ButlerLocation(object):
         self.pythonType = pythonType
         self.cppType = cppType
         self.storageName = storageName
-        self.locationList = locationList
+        if hasattr(locationList, '__iter__'):
+            self.locationList = locationList
+        else:
+            self.locationList = [locationList]
         self.additionalData = dafBase.PropertySet()
         for k, v in dataId.iteritems():
             self.additionalData.set(k, v)
