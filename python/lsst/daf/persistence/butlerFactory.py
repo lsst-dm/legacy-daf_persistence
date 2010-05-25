@@ -6,7 +6,7 @@
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
-from lsst.daf.persistence import Butler, Persistence
+from lsst.daf.persistence import Butler, Mapper, Persistence
 
 class ButlerFactory(object):
     """ButlerFactory creates data Butlers containing data mappers.
@@ -91,5 +91,12 @@ def _importMapper(name, policy):
     importPackage = ".".join(mapperTokenList)
     module = __import__(importPackage, globals(), locals(), \
             [importClassString], -1)
+    if not hasattr(module, importClassString):
+        raise TypeError, "Unable to find mapper class %s in module %s" % (
+                importClassString, importPackage)
     mapper = getattr(module, importClassString)
+    if not isinstance(mapper, type):
+        raise TypeError, "Not a Mapper (or even a class): %s" % (mapper,)
+    if not issubclass(mapper, Mapper):
+        raise TypeError, "Not a Mapper: %s" % (mapper,)
     return mapper(policy)

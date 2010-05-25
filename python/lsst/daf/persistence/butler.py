@@ -3,6 +3,8 @@
 
 """This module defines the Butler class."""
 
+import cPickle
+import os
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
@@ -13,16 +15,15 @@ class Butler(object):
 
     Butlers should always be created using ButlerFactory.create().
     
-    A Butler manages an input collection and an output collection.  Each
-    collection is composed of data sets.  Each data set has a type
-    representing its intended usage and a location.  Note that the data set
+    A Butler manages an collection of datasets.  Each dataset has a type
+    representing its intended usage and a location.  Note that the dataset
     type is not the same as the C++ or Python type of the object containing
     the data.  For example, an ExposureF object might be used to hold the data
     for a raw image, a post-ISR image, a calibrated science image, or a
-    difference image.  These would all be different data set types.
+    difference image.  These would all be different dataset types.
 
-    Each Butler is responsible for a subset of its input collection defined by
-    the partial data identifier used to create it.  A Butler can produce a
+    Each Butler is responsible for a subset of its collection defined by the
+    partial data identifier used to create it.  A Butler can produce a
     collection of possible values for a key (or tuples of values for multiple
     keys) if given a partial data identifier.  It can check for the existence
     of a file containing a data set given its type and data identifier.  The
@@ -42,9 +43,7 @@ class Butler(object):
 
     Public methods:
 
-    inputKeys(self)
-
-    outputKeys(self)
+    getKeys(self)
 
     queryMetadata(self, datasetType, keys, format=None, dataId={}, **rest)
 
@@ -61,6 +60,8 @@ class Butler(object):
         self.mapper = mapper
         self.persistence = persistence
         self.partialId = partialId
+        self.log = pexLog.Log(pexLog.Log.getDefaultLog(),
+                "daf.persistence.butler")
 
     def getKeys(self):
         """Returns the valid data id keys for the dataset collection."""
@@ -98,10 +99,19 @@ class Butler(object):
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
-        for (storageName, locationString) in location.getStorageInfo():
-            if storageName == 'BoostStorage' or storageName == 'FitsStorage':
+        storageName = location.getStorageName()
+        if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
+                'PickleStorage'):
+            locations = location.getLocations()
+            for locationString in locations:
                 logLoc = LogicalLocation(locationString, additionalData)
-                return os.path.exists(logLoc.locString())
+                if not os.path.exists(logLoc.locString()):
+                    return False
+            return True
+        self.log.log(pexLog.Log.WARN,
+                "fileExists() for non-file storage %s, " +
+                "dataset type=%s, keys=%s""" %
+                (storageName, datasetType, str(dataId)))
         return False
 
     def get(self, datasetType, dataId={}, **rest):
@@ -114,15 +124,20 @@ class Butler(object):
         """
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
+        self.log.log(pexLog.Log.DEBUG, "Get type=%s keys=%s from %s" %
+                (datasetType, dataId, str(location)))
 
-        # import this pythonType dynamically 
-        pythonTypeTokenList = location.getPythonType().split('.')
-        importClassString = pythonTypeTokenList.pop()
-        importClassString = importClassString.strip()
-        importPackage = ".".join(pythonTypeTokenList)
-        importType = __import__(importPackage, globals(), locals(), \
-                [importClassString], -1) 
-        pythonType = getattr(importType, importClassString)
+        if location.getPythonType() is not None:
+            # import this pythonType dynamically 
+            pythonTypeTokenList = location.getPythonType().split('.')
+            importClassString = pythonTypeTokenList.pop()
+            importClassString = importClassString.strip()
+            importPackage = ".".join(pythonTypeTokenList)
+            importType = __import__(importPackage, globals(), locals(), \
+                    [importClassString], -1) 
+            pythonType = getattr(importType, importClassString)
+        else:
+            pythonType = None
         if self.mapper.canStandardize(datasetType):
             callback = lambda: self.mapper.standardize(datasetType,
                     self._read(pythonType, location), dataId)
@@ -139,16 +154,33 @@ class Butler(object):
         @param **rest         keyword arguments for the data id.
         """
         dataId = self._combineDicts(dataId, **rest)
-        location = self.outputMapper.map(datasetType, dataId)
+        location = self.mapper.map(datasetType, dataId)
+        self.log.log(pexLog.Log.DEBUG, "Put type=%s keys=%s to %s" %
+                (datasetType, dataId, str(location)))
         additionalData = location.getAdditionalData()
+        storageName = location.getStorageName()
+        locations = location.getLocations()
+        # TODO support multiple output locations
+        locationString = locations[0]
+        logLoc = LogicalLocation(locationString, additionalData)
+
+        if storageName == "PickleStorage":
+            self.log.log(pexLog.Log.DEBUG, "Writing to PickleStorage(%s)" %
+                    (logLoc.locString(),))
+            outfile = open(logLoc.locString(), "wb")
+            try:
+                cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+            finally:
+                outfile.close()
+            self.log.log(pexLog.Log.DEBUG, "Writing complete")
+            return
 
         # Create a list of Storages for the item.
         storageList = StorageList()
-        for storageName, locationString in location.getStorageInfo():
-            logLoc = LogicalLocation(locationString, additionalData)
-            # self.log.log(Log.INFO, "persisting %s as %s" % (item, logLoc.locString()))
-            storage = self.persistence.getPersistStorage(storageName, logLoc)
-            storageList.append(storage)
+        storage = self.persistence.getPersistStorage(storageName, logLoc)
+        storageList.append(storage)
+        self.log.log(pexLog.Log.DEBUG, "Writing to %s(%s)" %
+                (storageName, logLoc.locString()))
 
         # Persist the item.
         if '__deref__' in dir(obj):
@@ -157,6 +189,7 @@ class Butler(object):
                     obj.__deref__(), storageList, additionalData)
         else:
             self.persistence.persist(obj, storageList, additionalData)
+        self.log.log(pexLog.Log.DEBUG, "Writing complete")
 
     def _combineDicts(self, dataId, **rest):
         finalId = {}
@@ -169,29 +202,40 @@ class Butler(object):
         return mapper.map(datasetType, dataId)
 
     def _read(self, pythonType, location):
-        # print "Loading", pythonType, "from", location
         additionalData = location.getAdditionalData()
         # Create a list of Storages for the item.
         storageName = location.getStorageName()
         results = []
         locations = location.getLocations()
         returnList = True
-        if not hasattr(locations, "__iter__"):
-            locations = [locations]
+        if len(locations) == 1:
             returnList = False
 
         for locationString in locations:
             logLoc = LogicalLocation(locationString, additionalData)
-            # self.log.log(Log.INFO, "loading %s as %s" % (item, logLoc.locString()))
             if storageName == "PafStorage":
+                self.log.log(pexLog.Log.DEBUG, "Reading from PafStorage(%s)" %
+                        (logLoc.locString(),))
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
+            elif storageName == "PickleStorage":
+                self.log.log(pexLog.Log.DEBUG,
+                        "Reading from PickleStorage(%s)" %
+                        (logLoc.locString(),))
+                infile = open(logLoc.locString(), "rb")
+                try:
+                    finalItem = cPickle.load(infile)
+                finally:
+                    infile.close()
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
                 storageList.append(storage)
+                self.log.log(pexLog.Log.DEBUG, "Reading from %s(%s)" %
+                        (storageName, logLoc.locString()))
                 itemData = self.persistence.unsafeRetrieve(
                         location.getCppType(), storageList, additionalData)
                 finalItem = pythonType.swigConvert(itemData)
+            self.log.log(pexLog.Log.DEBUG, "Reading complete")
             results.append(finalItem)
 
         if not returnList:
