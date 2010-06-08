@@ -85,7 +85,12 @@ class Butler(object):
         dataId = self._combineDicts(dataId, **rest)
         if format is None:
             format = (key,)
-        return self.mapper.queryMetadata(datasetType, key, format, dataId)
+        elif not hasattr(format, '__iter__'):
+            format = (format,)
+        tuples = self.mapper.queryMetadata(datasetType, key, format, dataId)
+        if len(format) == 1:
+            return [x[0] for x in tuples]
+        return tuples
 
     def datasetExists(self, datasetType, dataId={}, **rest):
         """Determines if a data set file exists.
