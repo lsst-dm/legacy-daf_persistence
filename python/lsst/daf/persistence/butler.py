@@ -47,7 +47,7 @@ class Butler(object):
 
     queryMetadata(self, datasetType, keys, format=None, dataId={}, **rest)
 
-    fileExists(self, datasetType, dataId={}, **rest)
+    datasetExists(self, datasetType, dataId={}, **rest)
 
     get(self, datasetType, dataId={}, **rest)
 
@@ -84,16 +84,16 @@ class Butler(object):
 
         dataId = self._combineDicts(dataId, **rest)
         if format is None:
-            format = key
+            format = (key,)
         return self.mapper.queryMetadata(datasetType, key, format, dataId)
 
-    def fileExists(self, datasetType, dataId={}, **rest):
+    def datasetExists(self, datasetType, dataId={}, **rest):
         """Determines if a data set file exists.
 
         @param datasetType    the type of data set to inquire about.
         @param dataId         the data id of the data set.
         @param **rest         keyword arguments for the data id.
-        @returns True if the data set is file-based and exists.
+        @returns True if the data set exists or is non-file-based.
         """
 
         dataId = self._combineDicts(dataId, **rest)
@@ -109,10 +109,10 @@ class Butler(object):
                     return False
             return True
         self.log.log(pexLog.Log.WARN,
-                "fileExists() for non-file storage %s, " +
+                "datasetExists() for non-file storage %s, " +
                 "dataset type=%s, keys=%s""" %
                 (storageName, datasetType, str(dataId)))
-        return False
+        return True
 
     def get(self, datasetType, dataId={}, **rest):
         """Retrieves a data set given an input collection data id.
