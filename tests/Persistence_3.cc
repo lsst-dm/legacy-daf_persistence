@@ -168,6 +168,14 @@ BOOST_AUTO_TEST_CASE(Persistence3Test) {
         BOOST_CHECK_MESSAGE(mp->getRa() == 1.73205, "RA is incorrect");
         BOOST_CHECK_MESSAGE(mp->getDecl() == 1.61803, "Decl is incorrect");
     }
+    {
+        dafPersist::Persistence::Ptr persist = dafPersist::Persistence::getPersistence(policy);
+        dafPersist::Storage::List storageList;
+        dafPersist::LogicalLocation pathLoc("this.does.not.exist");
+        BOOST_CHECK_THROW(persist->getRetrieveStorage("BoostStorage", pathLoc),
+                          pexExcept::NotFoundException);
+    }
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

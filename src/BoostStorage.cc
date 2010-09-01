@@ -42,7 +42,9 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/BoostStorage.h"
 
+#include <boost/format.hpp>
 #include <fstream>
+#include <unistd.h>
 
 #include "lsst/daf/persistence/LogicalLocation.h"
 
@@ -80,7 +82,13 @@ void BoostStorage::setPersistLocation(LogicalLocation const& location) {
  * \param[in] location Pathname to read from.
  */
 void BoostStorage::setRetrieveLocation(LogicalLocation const& location) {
-    _istream.reset(new std::ifstream(location.locString().c_str()));
+    char const* fname = location.locString().c_str();
+    if (::access(fname, R_OK | F_OK) != 0) {
+        throw LSST_EXCEPT(pexExcept::NotFoundException,
+                          (boost::format("Unable to access file: %1%")
+                           % fname).str());
+    }
+    _istream.reset(new std::ifstream(fname));
     _iarchive.reset(new boost::archive::text_iarchive(*_istream));
 }
 
