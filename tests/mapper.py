@@ -54,8 +54,8 @@ class MapperTestCase(unittest.TestCase):
     def setUp(self):
         self.mapper = MinMapper()
 
-    def testGetDataSetTypes(self):
-        self.assertEqual(set(self.mapper.getDataSetTypes()),
+    def testGetDatasetTypes(self):
+        self.assertEqual(set(self.mapper.getDatasetTypes()),
                 set(["x", "badSourceHist"]))
 
     def testMap(self):
