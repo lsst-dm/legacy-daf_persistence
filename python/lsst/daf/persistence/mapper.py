@@ -50,7 +50,7 @@ class Mapper(object):
 
     __init__(self)
 
-    getDataSetTypes(self)
+    getDatasetTypes(self)
 
     map(self, datasetType, dataId)
 
@@ -73,13 +73,13 @@ class Mapper(object):
         func = getattr(self, 'query_' + datasetType)
         return func(key, format, dataId)
 
-    def getDataSetTypes(self):
+    def getDatasetTypes(self):
         """Return a list of the mappable dataset types."""
 
         list = []
         for attr in dir(self):
             if attr.startswith("map_"):
-                list += attr[5:]
+                list.append(attr[4:])
         return list
 
     def map(self, datasetType, dataId):
