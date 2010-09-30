@@ -26,5 +26,6 @@ from persistenceLib import *
 from butlerLocation import *
 from readProxy import *
 from butler import *
+from mapping import *
 from mapper import *
 from butlerFactory import *
