@@ -76,7 +76,11 @@ class Mapping(object):
 
 	query (string): a Python string providing a SQL query to look up
 	the registry.  It should typically start as "SELECT *".
-	
+
+	lookup (string): the name of a function in the appropriate Mapper
+	subclass that will lookup the desired properties.  The function
+	will receive: the Mapper, this Mapping, a list of the desired
+	properties, and the data identifier dict.	
 	"""
 
 	def __init__(self,					# Mapping object
@@ -117,6 +121,10 @@ class Mapping(object):
 			self.query = policy.getString("query")
 		else:
 			self.query = None
+		if policy.exists("lookup"):
+			self.lookupFunc = policy.getString("lookup")
+		else:
+			self.lookupFunc = None
 		return
 
 
@@ -174,8 +182,12 @@ class Mapping(object):
 			return self._lookupTables(mapper, properties, dataId)
 		elif self.query is not None:
 			return self._lookupQuery(mapper, properties, dataId)
+		elif self.lookupFunc is not None:
+			func = getattr(mapper, self.lookupFunc)	# Function for lookup
+			return func(self, properties, dataId)
 		else:
 			raise RuntimeError, "No table or query specified to queryMetadata for %s" % self.type
+
 
 	def have(self,						# Mapping
 			 properties,				# Properties required
@@ -236,6 +248,7 @@ class Mapping(object):
 			where[k] = '?'
 			values.append(v)
 		return self.registry.executeQuery(properties, self.tables, where, None, values)
+
 
 	# Perform a lookup in the registry using the "query" specification
 	def _lookupQuery(self,				# Mapping

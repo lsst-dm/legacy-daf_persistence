@@ -141,22 +141,24 @@ class Mapper(object):
 
 		# Mappings
 		self.mappings = dict()
-		exposures = self.policy.getPolicy("exposures") # List of exposure types
-		for type in exposures.names(True):
-			subPolicy = exposures.get(type)
-			if not isinstance(subPolicy, pexPolicy.Policy):
-				raise RuntimeError, "Exposure type %s is not a policy" % type
-			subPolicy.mergeDefaults(mappingPolicy)
-			self.mappings[type] = Mapping(mapper=self, policy=subPolicy, type=type,
-										  registry=self.registry, root=self.root)
-		calibs = self.policy.getPolicy("calibrations") # List of calibration types
-		for type in calibs.names(True):
-			subPolicy = calibs.get(type)
-			if not isinstance(subPolicy, pexPolicy.Policy):
-				raise RuntimeError, "Calibration type %s is not a policy" % type
-			subPolicy.mergeDefaults(mappingPolicy)
-			self.mappings[type] = CalibrationMapping(mapper=self, policy=subPolicy, type=type,
-													 registry=self.calibRegistry, root=self.calibRoot)
+		if self.policy.exists("exposures"):
+			exposures = self.policy.getPolicy("exposures") # List of exposure types
+			for type in exposures.names(True):
+				subPolicy = exposures.get(type)
+				if not isinstance(subPolicy, pexPolicy.Policy):
+					raise RuntimeError, "Exposure type %s is not a policy" % type
+				subPolicy.mergeDefaults(mappingPolicy)
+				self.mappings[type] = Mapping(mapper=self, policy=subPolicy, type=type,
+											  registry=self.registry, root=self.root)
+		if self.policy.exists("calibrations"):
+			calibs = self.policy.getPolicy("calibrations") # List of calibration types
+			for type in calibs.names(True):
+				subPolicy = calibs.get(type)
+				if not isinstance(subPolicy, pexPolicy.Policy):
+					raise RuntimeError, "Calibration type %s is not a policy" % type
+				subPolicy.mergeDefaults(mappingPolicy)
+				self.mappings[type] = CalibrationMapping(mapper=self, policy=subPolicy, type=type,
+														 registry=self.calibRegistry, root=self.calibRoot)
 
 		# Subclass should override these!
 		self.keys = []
@@ -164,10 +166,13 @@ class Mapper(object):
 		self.filterIdMap = {}
 
 		# Camera geometry
-		self.cameraPolicyLocation = self.policy.getString('camera')
-		cameraPolicy = cameraGeomUtils.getGeomPolicy(self.cameraPolicyLocation, module=module,
-													 directory=policyDir)
-		self.camera = cameraGeomUtils.makeCamera(cameraPolicy)
+		self.cameraPolicyLocation = None
+		self.camera = None
+		if self.policy.exists('camera'):
+			self.cameraPolicyLocation = self.policy.getString('camera')
+			cameraPolicy = cameraGeomUtils.getGeomPolicy(self.cameraPolicyLocation, module=module,
+														 directory=policyDir)
+			self.camera = cameraGeomUtils.makeCamera(cameraPolicy)
 
 		# Defect registry
 		self.defectRegistry = None
@@ -179,10 +184,12 @@ class Mapper(object):
 					butlerUtils.Registry.create(defectRegistryLocation)
 
 		# Filters
-		filterPolicyLocation = self.policy.getString('filters')
-		filterPolicyFile = pexPolicy.DefaultPolicyFile(module, filterPolicyLocation, policyDir)
-		filterPolicy = pexPolicy.Policy.createPolicy(filterPolicyFile, filterPolicyFile.getRepositoryPath())
-		imageUtils.defineFiltersFromPolicy(filterPolicy, reset=True)
+		if self.policy.exists('filters'):
+			filterPolicyLocation = self.policy.getString('filters')
+			filterPolicyFile = pexPolicy.DefaultPolicyFile(module, filterPolicyLocation, policyDir)
+			filterPolicy = pexPolicy.Policy.createPolicy(filterPolicyFile,
+														 filterPolicyFile.getRepositoryPath())
+			imageUtils.defineFiltersFromPolicy(filterPolicy, reset=True)
 
 
 	def getKeys(self):
@@ -217,7 +224,11 @@ class Mapper(object):
 	def canStandardize(self, type):
 		"""Return true if this mapper can standardize an object of the given
 		dataset type."""
-		return self.getMapping(type).canStandardize()
+		try:
+			mapping = self.getMapping(type)
+		except KeyError:
+			return False
+		return mapping.canStandardize()
 
 	def standardize(self,			   # The Mapper
 					type,			   # Type of data

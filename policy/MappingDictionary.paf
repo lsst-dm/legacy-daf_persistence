@@ -52,4 +52,9 @@ definitions: {
 		description: "Function to use for standardizing this data set type"
 		maxOccurs: 1
 	}
+	lookup: {
+		type: string
+		description: "Function to use for looking up this data set type"
+		maxOccurs: 1
+	}
 }
