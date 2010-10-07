@@ -283,7 +283,10 @@ class Mapper(object):
 		if path is not None:
 			self.log.log(pexLog.Log.INFO,
 						 "Loading %s registry from %s" % (name, path))
-			return butlerUtils.Registry.create(path)
+			registry = butlerUtils.Registry.create(path)
+			if registry is None:
+					self.log.log(pexLog.Log.ERROR, "Unable to load %s registry from %s" % (name, path))
+			return registry
 		else:
 			# TODO Try a FsRegistry(root)
 			self.log.log(pexLog.Log.WARN,
