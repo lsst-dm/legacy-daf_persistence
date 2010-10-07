@@ -276,7 +276,7 @@ def addIdentifiers(lookups,			    # Lookups from Mappings.lookup()
 				   clobber=False		# Clobber existing values?
 				   ):
 	if len(lookups) != 1:
-		raise RuntimeError, "No unique lookup: %d" % len(lookups)
+		raise RuntimeError, "No unique lookup for %s from %s: %d" % (properties, dataId, len(lookups))
 	for i, prop in enumerate(properties):
 		if clobber or not dataId.has_key(prop):
 			dataId[prop] = lookups[0][i]
