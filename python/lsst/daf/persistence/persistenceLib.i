@@ -38,6 +38,7 @@ Access to the lsst::daf::persistence classes
 #include "lsst/daf/persistence/Storage.h"
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/DbTsvStorage.h"
+#include "lsst/daf/base.h"
 %}
 
 %include "lsst/p_lsstSwig.i"
