@@ -136,6 +136,11 @@ void DbTsvStorage::endTransaction(void) {
         throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
             "Unable to connect to MySQL database: " + _location);
     }
+    if (mysql_options(db, MYSQL_OPT_LOCAL_INFILE, 0) != 0) {
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+            std::string("Unable to set LOCAL INFILE option - * ") +
+            mysql_error(db));
+    }
 
     std::string query = "LOAD DATA LOCAL INFILE";
     query += " '";
@@ -158,7 +163,8 @@ void DbTsvStorage::endTransaction(void) {
     if (mysql_query(db, query.c_str()) != 0) {
         mysql_close(db);
         throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
-            "Unable to load data into database table: " + _tableName);
+            "Unable to load data into database table: " + _tableName +
+            "- * " + mysql_error(db));
     }
     mysql_close(db);
 

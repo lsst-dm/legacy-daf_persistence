@@ -166,7 +166,11 @@ class Butler(object):
             pythonType = getattr(importType, importClassString)
         else:
             pythonType = None
-        if self.mapper.canStandardize(datasetType):
+        if hasattr(self.mapper, "bypass_" + datasetType):
+            bypassFunc = getattr(self.mapper, "bypass_" + datasetType)
+            callback = lambda: bypassFunc(datasetType, pythonType,
+                    location, dataId)
+        elif self.mapper.canStandardize(datasetType):
             callback = lambda: self.mapper.standardize(datasetType,
                     self._read(pythonType, location), dataId)
         else:
