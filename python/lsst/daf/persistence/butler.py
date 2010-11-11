@@ -197,21 +197,21 @@ class Butler(object):
         logLoc = LogicalLocation(locationString, additionalData)
 
         if storageName == "PickleStorage":
-            self.log.log(pexLog.Log.DEBUG, "Writing to PickleStorage(%s)" %
+            self.log.log(pexLog.Log.INFO - 1, "Writing to PickleStorage(%s)" %
                     (logLoc.locString(),))
             outfile = open(logLoc.locString(), "wb")
             try:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
             finally:
                 outfile.close()
-            self.log.log(pexLog.Log.DEBUG, "Writing complete")
+            self.log.log(pexLog.Log.INFO - 1, "Writing complete")
             return
 
         # Create a list of Storages for the item.
         storageList = StorageList()
         storage = self.persistence.getPersistStorage(storageName, logLoc)
         storageList.append(storage)
-        self.log.log(pexLog.Log.DEBUG, "Writing to %s(%s)" %
+        self.log.log(pexLog.Log.INFO - 1, "Writing to %s(%s)" %
                 (storageName, logLoc.locString()))
 
         # Persist the item.
@@ -221,7 +221,7 @@ class Butler(object):
                     obj.__deref__(), storageList, additionalData)
         else:
             self.persistence.persist(obj, storageList, additionalData)
-        self.log.log(pexLog.Log.DEBUG, "Writing complete")
+        self.log.log(pexLog.Log.INFO - 1, "Writing complete")
 
     def _combineDicts(self, dataId, **rest):
         finalId = {}
@@ -246,11 +246,11 @@ class Butler(object):
         for locationString in locations:
             logLoc = LogicalLocation(locationString, additionalData)
             if storageName == "PafStorage":
-                self.log.log(pexLog.Log.DEBUG, "Reading from PafStorage(%s)" %
-                        (logLoc.locString(),))
+                self.log.log(pexLog.Log.INFO - 1,
+                        "Reading from PafStorage(%s)" % (logLoc.locString(),))
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
             elif storageName == "PickleStorage":
-                self.log.log(pexLog.Log.DEBUG,
+                self.log.log(pexLog.Log.INFO - 1,
                         "Reading from PickleStorage(%s)" %
                         (logLoc.locString(),))
                 infile = open(logLoc.locString(), "rb")
@@ -262,12 +262,12 @@ class Butler(object):
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
                 storageList.append(storage)
-                self.log.log(pexLog.Log.DEBUG, "Reading from %s(%s)" %
+                self.log.log(pexLog.Log.INFO - 1, "Reading from %s(%s)" %
                         (storageName, logLoc.locString()))
                 itemData = self.persistence.unsafeRetrieve(
                         location.getCppType(), storageList, additionalData)
                 finalItem = pythonType.swigConvert(itemData)
-            self.log.log(pexLog.Log.DEBUG, "Reading complete")
+            self.log.log(pexLog.Log.INFO - 1, "Reading complete")
             results.append(finalItem)
 
         if not returnList:
