@@ -195,24 +195,24 @@ class Butler(object):
         # TODO support multiple output locations
         locationString = locations[0]
         logLoc = LogicalLocation(locationString, additionalData)
+        trace = pexLog.BlockTimingLog(self.log, "put",
+                                      pexLog.BlockTimingLog.INSTRUM+1)
 
         if storageName == "PickleStorage":
-            self.log.log(pexLog.Log.INFO - 1, "Writing to PickleStorage(%s)" %
-                    (logLoc.locString(),))
+            trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
             outfile = open(logLoc.locString(), "wb")
             try:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
             finally:
                 outfile.close()
-            self.log.log(pexLog.Log.INFO - 1, "Writing complete")
+            trace.done()
             return
 
         # Create a list of Storages for the item.
         storageList = StorageList()
         storage = self.persistence.getPersistStorage(storageName, logLoc)
         storageList.append(storage)
-        self.log.log(pexLog.Log.INFO - 1, "Writing to %s(%s)" %
-                (storageName, logLoc.locString()))
+        trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
 
         # Persist the item.
         if '__deref__' in dir(obj):
@@ -221,7 +221,7 @@ class Butler(object):
                     obj.__deref__(), storageList, additionalData)
         else:
             self.persistence.persist(obj, storageList, additionalData)
-        self.log.log(pexLog.Log.INFO - 1, "Writing complete")
+        trace.done()
 
     def _combineDicts(self, dataId, **rest):
         finalId = {}
@@ -234,6 +234,9 @@ class Butler(object):
         return mapper.map(datasetType, dataId)
 
     def _read(self, pythonType, location):
+        trace = pexLog.BlockTimingLog(self.log, "read",
+                                      pexLog.BlockTimingLog.INSTRUM+1)
+        
         additionalData = location.getAdditionalData()
         # Create a list of Storages for the item.
         storageName = location.getStorageName()
@@ -245,14 +248,11 @@ class Butler(object):
 
         for locationString in locations:
             logLoc = LogicalLocation(locationString, additionalData)
+            trace.start("read from %s(%s)" % (storageName, logLoc.locString()))
+            
             if storageName == "PafStorage":
-                self.log.log(pexLog.Log.INFO - 1,
-                        "Reading from PafStorage(%s)" % (logLoc.locString(),))
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
             elif storageName == "PickleStorage":
-                self.log.log(pexLog.Log.INFO - 1,
-                        "Reading from PickleStorage(%s)" %
-                        (logLoc.locString(),))
                 infile = open(logLoc.locString(), "rb")
                 try:
                     finalItem = cPickle.load(infile)
@@ -262,12 +262,10 @@ class Butler(object):
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
                 storageList.append(storage)
-                self.log.log(pexLog.Log.INFO - 1, "Reading from %s(%s)" %
-                        (storageName, logLoc.locString()))
                 itemData = self.persistence.unsafeRetrieve(
                         location.getCppType(), storageList, additionalData)
                 finalItem = pythonType.swigConvert(itemData)
-            self.log.log(pexLog.Log.INFO - 1, "Reading complete")
+            trace.done()
             results.append(finalItem)
 
         if not returnList:
