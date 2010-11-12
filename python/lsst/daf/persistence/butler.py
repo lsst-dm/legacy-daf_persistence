@@ -26,6 +26,7 @@
 
 """This module defines the Butler class."""
 
+from __future__ import with_statement
 import cPickle
 import os
 import lsst.daf.base as dafBase
@@ -199,11 +200,11 @@ class Butler(object):
         if storageName == "PickleStorage":
             self.log.log(pexLog.Log.INFO - 1, "Writing to PickleStorage(%s)" %
                     (logLoc.locString(),))
-            outfile = open(logLoc.locString(), "wb")
-            try:
+            dir = os.path.dirname(logLoc.locString())
+            if dir != "" and not os.path.exists(dir):
+                os.makedirs(dir)
+            with open(logLoc.locString(), "wb") as outfile:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
-            finally:
-                outfile.close()
             self.log.log(pexLog.Log.INFO - 1, "Writing complete")
             return
 
