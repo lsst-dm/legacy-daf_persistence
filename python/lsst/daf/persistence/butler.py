@@ -200,9 +200,9 @@ class Butler(object):
         if storageName == "PickleStorage":
             self.log.log(pexLog.Log.INFO - 1, "Writing to PickleStorage(%s)" %
                     (logLoc.locString(),))
-            dir = os.path.dirname(logLoc.locString())
-            if dir != "" and not os.path.exists(dir):
-                os.makedirs(dir)
+            outDir = os.path.dirname(logLoc.locString())
+            if outDir != "" and not os.path.exists(outDir):
+                os.makedirs(outDir)
             with open(logLoc.locString(), "wb") as outfile:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
             self.log.log(pexLog.Log.INFO - 1, "Writing complete")
@@ -216,7 +216,7 @@ class Butler(object):
                 (storageName, logLoc.locString()))
 
         # Persist the item.
-        if '__deref__' in dir(obj):
+        if hasattr(obj, '__deref__'):
             # We have a smart pointer, so dereference it.
             self.persistence.persist(
                     obj.__deref__(), storageList, additionalData)
