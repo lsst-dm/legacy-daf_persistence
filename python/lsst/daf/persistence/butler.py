@@ -254,11 +254,11 @@ class Butler(object):
                 self.log.log(pexLog.Log.INFO - 1,
                         "Reading from PickleStorage(%s)" %
                         (logLoc.locString(),))
-                infile = open(logLoc.locString(), "rb")
-                try:
+                if not os.path.exists(logLoc.locString()):
+                    raise RuntimeError, \
+                            "No such pickle file: " + logLoc.locString()
+                with open(logLoc.locString(), "rb") as infile:
                     finalItem = cPickle.load(infile)
-                finally:
-                    infile.close()
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
