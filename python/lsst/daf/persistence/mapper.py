@@ -27,6 +27,7 @@ from lsst.daf.persistence import ButlerLocation, LogicalLocation, Mapping, Calib
 import lsst.daf.butlerUtils as butlerUtils
 import lsst.daf.base as dafBase
 import lsst.afw.image as afwImage
+import lsst.afw.detection as afwDet
 import lsst.afw.cameraGeom as afwCameraGeom
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
 import lsst.afw.image.utils as imageUtils
@@ -374,6 +375,9 @@ class Mapper(object):
                 self._setFilter(mapping, item, dataId)
             elif mapping.type in ['flat', 'fringe']:
                 self._setFilter(mapping, item, dataId)
+
+        if isinstance(item, afwDet.PersistableSourceVector):
+            item = item.getSources()
 
         return item
 
