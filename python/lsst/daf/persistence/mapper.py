@@ -362,18 +362,19 @@ class Mapper(object):
                      item,                # Item to standardize
                      dataId                # Data identifiers
                      ):
-        stripFits(item.getMetadata())
+        if isinstance(item, afwImage.ExposureF) or isinstance(item, afwImage.ExposureU):
+            stripFits(item.getMetadata())
+            if mapping.level.lower() == "amp":
+                self._setAmpDetector(mapping, item, dataId)
+            elif mapping.level.lower() == "ccd":
+                self._setCcdDetector(mapping, item, dataId)
 
-        if mapping.level.lower() == "amp":
-            self._setAmpDetector(mapping, item, dataId)
-        elif mapping.level.lower() == "ccd":
-            self._setCcdDetector(mapping, item, dataId)
+            if not isinstance(mapping, CalibrationMapping):
+                self._setTimes(mapping, item, dataId)
+                self._setFilter(mapping, item, dataId)
+            elif mapping.type in ['flat', 'fringe']:
+                self._setFilter(mapping, item, dataId)
 
-        if not isinstance(mapping, CalibrationMapping):
-            self._setTimes(mapping, item, dataId)
-            self._setFilter(mapping, item, dataId)
-        elif mapping.type in ['flat', 'fringe']:
-            self._setFilter(mapping, item, dataId)
         return item
 
     def _defectLookup(self, dataId, ccdSerial):
