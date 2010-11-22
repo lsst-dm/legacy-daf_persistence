@@ -26,6 +26,7 @@
 
 """This module defines the Butler class."""
 
+from __future__ import with_statement
 import cPickle
 import os
 import lsst.daf.base as dafBase
@@ -201,11 +202,11 @@ class Butler(object):
 
         if storageName == "PickleStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            outfile = open(logLoc.locString(), "wb")
-            try:
+            outDir = os.path.dirname(logLoc.locString())
+            if outDir != "" and not os.path.exists(outDir):
+                os.makedirs(outDir)
+            with open(logLoc.locString(), "wb") as outfile:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
-            finally:
-                outfile.close()
             trace.done()
             return
 
@@ -216,7 +217,7 @@ class Butler(object):
         trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
 
         # Persist the item.
-        if '__deref__' in dir(obj):
+        if hasattr(obj, '__deref__'):
             # We have a smart pointer, so dereference it.
             self.persistence.persist(
                     obj.__deref__(), storageList, additionalData)
@@ -254,11 +255,11 @@ class Butler(object):
             if storageName == "PafStorage":
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
             elif storageName == "PickleStorage":
-                infile = open(logLoc.locString(), "rb")
-                try:
+                if not os.path.exists(logLoc.locString()):
+                    raise RuntimeError, \
+                            "No such pickle file: " + logLoc.locString()
+                with open(logLoc.locString(), "rb") as infile:
                     finalItem = cPickle.load(infile)
-                finally:
-                    infile.close()
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
