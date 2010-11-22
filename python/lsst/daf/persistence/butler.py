@@ -197,6 +197,7 @@ class Butler(object):
         logLoc = LogicalLocation(locationString, additionalData)
         trace = pexLog.BlockTimingLog(self.log, "put",
                                       pexLog.BlockTimingLog.INSTRUM+1)
+        trace.setUsageFlags(trace.ALLUDATA)
 
         if storageName == "PickleStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
