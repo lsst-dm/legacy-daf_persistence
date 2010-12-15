@@ -204,7 +204,12 @@ class Butler(object):
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
             outDir = os.path.dirname(logLoc.locString())
             if outDir != "" and not os.path.exists(outDir):
-                os.makedirs(outDir)
+                try:
+                    os.makedirs(outDir)
+                except OSError, e:
+                    # Don't fail if directory exists due to race
+                    if e.errno != 17:
+                        raise e
             with open(logLoc.locString(), "wb") as outfile:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
             trace.done()
