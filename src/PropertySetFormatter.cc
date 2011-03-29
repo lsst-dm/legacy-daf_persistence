@@ -49,6 +49,8 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/mpi/packed_oarchive.hpp>
@@ -316,6 +318,11 @@ void dafPersist::PropertySetFormatter::delegateSerialize(
     execTrace("PropertySetFormatter delegateSerialize end");
 }
 
+template void dafPersist::PropertySetFormatter::delegateSerialize(
+    boost::archive::binary_oarchive&, unsigned int const version, dafBase::Persistable*);
+template void dafPersist::PropertySetFormatter::delegateSerialize(
+    boost::archive::binary_iarchive&, unsigned int const version, dafBase::Persistable*);
+
 template
 void lsst::daf::persistence::delegateSerialize<lsst::daf::persistence::PropertySetFormatter, boost::mpi::packed_oarchive>(
         boost::mpi::packed_oarchive& ar,
@@ -327,6 +334,7 @@ void lsst::daf::persistence::delegateSerialize<lsst::daf::persistence::PropertyS
         boost::mpi::packed_iarchive& ar,
         unsigned int const version,
         lsst::daf::base::Persistable* persistable);
+
 
 /** Factory method for PropertySetFormatter.
  * \param[in] policy Policy for configuring the PropertySetFormatter
