@@ -51,10 +51,12 @@ for d in Split("lib python/lsst/" + re.sub(r'_', "/", pkg) + " examples tests do
 
 env['IgnoreFiles'] = r"(~$|\.pyc$|^\.svn$|\.o$)"
 
-Alias("install", [env.Install(env['prefix'], "python"),
-                  env.Install(env['prefix'], "include"),
+Alias("install", [env.Install(env['prefix'], "include"),
                   env.Install(env['prefix'], "lib"),
                   env.Install(env['prefix'], "policy"),
+                  env.Install(env['prefix'], "python"),
+                  env.Install(env['prefix'], "src"),
+                  env.Install(env['prefix'], "tests"),
                   env.InstallAs(os.path.join(env['prefix'], "doc", "doxygen"),
                                 os.path.join("doc", "htmlDir")),
                   env.InstallEups(env['prefix'] + "/ups", glob.glob("ups/*.table"))])
