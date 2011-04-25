@@ -65,6 +65,8 @@ class ButlerFactory(object):
     create(self, **partialId)
     """
 
+    _mapperCache = dict()
+
     def __init__(self, policy=None, mapper=None):
         """Construct a ButlerFactory.
 
@@ -88,8 +90,13 @@ class ButlerFactory(object):
                 subpolicy = self.policy.get('mapperPolicy')
             else:
                 subpolicy = pexPolicy.Policy()
-            self.mapper = _importMapper(
-                    self.policy.get('mapperName'), subpolicy)
+            key = self.policy.get('mapperName') + '!+!' + subpolicy.toString()
+            if ButlerFactory._mapperCache.has_key(key):
+                self.mapper = ButlerFactory._mapperCache[key]
+            else:
+                self.mapper = _importMapper(
+                        self.policy.get('mapperName'), subpolicy)
+                ButlerFactory._mapperCache[key] = self.mapper
 
         if self.policy.exists('persistencePolicy'):
             persistencePolicy = self.policy.getPolicy('persistencePolicy')
