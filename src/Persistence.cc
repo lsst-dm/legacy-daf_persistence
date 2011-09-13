@@ -129,7 +129,6 @@ void Persistence::persist(
         (*it)->startTransaction();
         f->write(&persistable, *it, additionalData);
     }
-    /// \todo Add in more transaction handling -- KTL 2007-06-26
     for (Storage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
         (*it)->endTransaction();
