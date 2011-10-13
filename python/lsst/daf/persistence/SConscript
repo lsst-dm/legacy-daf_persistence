@@ -1,6 +1,3 @@
 # -*- python -*-
-Import("env")
-
-pkg = env["eups_product"]
-env.CheckSwig("python", ilang="c++", includedProducts="utils pex_exceptions daf_base pex_logging pex_policy")
-env.LoadableModuleIncomplete("_persistenceLib", Split("persistenceLib.i"), LIBS=env.getlibs(pkg))
+from lsst.sconsUtils import scripts
+scripts.BasicSConscript.python(['persistenceLib'])
