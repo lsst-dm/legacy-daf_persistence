@@ -5,25 +5,18 @@
 import glob, os.path, re
 import lsst.SConsUtils as scons
 
-dependencies = "boost boost_mpi python mysqlclient utils daf_base pex_logging pex_exceptions pex_policy mpich2".split()
+dependencies = "boost python mysqlclient utils daf_base pex_logging pex_exceptions pex_policy".split()
 #
 # mpich2 1.0.5 (at least) sometimes requires the "pmpich" library.  We could look at the mpicc script
 # to check, but this is OK too.  Let's hope that 1.0.8 doesn't have this problem
 #
-pmpichLib = []
-if os.uname()[0] == 'Darwin':
-    pmpichLib += [["mpich2", "mpi.h", "pmpich:C++"],]
-
 env = scons.makeEnv("daf_persistence",
                     r"$HeadURL$",
                     [
                      ["boost", "boost/regex.hpp", "boost_regex:C++"],
                      ["boost", "boost/serialization/serialization.hpp", "boost_serialization:C++"],
                      ["boost", "boost/version.hpp", "boost_system:C++"],
-                     ] + pmpichLib + [
-                     ["mpich2", "mpi.h", "mpich:C++"],
-                     ["mpich2", "mpi.h", "lmpe:C++"],
-                     ["boost_mpi", "boost/mpi.hpp", "boost_mpi:C++"],
+                     ] + [
                      ["python", "Python.h"],
                      ["mysqlclient", "mysql/mysql.h", "mysqlclient_r:C"],
                      ["utils", "lsst/tr1/unordered_map.h", "utils:C++"],
@@ -35,8 +28,6 @@ env = scons.makeEnv("daf_persistence",
 env.Help("""
 LSST Data Access Framework persistence package
 """)
-
-print "libraries:", env.libs.keys()
 
 ###############################################################################
 # Boilerplate below here
