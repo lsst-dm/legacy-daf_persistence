@@ -1,6 +1,6 @@
 setupRequired(mysqlclient >= 5.1.44)
-setupRequired(pex_logging >= 4.1.0.0)
-setupRequired(pex_policy >= 3.3.2)
+setupRequired(pex_logging >= 4.6.0.0)
+setupRequired(pex_policy >= 4.6.0.0)
 setupRequired(boost_mpi)
 
 envAppend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
