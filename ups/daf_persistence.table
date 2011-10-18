@@ -1,6 +1,4 @@
 setupRequired(mysqlclient >= 5.1.44)
-setupRequired(boost >= 1.47.0)
-setupRequired(boost_mpi >= 1.47.0)
 setupRequired(pex_logging >= 4.1.0.0)
 setupRequired(pex_policy >= 3.3.2)
 
