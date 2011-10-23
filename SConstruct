@@ -7,9 +7,6 @@ import lsst.SConsUtils as scons
 
 dependencies = "boost python mysqlclient utils daf_base pex_logging pex_exceptions pex_policy".split()
 #
-# mpich2 1.0.5 (at least) sometimes requires the "pmpich" library.  We could look at the mpicc script
-# to check, but this is OK too.  Let's hope that 1.0.8 doesn't have this problem
-#
 env = scons.makeEnv("daf_persistence",
                     r"$HeadURL$",
                     [
