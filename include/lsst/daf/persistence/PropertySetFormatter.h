@@ -86,4 +86,6 @@ private:
 
 }}} // namespace lsst::daf::persistence
 
+#include "PropertySetFormatter.cc" // for template definitions
+
 #endif
