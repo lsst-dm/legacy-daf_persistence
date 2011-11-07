@@ -39,17 +39,19 @@ Access to the lsst::daf::persistence classes
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/DbTsvStorage.h"
 #include "lsst/daf/base.h"
+#include "lsst/pex/logging.h"
+#include "lsst/pex/policy.h"
 %}
 
 %include "lsst/p_lsstSwig.i"
 
 %lsst_exceptions();
 
-SWIG_SHARED_PTR(Persistence, lsst::daf::persistence::Persistence)
-SWIG_SHARED_PTR(LogicalLocation, lsst::daf::persistence::LogicalLocation)
-SWIG_SHARED_PTR(Storage, lsst::daf::persistence::Storage)
-SWIG_SHARED_PTR_DERIVED(DbStorage, lsst::daf::persistence::Storage, lsst::daf::persistence::DbStorage)
-SWIG_SHARED_PTR_DERIVED(DbTsvStorage, lsst::daf::persistence::DbStorage, lsst::daf::persistence::DbTsvStorage)
+%shared_ptr(lsst::daf::persistence::Persistence)
+%shared_ptr(lsst::daf::persistence::LogicalLocation)
+%shared_ptr(lsst::daf::persistence::Storage)
+%shared_ptr(lsst::daf::persistence::DbStorage)
+%shared_ptr(lsst::daf::persistence::DbTsvStorage)
 
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %import "lsst/daf/base/baseLib.i"
@@ -71,7 +73,7 @@ SWIG_SHARED_PTR_DERIVED(DbTsvStorage, lsst::daf::persistence::DbStorage, lsst::d
 %include "lsst/daf/persistence/DbTsvStorage.h"
 %include "lsst/daf/persistence/Persistence.h"
 
-typedef long long int64_t;
+// typedef long long int64_t;
 
 %extend lsst::daf::persistence::DbStorage {
 
@@ -79,7 +81,7 @@ typedef long long int64_t;
     %template(setColumnShort) setColumn<short>;
     %template(setColumnInt) setColumn<int>;
     %template(setColumnLong) setColumn<long>;
-    %template(setColumnInt64) setColumn<int64_t>;
+    %template(setColumnInt64) setColumn<long long>;
     %template(setColumnFloat) setColumn<float>;
     %template(setColumnDouble) setColumn<double>;
     %template(setColumnString) setColumn<std::string>;
@@ -89,7 +91,7 @@ typedef long long int64_t;
     %template(condParamShort) condParam<short>;
     %template(condParamInt) condParam<int>;
     %template(condParamLong) condParam<long>;
-    %template(condParamInt64) condParam<int64_t>;
+    %template(condParamInt64) condParam<long long>;
     %template(condParamFloat) condParam<float>;
     %template(condParamDouble) condParam<double>;
     %template(condParamString) condParam<std::string>;
@@ -99,7 +101,7 @@ typedef long long int64_t;
     %template(getColumnByPosShort) getColumnByPos<short>;
     %template(getColumnByPosInt) getColumnByPos<int>;
     %template(getColumnByPosLong) getColumnByPos<long>;
-    %template(getColumnByPosInt64) getColumnByPos<int64_t>;
+    %template(getColumnByPosInt64) getColumnByPos<long long>;
     %template(getColumnByPosFloat) getColumnByPos<float>;
     %template(getColumnByPosDouble) getColumnByPos<double>;
     %template(getColumnByPosString) getColumnByPos<std::string>;
