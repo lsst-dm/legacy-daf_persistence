@@ -113,6 +113,10 @@ class ButlerFactory(object):
 
         return Butler(self.mapper, self.persistence, partialId)
 
+    @staticmethod
+    def cleanCache():
+        ButlerFactory._mapperCache = dict()
+
 def _importMapper(name, policy):
     """Private function to import a mapper class and construct an instance."""
     mapperTokenList = name.split('.')
