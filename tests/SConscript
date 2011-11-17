@@ -1,34 +1,12 @@
 # -*- python -*-
-Import("env")
-import glob, os
+from lsst.sconsUtils import scripts
+import os
 
-for src in glob.glob("*.cc"):
-    env.Program(src, LIBS=env.getlibs(env["eups_product"]))
-
-#
-# Tests
-#
-import lsst.tests
-
-tests = lsst.tests.Control(env, verbose = True)
-tests.run("FormatterRegistry_*.cc")
-tests.run("Persistence_3.cc")
-tests.run("PropertySetPersist.cc")
-tests.run("PropertySet_2.cc")
-
-if os.path.exists(os.path.join(os.environ['HOME'], ".lsst/db-auth.paf")):
-    tests.run("DateTime_1.cc")
-    tests.run("DbStorage_*.cc")
-    tests.run("Persistence_1.cc")
-    tests.run("Persistence_2.cc")
-    tests.run("Persistence_2.py")
-else:
+ignoreList = []
+if not os.path.exists(os.path.join(os.environ['HOME'], ".lsst/db-auth.paf")):
+    ignoreList = ["DateTime_1", "DbStorage_1", "DbStorage_1.py", "DbStorage_2.py",
+                  "Persistence_1", "Persistence_2", "Persistence_2.py"]
     print "WARNING: No fallback database authenticator seen"
     print "Database tests are being skipped"
 
-for test in glob.glob("*.py"):
-    if test != "Persistence_2.py":
-        target = tests.run(test)
-        env.Depends(target,
-                "../python/lsst/daf/persistence/_persistenceLib%s" %
-                (env['LDMODULESUFFIX']))
+scripts.BasicSConscript.tests(ignoreList=ignoreList)
