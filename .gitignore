@@ -1,34 +1,26 @@
-
-# /
-/.sconsign.dblite
-/._SConstruct
-/.scon*
-/config.log
-/fov391
-/MyPersistable.boost.*
-/test.boost
-
-# /doc/
-/doc/htmlDir
-
-# /lib/
-/lib/*.so
-/lib/*.dylib
-
-# /python/lsst/daf/persistence/
-/python/lsst/daf/persistence/persistenceLib.py
-/python/lsst/daf/persistence/persistenceLib_wrap.*
-
-# /src/
-/src/*.os
-
-# /tests/
-/tests/.tests
-/tests/data
-/tests/DbStorage_1
-/tests/Persistence_1
-/tests/Persistence_2
-/tests/Persistence_3
-/tests/FormatterRegistry_1
-/tests/PropertySetPersist
-/tests/PropertySet_2
+.sconsign.dblite
+config.log
+.sconf_temp
+*.dylib
+*.o
+*.os
+*.so
+*.cfgc
+*.pyc
+*_wrap.cc
+*Lib.py
+doc/html
+doc/*.tag
+doc/*.inc
+doc/doxygen.conf
+tests/.tests
+version.py
+foo3.pickle
+tests/DbStorage_1
+tests/FormatterRegistry_1
+tests/Persistence_1
+tests/Persistence_2
+tests/Persistence_3
+tests/PropertySetPersist
+tests/PropertySet_2
+tests/data
