@@ -35,7 +35,8 @@ extern "C" {
 #include "lsst/daf/persistence/Persistence.h"
 
 #define BOOST_TEST_MODULE Persistence_1
-#include "boost/test/included/unit_test.hpp"
+#define BOOST_TEST_DYN_LINK
+#include "boost/test/unit_test.hpp"
 
 namespace test = boost::test_tools;
 namespace dafBase = lsst::daf::base;
