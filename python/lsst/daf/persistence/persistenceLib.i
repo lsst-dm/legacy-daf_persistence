@@ -47,11 +47,11 @@ Access to the lsst::daf::persistence classes
 
 %lsst_exceptions();
 
-%shared_ptr(lsst::daf::persistence::Persistence)
-%shared_ptr(lsst::daf::persistence::LogicalLocation)
-%shared_ptr(lsst::daf::persistence::Storage)
-%shared_ptr(lsst::daf::persistence::DbStorage)
-%shared_ptr(lsst::daf::persistence::DbTsvStorage)
+%shared_ptr(lsst::daf::persistence::Persistence);
+%shared_ptr(lsst::daf::persistence::LogicalLocation);
+%shared_ptr(lsst::daf::persistence::Storage);
+%shared_ptr(lsst::daf::persistence::DbStorage);
+%shared_ptr(lsst::daf::persistence::DbTsvStorage);
 
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %import "lsst/daf/base/baseLib.i"
