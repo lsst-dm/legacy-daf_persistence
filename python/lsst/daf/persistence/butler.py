@@ -32,14 +32,14 @@ import os
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
-from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy
+from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
 
     Butlers should always be created using ButlerFactory.create().
     
-    A Butler manages an collection of datasets.  Each dataset has a type
+    A Butler manages a collection of datasets.  Each dataset has a type
     representing its intended usage and a location.  Note that the dataset
     type is not the same as the C++ or Python type of the object containing
     the data.  For example, an ExposureF object might be used to hold the data
@@ -50,17 +50,17 @@ class Butler(object):
     partial data identifier used to create it.  A Butler can produce a
     collection of possible values for a key (or tuples of values for multiple
     keys) if given a partial data identifier.  It can check for the existence
-    of a file containing a data set given its type and data identifier.  The
-    Butler can then retrieve the data set.  Similarly, it can persist an
+    of a file containing a dataset given its type and data identifier.  The
+    Butler can then retrieve the dataset.  Similarly, it can persist an
     object to an appropriate location when given its associated data
     identifier.
 
     Note that the Butler has two more advanced features when retrieving a data
     set.  First, the retrieval is lazy.  Input does not occur until the data
-    set is actually accessed.  This allows data sets to be retrieved and
+    set is actually accessed.  This allows datasets to be retrieved and
     placed on a clipboard prospectively with little cost, even if the
     algorithm of a stage ends up not using them.  Second, the Butler will call
-    a standardization hook upon retrieval of the data set.  This function,
+    a standardization hook upon retrieval of the dataset.  This function,
     contained in the input mapper object, must perform any necessary
     manipulations to force the retrieved object to conform to standards,
     including translating metadata.
@@ -76,6 +76,9 @@ class Butler(object):
     get(self, datasetType, dataId={}, **rest)
 
     put(self, obj, datasetType, dataId={}, **rest)
+
+    subset(self, datasetType, level=None, dataId={}, **rest))
+
     """
 
     def __init__(self, mapper, persistence, partialId={}):
@@ -87,16 +90,21 @@ class Butler(object):
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(),
                 "daf.persistence.butler")
 
-    def getKeys(self):
-        """Returns the valid data id keys for the dataset collection."""
+    def getKeys(self, datasetType=None, level=None):
+        """Returns the valid data id keys at or above the given level of
+        hierarchy for the dataset type or the entire collection if None.
+        
+        @param datasetType  the type of dataset to get keys for, entire collection if None
+        @param level        the hierarchy level to descend to or None
+        """
 
-        return self.mapper.getKeys()
+        return self.mapper.getKeys(datasetType, level)
 
     def queryMetadata(self, datasetType, key, format=None, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
         
-        @param datasetType the type of data set to inquire about.
+        @param datasetType the type of dataset to inquire about.
         @param key         a key giving the level of granularity of the inquiry.
         @param format      an optional key or tuple of keys to be returned. 
         @param dataId      the partial data id.
@@ -117,12 +125,12 @@ class Butler(object):
         return tuples
 
     def datasetExists(self, datasetType, dataId={}, **rest):
-        """Determines if a data set file exists.
+        """Determines if a dataset file exists.
 
-        @param datasetType    the type of data set to inquire about.
-        @param dataId         the data id of the data set.
+        @param datasetType    the type of dataset to inquire about.
+        @param dataId         the data id of the dataset.
         @param **rest         keyword arguments for the data id.
-        @returns True if the data set exists or is non-file-based.
+        @returns True if the dataset exists or is non-file-based.
         """
 
         dataId = self._combineDicts(dataId, **rest)
@@ -144,12 +152,12 @@ class Butler(object):
         return True
 
     def get(self, datasetType, dataId={}, **rest):
-        """Retrieves a data set given an input collection data id.
+        """Retrieves a dataset given an input collection data id.
         
-        @param datasetType    the type of data set to retrieve.
+        @param datasetType    the type of dataset to retrieve.
         @param dataId         the data id.
         @param **rest         keyword arguments for the data id.
-        @returns an object retrieved from the data set (or a proxy for one).
+        @returns an object retrieved from the dataset (or a proxy for one).
         """
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
@@ -179,10 +187,10 @@ class Butler(object):
         return ReadProxy(callback)
 
     def put(self, obj, datasetType, dataId={}, **rest):
-        """Persists a data set given an output collection data id.
+        """Persists a dataset given an output collection data id.
         
         @param obj            the object to persist.
-        @param datasetType    the type of data set to persist.
+        @param datasetType    the type of dataset to persist.
         @param dataId         the data id.
         @param **rest         keyword arguments for the data id.
         """
@@ -229,6 +237,23 @@ class Butler(object):
         else:
             self.persistence.persist(obj, storageList, additionalData)
         trace.done()
+
+    def subset(self, datasetType, level=None, dataId={}, **rest):
+        """Extracts a subset of a dataset collection.
+        
+        Given a partial dataId specified in dataId and **rest, find all
+        datasets at a given level specified by a dataId key (e.g. visit or
+        sensor or amp for a camera) and return a collection of their dataIds.
+
+        @param datasetType  the type of dataset collection to subset
+        @param level        the level of dataId at which to subset
+        @param dataId         the data id.
+        @param **rest         keyword arguments for the data id."""
+
+        if level is None:
+            level = self.mapper.defaultLevel()
+        dataId = self._combineDicts(dataId, **rest)
+        return ButlerSubset(self, datasetType, level, dataId)
 
     def _combineDicts(self, dataId, **rest):
         finalId = {}
