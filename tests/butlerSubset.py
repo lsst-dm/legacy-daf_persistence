@@ -28,22 +28,33 @@ import lsst.utils.tests as utilsTests
 
 import re
 import lsst.daf.persistence as dafPersist
+from cameraMapper import CameraMapper
 
+class Registry(object):
+    def __init__(self, dictList):
+        self.dictList = dictList
 
-class ImgMapper(dafPersist.Mapper):
+    def query(self, datasetType, key, format, dataId):
+        result = set()
+        for d in self.dictList:
+            where = True
+            for k in dataId.iterkeys():
+                if k not in d:
+                    raise RuntimeError("%s not in %s" % (k, repr(d)))
+                if d[k] != dataId[k]:
+                    where = False
+                    break
+            if where:
+                values = []
+                for k in format:
+                    values.append(d[k])
+                result.add(tuple(values))
+        return result
+
+class ImgMapper(CameraMapper):
     def __init__(self):
-        self.templates = dict(
-            raw="raw_v%(visit)d_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
-            flat="flat_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
-            calexp="calexp_v%(visit)d_R%(raft)s_S%(sensor)s.pickle")
-        self.levels = dict(
-                skyTile=["visit", "raft", "sensor"],
-                visit=["snap", "raft", "sensor", "amp"],
-                raft=["snap", "sensor", "amp"],
-                sensor=["snap", "amp"],
-                amp=[])
-
-        self.registry = [
+        CameraMapper.__init__(self)
+        self.registry = Registry([
                 dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
                     snap=0, skyTile=5),
                 dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
@@ -64,55 +75,7 @@ class ImgMapper(dafPersist.Mapper):
                     snap=1, skyTile=6),
                 dict(visit=654321, raft="1,3", sensor="1,2", amp="0,0",
                     snap=0, skyTile=6)
-                ]
-
-
-    def getKeys(self, datasetType, level):
-        keySet = set()
-        if datasetType is None:
-            for t in self.templates.iterkeys():
-                keySet.update(self.getKeys(t))
-        else:
-            keySet.update(re.findall(r'\%\((\w+)\)',
-                self.templates[datasetType]))
-        if level is not None:
-            keySet -= set(self.levels[level])
-        return keySet
-
-    def defaultLevel(self):
-        return "sensor"
-
-    def query_raw(self, key, format, dataId):
-        result = set()
-        for d in self.registry:
-            where = True
-            for k in dataId.iterkeys():
-                if k not in d:
-                    raise RuntimeError("%s not in %s" % (k, repr(d)))
-                if d[k] != dataId[k]:
-                    where = False
-                    break
-            if where:
-                values = []
-                for k in format:
-                    values.append(d[k])
-                result.add(tuple(values))
-        return result
-
-    def query_calexp(self, key, format, dataId):
-        return self.query_raw(key, format, dataId)
-
-    def map_raw(self, dataId):
-        path = self.templates["raw"] % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
-
-    def map_flat(self, dataId):
-        path = self.templates["flat"] % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
-
-    def map_calexp(self, dataId):
-        path = self.templates["calexp"] % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
+                ])
 
 
 class ButlerSubsetTestCase(unittest.TestCase):
@@ -149,7 +112,19 @@ class ButlerSubsetTestCase(unittest.TestCase):
         for iterator in subset:
             # this is a sensor iterator, but raw data is by amplifier, so
             # iterate over amplifiers
+            if iterator.dataId["raft"] == "1,1":
+                self.assertEqual(len(iterator.subItems()), 5)
+            else:
+                self.assertEqual(iterator.dataId["raft"], "1,2")
+                self.assertEqual(len(iterator.subItems()), 1)
             for ampIterator in iterator.subItems(): # default level = "amp"
+                if iterator.dataId["raft"] == "1,1":
+                    self.assertEqual(iterator.dataId["sensor"], "2,2")
+                    self.assert_(ampIterator.dataId["amp"] in ["0,0", "0,1",
+                        "1,0", "1,1"])
+                    self.assert_(ampIterator.dataId["snap"] in [0, 1])
+                else:
+                    self.assert_(iterator.dataId["sensor"] in ["2,1", "2,2"])
                 ampImage = ampIterator.get("raw")
                 # equivalent to butler.get("raw", ampIterator)
                 flat = ampIterator.get("flat")
