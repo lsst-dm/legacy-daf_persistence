@@ -120,9 +120,12 @@ class ButlerDataRef(object):
             datasetType = self.butlerSubset.datasetType
         self.butlerSubset.butler.put(obj, datasetType, self.dataId)
 
-    def subItems(self, level="amp"):
+    def subItems(self, level=None):
         """
         """
 
+        if level is None:
+            level = self.butlerSubset.butler.mapper.getDefaultSubLevel(
+                    self.butlerSubset.level)
         return ButlerSubset(self.butlerSubset.butler,
                 self.butlerSubset.datasetType, level, self.dataId)

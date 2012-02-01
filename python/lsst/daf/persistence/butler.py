@@ -251,7 +251,7 @@ class Butler(object):
         @param **rest         keyword arguments for the data id."""
 
         if level is None:
-            level = self.mapper.defaultLevel()
+            level = self.mapper.getDefaultLevel()
         dataId = self._combineDicts(dataId, **rest)
         return ButlerSubset(self, datasetType, level, dataId)
 
