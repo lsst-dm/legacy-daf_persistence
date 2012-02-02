@@ -26,6 +26,8 @@
 import unittest
 import lsst.utils.tests as utilsTests
 
+import os
+import pickle
 import re
 import lsst.daf.persistence as dafPersist
 from cameraMapper import CameraMapper
@@ -102,6 +104,18 @@ class ButlerSubsetTestCase(unittest.TestCase):
             image = iterator.get("calexp")
 
     def testDoubleIteration(self):
+        # create a bunch of files for testing
+        inputList = ["flat_R1,1_S2,2_C0,0_E000.pickle",
+                "flat_R1,1_S2,2_C0,0_E001.pickle",
+                "flat_R1,1_S2,2_C0,1_E000.pickle",
+                "flat_R1,1_S2,2_C1,0_E001.pickle",
+                "flat_R1,1_S2,2_C1,1_E000.pickle",
+                "flat_R1,2_S2,1_C0,0_E001.pickle",
+                "flat_R1,2_S2,2_C0,0_E000.pickle"]
+        for fileName in inputList:
+            with open(fileName, "w") as f:
+                pickle.dump(inputList, f)
+
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
         butler = bf.create()
 
@@ -131,6 +145,13 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 # ...perform ISR, assemble and calibrate the CCD, then persist
                 calexp = flat
                 iterator.put(calexp, "calexp")
+
+        for fileName in inputList:
+            os.unlink(fileName)
+        for fileName in ["calexp_v123456_R1,1_S2,2.pickle",
+                "calexp_v123456_R1,2_S2,1.pickle",
+                "calexp_v123456_R1,2_S2,2.pickle"]:
+            os.unlink(fileName)
 
 def suite():
     utilsTests.init()
