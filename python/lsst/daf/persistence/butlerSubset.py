@@ -110,7 +110,7 @@ class ButlerDataRef(object):
 
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
-        self.butlerSubset.butler.get(datasetType, self.dataId)
+        return self.butlerSubset.butler.get(datasetType, self.dataId)
 
     def put(self, obj, datasetType=None):
         """
