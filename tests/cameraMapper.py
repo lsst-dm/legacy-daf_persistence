@@ -44,17 +44,37 @@ class CameraMapper(dafPersist.Mapper):
                 amp=[])
 
 
+    def _formatMap(self, ch, k, datasetType):
+        if ch in "diouxX":
+            return int
+        elif ch in "eEfFgG":
+            return float
+        elif ch in "crs":
+            return str
+        else:
+            raise RuntimeError("Unexpected format specifier %s"
+                    " for field %s in template for dataset %s" %
+                    (ch, k, datasetType))
+
+
     def getKeys(self, datasetType, level):
-        keySet = set()
+        keyDict = dict()
         if datasetType is None:
             for t in self.templates.iterkeys():
-                keySet.update(self.getKeys(t))
+                keyDict.update(self.getKeys(t))
         else:
-            keySet.update(re.findall(r'\%\((\w+)\)',
-                self.templates[datasetType]))
+            d = dict([
+                (k, self._formatMap(v, k, datasetType))
+                for k, v in
+                re.findall(r'\%\((\w+)\).*?([diouxXeEfFgGcrs])',
+                    self.templates[datasetType])
+                ])
+            keyDict.update(d)
         if level is not None:
-            keySet -= set(self.levels[level])
-        return keySet
+            for l in self.levels[level]:
+                if l in keyDict:
+                    del keyDict[l]
+        return keyDict
 
     def getDefaultLevel(self):
         return "sensor"

@@ -67,7 +67,7 @@ class Butler(object):
 
     Public methods:
 
-    getKeys(self)
+    getKeys(self, datasetType=None, level=None)
 
     queryMetadata(self, datasetType, keys, format=None, dataId={}, **rest)
 
@@ -91,12 +91,16 @@ class Butler(object):
                 "daf.persistence.butler")
 
     def getKeys(self, datasetType=None, level=None):
-        """Returns the valid data id keys at or above the given level of
-        hierarchy for the dataset type or the entire collection if None.
+
+        """Returns a dict.  The dict keys are the valid data id keys at or
+        above the given level of hierarchy for the dataset type or the entire
+        collection if None.  The dict values are the basic Python types
+        corresponding to the keys (int, float, str).
         
-        @param datasetType  the type of dataset to get keys for, entire collection if None
-        @param level        the hierarchy level to descend to or None
-        """
+        @param datasetType (str)  the type of dataset to get keys for, entire
+                                  collection if None.
+        @param level (str)        the hierarchy level to descend to or None.
+        @returns (dict) valid data id keys; values are corresponding types."""
 
         return self.mapper.getKeys(datasetType, level)
 
@@ -104,14 +108,14 @@ class Butler(object):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
         
-        @param datasetType the type of dataset to inquire about.
-        @param key         a key giving the level of granularity of the inquiry.
-        @param format      an optional key or tuple of keys to be returned. 
-        @param dataId      the partial data id.
-        @param **rest      keyword arguments for the partial data id.
-        @returns a list of valid values or tuples of valid values as specified
-        by the format (defaulting to the same as the key) at the key's level
-        of granularity.
+        @param datasetType (str)    the type of dataset to inquire about.
+        @param key (str)            a key giving the level of granularity of the inquiry.
+        @param format (str, tuple)  an optional key or tuple of keys to be returned. 
+        @param dataId (dict)        the partial data id.
+        @param **rest               keyword arguments for the partial data id.
+        @returns (list) a list of valid values or tuples of valid values as
+        specified by the format (defaulting to the same as the key) at the
+        key's level of granularity.
         """
 
         dataId = self._combineDicts(dataId, **rest)
@@ -127,10 +131,10 @@ class Butler(object):
     def datasetExists(self, datasetType, dataId={}, **rest):
         """Determines if a dataset file exists.
 
-        @param datasetType    the type of dataset to inquire about.
-        @param dataId         the data id of the dataset.
-        @param **rest         keyword arguments for the data id.
-        @returns True if the dataset exists or is non-file-based.
+        @param datasetType (str)   the type of dataset to inquire about.
+        @param dataId (dict)       the data id of the dataset.
+        @param **rest              keyword arguments for the data id.
+        @returns (bool) True if the dataset exists or is non-file-based.
         """
 
         dataId = self._combineDicts(dataId, **rest)
@@ -154,9 +158,9 @@ class Butler(object):
     def get(self, datasetType, dataId={}, **rest):
         """Retrieves a dataset given an input collection data id.
         
-        @param datasetType    the type of dataset to retrieve.
-        @param dataId         the data id.
-        @param **rest         keyword arguments for the data id.
+        @param datasetType (str)   the type of dataset to retrieve.
+        @param dataId (dict)       the data id.
+        @param **rest              keyword arguments for the data id.
         @returns an object retrieved from the dataset (or a proxy for one).
         """
         dataId = self._combineDicts(dataId, **rest)
@@ -189,9 +193,9 @@ class Butler(object):
     def put(self, obj, datasetType, dataId={}, **rest):
         """Persists a dataset given an output collection data id.
         
-        @param obj            the object to persist.
-        @param datasetType    the type of dataset to persist.
-        @param dataId         the data id.
+        @param obj                 the object to persist.
+        @param datasetType (str)   the type of dataset to persist.
+        @param dataId (dict)       the data id.
         @param **rest         keyword arguments for the data id.
         """
         dataId = self._combineDicts(dataId, **rest)
@@ -243,12 +247,15 @@ class Butler(object):
         
         Given a partial dataId specified in dataId and **rest, find all
         datasets at a given level specified by a dataId key (e.g. visit or
-        sensor or amp for a camera) and return a collection of their dataIds.
+        sensor or amp for a camera) and return a collection of their dataIds
+        as ButlerDataRefs.
 
-        @param datasetType  the type of dataset collection to subset
-        @param level        the level of dataId at which to subset
-        @param dataId         the data id.
-        @param **rest         keyword arguments for the data id."""
+        @param datasetType (str)  the type of dataset collection to subset
+        @param level (str)        the level of dataId at which to subset
+        @param dataId (dict)      the data id.
+        @param **rest             keyword arguments for the data id.
+        @returns (ButlerSubset) collection of ButlerDataRefs for datasets
+        matching the data id."""
 
         if level is None:
             level = self.mapper.getDefaultLevel()

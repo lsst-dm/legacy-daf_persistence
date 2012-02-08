@@ -103,6 +103,20 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 self.assert_(iterator.dataId["raft"] in ["1,2", "1,3"])
             image = iterator.get("calexp")
 
+    def testNonexistentValue(self):
+        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
+        butler = bf.create()
+        subset = butler.subset("calexp", skyTile=2349023905239)
+        self.assertEqual(len(subset), 0)
+
+    def testInvalidValue(self):
+        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
+        butler = bf.create()
+        subset = butler.subset("calexp", skyTile="foo")
+        self.assertEqual(len(subset), 0)
+        subset = butler.subset("calexp", visit=123456, sensor="1;2")
+        self.assertEqual(len(subset), 0)
+
     def testDoubleIteration(self):
         # create a bunch of files for testing
         inputList = ["flat_R1,1_S2,2_C0,0_E000.pickle",
