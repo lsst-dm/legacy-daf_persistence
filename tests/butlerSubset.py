@@ -140,6 +140,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
         for iterator in subset:
             # this is a sensor iterator, but raw data is by amplifier, so
             # iterate over amplifiers
+            self.assertEqual(set(iterator.subLevels()), set(["snap", "amp"]))
             if iterator.dataId["raft"] == "1,1":
                 self.assertEqual(len(iterator.subItems()), 5)
             else:

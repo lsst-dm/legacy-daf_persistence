@@ -176,6 +176,22 @@ class ButlerDataRef(object):
             datasetType = self.butlerSubset.datasetType
         self.butlerSubset.butler.put(obj, datasetType, self.dataId)
 
+    def subLevels(self):
+        """
+        Return a list of the lower levels of the hierarchy than this
+        ButlerDataRef.
+
+        @returns (iterable)  list of strings with level keys."""
+
+        return set(
+                self.butlerSubset.butler.getKeys(
+                    self.butlerSubset.datasetType).keys()
+            ) - set(
+                self.butlerSubset.butler.getKeys(
+                    self.butlerSubset.datasetType,
+                    self.butlerSubset.level).keys()
+            )
+
     def subItems(self, level=None):
         """
         Generate a ButlerSubset at a lower level of the hierarchy than this
