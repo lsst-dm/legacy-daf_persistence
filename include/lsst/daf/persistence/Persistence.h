@@ -85,6 +85,8 @@ public:
         std::string const& persistableType, Storage::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
 
+    lsst::pex::policy::Policy::Ptr getPolicy() { return _policy; }
+
     static Ptr getPersistence(lsst::pex::policy::Policy::Ptr policy);
 
 private:

@@ -64,6 +64,18 @@ class Mapper(object):
     def __init__(self):
         pass
 
+    def __new__(cls, *args, **kwargs):
+        self = super(Mapper, cls).__new__(cls)
+        self._arguments = (args, kwargs)
+        return self
+
+    def __getstate__(self):
+        return self._arguments
+
+    def __setstate__(self, state):
+        args, kwargs = state
+        self.__init__(*args, **kwargs)
+
     def keys(self):
         raise NotImplementedError("keys() unimplemented")
 

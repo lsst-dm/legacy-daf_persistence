@@ -16,6 +16,7 @@ doc/doxygen.conf
 tests/.tests
 version.py
 foo3.pickle
+flat*.pickle
 tests/DbStorage_1
 tests/FormatterRegistry_1
 tests/Persistence_1

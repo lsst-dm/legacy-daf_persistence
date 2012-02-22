@@ -32,7 +32,7 @@ import os
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
-from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset
+from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, Persistence
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -80,6 +80,21 @@ class Butler(object):
     subset(self, datasetType, level=None, dataId={}, **rest))
 
     """
+    
+    def __new__(cls, mapper, persistence, partialId={}):
+        """Create new instance, storing arguments for recreation"""
+        self = super(Butler, cls).__new__(cls)
+        self._arguments = (mapper, persistence.getPolicy().toString(), partialId)
+        return self
+
+    def __getstate__(self):
+        return self._arguments
+
+    def __setstate__(self, state):
+        mapper, policyString, partialId = state
+        policy = pexPolicy.Policy.createPolicy(pexPolicy.PolicyString(policyString))
+        persistence = Persistence.getPersistence(policy)
+        self.__init__(mapper, persistence, partialId=partialId)
 
     def __init__(self, mapper, persistence, partialId={}):
         """Construct the Butler.  Only called via the ButlerFactory."""
