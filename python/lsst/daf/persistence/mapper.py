@@ -73,6 +73,7 @@ class Mapper(object):
         return self._arguments
 
     def __setstate__(self, state):
+        self._arguments = state
         args, kwargs = state
         self.__init__(*args, **kwargs)
 

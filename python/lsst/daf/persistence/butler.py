@@ -91,6 +91,7 @@ class Butler(object):
         return self._arguments
 
     def __setstate__(self, state):
+        self._arguments = state
         mapper, policyString, partialId = state
         policy = pexPolicy.Policy.createPolicy(pexPolicy.PolicyString(policyString))
         persistence = Persistence.getPersistence(policy)
