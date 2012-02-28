@@ -134,9 +134,9 @@ class ButlerDataRef(object):
 
     Public methods:
 
-    get(self, datasetType=None)
+    get(self, datasetType=None, **rest)
 
-    put(self, obj, datasetType=None)
+    put(self, obj, datasetType=None, **rest)
 
     subItems(self, level=None)
     """
@@ -150,31 +150,33 @@ class ButlerDataRef(object):
         self.butlerSubset = butlerSubset
         self.dataId = dataId
 
-    def get(self, datasetType=None):
+    def get(self, datasetType=None, **rest):
         """
         Retrieve a dataset of the given type (or the type used when creating
         the ButlerSubset, if None) as specified by the ButlerDataRef.
 
         @param datasetType (str)  dataset type to retrieve.
+        @param **rest             keyword arguments with data identifiers
         @returns object corresponding to the given dataset type.
         """
 
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
-        return self.butlerSubset.butler.get(datasetType, self.dataId)
+        return self.butlerSubset.butler.get(datasetType, self.dataId, **rest)
 
-    def put(self, obj, datasetType=None):
+    def put(self, obj, datasetType=None, **rest):
         """
         Persist a dataset of the given type (or the type used when creating
         the ButlerSubset, if None) as specified by the ButlerDataRef.
 
         @param obj                object to persist.
         @param datasetType (str)  dataset type to persist.
+        @param **rest             keyword arguments with data identifiers
         """
 
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
-        self.butlerSubset.butler.put(obj, datasetType, self.dataId)
+        self.butlerSubset.butler.put(obj, datasetType, self.dataId, **rest)
 
     def subLevels(self):
         """
