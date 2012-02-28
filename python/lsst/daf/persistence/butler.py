@@ -142,7 +142,7 @@ class Butler(object):
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                'PickleStorage'):
+                'PickleStorage', 'ConfigStorage'):
             locations = location.getLocations()
             for locationString in locations:
                 logLoc = LogicalLocation(locationString, additionalData)
@@ -224,6 +224,20 @@ class Butler(object):
                         raise e
             with open(logLoc.locString(), "wb") as outfile:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+            trace.done()
+            return
+
+        if storageName == "ConfigStorage":
+            trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
+            outDir = os.path.dirname(logLoc.locString())
+            if outDir != "" and not os.path.exists(outDir):
+                try:
+                    os.makedirs(outDir)
+                except OSError, e:
+                    # Don't fail if directory exists due to race
+                    if e.errno != 17:
+                        raise e
+            obj.save(logLoc.locString())
             trace.done()
             return
 
