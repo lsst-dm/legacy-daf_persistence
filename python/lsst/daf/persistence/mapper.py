@@ -59,6 +59,8 @@ class Mapper(object):
     canStandardize(self, datasetType)
 
     standardize(self, datasetType, item, dataId)
+
+    validate(self, dataId)
     """
 
     def __init__(self):
@@ -71,7 +73,7 @@ class Mapper(object):
         """Return possible values for keys given a partial data id."""
 
         func = getattr(self, 'query_' + datasetType)
-        return func(key, format, dataId)
+        return func(key, format, self.validate(dataId))
 
     def getDatasetTypes(self):
         """Return a list of the mappable dataset types."""
@@ -86,7 +88,7 @@ class Mapper(object):
         """Map a data id using the mapping method for its dataset type."""
 
         func = getattr(self, 'map_' + datasetType)
-        return func(dataId)
+        return func(self.validate(dataId))
 
     def canStandardize(self, datasetType):
         """Return true if this mapper can standardize an object of the given
@@ -100,5 +102,14 @@ class Mapper(object):
 
         if hasattr(self, 'std_' + datasetType):
             func = getattr(self, 'std_' + datasetType)
-            return func(item, dataId)
+            return func(item, self.validate(dataId))
         return item
+
+    def validate(self, dataId):
+        """Validate a dataId's contents.
+        
+        If the dataId is valid, return it.  If an invalid component can be
+        transformed into a valid one, copy the dataId, fix the component, and
+        return the copy.  Otherwise, raise an exception."""
+
+        return dataId
