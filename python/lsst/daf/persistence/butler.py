@@ -325,6 +325,11 @@ class Butler(object):
                             "No such pickle file: " + logLoc.locString()
                 with open(logLoc.locString(), "rb") as infile:
                     finalItem = cPickle.load(infile)
+            elif storageName == "FitsCatalogStorage":
+                if not os.path.exists(logLoc.locString()):
+                    raise RuntimeError, \
+                            "No such FITS catalog file: " + logLoc.locString()
+                pythonType.readFits(logLoc.locString())
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
