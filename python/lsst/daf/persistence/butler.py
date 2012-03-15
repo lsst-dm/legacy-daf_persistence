@@ -142,7 +142,7 @@ class Butler(object):
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                'PickleStorage', 'ConfigStorage'):
+                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
             locations = location.getLocations()
             for locationString in locations:
                 logLoc = LogicalLocation(locationString, additionalData)
@@ -244,6 +244,20 @@ class Butler(object):
             trace.done()
             return
 
+        if storageName == "FitsCatalogStorage":
+            trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
+            outDir = os.path.dirname(logLoc.locString())
+            if outDir != "" and not os.path.exists(outDir):
+                try:
+                    os.makedirs(outDir)
+                except OSError, e:
+                    # Don't fail if directory exists due to race
+                    if e.errno != 17:
+                        raise e
+            obj.writeFits(logLoc.locString())
+            trace.done()
+            return
+
         # Create a list of Storages for the item.
         storageList = StorageList()
         storage = self.persistence.getPersistStorage(storageName, logLoc)
@@ -314,6 +328,11 @@ class Butler(object):
                             "No such pickle file: " + logLoc.locString()
                 with open(logLoc.locString(), "rb") as infile:
                     finalItem = cPickle.load(infile)
+            elif storageName == "FitsCatalogStorage":
+                if not os.path.exists(logLoc.locString()):
+                    raise RuntimeError, \
+                            "No such FITS catalog file: " + logLoc.locString()
+                pythonType.readFits(logLoc.locString())
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
