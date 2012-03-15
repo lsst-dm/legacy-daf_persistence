@@ -73,7 +73,7 @@ class Butler(object):
 
     datasetExists(self, datasetType, dataId={}, **rest)
 
-    get(self, datasetType, dataId={}, **rest)
+    get(self, datasetType, dataId={}, immediate=False, **rest)
 
     put(self, obj, datasetType, dataId={}, **rest)
 
@@ -155,11 +155,12 @@ class Butler(object):
                 (storageName, datasetType, str(dataId)))
         return True
 
-    def get(self, datasetType, dataId={}, **rest):
+    def get(self, datasetType, dataId={}, immediate=False, **rest):
         """Retrieves a dataset given an input collection data id.
         
         @param datasetType (str)   the type of dataset to retrieve.
         @param dataId (dict)       the data id.
+        @param immediate (bool)    don't use a proxy for delayed loading.
         @param **rest              keyword arguments for the data id.
         @returns an object retrieved from the dataset (or a proxy for one).
         """
@@ -188,6 +189,8 @@ class Butler(object):
                     self._read(pythonType, location), dataId)
         else:
             callback = lambda: self._read(pythonType, location)
+        if immediate:
+            return callback()
         return ReadProxy(callback)
 
     def put(self, obj, datasetType, dataId={}, **rest):

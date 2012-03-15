@@ -87,6 +87,14 @@ class ButlerSubsetTestCase(unittest.TestCase):
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
         butler = bf.create()
 
+        inputList = ["calexp_v123456_R1,2_S2,1.pickle",
+                "calexp_v123456_R1,2_S2,2.pickle",
+                "calexp_v654321_R1,3_S1,1.pickle",
+                "calexp_v654321_R1,3_S1,2.pickle"]
+        for fileName in inputList:
+            with open(fileName, "w") as f:
+                pickle.dump(inputList, f)
+
         subset = butler.subset("calexp", skyTile=6)
         # all sensors overlapping that skyTile
         self.assertEqual(len(subset), 4)
@@ -101,7 +109,14 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 self.assertEqual(iterator.dataId["visit"], 654321)
             else:
                 self.assert_(iterator.dataId["raft"] in ["1,2", "1,3"])
-            image = iterator.get("calexp")
+            image = iterator.get("calexp") # succeeds since deferred
+            self.assertEqual(type(image), dafPersist.readProxy.ReadProxy)
+            image = iterator.get("calexp", immediate=True) # real test
+            self.assertEqual(type(image), list)
+            self.assertEqual(image, inputList)
+
+        for fileName in inputList:
+            os.unlink(fileName)
 
     def testNonexistentValue(self):
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
@@ -154,9 +169,11 @@ class ButlerSubsetTestCase(unittest.TestCase):
                     self.assert_(ampIterator.dataId["snap"] in [0, 1])
                 else:
                     self.assert_(iterator.dataId["sensor"] in ["2,1", "2,2"])
-                ampImage = ampIterator.get("raw")
                 # equivalent to butler.get("raw", ampIterator)
                 flat = ampIterator.get("flat")
+                self.assertEqual(flat, inputList)
+                flat = ampIterator.get("flat", immediate=True)
+                self.assertEqual(flat, inputList)
                 # ...perform ISR, assemble and calibrate the CCD, then persist
                 calexp = flat
                 iterator.put(calexp, "calexp")
@@ -166,6 +183,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
         for fileName in ["calexp_v123456_R1,1_S2,2.pickle",
                 "calexp_v123456_R1,2_S2,1.pickle",
                 "calexp_v123456_R1,2_S2,2.pickle"]:
+            self.assertEqual(os.path.exists(fileName), True)
             os.unlink(fileName)
 
 def suite():

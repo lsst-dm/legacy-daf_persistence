@@ -45,7 +45,7 @@ class ButlerPickleTestCase(unittest.TestCase):
         bbox = [[3, 4], [5, 6]]
         butler.put(bbox, "x", ccd=3)
 
-        y = butler.get("x", ccd=3)
+        y = butler.get("x", ccd=3, immediate=True)
         self.assertEqual(bbox, y)
 
 def suite():
