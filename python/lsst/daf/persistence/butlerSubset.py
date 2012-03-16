@@ -202,11 +202,14 @@ class ButlerDataRef(object):
         type is used.
 
         @param level (str)   the hierarchy level to descend to.
-        @returns (ButlerSubset) resulting from the lower-level query.
+        @returns (ButlerSubset) resulting from the lower-level query or () if
+                                there is no lower level.
         """
 
         if level is None:
             level = self.butlerSubset.butler.mapper.getDefaultSubLevel(
                     self.butlerSubset.level)
+            if level is None:
+                return ()
         return self.butlerSubset.butler.subset(self.butlerSubset.datasetType,
                 level, self.dataId)
