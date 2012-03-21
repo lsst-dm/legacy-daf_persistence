@@ -329,7 +329,7 @@ class Butler(object):
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError, \
                             "No such FITS catalog file: " + logLoc.locString()
-                pythonType.readFits(logLoc.locString())
+                finalItem = pythonType.readFits(logLoc.locString())
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
