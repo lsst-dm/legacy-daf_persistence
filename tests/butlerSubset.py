@@ -170,6 +170,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 else:
                     self.assert_(iterator.dataId["sensor"] in ["2,1", "2,2"])
                 # equivalent to butler.get("raw", ampIterator)
+                self.assertTrue(ampIterator.datasetExists("flat"))
                 flat = ampIterator.get("flat")
                 self.assertEqual(flat, inputList)
                 flat = ampIterator.get("flat", immediate=True)
@@ -180,6 +181,10 @@ class ButlerSubsetTestCase(unittest.TestCase):
 
         for fileName in inputList:
             os.unlink(fileName)
+        ref = butler.dataRef("raw",
+                visit=123456, raft="1,1", sensor="2,2", amp="0,1", snap=0)
+        self.assertFalse(ref.datasetExists("flat"))
+
         for fileName in ["calexp_v123456_R1,1_S2,2.pickle",
                 "calexp_v123456_R1,2_S2,1.pickle",
                 "calexp_v123456_R1,2_S2,2.pickle"]:

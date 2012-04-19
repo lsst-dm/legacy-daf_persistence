@@ -32,7 +32,7 @@ import os
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
-from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset
+from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -292,6 +292,29 @@ class Butler(object):
             level = self.mapper.getDefaultLevel()
         dataId = self._combineDicts(dataId, **rest)
         return ButlerSubset(self, datasetType, level, dataId)
+
+    def dataRef(self, datasetType, level=None, dataId={}, **rest):
+        """Returns a single ButlerDataRef.
+
+        Given a complete dataId specified in dataId and **rest, find the
+        unique dataset at the given level specified by a dataId key (e.g.
+        visit or sensor or amp for a camera) and return a ButlerDataRef.
+
+        @param datasetType (str)  the type of dataset collection to reference
+        @param level (str)        the level of dataId at which to reference
+        @param dataId (dict)      the data id.
+        @param **rest             keyword arguments for the data id.
+        @returns (ButlerDataRef) ButlerDataRef for dataset matching the data id
+        """
+
+        subset = self.subset(datasetType, level, dataId, **rest)
+        if len(subset) != 1:
+            raise RuntimeError, """No unique dataset for:
+    Dataset type = %s
+    Level = %s
+    Data ID = %s
+    Keywords = %s""" % (str(datasetType), str(level), str(dataId), str(rest))
+        return ButlerDataRef(subset, subset.cache[0])
 
     def _combineDicts(self, dataId, **rest):
         finalId = {}
