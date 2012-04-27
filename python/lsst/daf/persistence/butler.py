@@ -184,11 +184,12 @@ class Butler(object):
             bypassFunc = getattr(self.mapper, "bypass_" + datasetType)
             callback = lambda: bypassFunc(datasetType, pythonType,
                     location, dataId)
-        elif self.mapper.canStandardize(datasetType):
-            callback = lambda: self.mapper.standardize(datasetType,
-                    self._read(pythonType, location), dataId)
         else:
             callback = lambda: self._read(pythonType, location)
+        if self.mapper.canStandardize(datasetType):
+            innerCallback = callback
+            callback = lambda: self.mapper.standardize(datasetType,
+                    innerCallback(), dataId)
         if immediate:
             return callback()
         return ReadProxy(callback)
