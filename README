@@ -1,0 +1,62 @@
+Calibrations
+============
+
+Calibrations, like all datasets, are identified by a set of data ids.  These
+are typically only used internally, so they do not need to be as user-friendly
+as those for "normal" datasets.  For example, it is not unreasonable to just
+have "path" (relative to the calibration repository) as a (string) data id.
+Different calibration datasets may have different data id *spaces* (names of
+id keys and possible values), or they may share a space.
+
+Create a SQLite3 file named `calibRegistry.sqlite3` in the repository
+containing the calibration files.  This should contain a table for each
+calibration data id space.  The columns in the table should be "id integer
+primary key autoincrement", "validStart text", "validEnd text", and then all of
+the data id keys for that space.  Write a Python script to populate this table
+with the metadata from the calibration files and put it in `obs_{camera}/bin`.
+
+For each calibration dataset, write a sub-Policy under the calibrations
+sub-Policy within the mapper Policy giving the table for its data id space in
+the calibration registry, the reference table in the input (not calibration)
+repository registry containing the `taiObs` column, and specifying that
+validity range checking should be enabled.  If additional data id keys such as
+filter/band or camcol are necessary, put them in a "refCols" entry.
+
+Example::
+
+    calibrations: {
+        gain: {
+            [usual mapping entries]
+            tables: gain
+            reference: raw
+            refCols: "run" "camcol" "band"
+            validRange: true
+        }
+    }
+
+Bypassing Input
+===============
+
+In certain cases, it may be useful to skip using the butler's reading
+machinery.  This should not be the case for PafStorage, PickleStorage,
+FitsCatalogStorage, or any dataset type known to the Persistence Framework
+(i.e. with a Formatter).  But other datasets, particularly ones that are stored
+in FITS tables but are not LSST afw Source Tables (which use
+FitsCatalogStorage) or ones that are derivatives of other dataset types (like
+metadata headers extracted from a file or subimages from an image), may need
+this capability.  It is also appropriate for "datasets" with no actual data
+that can be computed solely on the basis of the data ids.
+
+Add a `bypass_{dataset type}(self, datasetType, pythonType, location, dataId)`
+method to the mapper subclass.  The `datasetType` argument is redundant but
+preserved for compatibility.  The `pythonType` argument comes from the mapper;
+it has already been imported.  The `location` argument is a `ButlerLocation`
+object; substitution of fields using the `daf_persistence` `LogicalLocation`
+facilities (which should rarely be necessary) has not been done yet, but all
+other mapping and data id substitutions have been performed.  Typically, the
+pathname of the first location in the list contained in the `ButlerLocation` is
+what is needed: `location.getLocations()[0]`
+
+The `bypass_{dataset type}` method must return the actual object (usually of
+the specified `pythonType`) after retrieval.  This may still be proxied by
+the butler.
