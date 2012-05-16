@@ -191,6 +191,27 @@ class ButlerSubsetTestCase(unittest.TestCase):
             self.assertEqual(os.path.exists(fileName), True)
             os.unlink(fileName)
 
+    def testCompleteDataRef(self):
+        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
+        butler = bf.create()
+
+        # Test by using junk data
+        tuples = butler.queryMetadata("raw",
+                ["visit", "raft", "sensor", "amp", "snap"], "amp",
+                dict(visit=314159, raft="ab", sensor="cd", amp="ef", snap=9))
+        self.assertEqual(len(tuples), 0)
+        subset = butler.subset("raw", "amp",
+                visit=314159, raft="ab", sensor="cd")
+        self.assertEqual(len(subset), 0)
+
+        # But allow user to fully specify dataId, even if it doesn't exist
+        subset = butler.subset("raw", "sensor",
+                visit=314159, raft="ab", sensor="cd")
+        self.assertEqual(len(subset), 1)
+        ref = butler.dataRef("raw",
+                visit=314159, raft="ab", sensor="cd", amp="ef", snap=9)
+        self.assertFalse(ref.datasetExists("raw"))
+
 def suite():
     utilsTests.init()
 

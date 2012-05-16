@@ -75,6 +75,17 @@ class ButlerSubset(object):
         self.cache = []
 
         fmt = list(self.butler.getKeys(datasetType, level).iterkeys())
+
+        # Don't query if we already have a complete dataId
+        completeId = True
+        for key in fmt:
+            if key not in dataId:
+                completeId = False
+                break
+        if completeId:
+            self.cache.append(dataId)
+            return
+
         for tuple in butler.queryMetadata(self.datasetType,
                 level, fmt, self.dataId):
             tempId = dict(self.dataId)
@@ -141,6 +152,8 @@ class ButlerDataRef(object):
     subItems(self, level=None)
 
     datasetExists(self, datasetType=None, **rest)
+
+    getButler(self)
     """
 
     def __init__(self, butlerSubset, dataId):
@@ -229,3 +242,9 @@ class ButlerDataRef(object):
             datasetType = self.butlerSubset.datasetType
         return self.butlerSubset.butler.datasetExists(
                 datasetType, self.dataId, **rest)
+
+    def getButler(self):
+        """
+        Return the butler associated with this data reference.
+        """
+        return self.butlerSubset.butler
