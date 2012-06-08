@@ -47,6 +47,7 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 
+#include "lsst/base.h"
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/PropertySet.h"
 
@@ -54,22 +55,19 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
-namespace dafBase = lsst::daf::base;
-
-class LogicalLocation : public dafBase::Citizen {
+class LogicalLocation : public base::Citizen {
 public:
     typedef boost::shared_ptr<LogicalLocation> Ptr;
 
     LogicalLocation(std::string const& locString,
-                    boost::shared_ptr<dafBase::PropertySet> additionalData =
-                    dafBase::PropertySet::Ptr());
+                    CONST_PTR(base::PropertySet) additionalData = CONST_PTR(base::PropertySet)());
     std::string const& locString(void) const;
 
-    static void setLocationMap(boost::shared_ptr<dafBase::PropertySet> map);
+    static void setLocationMap(PTR(base::PropertySet) map);
 
 private:
     std::string _locString; ///< The location string.
-    static dafBase::PropertySet::Ptr _map; ///< The logical-to-less-logical map.
+    static PTR(base::PropertySet) _map; ///< The logical-to-less-logical map.
 };
 
 }}} // namespace lsst::daf::persistence
