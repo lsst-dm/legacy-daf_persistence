@@ -55,19 +55,21 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
-class LogicalLocation : public base::Citizen {
+namespace dafBase = lsst::daf::base;
+
+class LogicalLocation : public dafBase::Citizen {
 public:
     typedef boost::shared_ptr<LogicalLocation> Ptr;
 
     LogicalLocation(std::string const& locString,
-                    CONST_PTR(base::PropertySet) additionalData = CONST_PTR(base::PropertySet)());
+                    CONST_PTR(dafBase::PropertySet) additionalData = CONST_PTR(dafBase::PropertySet)());
     std::string const& locString(void) const;
 
-    static void setLocationMap(PTR(base::PropertySet) map);
+    static void setLocationMap(PTR(dafBase::PropertySet) map);
 
 private:
     std::string _locString; ///< The location string.
-    static PTR(base::PropertySet) _map; ///< The logical-to-less-logical map.
+    static PTR(dafBase::PropertySet) _map; ///< The logical-to-less-logical map.
 };
 
 }}} // namespace lsst::daf::persistence
