@@ -32,7 +32,7 @@ class MinMapper(dafPersist.Mapper):
     def __init__(self):
         pass
 
-    def map_x(self, dataId):
+    def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
         return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
 

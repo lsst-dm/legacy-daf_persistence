@@ -89,14 +89,14 @@ class CameraMapper(dafPersist.Mapper):
     def query(self, datasetType, key, format, dataId):
         return self.registry.query(datasetType, key, format, dataId)
 
-    def map(self, datasetType, dataId):
+    def map(self, datasetType, dataId, write=False):
         path = self.templates[datasetType] % dataId
         return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
 
 for datasetType in ["raw", "flat", "calexp"]:
     setattr(CameraMapper, "map_" + datasetType,
-            lambda self, dataId:
-            CameraMapper.map(self, datasetType, dataId))
+            lambda self, dataId, write:
+            CameraMapper.map(self, datasetType, dataId, write))
     setattr(CameraMapper, "query_" + datasetType,
             lambda self, key, format, dataId:
             CameraMapper.query(self, datasetType, key, format, dataId))

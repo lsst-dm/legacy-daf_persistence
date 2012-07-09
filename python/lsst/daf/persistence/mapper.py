@@ -30,8 +30,9 @@ class Mapper(object):
 
     Subclasses may define the following methods:
     
-    map_{datasetType}(self, dataId)
+    map_{datasetType}(self, dataId, write)
         Map a dataset id for the given dataset type into a ButlerLocation.
+        If write=True, this mapping is for an output dataset.
 
     query_{datasetType}(self, key, format, dataId)
         Return the possible values for the format fields that would produce
@@ -52,7 +53,7 @@ class Mapper(object):
 
     getDatasetTypes(self)
 
-    map(self, datasetType, dataId)
+    map(self, datasetType, dataId, write=False)
 
     queryMetadata(self, datasetType, key, format, dataId)
 
@@ -84,11 +85,11 @@ class Mapper(object):
                 list.append(attr[4:])
         return list
 
-    def map(self, datasetType, dataId):
+    def map(self, datasetType, dataId, write=False):
         """Map a data id using the mapping method for its dataset type."""
 
         func = getattr(self, 'map_' + datasetType)
-        return func(self.validate(dataId))
+        return func(self.validate(dataId), write)
 
     def canStandardize(self, datasetType):
         """Return true if this mapper can standardize an object of the given

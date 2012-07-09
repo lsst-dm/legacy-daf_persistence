@@ -32,12 +32,14 @@ class MinMapper(dafPersist.Mapper):
     def __init__(self):
         pass
 
-    def map_x(self, dataId):
+    def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
+        if not write:
+            path = "parent/" + path
         return dafPersist.ButlerLocation("lsst.afw.image.BBox",
                 "lsst::afw::image::BBox", "PickleStorage", path, {})
 
-    def map_badSourceHist(self, dataId):
+    def map_badSourceHist(self, dataId, write):
         path = "badSourceHist%(ccd)d.pickle" % dataId
         return dafPersist.ButlerLocation("lsst.afw.image.BBox",
                 "lsst::afw::image::BBox", "PickleStorage", path, {})
@@ -60,6 +62,14 @@ class MapperTestCase(unittest.TestCase):
 
     def testMap(self):
         loc = self.mapper.map("x", {"ccd": 27})
+        self.assertEqual(loc.getPythonType(), "lsst.afw.image.BBox")
+        self.assertEqual(loc.getCppType(), "lsst::afw::image::BBox")
+        self.assertEqual(loc.getStorageName(), "PickleStorage")
+        self.assertEqual(loc.getLocations(), ["parent/foo27.pickle"])
+        self.assertEqual(loc.getAdditionalData().toString(), "")
+
+    def testMapWrite(self):
+        loc = self.mapper.map("x", {"ccd": 27}, write=True)
         self.assertEqual(loc.getPythonType(), "lsst.afw.image.BBox")
         self.assertEqual(loc.getCppType(), "lsst::afw::image::BBox")
         self.assertEqual(loc.getStorageName(), "PickleStorage")

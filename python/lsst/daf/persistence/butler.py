@@ -203,7 +203,7 @@ class Butler(object):
         @param **rest         keyword arguments for the data id.
         """
         dataId = self._combineDicts(dataId, **rest)
-        location = self.mapper.map(datasetType, dataId)
+        location = self.mapper.map(datasetType, dataId, write=True)
         self.log.log(pexLog.Log.DEBUG, "Put type=%s keys=%s to %s" %
                 (datasetType, dataId, str(location)))
         additionalData = location.getAdditionalData()
@@ -323,9 +323,6 @@ class Butler(object):
         finalId.update(dataId)
         finalId.update(rest)
         return finalId
-
-    def _map(self, mapper, datasetType, dataId):
-        return mapper.map(datasetType, dataId)
 
     def _read(self, pythonType, location):
         trace = pexLog.BlockTimingLog(self.log, "read",
