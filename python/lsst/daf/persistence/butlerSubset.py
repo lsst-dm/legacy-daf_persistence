@@ -86,11 +86,14 @@ class ButlerSubset(object):
             self.cache.append(dataId)
             return
 
-        for tuple in butler.queryMetadata(self.datasetType,
+        for idTuple in butler.queryMetadata(self.datasetType,
                 level, fmt, self.dataId):
             tempId = dict(self.dataId)
-            for i in xrange(len(fmt)):
-                tempId[fmt[i]] = tuple[i]
+            if len(fmt) == 1:
+                tempId[fmt[0]] = idTuple
+            else:
+                for i in xrange(len(fmt)):
+                    tempId[fmt[i]] = idTuple[i]
             self.cache.append(tempId)
 
     def __len__(self):
