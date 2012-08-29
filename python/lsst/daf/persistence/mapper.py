@@ -64,8 +64,32 @@ class Mapper(object):
     validate(self, dataId)
     """
 
+    def __new__(cls, *args, **kwargs):
+        """Create a new Mapper, saving arguments for pickling.
+
+        This is in __new__ instead of __init__ to save the user
+        from having to save the arguments themselves (either explicitly,
+        or by calling the super's __init__ with all their
+        *args,**kwargs.  The resulting pickling system (of __new__,
+        __getstate__ and __setstate__ is similar to how __reduce__
+        is usually used, except that we save the user from any
+        responsibility (except when overriding __new__, but that
+        is not common).
+        """
+        self = super(Mapper, cls).__new__(cls)
+        self._arguments = (args, kwargs)
+        return self
+
     def __init__(self):
         pass
+
+    def __getstate__(self):
+        return self._arguments
+
+    def __setstate__(self, state):
+        self._arguments = state
+        args, kwargs = state
+        self.__init__(*args, **kwargs)
 
     def keys(self):
         raise NotImplementedError("keys() unimplemented")
