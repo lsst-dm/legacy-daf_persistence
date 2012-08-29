@@ -15,6 +15,7 @@ doc/*.inc
 doc/doxygen.conf
 tests/.tests
 version.py
+foo1.pickle
 foo3.pickle
 flat_R1,1_S2,2_C0,0_E000.pickle
 flat_R1,1_S2,2_C0,0_E001.pickle

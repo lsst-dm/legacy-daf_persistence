@@ -32,7 +32,8 @@ import os
 import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
-from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef
+from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
+    Persistence
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -373,3 +374,13 @@ class Butler(object):
         if not returnList:
             results = results[0]
         return results
+
+    def __reduce__(self):
+        return (_unreduce, (self.mapper, self.persistence.getPolicy().toString(), self.partialId))
+
+
+def _unreduce(mapper, policyString, partialId):
+    policy = pexPolicy.Policy.createPolicy(pexPolicy.PolicyString(policyString))
+    persistence = Persistence.getPersistence(policy)
+    return Butler(mapper, persistence, partialId=partialId)
+
