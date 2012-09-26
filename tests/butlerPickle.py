@@ -23,6 +23,7 @@
 #
 
 
+import pickle
 import unittest
 import lsst.utils.tests as utilsTests
 
@@ -39,14 +40,26 @@ class MinMapper(dafPersist.Mapper):
 class ButlerPickleTestCase(unittest.TestCase):
     """A test case for the data butler using PickleStorage"""
 
-    def testPickle(self):
+    def setUp(self):
         bf = dafPersist.ButlerFactory(mapper=MinMapper())
-        butler = bf.create()
-        bbox = [[3, 4], [5, 6]]
-        butler.put(bbox, "x", ccd=3)
+        self.butler = bf.create()
 
-        y = butler.get("x", ccd=3, immediate=True)
+    def tearDown(self):
+        del self.butler
+
+    def checkIO(self, butler, bbox, ccd):
+        butler.put(bbox, "x", ccd=ccd)
+        y = butler.get("x", ccd=ccd, immediate=True)
         self.assertEqual(bbox, y)
+
+    def testIO(self):
+        bbox = [[3, 4], [5, 6]]
+        self.checkIO(self.butler, bbox, 3)
+
+    def testPickle(self):
+        butler = pickle.loads(pickle.dumps(self.butler))
+        bbox = [[1, 2], [8, 9]]
+        self.checkIO(butler, bbox, 1)
 
 def suite():
     utilsTests.init()

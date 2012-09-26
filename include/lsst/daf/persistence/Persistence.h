@@ -87,6 +87,8 @@ public:
 
     static Ptr getPersistence(lsst::pex::policy::Policy::Ptr policy);
 
+    lsst::pex::policy::Policy::Ptr getPolicy() const;
+
 private:
     explicit Persistence(lsst::pex::policy::Policy::Ptr policy);
 

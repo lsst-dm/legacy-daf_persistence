@@ -198,5 +198,14 @@ Persistence::Ptr Persistence::getPersistence(
     return Persistence::Ptr(new Persistence(policy));
 }
 
+/** Return the policy used to configure the Persistence object
+ *
+ * \return Pointer to Policy
+ */
+lsst::pex::policy::Policy::Ptr Persistence::getPolicy() const
+{
+    return _policy;
+}
+
 
 }}} // namespace lsst::daf::persistence
