@@ -146,8 +146,12 @@ class Butler(object):
                 'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
             locations = location.getLocations()
             for locationString in locations:
-                logLoc = LogicalLocation(locationString, additionalData)
-                if not os.path.exists(logLoc.locString()):
+                logLoc = LogicalLocation(locationString, additionalData).locString()
+                if storageName == 'FitsStorage':
+                    bracket = logLoc.find('[')
+                    if bracket > 0:
+                        logLoc = logLoc[:bracket]
+                if not os.path.exists(logLoc):
                     return False
             return True
         self.log.log(pexLog.Log.WARN,
