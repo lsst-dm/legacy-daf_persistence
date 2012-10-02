@@ -148,6 +148,7 @@ class Butler(object):
             for locationString in locations:
                 logLoc = LogicalLocation(locationString, additionalData).locString()
                 if storageName == 'FitsStorage':
+                    # Strip off directives for cfitsio (in square brackets, e.g., extension name)
                     bracket = logLoc.find('[')
                     if bracket > 0:
                         logLoc = logLoc[:bracket]
