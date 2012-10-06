@@ -29,7 +29,6 @@
 from __future__ import with_statement
 import cPickle
 import os
-import lsst.daf.base as dafBase
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
@@ -38,23 +37,20 @@ from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, Butler
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
 
-    Butlers should always be created using ButlerFactory.create().
-    
-    A Butler manages a collection of datasets.  Each dataset has a type
-    representing its intended usage and a location.  Note that the dataset
-    type is not the same as the C++ or Python type of the object containing
-    the data.  For example, an ExposureF object might be used to hold the data
-    for a raw image, a post-ISR image, a calibrated science image, or a
-    difference image.  These would all be different dataset types.
+    A Butler manages a collection of datasets known as a repository.  Each
+    dataset has a type representing its intended usage and a location.  Note
+    that the dataset type is not the same as the C++ or Python type of the
+    object containing the data.  For example, an ExposureF object might be
+    used to hold the data for a raw image, a post-ISR image, a calibrated
+    science image, or a difference image.  These would all be different
+    dataset types.
 
-    Each Butler is responsible for a subset of its collection defined by the
-    partial data identifier used to create it.  A Butler can produce a
-    collection of possible values for a key (or tuples of values for multiple
-    keys) if given a partial data identifier.  It can check for the existence
-    of a file containing a dataset given its type and data identifier.  The
-    Butler can then retrieve the dataset.  Similarly, it can persist an
-    object to an appropriate location when given its associated data
-    identifier.
+    A Butler can produce a collection of possible values for a key (or tuples
+    of values for multiple keys) if given a partial data identifier.  It can
+    check for the existence of a file containing a dataset given its type and
+    data identifier.  The Butler can then retrieve the dataset.  Similarly, it
+    can persist an object to an appropriate location when given its associated
+    data identifier.
 
     Note that the Butler has two more advanced features when retrieving a data
     set.  First, the retrieval is lazy.  Input does not occur until the data
@@ -67,6 +63,8 @@ class Butler(object):
     including translating metadata.
 
     Public methods:
+
+    __init__(self, root, mapper=None, **mapperArgs)
 
     getKeys(self, datasetType=None, level=None)
 
@@ -82,12 +80,30 @@ class Butler(object):
 
     """
 
-    def __init__(self, mapper, persistence, partialId={}):
-        """Construct the Butler.  Only called via the ButlerFactory."""
+    def __init__(self, root, mapper=None, **mapperArgs):
+        """Construct the Butler.  If no mapper class is provided, then a file
+        named "_mapper.py" is expected to be found in the repository, which
+        must be a filesystem path.  That file is executed and must provide a
+        class called "Mapper", typically by importing.
 
-        self.mapper = mapper
-        self.persistence = persistence
-        self.partialId = partialId
+        @param root (str)       the repository to be managed (at least
+                                initially).  May be None if a mapper is
+                                provided.
+        @param mapper (Mapper)  if present, the Mapper subclass instance
+                                to be used as the butler's mapper.
+        @param **mapperArgs     arguments to be passed to the mapper's
+                                __init__ method, in addition to the root."""
+
+        if mapper is None:
+            mapperPath = os.path.join(root, "_mapper.py")
+            globals = {}
+            if os.path.exists(mapperPath):
+                execfile(mapperPath, globals)
+            self.mapper = globals["Mapper"](root=root, **mapperArgs)
+        else:
+            self.mapper = mapper
+        persistencePolicy = pexPolicy.Policy()
+        self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(),
                 "daf.persistence.butler")
 
@@ -325,7 +341,6 @@ class Butler(object):
 
     def _combineDicts(self, dataId, **rest):
         finalId = {}
-        finalId.update(self.partialId)
         finalId.update(dataId)
         finalId.update(rest)
         return finalId
@@ -381,11 +396,8 @@ class Butler(object):
         return results
 
     def __reduce__(self):
-        return (_unreduce, (self.mapper, self.persistence.getPolicy().toString(), self.partialId))
+        return (_unreduce, (self.mapper,))
 
 
-def _unreduce(mapper, policyString, partialId):
-    policy = pexPolicy.Policy.createPolicy(pexPolicy.PolicyString(policyString))
-    persistence = Persistence.getPersistence(policy)
-    return Butler(mapper, persistence, partialId=partialId)
-
+def _unreduce(mapper):
+    return Butler(root=None, mapper=mapper)
