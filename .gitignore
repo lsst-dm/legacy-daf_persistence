@@ -32,3 +32,4 @@ tests/Persistence_3
 tests/PropertySetPersist
 tests/PropertySet_2
 tests/data
+tests/root/out
