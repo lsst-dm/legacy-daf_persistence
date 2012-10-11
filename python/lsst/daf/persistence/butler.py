@@ -28,6 +28,7 @@
 
 from __future__ import with_statement
 import cPickle
+import importlib
 import os
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
@@ -82,9 +83,10 @@ class Butler(object):
 
     def __init__(self, root, mapper=None, **mapperArgs):
         """Construct the Butler.  If no mapper class is provided, then a file
-        named "_mapper.py" is expected to be found in the repository, which
-        must be a filesystem path.  That file is executed and must provide a
-        class called "Mapper", typically by importing.
+        named "_mapper" is expected to be found in the repository, which
+        must be a filesystem path.  The first line in that file is read and
+        must contain the fully-qualified name of a Mapper subclass, which is
+        then imported and instantiated using the root and the mapperArgs.
 
         @param root (str)       the repository to be managed (at least
                                 initially).  May be None if a mapper is
@@ -94,14 +96,35 @@ class Butler(object):
         @param **mapperArgs     arguments to be passed to the mapper's
                                 __init__ method, in addition to the root."""
 
-        if mapper is None:
-            mapperPath = os.path.join(root, "_mapper.py")
-            globals = {}
-            if os.path.exists(mapperPath):
-                execfile(mapperPath, globals)
-            self.mapper = globals["Mapper"](root=root, **mapperArgs)
-        else:
+        if mapper is not None:
             self.mapper = mapper
+        else:
+            # Find a "_mapper" file containing tha mapper class name
+            basePath = root
+            mapperFile = "_mapper"
+            globals = {}
+            while not os.path.exists(os.path.join(basePath, mapperFile)):
+                # Break abstraction by following _parent links from CameraMapper
+                if os.path.exists(os.path.join(basePath, "_parent")):
+                    basePath = os.path.join(basePath, "_parent")
+                else:
+                    raise RuntimeError(
+                            "No mapper provided and no %s available" %
+                            (mapperFile,))
+            mapperFile = os.path.join(basePath, mapperFile)
+
+            # Read the name of the mapper class and instantiate it
+            with open(mapperFile, "r") as f:
+                mapperName = f.readline().strip()
+            components = mapperName.split(".")
+            if len(components) <= 1:
+                raise RuntimeError("Unqualified mapper name %s in %s" %
+                        (mapperName, mapperFile))
+            pkg = importlib.import_module(".".join(components[:-1]))
+            cls = getattr(pkg, components[-1])
+            self.mapper = cls(root=root, **mapperArgs)
+
+        # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(),
