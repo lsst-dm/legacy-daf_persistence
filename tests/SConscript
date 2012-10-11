@@ -2,10 +2,10 @@
 from lsst.sconsUtils import scripts
 import os
 
-ignoreList = []
+ignoreList = ["pickleMapper.py"]
 if not os.path.exists(os.path.join(os.environ['HOME'], ".lsst/db-auth.paf")):
-    ignoreList = ["DateTime_1", "DbStorage_1", "DbStorage_1.py", "DbStorage_2.py",
-                  "Persistence_1", "Persistence_2", "Persistence_2.py"]
+    ignoreList.extend(["DateTime_1", "DbStorage_1", "DbStorage_1.py", "DbStorage_2.py",
+                       "Persistence_1", "Persistence_2", "Persistence_2.py"])
     print "WARNING: No fallback database authenticator seen"
     print "Database tests are being skipped"
 
