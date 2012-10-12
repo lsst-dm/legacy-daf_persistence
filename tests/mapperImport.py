@@ -29,6 +29,7 @@ import unittest
 import lsst.utils.tests as utilsTests
 
 import lsst.daf.persistence as dafPersist
+import pickleMapper
 
 class MapperImportTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
@@ -39,6 +40,10 @@ class MapperImportTestCase(unittest.TestCase):
 
     def tearDown(self):
         del self.butler
+
+    def testMapperClass(self):
+        cls = dafPersist.Butler.getMapperClass(os.path.join("tests", "root"))
+        self.assertEqual(cls, pickleMapper.PickleMapper)
 
     def checkIO(self, butler, bbox, ccd):
         butler.put(bbox, "x", ccd=ccd)

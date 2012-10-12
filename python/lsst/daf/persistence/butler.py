@@ -81,6 +81,34 @@ class Butler(object):
 
     """
 
+    @staticmethod
+    def getMapperClass(root):
+        """Return the mapper class associated with a repository root."""
+
+        # Find a "_mapper" file containing the mapper class name
+        basePath = root
+        mapperFile = "_mapper"
+        globals = {}
+        while not os.path.exists(os.path.join(basePath, mapperFile)):
+            # Break abstraction by following _parent links from CameraMapper
+            if os.path.exists(os.path.join(basePath, "_parent")):
+                basePath = os.path.join(basePath, "_parent")
+            else:
+                raise RuntimeError(
+                        "No mapper provided and no %s available" %
+                        (mapperFile,))
+        mapperFile = os.path.join(basePath, mapperFile)
+
+        # Read the name of the mapper class and instantiate it
+        with open(mapperFile, "r") as f:
+            mapperName = f.readline().strip()
+        components = mapperName.split(".")
+        if len(components) <= 1:
+            raise RuntimeError("Unqualified mapper name %s in %s" %
+                    (mapperName, mapperFile))
+        pkg = importlib.import_module(".".join(components[:-1]))
+        return getattr(pkg, components[-1])
+
     def __init__(self, root, mapper=None, **mapperArgs):
         """Construct the Butler.  If no mapper class is provided, then a file
         named "_mapper" is expected to be found in the repository, which
@@ -99,29 +127,7 @@ class Butler(object):
         if mapper is not None:
             self.mapper = mapper
         else:
-            # Find a "_mapper" file containing tha mapper class name
-            basePath = root
-            mapperFile = "_mapper"
-            globals = {}
-            while not os.path.exists(os.path.join(basePath, mapperFile)):
-                # Break abstraction by following _parent links from CameraMapper
-                if os.path.exists(os.path.join(basePath, "_parent")):
-                    basePath = os.path.join(basePath, "_parent")
-                else:
-                    raise RuntimeError(
-                            "No mapper provided and no %s available" %
-                            (mapperFile,))
-            mapperFile = os.path.join(basePath, mapperFile)
-
-            # Read the name of the mapper class and instantiate it
-            with open(mapperFile, "r") as f:
-                mapperName = f.readline().strip()
-            components = mapperName.split(".")
-            if len(components) <= 1:
-                raise RuntimeError("Unqualified mapper name %s in %s" %
-                        (mapperName, mapperFile))
-            pkg = importlib.import_module(".".join(components[:-1]))
-            cls = getattr(pkg, components[-1])
+            cls = Butler.getMapperClass(root)
             self.mapper = cls(root=root, **mapperArgs)
 
         # Always use an empty Persistence policy until we can get rid of it
