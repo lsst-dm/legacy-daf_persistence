@@ -201,8 +201,7 @@ class Butler(object):
                     return False
             return True
         self.log.log(pexLog.Log.WARN,
-                "datasetExists() for non-file storage %s, " +
-                "dataset type=%s, keys=%s""" %
+                "datasetExists() for non-file storage %s, dataset type=%s, keys=%s" %
                 (storageName, datasetType, str(dataId)))
         return True
 
