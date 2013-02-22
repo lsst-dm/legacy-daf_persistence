@@ -295,7 +295,7 @@ class Butler(object):
             trace.done()
             return
 
-        if storageName == "FitsCatalogStorage":
+        if storageName == "FitsCatalogStorage" or storageName == "FitsStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
             outDir = os.path.dirname(logLoc.locString())
             if outDir != "" and not os.path.exists(outDir):
@@ -398,10 +398,10 @@ class Butler(object):
                             "No such pickle file: " + logLoc.locString()
                 with open(logLoc.locString(), "rb") as infile:
                     finalItem = cPickle.load(infile)
-            elif storageName == "FitsCatalogStorage":
+            elif storageName == "FitsCatalogStorage" or storageName == "FitsStorage":
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError, \
-                            "No such FITS catalog file: " + logLoc.locString()
+                            "No such FITS file: " + logLoc.locString()
                 finalItem = pythonType.readFits(logLoc.locString())
             elif storageName == "ConfigStorage":
                 if not os.path.exists(logLoc.locString()):

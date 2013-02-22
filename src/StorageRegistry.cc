@@ -51,7 +51,6 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "lsst/daf/persistence/BoostStorage.h"
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/DbTsvStorage.h"
-#include "lsst/daf/persistence/FitsStorage.h"
 #include "lsst/daf/persistence/XmlStorage.h"
 
 namespace lsst {
@@ -86,9 +85,6 @@ Storage::Ptr StorageRegistry::createInstance(std::string const& name) {
     }
     else if (name == "DbTsvStorage") {
         return Storage::Ptr(new DbTsvStorage);
-    }
-    else if (name == "FitsStorage") {
-        return Storage::Ptr(new FitsStorage);
     }
     else if (name == "XmlStorage") {
         return Storage::Ptr(new XmlStorage);
