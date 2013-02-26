@@ -240,6 +240,9 @@ class Butler(object):
             innerCallback = callback
             callback = lambda: self.mapper.standardize(datasetType,
                     innerCallback(), dataId)
+        if self.mapper.isAggregate(datasetType):
+            callback = lambda: self.mapper.buildAggregate(datasetType,
+                    dataId, self)
         if immediate:
             return callback()
         return ReadProxy(callback)

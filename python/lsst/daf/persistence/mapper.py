@@ -61,6 +61,10 @@ class Mapper(object):
 
     standardize(self, datasetType, item, dataId)
 
+    isAggregate(self, datasetType)
+
+    buildAggregate(self, datasetType, dataId, butler)
+
     validate(self, dataId)
     """
 
@@ -129,6 +133,18 @@ class Mapper(object):
             func = getattr(self, 'std_' + datasetType)
             return func(item, self.validate(dataId))
         return item
+
+    def isAggregate(self, datasetType):
+        """Return True if the mapper defines the given object as an aggregate
+        of other objects to be loaded from the butler.
+        """
+        return hasattr(self, 'build_' + datasetType)
+
+    def buildAggregate(self, datasetType, dataId, butler):
+        """Load an aggegrate object's components from the butler and build it.
+        """
+        func = getattr(self, 'build_' + datasetType)
+        return func(dataId, butler)
 
     def validate(self, dataId):
         """Validate a dataId's contents.
