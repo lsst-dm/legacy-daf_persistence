@@ -138,3 +138,10 @@ class Mapper(object):
         return the copy.  Otherwise, raise an exception."""
 
         return dataId
+
+    def backup(self, datasetType, dataId):
+        """Rename any existing object with the given type and dataId.
+
+        Not implemented in the base mapper.
+        """
+        raise NotImplementedError("Base-class Mapper does not implement backups")
