@@ -182,19 +182,23 @@ class ButlerDataRef(object):
             datasetType = self.butlerSubset.datasetType
         return self.butlerSubset.butler.get(datasetType, self.dataId, **rest)
 
-    def put(self, obj, datasetType=None, **rest):
+    def put(self, obj, datasetType=None, doBackup=False, **rest):
         """
         Persist a dataset of the given type (or the type used when creating
         the ButlerSubset, if None) as specified by the ButlerDataRef.
 
         @param obj                object to persist.
         @param datasetType (str)  dataset type to persist.
+        @param doBackup           if True, rename existing instead of overwriting
         @param **rest             keyword arguments with data identifiers
+
+        WARNING: Setting doBackup=True is not safe for parallel processing, as it
+        may be subject to race conditions.
         """
 
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
-        self.butlerSubset.butler.put(obj, datasetType, self.dataId, **rest)
+        self.butlerSubset.butler.put(obj, datasetType, self.dataId, doBackup=doBackup, **rest)
 
     def subLevels(self):
         """

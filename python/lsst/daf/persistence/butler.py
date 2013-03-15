@@ -244,14 +244,20 @@ class Butler(object):
             return callback()
         return ReadProxy(callback)
 
-    def put(self, obj, datasetType, dataId={}, **rest):
+    def put(self, obj, datasetType, dataId={}, doBackup=False, **rest):
         """Persists a dataset given an output collection data id.
         
         @param obj                 the object to persist.
         @param datasetType (str)   the type of dataset to persist.
         @param dataId (dict)       the data id.
+        @param doBackup            if True, rename existing instead of overwriting
         @param **rest         keyword arguments for the data id.
+
+        WARNING: Setting doBackup=True is not safe for parallel processing, as it
+        may be subject to race conditions.
         """
+        if doBackup:
+            self.mapper.backup(datasetType, dataId)
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId, write=True)
         self.log.log(pexLog.Log.DEBUG, "Put type=%s keys=%s to %s" %
