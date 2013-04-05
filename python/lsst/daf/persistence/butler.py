@@ -30,6 +30,7 @@ from __future__ import with_statement
 import cPickle
 import importlib
 import os
+import lsst.pex.config as pexConfig
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
@@ -416,8 +417,15 @@ class Butler(object):
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError, \
                             "No such config file: " + logLoc.locString()
-                finalItem = pythonType()
-                finalItem.load(logLoc.locString())
+                try:
+                    finalItem = pythonType()
+                    finalItem.load(logLoc.locString())
+                except AssertionError:
+                    # assert in the config file says wrong class, but it may be a derived class
+                    finalItem = pexConfig.load(logLoc.locString())
+                    if not isinstance(finalItem, pythonType):
+                        raise TypeError("Incorrect type when loading config: expected %s, got %s"
+                                        % pythonType, type(finalItem))
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
