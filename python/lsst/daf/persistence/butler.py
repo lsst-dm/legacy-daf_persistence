@@ -425,7 +425,7 @@ class Butler(object):
                     finalItem = pexConfig.load(logLoc.locString())
                     if not isinstance(finalItem, pythonType):
                         raise TypeError("Incorrect type when loading config: expected %s, got %s"
-                                        % pythonType, type(finalItem))
+                                        % (pythonType, type(finalItem)))
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
