@@ -311,7 +311,8 @@ class Butler(object):
                     # Don't fail if directory exists due to race
                     if e.errno != 17:
                         raise e
-            obj.writeFits(logLoc.locString())
+            flags = additionalData.getInt("flags", 0)
+            obj.writeFits(logLoc.locString(), flags=flags)
             trace.done()
             return
 
@@ -408,7 +409,9 @@ class Butler(object):
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError, \
                             "No such FITS catalog file: " + logLoc.locString()
-                finalItem = pythonType.readFits(logLoc.locString())
+                hdu = additionalData.getInt("hdu", 0)
+                flags = additionalData.getInt("flags", 0)
+                finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
             elif storageName == "ConfigStorage":
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError, \
