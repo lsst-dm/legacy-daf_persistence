@@ -76,18 +76,17 @@ void FitsStorage::setPersistLocation(LogicalLocation const& location) {
 }
 
 /** Set the source of the FITS file for retrieval.
- * \param[in] location Pathname to read from, optionally followed by '#' and
+ * \param[in] location Pathname to read from, optionally followed by bracketed
  * HDU number.
  */
 void FitsStorage::setRetrieveLocation(LogicalLocation const& location) {
     _path = location.locString();
-    size_t loc = _path.find_last_of('#');
+    size_t loc = _path.find_last_of('[');
     if (loc == std::string::npos) {
         _hdu = 0;
     }
     else {
         _hdu = strtol(_path.substr(loc + 1).c_str(), 0, 10);
-        _path = _path.substr(0, loc);
     }
 }
 
