@@ -25,6 +25,7 @@ flat_R1,1_S2,2_C1,1_E000.pickle
 flat_R1,2_S2,1_C0,0_E001.pickle
 flat_R1,2_S2,2_C0,0_E000.pickle
 tests/DbStorage_1
+tests/FitsStorage_1
 tests/FormatterRegistry_1
 tests/Persistence_1
 tests/Persistence_2
