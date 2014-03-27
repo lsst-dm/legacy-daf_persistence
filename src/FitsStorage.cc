@@ -86,7 +86,8 @@ void FitsStorage::setRetrieveLocation(LogicalLocation const& location) {
         _hdu = 0;
     }
     else {
-        _hdu = strtol(_path.substr(loc + 1).c_str(), 0, 10);
+        // HDUs for setHdu() are off by one from bracket extensions.
+        _hdu = strtol(_path.substr(loc + 1).c_str(), 0, 10) + 1;
     }
 }
 
