@@ -45,25 +45,28 @@ BOOST_AUTO_TEST_SUITE(FitsStorageSuite)
 BOOST_AUTO_TEST_CASE(FitsStorageRetrieveTest) {
     lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
 
-    dafPersist::LogicalLocation pathLoc("tests/data/mef.fits[1]");
-    dafPersist::Persistence::Ptr persist =
-        dafPersist::Persistence::getPersistence(policy);
-    BOOST_CHECK_NE(persist, dafPersist::Persistence::Ptr());
-    PTR(dafPersist::Storage) storage =
-        persist->getRetrieveStorage("FitsStorage", pathLoc);
-    BOOST_CHECK_NE(storage, PTR(dafPersist::Storage)());
-    dafPersist::FitsStorage* fits =
-        dynamic_cast<dafPersist::FitsStorage*>(storage.get());
-    dafPersist::FitsStorage* null = 0;
-    BOOST_CHECK_NE(fits, null);
-    BOOST_CHECK_EQUAL(fits->getPath(), "tests/data/mef.fits[1]");
-    BOOST_CHECK_EQUAL(fits->getHdu(), 1);
+    for (int i = 0; i <= 4; ++i) {
+        std::string loc = (boost::format("tests/data/mef.fits[%d]") % i).str();
+        dafPersist::LogicalLocation pathLoc(loc);
+        dafPersist::Persistence::Ptr persist =
+            dafPersist::Persistence::getPersistence(policy);
+        BOOST_CHECK_NE(persist, dafPersist::Persistence::Ptr());
+        PTR(dafPersist::Storage) storage =
+            persist->getRetrieveStorage("FitsStorage", pathLoc);
+        BOOST_CHECK_NE(storage, PTR(dafPersist::Storage)());
+        dafPersist::FitsStorage* fits =
+            dynamic_cast<dafPersist::FitsStorage*>(storage.get());
+        dafPersist::FitsStorage* null = 0;
+        BOOST_CHECK_NE(fits, null);
+        BOOST_CHECK_EQUAL(fits->getPath(), loc);
+        BOOST_CHECK_EQUAL(fits->getHdu(), i + 1);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(FitsStoragePersistTest) {
     lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
 
-    dafPersist::LogicalLocation pathLoc("tests/data/mef.fits[1]");
+    dafPersist::LogicalLocation pathLoc("tests/data/mef.fits[2]");
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policy);
     BOOST_CHECK_NE(persist, dafPersist::Persistence::Ptr());
@@ -74,7 +77,7 @@ BOOST_AUTO_TEST_CASE(FitsStoragePersistTest) {
         dynamic_cast<dafPersist::FitsStorage*>(storage.get());
     dafPersist::FitsStorage* null = 0;
     BOOST_CHECK_NE(fits, null);
-    BOOST_CHECK_EQUAL(fits->getPath(), "tests/data/mef.fits[1]");
+    BOOST_CHECK_EQUAL(fits->getPath(), "tests/data/mef.fits[2]");
     // Persistence ignores HDU
     BOOST_CHECK_EQUAL(fits->getHdu(), 0);
 }
