@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_CASE(FormatterRegistry1) {
     // These tests look at failure cases, where we try to find a Formatter
     // that doesn't exist.  This should cause an InvalidParameter exception to
     // be thrown.
-    BOOST_CHECK_THROW(dafPersist::Formatter::lookupFormatter("FooBar", policy), lsst::pex::exceptions::InvalidParameterException);
-    BOOST_CHECK_THROW(dafPersist::Formatter::lookupFormatter(typeid(double), policy), lsst::pex::exceptions::InvalidParameterException);
+    BOOST_CHECK_THROW(dafPersist::Formatter::lookupFormatter("FooBar", policy), lsst::pex::exceptions::InvalidParameterError);
+    BOOST_CHECK_THROW(dafPersist::Formatter::lookupFormatter(typeid(double), policy), lsst::pex::exceptions::InvalidParameterError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

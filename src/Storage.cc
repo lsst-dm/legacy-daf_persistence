@@ -108,18 +108,18 @@ void Storage::verifyPathName(std::string const& name) {
 
         // If it already exists, we're OK; otherwise, throw an exception.
         if (ret == -1 && errno != EEXIST) {
-            throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+            throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
                 dirName + ": Error creating directory = " + std::strerror(errno));
         }
     }
     else if (ret == -1) {
         // We couldn't read the (existing) directory for some reason.
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
             dirName + ": Error searching for directory = " + std::strerror(errno));
     }
     else if (!S_ISDIR(buf.st_mode)) {
         // It's not a directory.
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
             dirName + ": Non-directory in path");
     }
 }

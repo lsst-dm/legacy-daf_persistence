@@ -71,7 +71,7 @@ search(std::string const& host, std::string const& port) {
         boost::scoped_array<char> buffer(new char[maxbuf]);
         int ret = getpwuid_r(geteuid(), &pwd, buffer.get(), maxbuf, &pw);
         if (ret != 0 || pw->pw_dir == 0) {
-            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+            throw LSST_EXCEPT(pexExcept::RuntimeError,
                     "Could not get home directory");
         }
         std::string dir = std::string(pw->pw_dir) + "/.lsst";
@@ -79,12 +79,12 @@ search(std::string const& host, std::string const& port) {
         struct stat st;
         ret = stat(dir.c_str(), &st);
         if (ret != 0 || (st.st_mode & (S_IRWXG | S_IRWXO)) != 0) {
-            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+            throw LSST_EXCEPT(pexExcept::RuntimeError,
                     dir + " directory is missing or accessible by others");
         }
         ret = stat(filename.c_str(), &st);
         if (ret != 0 || (st.st_mode & (S_IRWXG | S_IRWXO)) != 0) {
-            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+            throw LSST_EXCEPT(pexExcept::RuntimeError,
                     filename + " is missing or accessible by others");
         }
         {
@@ -102,13 +102,13 @@ search(std::string const& host, std::string const& port) {
             std::string username = (*i)->getString("user");
             std::string password = (*i)->getString("password");
             if (username.empty()) {
-                throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+                throw LSST_EXCEPT(pexExcept::RuntimeError,
                         "Empty username for host/port: " + host + ":" + port);
             }
             return std::pair<std::string, std::string>(username, password);
         }
     }
-    throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+    throw LSST_EXCEPT(pexExcept::RuntimeError,
             "No credentials found for host/port: " + host + ":" + port);
     return std::pair<std::string, std::string>("", ""); // not reached
 }

@@ -272,10 +272,10 @@ void dafPer::DbStorageImpl::stError(std::string const& text) {
 
 void dafPer::DbStorageImpl::error(std::string const& text, bool mysqlCause) {
     if (mysqlCause) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, text + " - * " + mysql_error(_db));
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, text + " - * " + mysql_error(_db));
     }
     else {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, text);
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, text);
     }
 }
 

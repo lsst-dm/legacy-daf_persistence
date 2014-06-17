@@ -84,7 +84,7 @@ void BoostStorage::setPersistLocation(LogicalLocation const& location) {
 void BoostStorage::setRetrieveLocation(LogicalLocation const& location) {
     char const* fname = location.locString().c_str();
     if (::access(fname, R_OK | F_OK) != 0) {
-        throw LSST_EXCEPT(pexExcept::NotFoundException,
+        throw LSST_EXCEPT(pexExcept::NotFoundError,
                           (boost::format("Unable to access file: %1%")
                            % fname).str());
     }

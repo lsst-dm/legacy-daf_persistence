@@ -103,7 +103,7 @@ void dafPersist::PropertySetFormatter::write(
     dafBase::PropertySet const* ps =
         dynamic_cast<dafBase::PropertySet const*>(persistable);
     if (ps == 0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, "Persisting non-PropertySet");
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Persisting non-PropertySet");
     }
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
         execTrace("PropertySetFormatter write BoostStorage");
@@ -202,7 +202,7 @@ void dafPersist::PropertySetFormatter::write(
                     colName, ps->get<dafBase::DateTime>(key));
             }
             else {
-                throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, 
+                throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, 
                     std::string("Unknown type ") + type.name() +
                     " in PropertySetFormatter write");
             }
@@ -212,7 +212,7 @@ void dafPersist::PropertySetFormatter::write(
         return;
     }
 
-    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, "Unrecognized Storage for PropertySet");
+    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unrecognized Storage for PropertySet");
 }
 
 dafBase::Persistable* dafPersist::PropertySetFormatter::read(
@@ -235,13 +235,13 @@ dafBase::Persistable* dafPersist::PropertySetFormatter::read(
         execTrace("PropertySetFormatter read end");
         return ps;
     }
-    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, "Unrecognized Storage for PropertySet");
+    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unrecognized Storage for PropertySet");
 }
 
 void dafPersist::PropertySetFormatter::update(dafBase::Persistable* persistable,
                                    dafPersist::Storage::Ptr storage,
                                    dafBase::PropertySet::Ptr additionalData) {
-    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, "Unexpected call to update for PropertySet");
+    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unexpected call to update for PropertySet");
 }
 
 /** Factory method for PropertySetFormatter.

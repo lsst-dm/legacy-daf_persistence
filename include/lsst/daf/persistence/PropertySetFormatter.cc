@@ -117,7 +117,7 @@ void PropertySetFormatter::delegateSerialize(
     dafBase::PropertySet* ps =
         dynamic_cast<dafBase::PropertySet*>(persistable);
     if (ps == 0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, "Serializing non-PropertySet");
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Serializing non-PropertySet");
     }
     ar & make_nvp("base",
                   boost::serialization::base_object<dafBase::Persistable>(*ps));
@@ -155,7 +155,7 @@ void PropertySetFormatter::delegateSerialize(
             else if (id == typeid(dafBase::DateTime)) type = 'T';
             else if (id == typeid(dafBase::Persistable::Ptr)) type = 'p';
             else {
-                throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+                throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
                                   name +
                                   ": Unknown type in PropertySet serialize");
             }
@@ -182,7 +182,7 @@ void PropertySetFormatter::delegateSerialize(
         case 'T': serializeDateTime<Archive>(ar, name, ps); break;
         case 'p': serializeItem<Archive, dafBase::Persistable::Ptr>(ar, name, ps); break;
         default:
-                  throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, 
+                  throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, 
                       std::string("Unknown type reading PropertySet") +
                       type + ", name = " + name);
         }

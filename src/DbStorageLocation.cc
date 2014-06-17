@@ -75,7 +75,7 @@ DbStorageLocation::DbStorageLocation(std::string const& url) :
         _password = DbAuth::password(_hostname, _port);
     }
     else {
-        throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterException,
+        throw LSST_EXCEPT(lsst::pex::exceptions::InvalidParameterError,
             "Unparseable connection string passed to DbStorageLocation: " +
             url);
     }
