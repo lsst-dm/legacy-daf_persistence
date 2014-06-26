@@ -122,7 +122,7 @@ void DbTsvStorage::endTransaction(void) {
 
     MYSQL* db = mysql_init(0);
     if (db == 0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException, "Unable to allocate MySQL connection");
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unable to allocate MySQL connection");
     }
     DbStorageLocation dbLoc(_location);
     unsigned int port = strtoul(dbLoc.getPort().c_str(), 0, 10);
@@ -133,11 +133,11 @@ void DbTsvStorage::endTransaction(void) {
                            dbLoc.getDbName().c_str(),
                            port, 0,
                            CLIENT_COMPRESS | CLIENT_LOCAL_FILES) == 0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
             "Unable to connect to MySQL database: " + _location);
     }
     if (mysql_options(db, MYSQL_OPT_LOCAL_INFILE, 0) != 0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
             std::string("Unable to set LOCAL INFILE option - * ") +
             mysql_error(db));
     }
@@ -162,7 +162,7 @@ void DbTsvStorage::endTransaction(void) {
 
     if (mysql_query(db, query.c_str()) != 0) {
         mysql_close(db);
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
             "Unable to load data into database table: " + _tableName +
             "- * " + mysql_error(db));
     }

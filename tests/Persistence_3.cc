@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(Persistence3Test) {
         dafPersist::Storage::List storageList;
         dafPersist::LogicalLocation pathLoc("this.does.not.exist");
         BOOST_CHECK_THROW(persist->getRetrieveStorage("BoostStorage", pathLoc),
-                          pexExcept::NotFoundException);
+                          pexExcept::NotFoundError);
     }
 
 }

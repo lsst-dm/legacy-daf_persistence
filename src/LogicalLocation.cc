@@ -110,7 +110,7 @@ dafPersist::LogicalLocation::LogicalLocation(
             }
         }
         else {
-            throw LSST_EXCEPT(pexExcept::RuntimeErrorException,
+            throw LSST_EXCEPT(pexExcept::RuntimeError,
                               "Unknown substitution: " + key);
         }
         ++i;
