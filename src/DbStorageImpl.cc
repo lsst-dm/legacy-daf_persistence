@@ -46,6 +46,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "boost/regex.hpp"
 #include <ctime>
 #include <iostream>
+#include <sstream>
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
@@ -888,7 +889,9 @@ bool dafPer::DbStorageImpl::next(void) {
 template <typename T>
 T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     MYSQL_BIND bind;
     memset(&bind, 0, sizeof(MYSQL_BIND));
@@ -900,7 +903,9 @@ T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
     if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
-        stError("Error fetching column: " + pos);
+        std::ostringstream os;
+        os << "Error fetching column: " << pos;
+        error(os.str(), false);
     }
     return t;
 }
@@ -908,7 +913,9 @@ T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
 template <>
 std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     MYSQL_BIND bind;
     memset(&bind, 0, sizeof(MYSQL_BIND));
@@ -923,7 +930,9 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
     if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
-        stError("Error fetching string column: " + pos);
+        std::ostringstream os;
+        os << "Error fetching string column: " << pos;
+        stError(os.str());
     }
     static std::string s;
     s = std::string(t.get(), _fieldLengths[pos]);
@@ -933,7 +942,9 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
 template <>
 dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     MYSQL_BIND bind;
     memset(&bind, 0, sizeof(MYSQL_BIND));
@@ -951,7 +962,9 @@ dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
     if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
-        stError("Error fetching DateTime column: " + pos);
+        std::ostringstream os;
+        os << "Error fetching DateTime column: " << pos;
+        stError(os.str());
     }
     static dafBase::DateTime v;
     v = dafBase::DateTime(t.year, t.month, t.day, t.hour, t.minute, t.second,
@@ -965,7 +978,9 @@ dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
  */
 bool dafPer::DbStorageImpl::columnIsNull(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     return _fieldNulls[pos];
 }
