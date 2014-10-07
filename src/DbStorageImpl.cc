@@ -46,6 +46,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "boost/regex.hpp"
 #include <ctime>
 #include <iostream>
+#include <sstream>
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
@@ -80,52 +81,52 @@ public:
     static bool isUnsigned;
 };
 
-}}} // namespace lsst::daf::persistence
-
 template<> enum_field_types
-    dafPer::IntegerTypeTraits<1>::mysqlType = MYSQL_TYPE_TINY;
+    IntegerTypeTraits<1>::mysqlType = MYSQL_TYPE_TINY;
 template<> enum_field_types
-    dafPer::IntegerTypeTraits<2>::mysqlType = MYSQL_TYPE_SHORT;
+    IntegerTypeTraits<2>::mysqlType = MYSQL_TYPE_SHORT;
 template<> enum_field_types
-    dafPer::IntegerTypeTraits<4>::mysqlType = MYSQL_TYPE_LONG;
+    IntegerTypeTraits<4>::mysqlType = MYSQL_TYPE_LONG;
 template<> enum_field_types
-    dafPer::IntegerTypeTraits<8>::mysqlType = MYSQL_TYPE_LONGLONG;
+    IntegerTypeTraits<8>::mysqlType = MYSQL_TYPE_LONGLONG;
 
 template <typename N> enum_field_types
-    dafPer::BoundVarTraits<N>::mysqlType =
-    dafPer::IntegerTypeTraits<sizeof(N)>::mysqlType;
+    BoundVarTraits<N>::mysqlType =
+    IntegerTypeTraits<sizeof(N)>::mysqlType;
 
 template<> enum_field_types
-    dafPer::BoundVarTraits<bool>::mysqlType = MYSQL_TYPE_LONG;
-template<> bool dafPer::BoundVarTraits<bool>::isUnsigned = true;
+    BoundVarTraits<bool>::mysqlType = MYSQL_TYPE_LONG;
+template<> bool BoundVarTraits<bool>::isUnsigned = true;
 
-template<> bool dafPer::BoundVarTraits<char>::isUnsigned = false;
-template<> bool dafPer::BoundVarTraits<signed char>::isUnsigned = false;
-template<> bool dafPer::BoundVarTraits<unsigned char>::isUnsigned = true;
-template<> bool dafPer::BoundVarTraits<short>::isUnsigned = false;
-template<> bool dafPer::BoundVarTraits<unsigned short>::isUnsigned = true;
-template<> bool dafPer::BoundVarTraits<int>::isUnsigned = false;
-template<> bool dafPer::BoundVarTraits<unsigned int>::isUnsigned = true;
-template<> bool dafPer::BoundVarTraits<long>::isUnsigned = false;
-template<> bool dafPer::BoundVarTraits<unsigned long>::isUnsigned = true;
-template<> bool dafPer::BoundVarTraits<long long>::isUnsigned = false;
-template<> bool dafPer::BoundVarTraits<unsigned long long>::isUnsigned = true;
-
-template<> enum_field_types
-    dafPer::BoundVarTraits<float>::mysqlType = MYSQL_TYPE_FLOAT;
-template<> bool dafPer::BoundVarTraits<float>::isUnsigned = false;
+template<> bool BoundVarTraits<char>::isUnsigned = false;
+template<> bool BoundVarTraits<signed char>::isUnsigned = false;
+template<> bool BoundVarTraits<unsigned char>::isUnsigned = true;
+template<> bool BoundVarTraits<short>::isUnsigned = false;
+template<> bool BoundVarTraits<unsigned short>::isUnsigned = true;
+template<> bool BoundVarTraits<int>::isUnsigned = false;
+template<> bool BoundVarTraits<unsigned int>::isUnsigned = true;
+template<> bool BoundVarTraits<long>::isUnsigned = false;
+template<> bool BoundVarTraits<unsigned long>::isUnsigned = true;
+template<> bool BoundVarTraits<long long>::isUnsigned = false;
+template<> bool BoundVarTraits<unsigned long long>::isUnsigned = true;
 
 template<> enum_field_types
-    dafPer::BoundVarTraits<double>::mysqlType = MYSQL_TYPE_DOUBLE;
-template<> bool dafPer::BoundVarTraits<double>::isUnsigned = false;
+    BoundVarTraits<float>::mysqlType = MYSQL_TYPE_FLOAT;
+template<> bool BoundVarTraits<float>::isUnsigned = false;
 
 template<> enum_field_types
-    dafPer::BoundVarTraits<dafBase::DateTime>::mysqlType = MYSQL_TYPE_DATETIME;
-template<> bool dafPer::BoundVarTraits<dafBase::DateTime>::isUnsigned = false;
+    BoundVarTraits<double>::mysqlType = MYSQL_TYPE_DOUBLE;
+template<> bool BoundVarTraits<double>::isUnsigned = false;
 
 template<> enum_field_types
-    dafPer::BoundVarTraits<std::string>::mysqlType = MYSQL_TYPE_VAR_STRING;
-template<> bool dafPer::BoundVarTraits<std::string>::isUnsigned = false;
+    BoundVarTraits<dafBase::DateTime>::mysqlType = MYSQL_TYPE_DATETIME;
+template<> bool BoundVarTraits<dafBase::DateTime>::isUnsigned = false;
+
+template<> enum_field_types
+    BoundVarTraits<std::string>::mysqlType = MYSQL_TYPE_VAR_STRING;
+template<> bool BoundVarTraits<std::string>::isUnsigned = false;
+
+}}} // namespace lsst::daf::persistence
 
 ///////////////////////////////////////////////////////////////////////////////
 // BoundVar
@@ -888,7 +889,9 @@ bool dafPer::DbStorageImpl::next(void) {
 template <typename T>
 T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     MYSQL_BIND bind;
     memset(&bind, 0, sizeof(MYSQL_BIND));
@@ -900,7 +903,9 @@ T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
     if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
-        stError("Error fetching column: " + pos);
+        std::ostringstream os;
+        os << "Error fetching column: " << pos;
+        error(os.str(), false);
     }
     return t;
 }
@@ -908,7 +913,9 @@ T const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
 template <>
 std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     MYSQL_BIND bind;
     memset(&bind, 0, sizeof(MYSQL_BIND));
@@ -923,7 +930,9 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
     if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
-        stError("Error fetching string column: " + pos);
+        std::ostringstream os;
+        os << "Error fetching string column: " << pos;
+        stError(os.str());
     }
     static std::string s;
     s = std::string(t.get(), _fieldLengths[pos]);
@@ -933,7 +942,9 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
 template <>
 dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     MYSQL_BIND bind;
     memset(&bind, 0, sizeof(MYSQL_BIND));
@@ -951,7 +962,9 @@ dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     bind.length = &(_fieldLengths[pos]);
     bind.is_null = &(_fieldNulls[pos]);
     if (mysql_stmt_fetch_column(_statement, &bind, pos, 0)) {
-        stError("Error fetching DateTime column: " + pos);
+        std::ostringstream os;
+        os << "Error fetching DateTime column: " << pos;
+        stError(os.str());
     }
     static dafBase::DateTime v;
     v = dafBase::DateTime(t.year, t.month, t.day, t.hour, t.minute, t.second,
@@ -965,7 +978,9 @@ dafBase::DateTime const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
  */
 bool dafPer::DbStorageImpl::columnIsNull(int pos) {
     if (pos > _numResultFields) {
-        error("Nonexistent column: " + pos, false);
+        std::ostringstream os;
+        os << "Nonexistent column: " << pos;
+        error(os.str(), false);
     }
     return _fieldNulls[pos];
 }
