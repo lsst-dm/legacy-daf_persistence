@@ -34,6 +34,7 @@ import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
     Persistence
+import tempfile
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -319,10 +320,13 @@ class Butler(object):
                     os.makedirs(outDir)
                 except OSError, e:
                     # Don't fail if directory exists due to race
-                    if e.errno != 17:
+                    if e.errno != errno.EEXIST:
                         raise e
-            with open(logLoc.locString(), "wb") as outfile:
+            # to avoid race cond, make a temporary file and rename it
+            tmpFile = tempfile.mkstemp(dir=outDir)[1]
+            with open(tmpFile, "wb") as outfile:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+            os.rename(tmpFile, logLoc.locString())
             trace.done()
             return
 
@@ -334,9 +338,12 @@ class Butler(object):
                     os.makedirs(outDir)
                 except OSError, e:
                     # Don't fail if directory exists due to race
-                    if e.errno != 17:
+                    if e.errno != errno.EEXIST:
                         raise e
-            obj.save(logLoc.locString())
+            # to avoid race cond, make a temporary file and rename it
+            tmpFile = tempfile.mkstemp(dir=outDir)[1]
+            obj.save(tmpFile)
+            os.rename(tmpFile, logLoc.locString())
             trace.done()
             return
 
@@ -348,10 +355,13 @@ class Butler(object):
                     os.makedirs(outDir)
                 except OSError, e:
                     # Don't fail if directory exists due to race
-                    if e.errno != 17:
+                    if e.errno != errno.EEXIST:
                         raise e
             flags = additionalData.getInt("flags", 0)
-            obj.writeFits(logLoc.locString(), flags=flags)
+            # to avoid race cond, make a temporary file and rename it
+            tmpFile = tempfile.mkstemp(dir=outDir)[1]
+            obj.writeFits(tmpFile, flags=flags)
+            os.rename(tmpFile, logLoc.locString())
             trace.done()
             return
 
