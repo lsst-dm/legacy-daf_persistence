@@ -35,6 +35,7 @@ import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
     Persistence
 import tempfile
+import errno
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
