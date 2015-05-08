@@ -20,9 +20,14 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import sys
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy as pexPolicy
+
+if not dafPersist.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
+    print "*** WARNING*** Database authenticator unavailable.  Skipping test."
+    sys.exit()
 
 def test1():
     """
