@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/DbAuth.h"
 #include "lsst/pex/exceptions.h"
 
 #define BOOST_TEST_MODULE DbStorage_1
@@ -43,6 +44,14 @@ BOOST_AUTO_TEST_SUITE(DbStorageSuite)
 
 BOOST_AUTO_TEST_CASE(DbStorage) {
     lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
+
+    //If the user cannot access the test database, exit
+    //without failing
+    dafPersist::DbAuth testAuth;
+    testAuth.setPolicy(policy);
+    if(!testAuth.available("lsst10.ncsa.uiuc.edu","3306")){
+        return;
+    }
 
     struct timeval tv;
     gettimeofday(&tv, 0); 
@@ -135,6 +144,14 @@ BOOST_AUTO_TEST_CASE(DbStorage) {
 
 BOOST_AUTO_TEST_CASE(DbStorageExprs) {
     lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
+
+    //If the user cannot access the test database, exit
+    //without failing
+    dafPersist::DbAuth testAuth;
+    testAuth.setPolicy(policy);
+    if(!testAuth.available("lsst10.ncsa.uiuc.edu","3306")){
+        return;
+    }
 
     // Normally, we would create a DbStorage via
     // Persistence::getRetrieveStorage().  For testing purposes, we create one

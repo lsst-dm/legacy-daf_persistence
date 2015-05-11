@@ -33,6 +33,7 @@
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/Formatter.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
+#include "lsst/daf/persistence/DbAuth.h"
 #include "lsst/daf/persistence/Persistence.h"
 
 #define BOOST_TEST_MODULE Persistence_2
@@ -191,6 +192,14 @@ BOOST_AUTO_TEST_SUITE(Persistence2Suite)
 BOOST_AUTO_TEST_CASE(Persistence2Test) {
     // Define a blank Policy.
     lsst::pex::policy::Policy::Ptr policy(new lsst::pex::policy::Policy);
+
+    //If the user cannot access the test database, exit
+    //without failing
+    dafPersist::DbAuth testAuth;
+    testAuth.setPolicy(policy);
+    if(!testAuth.available("lsst10.ncsa.uiuc.edu","3306")){
+        return;
+    }
 
     // Get a unique id for this test.
     struct timeval tv;
