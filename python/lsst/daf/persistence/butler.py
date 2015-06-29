@@ -36,6 +36,30 @@ from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, Butler
     Persistence
 import tempfile
 import errno
+from contextlib import contextmanager
+
+@contextmanager
+def SafeFile(name):
+    """Context manager to create a file in a manner avoiding race conditions
+
+    The context manager provides a temporary filename. After the user is done,
+    we move that file into the desired place and close the fd to avoid resource
+    leakage.
+    """
+    outDir, outName = os.path.split(name)
+    if outDir != "" and not os.path.exists(outDir):
+        try:
+            os.makedirs(outDir)
+        except OSError, e:
+            # Don't fail if directory exists due to race
+            if e.errno != errno.EEXIST:
+                raise e
+    with tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False) as temp:
+        try:
+            yield temp.name
+        finally:
+            os.rename(temp.name, name)
+
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -315,54 +339,23 @@ class Butler(object):
 
         if storageName == "PickleStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            outDir = os.path.dirname(logLoc.locString())
-            if outDir != "" and not os.path.exists(outDir):
-                try:
-                    os.makedirs(outDir)
-                except OSError, e:
-                    # Don't fail if directory exists due to race
-                    if e.errno != errno.EEXIST:
-                        raise e
-            # to avoid race cond, make a temporary file and rename it
-            tmpFile = tempfile.mkstemp(dir=outDir)[1]
-            with open(tmpFile, "wb") as outfile:
+            with SafeFile(logLoc.locString()) as temp, open(temp, "wb") as outfile:
                 cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
-            os.rename(tmpFile, logLoc.locString())
             trace.done()
             return
 
         if storageName == "ConfigStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            outDir = os.path.dirname(logLoc.locString())
-            if outDir != "" and not os.path.exists(outDir):
-                try:
-                    os.makedirs(outDir)
-                except OSError, e:
-                    # Don't fail if directory exists due to race
-                    if e.errno != errno.EEXIST:
-                        raise e
-            # to avoid race cond, make a temporary file and rename it
-            tmpFile = tempfile.mkstemp(dir=outDir)[1]
-            obj.save(tmpFile)
-            os.rename(tmpFile, logLoc.locString())
+            with SafeFile(logLoc.locString()) as temp:
+                obj.save(temp)
             trace.done()
             return
 
         if storageName == "FitsCatalogStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            outDir = os.path.dirname(logLoc.locString())
-            if outDir != "" and not os.path.exists(outDir):
-                try:
-                    os.makedirs(outDir)
-                except OSError, e:
-                    # Don't fail if directory exists due to race
-                    if e.errno != errno.EEXIST:
-                        raise e
             flags = additionalData.getInt("flags", 0)
-            # to avoid race cond, make a temporary file and rename it
-            tmpFile = tempfile.mkstemp(dir=outDir)[1]
-            obj.writeFits(tmpFile, flags=flags)
-            os.rename(tmpFile, logLoc.locString())
+            with SafeFile(logLoc.locString()) as temp:
+                obj.writeFits(temp, flags=flags)
             trace.done()
             return
 
