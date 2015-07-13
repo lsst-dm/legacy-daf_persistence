@@ -59,6 +59,12 @@ def SafeFile(name):
             yield temp.name
         finally:
             os.rename(temp.name, name)
+            # Get the current umask, which we can only do by setting it and then reverting to the original.
+            umask = os.umask(0o077)
+            os.umask(umask)
+            # chmod the new file to match what it would have been if it hadn't started life as a temporary
+            # file (which have more restricted permissions).
+            os.chmod(name, (~umask & 0o666))
 
 
 class Butler(object):
