@@ -38,34 +38,60 @@ import tempfile
 import errno
 from contextlib import contextmanager
 
-@contextmanager
-def SafeFile(name):
-    """Context manager to create a file in a manner avoiding race conditions
-
-    The context manager provides a temporary filename. After the user is done,
-    we move that file into the desired place and close the fd to avoid resource
-    leakage.
-    """
-    outDir, outName = os.path.split(name)
-    if outDir != "" and not os.path.exists(outDir):
+def safeMakeDir(directory):
+    """Make a directory in a manner avoiding race conditions"""
+    if directory != "" and not os.path.exists(directory):
         try:
-            os.makedirs(outDir)
+            os.makedirs(directory)
         except OSError, e:
             # Don't fail if directory exists due to race
             if e.errno != errno.EEXIST:
                 raise e
+
+def setFileMode(filename):
+    """Set a file mode according to the user's umask"""
+    # Get the current umask, which we can only do by setting it and then reverting to the original.
+    umask = os.umask(0o077)
+    os.umask(umask)
+    # chmod the new file to match what it would have been if it hadn't started life as a temporary
+    # file (which have more restricted permissions).
+    os.chmod(filename, (~umask & 0o666))
+
+@contextmanager
+def SafeFile(name):
+    """Context manager to create a file in a manner avoiding race conditions
+
+    The context manager provides a temporary file object. After the user is done,
+    we move that file into the desired place and close the fd to avoid resource
+    leakage.
+    """
+    outDir, outName = os.path.split(name)
+    safeMakeDir(outDir)
     with tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False) as temp:
         try:
-            yield temp.name
+            yield temp
         finally:
             os.rename(temp.name, name)
-            # Get the current umask, which we can only do by setting it and then reverting to the original.
-            umask = os.umask(0o077)
-            os.umask(umask)
-            # chmod the new file to match what it would have been if it hadn't started life as a temporary
-            # file (which have more restricted permissions).
-            os.chmod(name, (~umask & 0o666))
+            setFileMode(name)
 
+@contextmanager
+def SafeFilename(name):
+    """Context manager for creating a file in a manner avoiding race conditions
+
+    The context manager provides a temporary filename with no open file descriptors
+    (as this can cause trouble on some systems). After the user is done, we move the
+    file into the desired place.
+    """
+    outDir, outName = os.path.split(name)
+    safeMakeDir(outDir)
+    try:
+        temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
+        tempName = temp.name
+        temp.close() # We don't use the fd, just want a filename
+        yield tempName
+    finally:
+        os.rename(tempName, name)
+        setFileMode(name)
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -345,22 +371,22 @@ class Butler(object):
 
         if storageName == "PickleStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            with SafeFile(logLoc.locString()) as temp, open(temp, "wb") as outfile:
-                cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+            with SafeFile(logLoc.locString()) as fp:
+                cPickle.dump(obj, fp, cPickle.HIGHEST_PROTOCOL)
             trace.done()
             return
 
         if storageName == "ConfigStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            with SafeFile(logLoc.locString()) as temp:
-                obj.save(temp)
+            with SafeFile(logLoc.locString()) as fp:
+                obj.saveToStream(fp)
             trace.done()
             return
 
         if storageName == "FitsCatalogStorage":
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
             flags = additionalData.getInt("flags", 0)
-            with SafeFile(logLoc.locString()) as temp:
+            with SafeFilename(logLoc.locString()) as temp:
                 obj.writeFits(temp, flags=flags)
             trace.done()
             return
@@ -371,13 +397,19 @@ class Butler(object):
         storageList.append(storage)
         trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
 
-        # Persist the item.
-        if hasattr(obj, '__deref__'):
-            # We have a smart pointer, so dereference it.
-            self.persistence.persist(
-                    obj.__deref__(), storageList, additionalData)
-        else:
-            self.persistence.persist(obj, storageList, additionalData)
+        if storageName == 'FitsStorage':
+            with SafeFilename(logLoc.locString()):
+                self.persistence.persist(obj, storageList, additionalData)
+            trace.done()
+            return
+
+        with SafeFilename(logLoc.locString()):
+            # Persist the item.
+            if hasattr(obj, '__deref__'):
+                # We have a smart pointer, so dereference it.
+                self.persistence.persist(obj.__deref__(), storageList, additionalData)
+            else:
+                self.persistence.persist(obj, storageList, additionalData)
         trace.done()
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
