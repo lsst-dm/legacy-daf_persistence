@@ -2,7 +2,7 @@
 
 # 
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 # 
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -122,7 +122,10 @@ class Butler(object):
         @param mapper (Mapper)  if present, the Mapper subclass instance
                                 to be used as the butler's mapper.
         @param **mapperArgs     arguments to be passed to the mapper's
-                                __init__ method, in addition to the root."""
+                                __init__ method, in addition to the root.
+        """
+
+        self.datasetTypeAliasDict = {}
 
         if mapper is not None:
             self.mapper = mapper
@@ -136,8 +139,36 @@ class Butler(object):
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(),
                 "daf.persistence.butler")
 
-    def getKeys(self, datasetType=None, level=None):
+    def defineAlias(self, alias, datasetType):
+        """Register an alias that will be used in place datasetType keyword.
 
+        @param alias (str) the alias keyword. it may start with @ or not. It may not contain @ except as the
+                           first character.
+        @param datasetType (str) the keyword that will be used when @alias is passed into datasetType. it may
+                                 not contain '@'
+        """
+
+        #verify formatting of alias:
+        # it can have '@' as the first character (if not it's okay, we will add it) or not at all.
+        atLoc = alias.rfind('@')
+        if atLoc is -1:
+            alias = "@%s" %(alias)
+        elif atLoc > 0:
+            raise RuntimeError("Badly formatted alias string:%s" %(alias))
+
+        # verify that datasetType does not contain '@'
+        if datasetType.count('@') != 0:
+            raise RuntimeError("Badly formatted type string:%s" %(datasetType))
+
+        # verify that the alias keyword does not start with another alias keyword,
+        # and vice versa
+        for key in self.datasetTypeAliasDict:
+            if key.find(alias) is 0 or alias.find(key) is 0:
+                raise RuntimeError("Alias:%s overlaps with existing alias:%s" %(alias, key))
+
+        self.datasetTypeAliasDict[alias] = datasetType
+
+    def getKeys(self, datasetType=None, level=None):
         """Returns a dict.  The dict keys are the valid data id keys at or
         above the given level of hierarchy for the dataset type or the entire
         collection if None.  The dict values are the basic Python types
@@ -146,8 +177,10 @@ class Butler(object):
         @param datasetType (str)  the type of dataset to get keys for, entire
                                   collection if None.
         @param level (str)        the hierarchy level to descend to or None.
-        @returns (dict) valid data id keys; values are corresponding types."""
+        @returns (dict) valid data id keys; values are corresponding types.
+        """
 
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
         return self.mapper.getKeys(datasetType, level)
 
     def queryMetadata(self, datasetType, key, format=None, dataId={}, **rest):
@@ -164,6 +197,7 @@ class Butler(object):
         key's level of granularity.
         """
 
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = self._combineDicts(dataId, **rest)
         if format is None:
             format = (key,)
@@ -183,6 +217,7 @@ class Butler(object):
         @returns (bool) True if the dataset exists or is non-file-based.
         """
 
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
         additionalData = location.getAdditionalData()
@@ -214,6 +249,8 @@ class Butler(object):
         @param **rest              keyword arguments for the data id.
         @returns an object retrieved from the dataset (or a proxy for one).
         """
+
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = self._combineDicts(dataId, **rest)
         location = self.mapper.map(datasetType, dataId)
         self.log.log(pexLog.Log.DEBUG, "Get type=%s keys=%s from %s" %
@@ -256,6 +293,8 @@ class Butler(object):
         WARNING: Setting doBackup=True is not safe for parallel processing, as it
         may be subject to race conditions.
         """
+
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
         if doBackup:
             self.mapper.backup(datasetType, dataId)
         dataId = self._combineDicts(dataId, **rest)
@@ -344,8 +383,10 @@ class Butler(object):
         @param dataId (dict)      the data id.
         @param **rest             keyword arguments for the data id.
         @returns (ButlerSubset) collection of ButlerDataRefs for datasets
-        matching the data id."""
+        matching the data id.
+        """
 
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
         if level is None:
             level = self.mapper.getDefaultLevel()
         dataId = self._combineDicts(dataId, **rest)
@@ -365,6 +406,7 @@ class Butler(object):
         @returns (ButlerDataRef) ButlerDataRef for dataset matching the data id
         """
 
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
         subset = self.subset(datasetType, level, dataId, **rest)
         if len(subset) != 1:
             raise RuntimeError, """No unique dataset for:
@@ -433,8 +475,27 @@ class Butler(object):
         return results
 
     def __reduce__(self):
-        return (_unreduce, (self.mapper,))
+        return (_unreduce, (self.mapper, self.datasetTypeAliasDict))
 
+    def _resolveDatasetTypeAlias(self, datasetType):
+        """ Replaces all the known alias keywords in the given string with the alias value.
+        @param (str)datasetType
+        @return (str) the de-aliased string
+        """
 
-def _unreduce(mapper):
-    return Butler(root=None, mapper=mapper)
+        for key in self.datasetTypeAliasDict:
+            # if all aliases have been replaced, bail out
+            if datasetType.find('@') == -1:
+                break
+            datasetType = datasetType.replace(key, self.datasetTypeAliasDict[key])
+
+        # If an alias specifier can not be resolved then throw.
+        if datasetType.find('@') != -1:
+            raise RuntimeError("Unresolvable alias specifier in datasetType:%s" %(datasetType))
+
+        return datasetType
+
+def _unreduce(mapper, datasetTypeAliasDict):
+    butler = Butler(root=None, mapper=mapper)
+    butler.datasetTypeAliasDict = datasetTypeAliasDict
+    return butler
