@@ -83,9 +83,20 @@ class ImgMapper(CameraMapper):
 class ButlerSubsetTestCase(unittest.TestCase):
     """A test case for the subset capability of the data butler."""
 
+    # create some random alias typenames
+    calexpTypeName = "@goBears"
+    rawTypeName = "@veggies"
+
+    @staticmethod
+    def registerAliases(butler):
+        butler.defineAlias(ButlerSubsetTestCase.calexpTypeName, "calexp")
+        butler.defineAlias(ButlerSubsetTestCase.rawTypeName, "raw")
+        return butler
+
     def testSingleIteration(self):
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
         butler = bf.create()
+        ButlerSubsetTestCase.registerAliases(butler)
 
         inputList = ["calexp_v123456_R1,2_S2,1.pickle",
                 "calexp_v123456_R1,2_S2,2.pickle",
@@ -95,7 +106,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
             with open(fileName, "w") as f:
                 pickle.dump(inputList, f)
 
-        subset = butler.subset("calexp", skyTile=6)
+        subset = butler.subset(self.calexpTypeName, skyTile=6)
         # all sensors overlapping that skyTile
         self.assertEqual(len(subset), 4)
         for iterator in subset:
@@ -109,9 +120,9 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 self.assertEqual(iterator.dataId["visit"], 654321)
             else:
                 self.assert_(iterator.dataId["raft"] in ["1,2", "1,3"])
-            image = iterator.get("calexp") # succeeds since deferred
+            image = iterator.get(self.calexpTypeName) # succeeds since deferred
             self.assertEqual(type(image), dafPersist.readProxy.ReadProxy)
-            image = iterator.get("calexp", immediate=True) # real test
+            image = iterator.get(self.calexpTypeName, immediate=True) # real test
             self.assertEqual(type(image), list)
             self.assertEqual(image, inputList)
 
@@ -121,15 +132,17 @@ class ButlerSubsetTestCase(unittest.TestCase):
     def testNonexistentValue(self):
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
         butler = bf.create()
-        subset = butler.subset("calexp", skyTile=2349023905239)
+        ButlerSubsetTestCase.registerAliases(butler)
+        subset = butler.subset(self.calexpTypeName, skyTile=2349023905239)
         self.assertEqual(len(subset), 0)
 
     def testInvalidValue(self):
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
         butler = bf.create()
-        subset = butler.subset("calexp", skyTile="foo")
+        ButlerSubsetTestCase.registerAliases(butler)
+        subset = butler.subset(self.calexpTypeName, skyTile="foo")
         self.assertEqual(len(subset), 0)
-        subset = butler.subset("calexp", visit=123456, sensor="1;2")
+        subset = butler.subset(self.calexpTypeName, visit=123456, sensor="1;2")
         self.assertEqual(len(subset), 0)
 
     def testDoubleIteration(self):
@@ -147,8 +160,9 @@ class ButlerSubsetTestCase(unittest.TestCase):
 
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
         butler = bf.create()
+        ButlerSubsetTestCase.registerAliases(butler)
 
-        subset = butler.subset("raw", visit=123456)
+        subset = butler.subset(self.rawTypeName, visit=123456)
         # Note: default level = "sensor"
         n = len(subset)
         self.assertEqual(n, 3)
@@ -169,7 +183,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                     self.assert_(ampIterator.dataId["snap"] in [0, 1])
                 else:
                     self.assert_(iterator.dataId["sensor"] in ["2,1", "2,2"])
-                # equivalent to butler.get("raw", ampIterator)
+                # equivalent to butler.get(self.rawTypeName, ampIterator)
                 self.assertTrue(ampIterator.datasetExists("flat"))
                 flat = ampIterator.get("flat")
                 self.assertEqual(flat, inputList)
@@ -177,11 +191,11 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 self.assertEqual(flat, inputList)
                 # ...perform ISR, assemble and calibrate the CCD, then persist
                 calexp = flat
-                iterator.put(calexp, "calexp")
+                iterator.put(calexp, self.calexpTypeName)
 
         for fileName in inputList:
             os.unlink(fileName)
-        ref = butler.dataRef("raw",
+        ref = butler.dataRef(self.rawTypeName,
                 visit=123456, raft="1,1", sensor="2,2", amp="0,1", snap=0)
         self.assertFalse(ref.datasetExists("flat"))
 
@@ -194,23 +208,24 @@ class ButlerSubsetTestCase(unittest.TestCase):
     def testCompleteDataRef(self):
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
         butler = bf.create()
+        ButlerSubsetTestCase.registerAliases(butler)
 
         # Test by using junk data
-        tuples = butler.queryMetadata("raw",
+        tuples = butler.queryMetadata(self.rawTypeName,
                 ["visit", "raft", "sensor", "amp", "snap"], "amp",
                 dict(visit=314159, raft="ab", sensor="cd", amp="ef", snap=9))
         self.assertEqual(len(tuples), 0)
-        subset = butler.subset("raw", "amp",
+        subset = butler.subset(self.rawTypeName, "amp",
                 visit=314159, raft="ab", sensor="cd")
         self.assertEqual(len(subset), 0)
 
         # But allow user to fully specify dataId, even if it doesn't exist
-        subset = butler.subset("raw", "sensor",
+        subset = butler.subset(self.rawTypeName, "sensor",
                 visit=314159, raft="ab", sensor="cd")
         self.assertEqual(len(subset), 1)
-        ref = butler.dataRef("raw",
+        ref = butler.dataRef(self.rawTypeName,
                 visit=314159, raft="ab", sensor="cd", amp="ef", snap=9)
-        self.assertFalse(ref.datasetExists("raw"))
+        self.assertFalse(ref.datasetExists(self.rawTypeName))
 
 def suite():
     utilsTests.init()
