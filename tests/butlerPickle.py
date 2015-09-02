@@ -40,16 +40,20 @@ class MinMapper(dafPersist.Mapper):
 class ButlerPickleTestCase(unittest.TestCase):
     """A test case for the data butler using PickleStorage"""
 
+    localTypeName = "@myPreferredType"
+    localTypeNameIsAliasOf = "x"
+
     def setUp(self):
         bf = dafPersist.ButlerFactory(mapper=MinMapper())
         self.butler = bf.create()
+        self.butler.defineAlias(self.localTypeName, self.localTypeNameIsAliasOf)
 
     def tearDown(self):
         del self.butler
 
     def checkIO(self, butler, bbox, ccd):
-        butler.put(bbox, "x", ccd=ccd)
-        y = butler.get("x", ccd=ccd, immediate=True)
+        butler.put(bbox, self.localTypeName, ccd=ccd)
+        y = butler.get(self.localTypeName, ccd=ccd, immediate=True)
         self.assertEqual(bbox, y)
 
     def testIO(self):
@@ -57,7 +61,8 @@ class ButlerPickleTestCase(unittest.TestCase):
         self.checkIO(self.butler, bbox, 3)
 
     def testPickle(self):
-        butler = pickle.loads(pickle.dumps(self.butler))
+        pickledButler = pickle.dumps(self.butler)
+        butler = pickle.loads(pickledButler)
         bbox = [[1, 2], [8, 9]]
         self.checkIO(butler, bbox, 1)
 
