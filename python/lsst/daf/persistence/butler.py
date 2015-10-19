@@ -84,10 +84,10 @@ def SafeFilename(name):
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
+    temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
+    tempName = temp.name
+    temp.close() # We don't use the fd, just want a filename
     try:
-        temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
-        tempName = temp.name
-        temp.close() # We don't use the fd, just want a filename
         yield tempName
     finally:
         os.rename(tempName, name)
