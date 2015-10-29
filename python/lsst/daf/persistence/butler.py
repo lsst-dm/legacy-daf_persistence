@@ -34,64 +34,7 @@ import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
     Persistence
-import tempfile
-import errno
-from contextlib import contextmanager
-
-def safeMakeDir(directory):
-    """Make a directory in a manner avoiding race conditions"""
-    if directory != "" and not os.path.exists(directory):
-        try:
-            os.makedirs(directory)
-        except OSError, e:
-            # Don't fail if directory exists due to race
-            if e.errno != errno.EEXIST:
-                raise e
-
-def setFileMode(filename):
-    """Set a file mode according to the user's umask"""
-    # Get the current umask, which we can only do by setting it and then reverting to the original.
-    umask = os.umask(0o077)
-    os.umask(umask)
-    # chmod the new file to match what it would have been if it hadn't started life as a temporary
-    # file (which have more restricted permissions).
-    os.chmod(filename, (~umask & 0o666))
-
-@contextmanager
-def SafeFile(name):
-    """Context manager to create a file in a manner avoiding race conditions
-
-    The context manager provides a temporary file object. After the user is done,
-    we move that file into the desired place and close the fd to avoid resource
-    leakage.
-    """
-    outDir, outName = os.path.split(name)
-    safeMakeDir(outDir)
-    with tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False) as temp:
-        try:
-            yield temp
-        finally:
-            os.rename(temp.name, name)
-            setFileMode(name)
-
-@contextmanager
-def SafeFilename(name):
-    """Context manager for creating a file in a manner avoiding race conditions
-
-    The context manager provides a temporary filename with no open file descriptors
-    (as this can cause trouble on some systems). After the user is done, we move the
-    file into the desired place.
-    """
-    outDir, outName = os.path.split(name)
-    safeMakeDir(outDir)
-    temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
-    tempName = temp.name
-    temp.close() # We don't use the fd, just want a filename
-    try:
-        yield tempName
-    finally:
-        os.rename(tempName, name)
-        setFileMode(name)
+from .safeFileIo import SafeFilename
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
