@@ -34,6 +34,7 @@ import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
     Persistence
+from .safeFileIo import SafeFilename
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -305,70 +306,50 @@ class Butler(object):
         storageName = location.getStorageName()
         locations = location.getLocations()
         # TODO support multiple output locations
-        locationString = locations[0]
-        logLoc = LogicalLocation(locationString, additionalData)
-        trace = pexLog.BlockTimingLog(self.log, "put",
-                                      pexLog.BlockTimingLog.INSTRUM+1)
-        trace.setUsageFlags(trace.ALLUDATA)
+        with SafeFilename(locations[0]) as locationString:
+            logLoc = LogicalLocation(locationString, additionalData)
+            trace = pexLog.BlockTimingLog(self.log, "put",
+                                          pexLog.BlockTimingLog.INSTRUM+1)
+            trace.setUsageFlags(trace.ALLUDATA)
 
-        if storageName == "PickleStorage":
+            if storageName == "PickleStorage":
+                trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
+                with open(logLoc.locString(), "wb") as outfile:
+                    cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+                trace.done()
+                return
+
+            if storageName == "ConfigStorage":
+                trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
+                obj.save(logLoc.locString())
+                trace.done()
+                return
+
+            if storageName == "FitsCatalogStorage":
+                trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
+                flags = additionalData.getInt("flags", 0)
+                obj.writeFits(logLoc.locString(), flags=flags)
+                trace.done()
+                return
+
+            # Create a list of Storages for the item.
+            storageList = StorageList()
+            storage = self.persistence.getPersistStorage(storageName, logLoc)
+            storageList.append(storage)
             trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            outDir = os.path.dirname(logLoc.locString())
-            if outDir != "" and not os.path.exists(outDir):
-                try:
-                    os.makedirs(outDir)
-                except OSError, e:
-                    # Don't fail if directory exists due to race
-                    if e.errno != 17:
-                        raise e
-            with open(logLoc.locString(), "wb") as outfile:
-                cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+
+            if storageName == 'FitsStorage':
+                self.persistence.persist(obj, storageList, additionalData)
+                trace.done()
+                return
+
+            # Persist the item.
+            if hasattr(obj, '__deref__'):
+                # We have a smart pointer, so dereference it.
+                self.persistence.persist(obj.__deref__(), storageList, additionalData)
+            else:
+                self.persistence.persist(obj, storageList, additionalData)
             trace.done()
-            return
-
-        if storageName == "ConfigStorage":
-            trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            outDir = os.path.dirname(logLoc.locString())
-            if outDir != "" and not os.path.exists(outDir):
-                try:
-                    os.makedirs(outDir)
-                except OSError, e:
-                    # Don't fail if directory exists due to race
-                    if e.errno != 17:
-                        raise e
-            obj.save(logLoc.locString())
-            trace.done()
-            return
-
-        if storageName == "FitsCatalogStorage":
-            trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-            outDir = os.path.dirname(logLoc.locString())
-            if outDir != "" and not os.path.exists(outDir):
-                try:
-                    os.makedirs(outDir)
-                except OSError, e:
-                    # Don't fail if directory exists due to race
-                    if e.errno != 17:
-                        raise e
-            flags = additionalData.getInt("flags", 0)
-            obj.writeFits(logLoc.locString(), flags=flags)
-            trace.done()
-            return
-
-        # Create a list of Storages for the item.
-        storageList = StorageList()
-        storage = self.persistence.getPersistStorage(storageName, logLoc)
-        storageList.append(storage)
-        trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-
-        # Persist the item.
-        if hasattr(obj, '__deref__'):
-            # We have a smart pointer, so dereference it.
-            self.persistence.persist(
-                    obj.__deref__(), storageList, additionalData)
-        else:
-            self.persistence.persist(obj, storageList, additionalData)
-        trace.done()
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
