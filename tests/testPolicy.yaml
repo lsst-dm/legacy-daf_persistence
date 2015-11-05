@@ -1,0 +1,2 @@
+exposures:
+  raw: {template: foo/bar/baz.fits.gz}
