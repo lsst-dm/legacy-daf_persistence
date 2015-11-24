@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-# 
+#
 # LSST Data Management System
 # Copyright 2008-2015 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -11,14 +11,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
@@ -174,7 +174,7 @@ class Butler(object):
         above the given level of hierarchy for the dataset type or the entire
         collection if None.  The dict values are the basic Python types
         corresponding to the keys (int, float, str).
-        
+
         @param datasetType (str)  the type of dataset to get keys for, entire
                                   collection if None.
         @param level (str)        the hierarchy level to descend to or None.
@@ -187,10 +187,10 @@ class Butler(object):
     def queryMetadata(self, datasetType, key, format=None, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
-        
+
         @param datasetType (str)    the type of dataset to inquire about.
         @param key (str)            a key giving the level of granularity of the inquiry.
-        @param format (str, tuple)  an optional key or tuple of keys to be returned. 
+        @param format (str, tuple)  an optional key or tuple of keys to be returned.
         @param dataId (dict)        the partial data id.
         @param **rest               keyword arguments for the partial data id.
         @returns (list) a list of valid values or tuples of valid values as
@@ -243,7 +243,7 @@ class Butler(object):
 
     def get(self, datasetType, dataId={}, immediate=False, **rest):
         """Retrieves a dataset given an input collection data id.
-        
+
         @param datasetType (str)   the type of dataset to retrieve.
         @param dataId (dict)       the data id.
         @param immediate (bool)    don't use a proxy for delayed loading.
@@ -258,13 +258,13 @@ class Butler(object):
                 (datasetType, dataId, str(location)))
 
         if location.getPythonType() is not None:
-            # import this pythonType dynamically 
+            # import this pythonType dynamically
             pythonTypeTokenList = location.getPythonType().split('.')
             importClassString = pythonTypeTokenList.pop()
             importClassString = importClassString.strip()
             importPackage = ".".join(pythonTypeTokenList)
             importType = __import__(importPackage, globals(), locals(), \
-                    [importClassString], -1) 
+                    [importClassString], -1)
             pythonType = getattr(importType, importClassString)
         else:
             pythonType = None
@@ -284,7 +284,7 @@ class Butler(object):
 
     def put(self, obj, datasetType, dataId={}, doBackup=False, **rest):
         """Persists a dataset given an output collection data id.
-        
+
         @param obj                 the object to persist.
         @param datasetType (str)   the type of dataset to persist.
         @param dataId (dict)       the data id.
@@ -353,7 +353,7 @@ class Butler(object):
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
-        
+
         Given a partial dataId specified in dataId and **rest, find all
         datasets at a given level specified by a dataId key (e.g. visit or
         sensor or amp for a camera) and return a collection of their dataIds
@@ -406,7 +406,7 @@ class Butler(object):
     def _read(self, pythonType, location):
         trace = pexLog.BlockTimingLog(self.log, "read",
                                       pexLog.BlockTimingLog.INSTRUM+1)
-        
+
         additionalData = location.getAdditionalData()
         # Create a list of Storages for the item.
         storageName = location.getStorageName()
@@ -419,7 +419,7 @@ class Butler(object):
         for locationString in locations:
             logLoc = LogicalLocation(locationString, additionalData)
             trace.start("read from %s(%s)" % (storageName, logLoc.locString()))
-            
+
             if storageName == "PafStorage":
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
             elif storageName == "PickleStorage":
