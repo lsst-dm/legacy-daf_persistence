@@ -68,6 +68,8 @@ class Butler(object):
 
     __init__(self, root, mapper=None, **mapperArgs)
 
+    defineAlias(self, alias, datasetType)
+
     getKeys(self, datasetType=None, level=None)
 
     queryMetadata(self, datasetType, keys, format=None, dataId={}, **rest)
@@ -78,8 +80,9 @@ class Butler(object):
 
     put(self, obj, datasetType, dataId={}, **rest)
 
-    subset(self, datasetType, level=None, dataId={}, **rest))
+    subset(self, datasetType, level=None, dataId={}, **rest)
 
+    dataRef(self, datasetType, level=None, dataId={}, **rest)
     """
 
     @staticmethod
