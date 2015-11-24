@@ -47,9 +47,9 @@
 #include <mysql/mysql.h>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 
-#include "lsst/tr1/unordered_map.h"
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/DateTime.h"
 #include "lsst/pex/policy.h"
@@ -146,7 +146,8 @@ private:
     std::vector<std::string> _queryTables;
         ///< Names of tables to select from.
 
-    typedef std::tr1::unordered_map<std::string, BoundVar> BoundVarMap;
+
+    typedef std::unordered_map<std::string, BoundVar> BoundVarMap;
     BoundVarMap _inputVars;
         ///< Input variable bindings.
     BoundVarMap _outputVars;
