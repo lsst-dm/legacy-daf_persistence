@@ -30,3 +30,5 @@ from butler import *
 from mapper import *
 from butlerFactory import *
 from .version import *
+from policy import *
+
