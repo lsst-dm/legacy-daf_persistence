@@ -37,12 +37,12 @@ class MinMapper(dafPersist.Mapper):
         if not write:
             path = "parent/" + path
         return dafPersist.ButlerLocation("lsst.afw.image.BBox",
-                "lsst::afw::image::BBox", "PickleStorage", path, {})
+                "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
 
     def map_badSourceHist(self, dataId, write):
         path = "badSourceHist%(ccd)d.pickle" % dataId
         return dafPersist.ButlerLocation("lsst.afw.image.BBox",
-                "lsst::afw::image::BBox", "PickleStorage", path, {})
+                "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
 
     def query_x(self, key, format, dataId):
         return [1, 2, 3]

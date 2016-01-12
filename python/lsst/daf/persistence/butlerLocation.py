@@ -34,10 +34,17 @@ class ButlerLocation(object):
     Mappers should create and return ButlerLocations from their
     map_{datasetType} methods."""
 
-    def __init__(self, pythonType, cppType, storageName, locationList, dataId):
+    def __repr__(self):
+        return \
+        'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, locationList=%r, additionalData=%r, mapper=%r)' % \
+        (self.pythonType, self.cppType, self.storageName, self.locationList, self.additionalData, self.mapper)
+
+    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, access=None):
         self.pythonType = pythonType
         self.cppType = cppType
         self.storageName = storageName
+        self.mapper = mapper
+        self.access = access
         if hasattr(locationList, '__iter__'):
             self.locationList = locationList
         else:
@@ -50,6 +57,12 @@ class ButlerLocation(object):
         s = "%s at %s(%s)" % (self.pythonType, self.storageName,
                 ", ".join(self.locationList))
         return s
+
+    def setRepository(self, repository):
+        self.repository = repository
+
+    def getRepository(self):
+        return self.repository
 
     def getPythonType(self):
         return self.pythonType
