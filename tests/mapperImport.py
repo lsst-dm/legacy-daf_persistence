@@ -25,6 +25,7 @@
 
 import os
 import pickle
+import shutil
 import unittest
 import lsst.utils.tests as utilsTests
 
@@ -35,15 +36,19 @@ class MapperImportTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
     def setUp(self):
-        self.butler = dafPersist.Butler(
-                os.path.join("tests", "root"), outPath="out")
+        self.butler = dafPersist.Butler(os.path.join("tests", "root"), outPath="out")
 
     def tearDown(self):
         del self.butler
+        if os.path.exists('tests/root/out'):
+            shutil.rmtree('tests/root/out')
+
 
     def testMapperClass(self):
-        cls = dafPersist.Butler.getMapperClass(os.path.join("tests", "root"))
-        self.assertEqual(cls, pickleMapper.PickleMapper)
+        repository = self.butler.repository
+        if hasattr(repository, 'repositories'):
+            raise RuntimeError('this test is not implemented for an AggregateRepository')
+        self.assertTrue(isinstance(repository._mapper, pickleMapper.PickleMapper))
 
     def checkIO(self, butler, bbox, ccd):
         butler.put(bbox, "x", ccd=ccd)

@@ -37,7 +37,7 @@ class MinMapper(dafPersist.Mapper):
         persistable = None
         storage = 'FitsStorage'
         path = 'tests/butlerAlias/data/input/raw/raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz'
-        return dafPersist.ButlerLocation(python, persistable, storage, path, dataId)
+        return dafPersist.ButlerLocation(python, persistable, storage, path, dataId, self)
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
         return pyfits.open(location.getLocations()[0])
@@ -74,7 +74,7 @@ class ButlerTestCase(unittest.TestCase):
     datasetType = '@foo'
 
     def setUp(self):
-        self.butler = dafPersist.Butler(None, mapper=MinMapper())
+        self.butler = dafPersist.Butler('tests/butlerAlias/data/input', MinMapper())
         self.butler.defineAlias(self.datasetType, 'raw')
 
     def tearDown(self):
@@ -122,7 +122,12 @@ class ButlerTestCase(unittest.TestCase):
             self.butler.getKeys('@bar')
 
     def testOverlappingAlias(self):
-        self.butler = dafPersist.Butler(None, mapper=MinMapper())
+        storageCfg = dafPersist.PosixStorage.cfg(root='tests/butlerAlias/data/input')
+        accessCfg = dafPersist.Access.cfg(storageCfg=storageCfg)
+        repoCfg = dafPersist.Repository.cfg(accessCfg=accessCfg, mapper=MinMapper())
+        butlerCfg = dafPersist.Butler.cfg(repoCfg=repoCfg)
+        self.butler = dafPersist.Butler(butlerCfg)
+
         self.butler.defineAlias('foo', 'raw')
         with self.assertRaises(RuntimeError):
             self.butler.defineAlias('foobar', 'calexp')

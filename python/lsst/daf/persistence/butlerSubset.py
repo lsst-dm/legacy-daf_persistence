@@ -67,14 +67,16 @@ class ButlerSubset(object):
         @param level (str)        the hierarchy level to descend to.
         @param dataId (dict)      the (partial or complete) data id.
         """
-
         self.butler = butler
         self.datasetType = datasetType
         self.level = level
         self.dataId = dataId
         self.cache = []
 
-        fmt = list(self.butler.getKeys(datasetType, level).iterkeys())
+        keys = self.butler.getKeys(datasetType, level)
+        if keys is None:
+            return
+        fmt = list(keys.iterkeys())
 
         # Don't query if we already have a complete dataId
         completeId = True
@@ -86,8 +88,8 @@ class ButlerSubset(object):
             self.cache.append(dataId)
             return
 
-        for idTuple in butler.queryMetadata(self.datasetType,
-                level, fmt, self.dataId):
+        idTuples = butler.queryMetadata(self.datasetType, level, fmt, self.dataId)
+        for idTuple in idTuples:
             tempId = dict(self.dataId)
             if len(fmt) == 1:
                 tempId[fmt[0]] = idTuple
@@ -95,6 +97,10 @@ class ButlerSubset(object):
                 for i in xrange(len(fmt)):
                     tempId[fmt[i]] = idTuple[i]
             self.cache.append(tempId)
+
+    def __repr__(self):
+        return "ButlerSubset(butler=%s, datasetType=%s, level=%s, dataId=%s, cache=%s)" % (
+            self.butler, self.datasetType, self.level, self.dataId, self.cache)
 
     def __len__(self):
         """
@@ -229,8 +235,13 @@ class ButlerDataRef(object):
         """
 
         if level is None:
-            level = self.butlerSubset.butler.mapper.getDefaultSubLevel(
-                    self.butlerSubset.level)
+            mappers = self.butlerSubset.butler.repository.mappers()
+            if len(mappers) is not 1:
+                raise RuntimeError("Support for multiple repositories not yet implemented!")
+            mapper = mappers[0]
+
+            # todo: getDefaultSubLevel is not in the mapper API!
+            level = mapper.getDefaultSubLevel(self.butlerSubset.level)
             if level is None:
                 return ()
         return self.butlerSubset.butler.subset(self.butlerSubset.datasetType,

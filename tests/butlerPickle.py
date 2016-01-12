@@ -35,7 +35,7 @@ class MinMapper(dafPersist.Mapper):
 
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
+        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
 
 class ButlerPickleTestCase(unittest.TestCase):
     """A test case for the data butler using PickleStorage"""
@@ -44,8 +44,7 @@ class ButlerPickleTestCase(unittest.TestCase):
     localTypeNameIsAliasOf = "x"
 
     def setUp(self):
-        bf = dafPersist.ButlerFactory(mapper=MinMapper())
-        self.butler = bf.create()
+        self.butler = dafPersist.Butler(root='.', mapper=MinMapper())
         self.butler.defineAlias(self.localTypeName, self.localTypeNameIsAliasOf)
 
     def tearDown(self):

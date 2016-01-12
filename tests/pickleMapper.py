@@ -27,11 +27,11 @@ import os
 import lsst.daf.persistence as dafPersist
 
 class PickleMapper(dafPersist.Mapper):
-    def __init__(self, root=None, outPath=None):
+    def __init__(self, root=None, outPath=''):
         self.root = root
         self.outPath = outPath
 
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
         path = os.path.join(self.root, self.outPath, path)
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
+        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)

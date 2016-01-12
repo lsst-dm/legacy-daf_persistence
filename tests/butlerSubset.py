@@ -211,20 +211,16 @@ class ButlerSubsetTestCase(unittest.TestCase):
         ButlerSubsetTestCase.registerAliases(butler)
 
         # Test by using junk data
-        tuples = butler.queryMetadata(self.rawTypeName,
-                ["visit", "raft", "sensor", "amp", "snap"], "amp",
-                dict(visit=314159, raft="ab", sensor="cd", amp="ef", snap=9))
+        tuples = butler.queryMetadata(self.rawTypeName, ["visit", "raft", "sensor", "amp", "snap"], "amp",
+                                      dict(visit=314159, raft="ab", sensor="cd", amp="ef", snap=9))
         self.assertEqual(len(tuples), 0)
-        subset = butler.subset(self.rawTypeName, "amp",
-                visit=314159, raft="ab", sensor="cd")
+        subset = butler.subset(self.rawTypeName, "amp", visit=314159, raft="ab", sensor="cd")
         self.assertEqual(len(subset), 0)
 
         # But allow user to fully specify dataId, even if it doesn't exist
-        subset = butler.subset(self.rawTypeName, "sensor",
-                visit=314159, raft="ab", sensor="cd")
+        subset = butler.subset(self.rawTypeName, "sensor", visit=314159, raft="ab", sensor="cd")
         self.assertEqual(len(subset), 1)
-        ref = butler.dataRef(self.rawTypeName,
-                visit=314159, raft="ab", sensor="cd", amp="ef", snap=9)
+        ref = butler.dataRef(self.rawTypeName, visit=314159, raft="ab", sensor="cd", amp="ef", snap=9)
         self.assertFalse(ref.datasetExists(self.rawTypeName))
 
 def suite():
