@@ -1,4 +1,4 @@
-setupRequired(mysqlclient)
+setupRequired(mariadbclient)
 setupRequired(pex_logging)
 setupRequired(pex_policy)
 setupRequired(pyfits)
