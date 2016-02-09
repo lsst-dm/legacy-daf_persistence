@@ -44,7 +44,7 @@ class MinMapper(dafPersist.Mapper):
         return dafPersist.ButlerLocation("lsst.afw.image.BBox",
                 "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
 
-    def query_x(self, key, format, dataId):
+    def query_x(self, format, dataId):
         return [1, 2, 3]
 
     def std_x(self, item, dataId):

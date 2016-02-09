@@ -36,7 +36,7 @@ class Registry(object):
     def __init__(self, dictList):
         self.dictList = dictList
 
-    def query(self, datasetType, key, format, dataId):
+    def query(self, datasetType, format, dataId):
         result = set()
         for d in self.dictList:
             where = True

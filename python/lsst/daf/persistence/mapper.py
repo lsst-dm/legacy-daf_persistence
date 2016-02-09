@@ -106,7 +106,8 @@ class Mapper(object):
 
         func = getattr(self, 'query_' + datasetType)
 
-        return func(key, format, self.validate(dataId))
+        val = func(format, self.validate(dataId))
+        return val
 
     def getDatasetTypes(self):
         """Return a list of the mappable dataset types."""

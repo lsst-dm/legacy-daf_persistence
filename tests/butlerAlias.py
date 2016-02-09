@@ -42,7 +42,7 @@ class MinMapper(dafPersist.Mapper):
     def bypass_raw(self, datasetType, pythonType, location, dataId):
         return pyfits.open(location.getLocations()[0])
 
-    def query_raw(self, key, format, dataId):
+    def query_raw(self, format, dataId):
         values = [{'visit':1, 'filter':'g'}, {'visit':2, 'filter':'g'}, {'visit':3, 'filter':'r'}]
         matches = []
         for value in values:

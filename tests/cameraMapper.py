@@ -86,8 +86,8 @@ class CameraMapper(dafPersist.Mapper):
                 visit="sensor",
                 skyTile="sensor")[level]
 
-    def query(self, datasetType, key, format, dataId):
-        return self.registry.query(datasetType, key, format, dataId)
+    def query(self, datasetType, format, dataId):
+        return self.registry.query(datasetType, format, dataId)
 
     def map(self, datasetType, dataId, write=False):
         path = self.templates[datasetType] % dataId
@@ -98,5 +98,5 @@ for datasetType in ["raw", "flat", "calexp"]:
             lambda self, dataId, write:
             CameraMapper.map(self, datasetType, dataId, write))
     setattr(CameraMapper, "query_" + datasetType,
-            lambda self, key, format, dataId:
-            CameraMapper.query(self, datasetType, key, format, dataId))
+            lambda self, format, dataId:
+            CameraMapper.query(self, datasetType, format, dataId))
