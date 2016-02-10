@@ -178,7 +178,9 @@ class Butler(object):
 
         @param datasetType (str)  the type of dataset to get keys for, entire
                                   collection if None.
-        @param level (str)        the hierarchy level to descend to or None.
+        @param level (str)        the hierarchy level to descend to.
+                                  None if it should not be restricted.
+                                  empty string if the mapper should lookup the default level.
         @returns (dict) valid data id keys; values are corresponding types.
         """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
@@ -359,7 +361,8 @@ class Butler(object):
         as ButlerDataRefs.
 
         @param datasetType (str)  the type of dataset collection to subset
-        @param level (str)        the level of dataId at which to subset
+        @param level (str)        the level of dataId at which to subset. Use an empty string if the mapper
+                                  should look up the default level.
         @param dataId (dict)      the data id.
         @param **rest             keyword arguments for the data id.
         @returns (ButlerSubset) collection of ButlerDataRefs for datasets
@@ -368,10 +371,11 @@ class Butler(object):
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
 
+        # Currently expected behavior of subset is that if specified level is None then the mapper's default
+        # level should be used. Convention for level within Butler is that an empty string is used to indicate
+        # 'get default'.
         if level is None:
-            # todo this does not seem safe. what if repo has more than 1 parent, and conained mappers have
-            # different levels? ...it seems wrapped up in the problem with ButlerSubset.
-            level = self.repository.getMapperDefaultLevel()
+            level = ''
 
         dataId = copy.copy(dataId)
         dataId.update(**rest)

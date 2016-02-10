@@ -58,6 +58,9 @@ class CameraMapper(dafPersist.Mapper):
 
 
     def getKeys(self, datasetType, level):
+        if level == '':
+            level = self.getDefaultLevel()
+
         keyDict = dict()
         if datasetType is None:
             for t in self.templates.iterkeys():
@@ -80,6 +83,8 @@ class CameraMapper(dafPersist.Mapper):
         return "sensor"
 
     def getDefaultSubLevel(self, level):
+        if level == '':
+            level = self.getDefaultLevel()
         return dict(
                 sensor="amp",
                 raft="sensor",

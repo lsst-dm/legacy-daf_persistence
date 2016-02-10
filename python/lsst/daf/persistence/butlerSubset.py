@@ -64,14 +64,15 @@ class ButlerSubset(object):
 
         @param butler (Butler)    butler that is being queried.
         @param datasetType (str)  the type of dataset to query.
-        @param level (str)        the hierarchy level to descend to.
+        @param level (str)        the hierarchy level to descend to. if empty string will look up the default
+                                  level.
         @param dataId (dict)      the (partial or complete) data id.
         """
         self.butler = butler
         self.datasetType = datasetType
-        self.level = level
         self.dataId = dataId
         self.cache = []
+        self.level = level
 
         keys = self.butler.getKeys(datasetType, level)
         if keys is None:
@@ -99,8 +100,8 @@ class ButlerSubset(object):
             self.cache.append(tempId)
 
     def __repr__(self):
-        return "ButlerSubset(butler=%s, datasetType=%s, level=%s, dataId=%s, cache=%s)" % (
-            self.butler, self.datasetType, self.level, self.dataId, self.cache)
+        return "ButlerSubset(butler=%s, datasetType=%s, dataId=%s, cache=%s)" % (
+            self.butler, self.datasetType, self.dataId, self.cache)
 
     def __len__(self):
         """
