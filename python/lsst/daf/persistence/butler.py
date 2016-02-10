@@ -185,7 +185,7 @@ class Butler(object):
         return self.repository.getKeys(datasetType, level)
 
 
-    def queryMetadata(self, datasetType, key, format=None, dataId={}, **rest):
+    def queryMetadata(self, datasetType, format=None, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
 
@@ -208,7 +208,7 @@ class Butler(object):
         elif not hasattr(format, '__iter__'):
             format = (format,)
 
-        tuples = self.repository.queryMetadata(datasetType, key, format, dataId)
+        tuples = self.repository.queryMetadata(datasetType, format, dataId)
 
         if tuples is None:
             return []

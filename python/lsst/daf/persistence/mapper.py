@@ -94,7 +94,7 @@ class Mapper(object):
     def keys(self):
         raise NotImplementedError("keys() unimplemented")
 
-    def queryMetadata(self, datasetType, key, format, dataId):
+    def queryMetadata(self, datasetType, format, dataId):
         """Get possible values for keys given a partial data id.
 
         :param datasetType: see documentation about the use of datasetType

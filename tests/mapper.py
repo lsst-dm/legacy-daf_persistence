@@ -77,7 +77,7 @@ class MapperTestCase(unittest.TestCase):
         self.assertEqual(loc.getAdditionalData().toString(), "")
 
     def testQueryMetadata(self):
-        self.assertEqual(self.mapper.queryMetadata("x", None, None, None),
+        self.assertEqual(self.mapper.queryMetadata("x", None, None),
             [1, 2, 3])
 
     def testStandardize(self):

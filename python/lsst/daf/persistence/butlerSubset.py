@@ -88,7 +88,7 @@ class ButlerSubset(object):
             self.cache.append(dataId)
             return
 
-        idTuples = butler.queryMetadata(self.datasetType, level, fmt, self.dataId)
+        idTuples = butler.queryMetadata(self.datasetType, fmt, self.dataId)
         for idTuple in idTuples:
             tempId = dict(self.dataId)
             if len(fmt) == 1:

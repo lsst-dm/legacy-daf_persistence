@@ -169,7 +169,8 @@ class TestBasics(unittest.TestCase):
         keys = self.butler.getKeys(self.datasetType)
         expectedKeyValues = {'filter':['g', 'r'], 'visit':[1, 2, 3]}
         for key in keys:
-            val = self.butler.queryMetadata(self.datasetType, key)
+            format = (key, )
+            val = self.butler.queryMetadata(self.datasetType, format)
             self.assertEqual(val.sort(), expectedKeyValues[key].sort())
 
     def testDatasetExists(self):
