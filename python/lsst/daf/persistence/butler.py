@@ -30,6 +30,9 @@ from __future__ import with_statement
 import cPickle
 import importlib
 import os
+import yaml
+
+import baseYaml
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
@@ -227,7 +230,8 @@ class Butler(object):
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
+                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage',
+                'YamlStorage'):
             locations = location.getLocations()
             for locationString in locations:
                 logLoc = LogicalLocation(locationString, additionalData).locString()
@@ -334,6 +338,14 @@ class Butler(object):
                 obj.writeFits(logLoc.locString(), flags=flags)
                 trace.done()
                 return
+
+            if storageName == "YamlStorage":
+                trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
+                with open(logLoc.locString(), "wb") as outfile:
+                    yaml.dump(obj, outfile)
+                trace.done()
+                return
+
 
             # Create a list of Storages for the item.
             storageList = StorageList()
@@ -444,6 +456,12 @@ class Butler(object):
                             "No such config file: " + logLoc.locString()
                 finalItem = pythonType()
                 finalItem.load(logLoc.locString())
+            elif storageName == "YamlStorage":
+                if not os.path.exists(logLoc.locString()):
+                    raise RuntimeError, \
+                            "No such YAML file: " + logLoc.locString()
+                with open(logLoc.locString(), "rb") as infile:
+                    finalItem = yaml.load(infile)
             else:
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
