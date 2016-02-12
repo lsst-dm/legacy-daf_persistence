@@ -100,8 +100,8 @@ class ButlerSubset(object):
             self.cache.append(tempId)
 
     def __repr__(self):
-        return "ButlerSubset(butler=%s, datasetType=%s, dataId=%s, cache=%s)" % (
-            self.butler, self.datasetType, self.dataId, self.cache)
+        return "ButlerSubset(butler=%s, datasetType=%s, dataId=%s, cache=%s, level=%s)" % (
+            self.butler, self.datasetType, self.dataId, self.cache, self.level)
 
     def __len__(self):
         """
@@ -175,6 +175,9 @@ class ButlerDataRef(object):
         self.butlerSubset = butlerSubset
         self.dataId = dataId
 
+    def __repr__(self):
+        return 'ButlerDataRef(butlerSubset=%s, dataId=%s)' %(self.butlerSubset, self.dataId)
+
     def get(self, datasetType=None, **rest):
         """
         Retrieve a dataset of the given type (or the type used when creating
@@ -184,7 +187,6 @@ class ButlerDataRef(object):
         @param **rest             keyword arguments with data identifiers
         @returns object corresponding to the given dataset type.
         """
-
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
         return self.butlerSubset.butler.get(datasetType, self.dataId, **rest)
