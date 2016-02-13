@@ -23,15 +23,17 @@
 """Python interface to lsst::daf::persistence classes
 """
 from persistenceLib import *
+from butlerExceptions import *
 from policy import *
 from butlerLocation import *
 from readProxy import *
 from butlerSubset import *
 from access import *
+from posixStorage import *
+from mapper import *
+from repositoryMapper import *
 from repository import *
 from butler import *
-from mapper import *
 from butlerFactory import *
 from .version import *
-from butlerExceptions import *
 

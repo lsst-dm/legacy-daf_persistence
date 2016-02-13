@@ -26,10 +26,62 @@ import collections
 import copy
 import inspect
 import itertools
+import os
 import uuid
 
-from lsst.daf.persistence import Access, butlerExceptions, Policy
+from lsst.daf.persistence import Access, Policy, Mapper, LogicalLocation, ButlerLocation
 
+import yaml
+
+class RepositoryCfg(Policy, yaml.YAMLObject):
+    yaml_tag = u"!RepositoryCfg"
+    yaml_loader = yaml.Loader
+    yaml_dumper = yaml.Dumper
+
+    def __init__(self, cls, id, accessCfg, parentCfgs, parentJoin, peerCfgs, mapper, mapperArgs):
+        super(RepositoryCfg, self).__init__()
+        self.update({'cls':cls, 'id':id, 'accessCfg':accessCfg, 'parentCfgs':parentCfgs,
+                   'parentJoin':parentJoin, 'peerCfgs':peerCfgs, 'mapper':mapper,
+                   'mapperArgs':mapperArgs})
+
+    @staticmethod
+    def to_yaml(dumper, obj):
+        return dumper.represent_mapping(RepositoryCfg.yaml_tag,
+                                        {'cls':obj['cls'], 'id':obj['id'], 'accessCfg':obj['accessCfg'],
+                                         'parentCfgs':obj['parentCfgs'], 'parentJoin':obj['parentJoin'],
+                                         'peerCfgs':obj['peerCfgs'], 'mapper':obj['mapper'],
+                                         'mapperArgs':obj['mapperArgs']})
+    @staticmethod
+    def from_yaml(loader, node):
+        obj = loader.construct_mapping(node)
+        return RepositoryCfg(**obj)
+
+    # todo these load & write methods are coupled to posix storage. need to invent butler mechanism for
+    # multiple dispatch and implement it.
+    @staticmethod
+    def get(butlerLocation):
+        if butlerLocation.getStorageName() is not "YamlStorage":
+            raise NotImplementedError("RepositoryCfg only supports YamlStorage")
+        ret = []
+        for location in butlerLocation.getLocations():
+            logLoc = LogicalLocation(location, butlerLocation.getAdditionalData())
+            with open(logLoc.locString()) as f:
+                cfg = yaml.load(f)
+            cfg['accessCfg.storageCfg.root'] = os.path.dirname(location)
+            ret.append(cfg)
+        return ret
+
+    @staticmethod
+    def put(obj, butlerLocation):
+        if butlerLocation.getStorageName() is not "YamlStorage":
+            raise NotImplementedError("RepositoryCfg only supports YamlStorage")
+        ret = []
+        for location in butlerLocation.getLocations():
+            logLoc = LogicalLocation(location, butlerLocation.getAdditionalData())
+            if not os.path.exists(os.path.dirname(logLoc.locString())):
+                os.makedirs(os.path.dirname(logLoc.locString()))
+            with open(logLoc.locString(), 'w') as f:
+                yaml.dump(obj, f)
 
 class Repository(object):
     """
@@ -75,12 +127,11 @@ class Repository(object):
         if parentJoin not in Repository._supportedParentJoin:
             raise RuntimeError('Repository.cfg parentJoin:%s not supported, must be one of:'
                                % (parentJoin, Repository._supportedParentJoin))
-        return Policy({'cls':cls, 'id':id, 'accessCfg':accessCfg, 'parentCfgs':parentCfgs,
-                       'parentJoin':parentJoin, 'peerCfgs':peerCfgs, 'mapper':mapper,
-                       'mapperArgs':mapperArgs})
+        return RepositoryCfg(cls=cls, id=id, accessCfg=accessCfg, parentCfgs=parentCfgs,
+                             parentJoin=parentJoin, peerCfgs=peerCfgs, mapper=mapper, mapperArgs=mapperArgs)
 
     @staticmethod
-    def Repository(repoCfg):
+    def makeFromCfg(repoCfg):
         '''Instantiate a Repository from a configuration.
         In come cases the repoCfg may have already been instantiated into a Repository, this is allowed and
         the input var is simply returned.
@@ -102,23 +153,23 @@ class Repository(object):
         :return:
         '''
         self.cfg = cfg
-        self._access = Access(cfg['accessCfg']) if cfg['accessCfg'] is not None else None
-        self._parentJoin = cfg['parentJoin']
+        self._access = Access(self.cfg['accessCfg']) if self.cfg['accessCfg'] is not None else None
+        self._parentJoin = self.cfg['parentJoin']
         if not self._parentJoin in Repository._supportedParentJoin:
             raise RuntimeError('Repository.__init__ parentJoin:%s not supported, must be one of:'
                                % (self._parentJoin, Repository._supportedParentJoin))
-
         self._parents = []
-        for parentCfg in cfg['parentCfgs']:
-            self._parents.append(Repository.Repository(parentCfg))
+        parentCfgs = self.cfg['parentCfgs']
+        if not hasattr(parentCfgs, '__iter__'):
+            parentCfgs = (parentCfgs,)
+        for parentCfg in parentCfgs:
+            self._parents.append(Repository.makeFromCfg(parentCfg))
         self._peers = []
-        for peerCfg in cfg['peerCfgs']:
-            self._peers.append(Repository.Repository(peerCfg))
-
-        self._id = cfg['id']
+        for peerCfg in self.cfg['peerCfgs']:
+            self._peers.append(Repository.makeFromCfg(peerCfg))
+        self._id = self.cfg['id']
 
         self._initMapper(cfg)
-
 
     def _initMapper(self, repoCfg):
         '''Initialize and keep the mapper in a member var.
@@ -128,30 +179,43 @@ class Repository(object):
         '''
 
         # rule: If mapper is:
-        # 1. an object: use it as the mapper.
-        # 2. a string: import it and instantiate it with mapperArgs
-        # 3. None: look for the mapper named in 'access' and use that string as in item 2.
+        # - a policy: instantiate it via the policy
+        # - an object: use it as the mapper.
+        # - a string: import it and instantiate it with mapperArgs
+        # - None: look for the mapper named in 'access' and use that string as in item 2.
         mapper = repoCfg['mapper']
         if mapper is None:
-            mapper = self._access.mapperClass()
+            if self._access is not None:
+                mapper = self._access.mapperClass()
             if mapper is None:
                 self._mapper = None
                 return None
-            # todo make mappers instantiated via a single mapperCfg object?
-            # mapper takes root which is not ideal. it should be accessing objects via storage.
-            # cameraMapper will require much refactoring to support this.
-            # mapper = mapperClass(root=self._access.root(), **repoCfg['mapperArgs'])
+        # if mapper is a cfg (IE an instance of the badly-named Policy class), instantiate via the cfg.
+        if isinstance(mapper, Policy):
+            # code at this location that knows that the mapper needs to share the repo's access instance is
+            # not ideal IMO. Not sure how to rectify in a good way.
+            if mapper['access'] is None:
+                #mapper = copy.copy(mapper)
+                mapper['access'] = self._access
+            mapper = Mapper.Mapper(mapper)
         # if mapper is a string, import it:
         if isinstance(mapper, basestring):
             mapper = __import__(mapper)
         # now if mapper is a class type (not instance), instantiate it:
         if inspect.isclass(mapper):
-            mapperArgs = copy.copy(repoCfg['mapperArgs'])
-            if mapperArgs is None:
-                mapperArgs = {}
-            if 'root' not in mapperArgs:
-                mapperArgs['root'] = self._access.root()
-            mapper = mapper(**mapperArgs)
+            # cameraMapper requires root which is not ideal. it should be accessing objects via storage.
+            # cameraMapper will require much refactoring to support this.
+            try:
+                # try new style init first; pass cfg to mapper
+                mapper = mapper(cfg=repoCfg['mapperCfg'])
+            except TypeError:
+                # try old style cfg, using mapperArgs keyword
+                mapperArgs = copy.copy(repoCfg['mapperArgs'])
+                if mapperArgs is None:
+                    mapperArgs = {}
+                if 'root' not in mapperArgs:
+                    mapperArgs['root'] = self._access.root()
+                mapper = mapper(**mapperArgs)
         self._mapper = mapper
 
 

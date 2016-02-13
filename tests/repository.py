@@ -31,9 +31,11 @@ import types
 import unittest
 import uuid
 
+import yaml
+
 import lsst.utils.tests as utilsTests
 import lsst.daf.persistence as dp
-from lsst.daf.persistence import posixRepoCfg
+from lsst.daf.persistence import posixRepoCfg, Policy
 
 def repoCfg(*args, **kwargs):
     """short hack to work around the issue that the root must be in mapperArgs in some cases"""
@@ -42,8 +44,21 @@ def repoCfg(*args, **kwargs):
 
 class ParentMapper(dp.Mapper):
 
-    def __init__(self, root):
-        self.root = root
+    @classmethod
+    def cfg(cls, root=None):
+        return Policy({'cls':cls, 'root':root})
+
+    def __init__(self, cfg):
+        try:
+            self.root = cfg['root']
+            self.cfg = copy.deepcopy(cfg)
+        except TypeError:
+            # handle the case where cfg is just a root, not a proper cfg
+            self.root = cfg
+            self.cfg = ParentMapper.cfg(root=cfg)
+
+    def __repr__(self):
+        return 'ParentMapper(cfg=%s)' % self.cfg
 
     def map_raw(self, dataId, write):
         python = 'pyfits.HDUList'
@@ -83,6 +98,13 @@ class ParentMapper(dp.Mapper):
     def getKeys(self, datasetType, level):
         return {'filter': types.StringType, 'visit': types.IntType}
 
+    def map_str(self, dataId, write):
+        path = os.path.join(self.root, 'data/input/raw')
+        path = os.path.join(path, 'raw_v' + str(dataId['str']) + '_f' + dataId['filter'] + '.fits.gz')
+        if os.path.exists(path):
+            return dp.ButlerLocation(str, None, 'PickleStorage', path, dataId, self)
+        return None
+
 
 class ChildrenMapper(dp.Mapper):
 
@@ -118,16 +140,14 @@ class TestBasics(unittest.TestCase):
     """Test case for basic functions of the repository classes."""
 
     def setUp(self):
-        # todo
-        # on the one hand all this config is a masstive PITA. On the other hand, most existing repos
-        # should already contain their parent info. Maybe there is a more elegant way to set up cfg.
         inputRoot = 'tests/butlerAlias'
         outputRootA = 'tests/repository/repoA'
         outputRootB = 'tests/repository/repoB'
 
         storageCfg = dp.PosixStorage.cfg(root=inputRoot)
         accessCfg = dp.Access.cfg(storageCfg=storageCfg)
-        inputRepoCfg = dp.Repository.cfg(accessCfg=accessCfg, mapper=ParentMapper(root=inputRoot))
+        inputRepoCfg = dp.Repository.cfg(accessCfg=accessCfg,
+                                         mapper=ParentMapper(ParentMapper.cfg(root=inputRoot)))
 
         storageCfg = dp.PosixStorage.cfg(root=outputRootB)
         accessCfg = dp.Access.cfg(storageCfg=storageCfg)
@@ -184,8 +204,6 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':1}), False)
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':3}), False)
 
-    def testDataRef(self):
-        print self.butler.dataRef(self.datasetType, dataId={'filter':'g', 'visit':1})
 
 ##############################################################################################################
 ##############################################################################################################
