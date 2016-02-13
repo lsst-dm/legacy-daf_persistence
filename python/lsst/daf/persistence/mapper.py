@@ -22,6 +22,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from lsst.daf.persistence import Policy
 
 """This module defines the Mapper base class."""
 
@@ -63,6 +64,20 @@ class Mapper(object):
 
     validate(self, dataId)
     """
+
+    @staticmethod
+    def Mapper(cfg):
+        '''Instantiate a Mapper from a configuration.
+        In come cases the cfg may have already been instantiated into a Mapper, this is allowed and
+        the input var is simply returned.
+
+        :param cfg: the cfg for this mapper. It is recommended this be created by calling
+                    Mapper.cfg()
+        :return: a Mapper instance
+        '''
+        if isinstance(cfg, Policy):
+            return cfg['cls'](cfg)
+        return cfg
 
     def __new__(cls, *args, **kwargs):
         """Create a new Mapper, saving arguments for pickling.
