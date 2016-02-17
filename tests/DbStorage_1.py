@@ -21,76 +21,79 @@
 # the GNU General Public License along with this program.  If not, 
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
-
+from __future__ import print_function
+import unittest
 import sys
 import time
 
 import lsst.daf.persistence as dafPers
 import lsst.pex.policy
 
-if not dafPers.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
-    print "*** WARNING*** Database authenticator unavailable.  Skipping test."
-    sys.exit()
+class DbStorage1TestCase(unittest.TestCase):
 
-testId = long(time.time() * 1000000000L);
-print testId
+    def setUp(self):
+        if not dafPers.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
+            raise unittest.SkipTest("Database authenticator unavailable. Skipping test.")
+        self.db = dafPers.DbStorage()
+        policy = lsst.pex.policy.Policy()
+        self.db.setPolicy(policy)
+        self.testId = long(time.time() * 1000000000L);
+        print(self.testId)
 
-db = dafPers.DbStorage()
-policy = lsst.pex.policy.Policy()
+    def testWriteRead(self):
+        loc = dafPers.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        db = self.db
+        db.setPersistLocation(loc)
 
-db.setPolicy(policy)
+        # Write a row
+        db.startTransaction()
 
-# Write a row
+        db.setTableForInsert("DbStorage_Test_1")
+        db.setColumnInt64("id", self.testId)
+        db.setColumnDouble("ra", 9.87654)
+        db.setColumnDouble("decl", 1.23456)
+        db.setColumnToNull("something")
+        db.setColumnString("final", "foo")
+        db.insertRow()
 
-loc = dafPers.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
-db.setPersistLocation(loc)
+        db.endTransaction()
 
-db.startTransaction()
+        # Get it back
 
-db.setTableForInsert("DbStorage_Test_1")
-db.setColumnInt64("id", testId)
-db.setColumnDouble("ra", 9.87654)
-db.setColumnDouble("decl", 1.23456)
-db.setColumnToNull("something")
-db.setColumnString("final", "foo")
-db.insertRow()
+        db.setRetrieveLocation(loc)
 
-db.endTransaction()
+        db.startTransaction()
 
-# Get it back
+        db.setTableForQuery("DbStorage_Test_1")
 
-db.setRetrieveLocation(loc)
+        db.outColumn("decl")
+        db.outColumn("id")
+        db.outColumn("something")
+        db.outColumn("final")
+        db.outColumn("ra")
 
-db.startTransaction()
+        db.condParamInt64("id", self.testId)
+        db.setQueryWhere("id = :id")
 
-db.setTableForQuery("DbStorage_Test_1")
+        db.query()
 
-db.outColumn("decl")
-db.outColumn("id")
-db.outColumn("something")
-db.outColumn("final")
-db.outColumn("ra")
+        self.assertTrue(db.next())
 
-db.condParamInt64("id", testId)
-db.setQueryWhere("id = :id")
+        self.assertFalse(db.columnIsNull(0))
+        self.assertFalse(db.columnIsNull(1))
+        self.assertTrue(db.columnIsNull(2))
+        self.assertFalse(db.columnIsNull(3))
+        self.assertFalse(db.columnIsNull(4))
+        self.assertEqual(db.getColumnByPosInt64(1), self.testId)
+        self.assertEqual(db.getColumnByPosDouble(0), 1.23456)
+        self.assertEqual(db.getColumnByPosString(3), "foo")
+        self.assertEqual(db.getColumnByPosDouble(4), 9.87654)
 
-db.query()
+        self.assertFalse(db.next())
 
-assert db.next()
+        db.finishQuery()
 
-assert db.columnIsNull(0) == False
-assert db.columnIsNull(1) == False
-assert db.columnIsNull(2) == True
-assert db.columnIsNull(3) == False
-assert db.columnIsNull(4) == False
-assert db.getColumnByPosInt64(1) == testId
-assert db.getColumnByPosDouble(0) == 1.23456
-assert db.getColumnByPosString(3) == "foo"
-assert db.getColumnByPosDouble(4) == 9.87654
+        db.endTransaction()
 
-assert not db.next()
-
-db.finishQuery()
-
-db.endTransaction()
+if __name__ == '__main__':
+    unittest.main()

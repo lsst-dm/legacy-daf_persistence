@@ -20,110 +20,113 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import unittest
 import sys
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy as pexPolicy
 
-if not dafPersist.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
-    print "*** WARNING*** Database authenticator unavailable.  Skipping test."
-    sys.exit()
+class DbPersistence2TestCase(unittest.TestCase):
 
-def test1():
-    """
-    Test PropertySet persistence to database without policy.
-    """
+    def setUp(self):
+        if not dafPersist.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
+            raise unittest.SkipTest("Database authenticator unavailable.  Skipping test.")
 
-    dp = dafBase.PropertySet()
-    dp.addInt("intField", 1)
-    dp.addDouble("doubleField", 1.2)
-    dp.addString("varcharField", "Testing")
-    dp.addBool("boolField", True)
-    dp.addLongLong("int64Field", 9876543210L)
-    dp.addFloat("floatField", 3.14)
+    def test1(self):
+        """
+        Test PropertySet persistence to database without policy.
+        """
 
-    pol = pexPolicy.Policy()
+        dp = dafBase.PropertySet()
+        dp.addInt("intField", 1)
+        dp.addDouble("doubleField", 1.2)
+        dp.addString("varcharField", "Testing")
+        dp.addBool("boolField", True)
+        dp.addLongLong("int64Field", 9876543210L)
+        dp.addFloat("floatField", 3.14)
 
-    additionalData = dafBase.PropertySet()
-    additionalData.add("itemName", "Persistence_Test_2")
+        pol = pexPolicy.Policy()
 
-    loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        additionalData = dafBase.PropertySet()
+        additionalData.add("itemName", "Persistence_Test_2")
 
-    persistence = dafPersist.Persistence.getPersistence(pol)
+        loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
 
-    storageList = dafPersist.StorageList()
-    storage = persistence.getPersistStorage("DbStorage", loc)
-    storageList.append(storage)
-    persistence.persist(dp, storageList, additionalData)
+        persistence = dafPersist.Persistence.getPersistence(pol)
 
-def test2():
-    """
-    Test PropertySet persistence to database with policy mapping itemName to
-    database table name.
-    """
+        storageList = dafPersist.StorageList()
+        storage = persistence.getPersistStorage("DbStorage", loc)
+        storageList.append(storage)
+        persistence.persist(dp, storageList, additionalData)
 
-    dp = dafBase.PropertySet()
-    dp.addInt("intField", 2)
-    dp.addDouble("doubleField", 2.3)
-    dp.addString("varcharField", "gnitseT")
-    dp.addBool("boolField", False)
-    dp.addLongLong("int64Field", 9988776655L)
-    dp.addFloat("floatField", 2.718)
+    def test2(self):
+        """
+        Test PropertySet persistence to database with policy mapping itemName to
+        database table name.
+        """
 
-    pol = pexPolicy.Policy()
-    itemPol = pexPolicy.Policy()
-    itemPol.set("TableName", "Persistence_Test_2")
-    pol.set("Formatter.PropertySet.testItem", itemPol)
+        dp = dafBase.PropertySet()
+        dp.addInt("intField", 2)
+        dp.addDouble("doubleField", 2.3)
+        dp.addString("varcharField", "gnitseT")
+        dp.addBool("boolField", False)
+        dp.addLongLong("int64Field", 9988776655L)
+        dp.addFloat("floatField", 2.718)
 
-    additionalData = dafBase.PropertySet()
-    additionalData.add("itemName", "testItem")
+        pol = pexPolicy.Policy()
+        itemPol = pexPolicy.Policy()
+        itemPol.set("TableName", "Persistence_Test_2")
+        pol.set("Formatter.PropertySet.testItem", itemPol)
 
-    loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        additionalData = dafBase.PropertySet()
+        additionalData.add("itemName", "testItem")
 
-    persistence = dafPersist.Persistence.getPersistence(pol)
+        loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
 
-    storageList = dafPersist.StorageList()
-    storage = persistence.getPersistStorage("DbStorage", loc)
-    storageList.append(storage)
-    persistence.persist(dp, storageList, additionalData)
+        persistence = dafPersist.Persistence.getPersistence(pol)
 
-def test3():
-    """
-    Test PropertySet persistence to database with policy mapping itemName to
-    database table name and mapping property keys to table columns.
-    """
+        storageList = dafPersist.StorageList()
+        storage = persistence.getPersistStorage("DbStorage", loc)
+        storageList.append(storage)
+        persistence.persist(dp, storageList, additionalData)
 
-    dp = dafBase.PropertySet()
-    dp.addInt("i", 3)
-    dp.addDouble("d", 3.4)
-    dp.addString("v", "LastOne")
-    dp.addBool("b", True)
-    dp.addLongLong("I", 9998887776L)
-    dp.addFloat("f", 1.414)
+    def test3(self):
+        """
+        Test PropertySet persistence to database with policy mapping itemName to
+        database table name and mapping property keys to table columns.
+        """
 
-    pol = pexPolicy.Policy()
-    itemPol = pexPolicy.Policy()
-    itemPol.set("TableName", "Persistence_Test_2")
-    itemPol.add("KeyList", "floatField=f")
-    itemPol.add("KeyList", "int64Field=I")
-    itemPol.add("KeyList", "boolField=b")
-    itemPol.add("KeyList", "varcharField=v")
-    itemPol.add("KeyList", "doubleField=d")
-    itemPol.add("KeyList", "intField=i")
-    pol.set("Formatter.PropertySet.testItem", itemPol)
+        dp = dafBase.PropertySet()
+        dp.addInt("i", 3)
+        dp.addDouble("d", 3.4)
+        dp.addString("v", "LastOne")
+        dp.addBool("b", True)
+        dp.addLongLong("I", 9998887776L)
+        dp.addFloat("f", 1.414)
 
-    additionalData = dafBase.PropertySet()
-    additionalData.add("itemName", "testItem")
+        pol = pexPolicy.Policy()
+        itemPol = pexPolicy.Policy()
+        itemPol.set("TableName", "Persistence_Test_2")
+        itemPol.add("KeyList", "floatField=f")
+        itemPol.add("KeyList", "int64Field=I")
+        itemPol.add("KeyList", "boolField=b")
+        itemPol.add("KeyList", "varcharField=v")
+        itemPol.add("KeyList", "doubleField=d")
+        itemPol.add("KeyList", "intField=i")
+        pol.set("Formatter.PropertySet.testItem", itemPol)
 
-    loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        additionalData = dafBase.PropertySet()
+        additionalData.add("itemName", "testItem")
 
-    persistence = dafPersist.Persistence.getPersistence(pol)
+        loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
 
-    storageList = dafPersist.StorageList()
-    storage = persistence.getPersistStorage("DbStorage", loc)
-    storageList.append(storage)
-    persistence.persist(dp, storageList, additionalData)
+        persistence = dafPersist.Persistence.getPersistence(pol)
 
-test1()
-test2()
-test3()
+        storageList = dafPersist.StorageList()
+        storage = persistence.getPersistStorage("DbStorage", loc)
+        storageList.append(storage)
+        persistence.persist(dp, storageList, additionalData)
+
+if __name__ == '__main__':
+    unittest.main()
+
