@@ -30,10 +30,13 @@ import time
 import lsst.daf.persistence as dafPers
 import lsst.pex.policy
 
+HOST = "lsst10.ncsa.uiuc.edu"
+PORT = "3306"
+
 class DbStorage2TestCase(unittest.TestCase):
 
     def setUp(self):
-        if not dafPers.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
+        if not dafPers.DbAuth.available(HOST, PORT):
             raise unittest.SkipTest("Database authenticator unavailable.  Skipping test.")
         self.db = dafPers.DbStorage()
         policy = lsst.pex.policy.Policy()
@@ -42,7 +45,7 @@ class DbStorage2TestCase(unittest.TestCase):
         print(self.testId)
 
     def testWriteRead(self):
-        loc = dafPers.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        loc = dafPers.LogicalLocation("mysql://{}:{}/test".format(HOST, PORT))
         db = self.db
         db.setPersistLocation(loc)
 

@@ -26,10 +26,13 @@ import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy as pexPolicy
 
+HOST = "lsst10.ncsa.uiuc.edu"
+PORT = "3306"
+
 class DbPersistence2TestCase(unittest.TestCase):
 
     def setUp(self):
-        if not dafPersist.DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"):
+        if not dafPersist.DbAuth.available(HOST, PORT):
             raise unittest.SkipTest("Database authenticator unavailable.  Skipping test.")
 
     def test1(self):
@@ -50,7 +53,7 @@ class DbPersistence2TestCase(unittest.TestCase):
         additionalData = dafBase.PropertySet()
         additionalData.add("itemName", "Persistence_Test_2")
 
-        loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        loc = dafPersist.LogicalLocation("mysql://{}:{}/test".format(HOST, PORT))
 
         persistence = dafPersist.Persistence.getPersistence(pol)
 
@@ -81,7 +84,7 @@ class DbPersistence2TestCase(unittest.TestCase):
         additionalData = dafBase.PropertySet()
         additionalData.add("itemName", "testItem")
 
-        loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        loc = dafPersist.LogicalLocation("mysql://{}:{}/test".format(HOST, PORT))
 
         persistence = dafPersist.Persistence.getPersistence(pol)
 
@@ -118,7 +121,7 @@ class DbPersistence2TestCase(unittest.TestCase):
         additionalData = dafBase.PropertySet()
         additionalData.add("itemName", "testItem")
 
-        loc = dafPersist.LogicalLocation("mysql://lsst10.ncsa.uiuc.edu:3306/test")
+        loc = dafPersist.LogicalLocation("mysql://{}:{}/test".format(HOST, PORT))
 
         persistence = dafPersist.Persistence.getPersistence(pol)
 
