@@ -22,6 +22,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import print_function
 import lsst.daf.persistence as dafPersist
 import lsst.utils.tests as utilsTests
 import os
@@ -114,7 +115,7 @@ class ButlerTestCase(unittest.TestCase):
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':3}), False)
 
     def testDataRef(self):
-        print self.butler.dataRef(self.datasetType, dataId={'filter':'g', 'visit':1})
+        print(self.butler.dataRef(self.datasetType, dataId={'filter':'g', 'visit':1}))
 
     def testUnregisteredAlias(self):
         with self.assertRaises(RuntimeError):
