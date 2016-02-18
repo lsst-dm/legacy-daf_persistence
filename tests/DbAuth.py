@@ -33,9 +33,15 @@ from lsst.pex.policy import Policy
 class DbAuthTestCase(unittest.TestCase):
     """A test case for DbAuth."""
 
+    def setUp(self):
+        self.pol = Policy("tests/testDbAuth.paf")
+        DbAuth.setPolicy(self.pol)
+
+    def tearDown(self):
+        DbAuth.setPolicy(Policy())
+        del self.pol
+
     def testSetPolicy(self):
-        pol = Policy("tests/testDbAuth.paf")
-        DbAuth.setPolicy(pol)
         self.assert_(DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"))
         self.assertEqual(DbAuth.authString("lsst10.ncsa.uiuc.edu", "3306"),
                 "test:globular.test")
