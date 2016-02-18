@@ -44,6 +44,9 @@ class DbStorage2TestCase(unittest.TestCase):
         self.testId = long(time.time() * 1000000000L);
         print(self.testId)
 
+    def tearDown(self):
+        del self.db
+
     def testWriteRead(self):
         loc = dafPers.LogicalLocation("mysql://{}:{}/test".format(HOST, PORT))
         db = self.db
