@@ -33,9 +33,15 @@ from lsst.pex.policy import Policy
 class DbAuthTestCase(unittest.TestCase):
     """A test case for DbAuth."""
 
+    def setUp(self):
+        self.pol = Policy("tests/testDbAuth.paf")
+        DbAuth.setPolicy(self.pol)
+
+    def tearDown(self):
+        DbAuth.setPolicy(Policy())
+        del self.pol
+
     def testSetPolicy(self):
-        pol = Policy("tests/testDbAuth.paf")
-        DbAuth.setPolicy(pol)
         self.assert_(DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"))
         self.assertEqual(DbAuth.authString("lsst10.ncsa.uiuc.edu", "3306"),
                 "test:globular.test")
@@ -57,27 +63,6 @@ class DbAuthTestCase(unittest.TestCase):
                 "rocky")
         self.assertEqual(DbAuth.password("lsst9.ncsa.uiuc.edu", "3306"),
                 "squirrel")
-
-class MemoryTestCase(unittest.TestCase):
-    def setUp(self):
-        pass
-    def testLeaks(self):
-        memId0 = 0
-        nleakPrintMax = 20
-
-        nleak = Citizen.census(0, memId0)
-        if nleak != 0:
-            print "\n%d Objects leaked:" % Citizen.census(0, memId0)
-
-            if nleak <= nleakPrintMax:
-                print Citizen.census(dafBase.cout, memId0)
-            else:
-                census = Citizen.census()
-                print "..."
-                for i in range(nleakPrintMax - 1, -1, -1):
-                    print census[i].repr()
-
-            self.fail("Leaked %d blocks" % Citizen.census(0, memId0))
 
 def run():
     tests.init()

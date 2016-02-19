@@ -20,35 +20,42 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import unittest
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy
 
-dp = dafBase.PropertySet()
-dp.addInt("foo", 3)
+class DbPersistence1TestCase(unittest.TestCase):
 
-pol = lsst.pex.policy.Policy()
+    def testPersistence1(self):
+        dp = dafBase.PropertySet()
+        dp.addInt("foo", 3)
 
-additionalData = dafBase.PropertySet()
-additionalData.addInt("sliceId", 5)
+        pol = lsst.pex.policy.Policy()
 
-loc = dafPersist.LogicalLocation("tests/data/test.boost")
+        additionalData = dafBase.PropertySet()
+        additionalData.addInt("sliceId", 5)
 
-persistence = dafPersist.Persistence.getPersistence(pol)
+        loc = dafPersist.LogicalLocation("tests/data/test.boost")
 
-storageList = dafPersist.StorageList()
-storage = persistence.getPersistStorage("BoostStorage", loc)
-storageList.append(storage)
-persistence.persist(dp, storageList, additionalData)
+        persistence = dafPersist.Persistence.getPersistence(pol)
 
-storageList = dafPersist.StorageList()
-storage = persistence.getRetrieveStorage("BoostStorage", loc)
-storageList.append(storage)
+        storageList = dafPersist.StorageList()
+        storage = persistence.getPersistStorage("BoostStorage", loc)
+        storageList.append(storage)
+        persistence.persist(dp, storageList, additionalData)
 
-rdp = dafBase.PropertySet.swigConvert( \
-        persistence.unsafeRetrieve("PropertySet", storageList, \
-            additionalData))
+        storageList = dafPersist.StorageList()
+        storage = persistence.getRetrieveStorage("BoostStorage", loc)
+        storageList.append(storage)
 
-assert(rdp.nameCount() == 1)
-assert(rdp.exists("foo"))
-assert(rdp.getInt("foo") == 3)
+        rdp = dafBase.PropertySet.swigConvert(
+                persistence.unsafeRetrieve("PropertySet", storageList,
+                    additionalData))
+
+        self.assertEqual(rdp.nameCount(),1)
+        self.assertTrue(rdp.exists("foo"))
+        self.assertEqual(rdp.getInt("foo"), 3)
+
+if __name__ == '__main__':
+    unittest.main()
