@@ -3,6 +3,8 @@ setupRequired(pex_logging)
 setupRequired(pex_policy)
 setupRequired(pyfits)
 setupRequired(pyyaml)
+setupRequired(scons)
+setupRequired(sconsUtils)
 
 envPrepend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envPrepend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
