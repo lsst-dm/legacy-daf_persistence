@@ -45,9 +45,20 @@ class PosixStorage:
 
     @classmethod
     def cfg(cls, root):
+        """Helper func to create a properly formatted Policy to configure a PosixStorage instance.
+
+        :param root: a posix path where the repository is or should be created.
+        :return:
+        """
         return Policy({'root':root, 'cls':cls})
 
     def __init__(self, cfg):
+        """Initializer
+
+        :param cfg: a Policy that defines the configuration for this class. It is recommended that the cfg be
+                    created by calling PosixStorage.cfg()
+        :return:
+        """
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
         self.root = cfg['root']
         if self.root and not os.path.exists(self.root):
@@ -59,7 +70,7 @@ class PosixStorage:
 
     @staticmethod
     def getMapperClass(root):
-        """Return the mapper class associated with a repository root.
+        """Returns the mapper class associated with a repository root.
 
         Supports the legacy _parent symlink search (which was only ever posix-only. This should not be used by
         new code and repositories; they should use the Repository parentCfg mechanism."""
@@ -92,23 +103,36 @@ class PosixStorage:
 
     def mapperClass(self):
         """Get the class object for the mapper specified in the stored repository"""
-
-        #todo would be better to use a generic statement instead of PosixStorage.
         return PosixStorage.getMapperClass(self.root)
 
     def setCfg(self, repoCfg):
+        """Writes the configuration to root in the repository on disk.
+
+        :param repoCfg: the Policy cfg to be written
+        :return: None
+        """
         if not self.root:
             raise RuntimeError("Storage root was declared to be None.")
         path = os.path.join(self.root, 'repoCfg.yaml')
         repoCfg.dumpToFile(path)
 
     def loadCfg(self):
+        """Reads the configuration from the repository on disk at root.
+
+        :return: the Policy cfg
+        """
         if not self.root:
             raise RuntimeError("Storage root was declared to be None.")
         path = os.path.join(self.root, 'repoCfg.yaml')
         return Policy(filePath=path)
 
     def write(self, butlerLocation, obj):
+        """Writes an object to a location and persistence format specified by ButlerLocation
+
+        :param butlerLocation: the location & formatting for the object to be written.
+        :param obj: the object to be written.
+        :return: None
+        """
         self.log.log(pexLog.Log.DEBUG, "Put location=%s obj=%s" % (butlerLocation, obj))
         additionalData = butlerLocation.getAdditionalData()
         storageName = butlerLocation.getStorageName()
@@ -151,25 +175,58 @@ class Access:
 
     @classmethod
     def cfg(cls, storageCfg):
+        """Helper func to create a properly formatted Policy to configure an Access instance.
+
+        :param storageCfg: a cfg to instantiate a storage.
+        :return:
+        """
         return Policy({'storageCfg': storageCfg})
 
     def __init__(self, cfg):
+        """Initializer
+
+        :param cfg: a Policy that defines the configuration for this class. It is recommended that the cfg be
+                    created by calling Access.cfg()
+        :return:
+        """
         self.storage = cfg['storageCfg.cls'](cfg['storageCfg'])
 
     def mapperClass(self):
+        """Get the mapper class associated with a repository root.
+
+        :return: the mapper class
+        """
         return self.storage.mapperClass()
 
     def root(self):
-        """Root refers to the 'top' of a persisted repository.
-        Presumably its form can vary depending on the type of storage although currently the only Butler
-        storage that exists is posix, and root is the repo path."""
+        """Get the repository root as defined by the Storage class, this refers to the 'top' of a persisted
+        repository. The exact type of Root can vary based on Storage type.
+
+        :return: the root of the persisted repository.
+        """
+
         return self.storage.root
 
     def setCfg(self, repoCfg):
+        """Writes the repository configuration to Storage.
+
+        :param repoCfg: the Policy cfg to be written
+        :return: None
+        """
         self.storage.setCfg(repoCfg)
 
     def loadCfg(self):
+        """Reads the repository configuration from Storage.
+
+        :return: the Policy cfg
+        """
         return self.storage.loadCfg()
 
     def write(self, butlerLocation, obj):
+        """Passes an object to Storage to be written into the repository.
+
+        :param butlerLocation: the location & formatting for the object to be written.
+        :param obj: the object to be written.
+        :return: None
+        """
         self.storage.write(butlerLocation, obj)

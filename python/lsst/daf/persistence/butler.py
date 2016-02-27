@@ -99,10 +99,49 @@ class Butler(object):
 
     @classmethod
     def cfg(cls, repoCfg):
+        """Helper func to create a properly formatted Policy to configure a Repository.
+
+
+        :param repoCfg: Cfg used to instantiate the repository.
+        :return: a properly populated cfg Policy.
+        """
         return Policy({'repoCfg':repoCfg})
 
+    def __init__(self, root, mapper=None, **mapperArgs):
+        """Initializer for the Class.
 
-    def initWithCfg(self, cfg):
+        The prefered initialization argument is to pass a single arg; cfg created by Butler.cfg();
+            butler = Butler(Butler.cfg(repoCfg))
+        For backward compatibility: this initialization method signature can take a posix root path, and
+        optionally a mapper class instance or class type that will be instantiated using the mapperArgs input
+        argument.
+        However, for this to work in a backward compatible way it creates a single repository that is used as
+        both an input and an output repository. This is NOT preferred, and will likely break any provenance
+        system we have in place.
+
+        :param root: Best practice is to pass in a cfg created by Butler.cfg(). But for backward
+                          compatibility this can also be a fileysystem path. Will only work with a
+                          PosixRepository.
+        :param mapper: Deprecated. Provides a mapper to be used with Butler.
+        :param mapperArgs: Deprecated. Provides arguments to be passed to the mapper if the mapper input arg
+                           is a class type to be instantiated by Butler.
+        :return:
+        """
+        if (isinstance(root, Policy)):
+            config = root
+        else:
+            parentCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs)
+            repoCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs, parentRepoCfgs=(parentCfg,))
+            config = Butler.cfg(repoCfg=repoCfg)
+        self._initWithCfg(config)
+
+    def _initWithCfg(self, cfg):
+        """Initialize this Butler with cfg
+
+        :param cfg: a dict (or daf_persistence.Policy) of key-value pairs that describe the configuration.
+                    Best practice is to create this object by calling Butler.cfg()
+        :return: None
+        """
         self._cfg = cfg
         self.datasetTypeAliasDict = {}
 
@@ -112,23 +151,6 @@ class Butler(object):
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
-
-
-    def __init__(self, root, mapper=None, **mapperArgs):
-        # prefered init arg is to pass a single arg; an instance of butlerCfg:
-        # butler = Butler(butlerCfg(...))
-        # For backward compatibility: init signature can take a posix root path, and optionally a mapper class
-        # that will be init'ed with mapperArgs.
-        # However, it is NOT preferred to have a repo be both input (parent) and output (self/peer), and will
-        # likely break any provenance system we have in place.
-        if (isinstance(root, Policy)):
-            config = root
-        else:
-            parentCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs)
-            repoCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs, parentRepoCfgs=(parentCfg,))
-            config = Butler.cfg(repoCfg=repoCfg)
-        self.initWithCfg(config)
-
 
     @staticmethod
     def getMapperClass(root):
