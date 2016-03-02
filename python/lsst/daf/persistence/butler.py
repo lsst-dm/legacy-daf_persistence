@@ -27,14 +27,26 @@
 """This module defines the Butler class."""
 
 from __future__ import with_statement
+import collections
+import copy
 import cPickle
-import importlib
+import inspect
+import itertools
 import os
+
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
-    Persistence
-from .safeFileIo import SafeFilename
+    Persistence, repository, Access, PosixStorage, butlerExceptions, Policy
+
+def posixRepoCfg(root=None, mapper=None, mapperArgs=None, parentRepoCfgs=[], id=None, parentJoin='left',
+                 peerCfgs=[]):
+    storageCfg = PosixStorage.cfg(root=root)
+    accessCfg = Access.cfg(storageCfg=storageCfg)
+    repoCfg = repository.Repository.cfg(id=id, accessCfg=accessCfg, mapper=mapper, mapperArgs=mapperArgs,
+                                        parentCfgs=parentRepoCfgs, parentJoin=parentJoin, peerCfgs=peerCfgs)
+    return repoCfg
+
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -85,63 +97,46 @@ class Butler(object):
     dataRef(self, datasetType, level=None, dataId={}, **rest)
     """
 
-    @staticmethod
-    def getMapperClass(root):
-        """Return the mapper class associated with a repository root."""
+    @classmethod
+    def cfg(cls, repoCfg):
+        return Policy({'repoCfg':repoCfg})
 
-        # Find a "_mapper" file containing the mapper class name
-        basePath = root
-        mapperFile = "_mapper"
-        globals = {}
-        while not os.path.exists(os.path.join(basePath, mapperFile)):
-            # Break abstraction by following _parent links from CameraMapper
-            if os.path.exists(os.path.join(basePath, "_parent")):
-                basePath = os.path.join(basePath, "_parent")
-            else:
-                raise RuntimeError(
-                        "No mapper provided and no %s available" %
-                        (mapperFile,))
-        mapperFile = os.path.join(basePath, mapperFile)
 
-        # Read the name of the mapper class and instantiate it
-        with open(mapperFile, "r") as f:
-            mapperName = f.readline().strip()
-        components = mapperName.split(".")
-        if len(components) <= 1:
-            raise RuntimeError("Unqualified mapper name %s in %s" %
-                    (mapperName, mapperFile))
-        pkg = importlib.import_module(".".join(components[:-1]))
-        return getattr(pkg, components[-1])
-
-    def __init__(self, root, mapper=None, **mapperArgs):
-        """Construct the Butler.  If no mapper class is provided, then a file
-        named "_mapper" is expected to be found in the repository, which
-        must be a filesystem path.  The first line in that file is read and
-        must contain the fully-qualified name of a Mapper subclass, which is
-        then imported and instantiated using the root and the mapperArgs.
-
-        @param root (str)       the repository to be managed (at least
-                                initially).  May be None if a mapper is
-                                provided.
-        @param mapper (Mapper)  if present, the Mapper subclass instance
-                                to be used as the butler's mapper.
-        @param **mapperArgs     arguments to be passed to the mapper's
-                                __init__ method, in addition to the root.
-        """
-
+    def initWithCfg(self, cfg):
+        self._cfg = cfg
         self.datasetTypeAliasDict = {}
 
-        if mapper is not None:
-            self.mapper = mapper
-        else:
-            cls = Butler.getMapperClass(root)
-            self.mapper = cls(root=root, **mapperArgs)
+        self.repository = repository.Repository.Repository(cfg['repoCfg'])
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
-        self.log = pexLog.Log(pexLog.Log.getDefaultLog(),
-                "daf.persistence.butler")
+        self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
+
+
+    def __init__(self, root, mapper=None, **mapperArgs):
+        # prefered init arg is to pass a single arg; an instance of butlerCfg:
+        # butler = Butler(butlerCfg(...))
+        # for backward compatibility: init signature can take a posix root path, and optionally a mapper class
+        # that will be init'ed with mapperArgs.
+        if (isinstance(root, Policy)):
+            config = root
+        else:
+            parentCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs)
+            repoCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs, parentRepoCfgs=(parentCfg,))
+            config = Butler.cfg(repoCfg=repoCfg)
+        self.initWithCfg(config)
+
+
+    @staticmethod
+    def getMapperClass(root):
+        """posix-only; gets the mapper class at the path specifed by root (if a file _mapper can be found at
+        that location or in a parent location.
+
+        As we abstract the storage and support different types of storage locaitons this method will be
+        moved entirely into Butler Access, or made more dynamic, and the API will very likely change."""
+        return PosixStorage.getMapperClass(root)
+
 
     def defineAlias(self, alias, datasetType):
         """Register an alias that will be substituted in datasetTypes.
@@ -172,6 +167,7 @@ class Butler(object):
 
         self.datasetTypeAliasDict[alias] = datasetType
 
+
     def getKeys(self, datasetType=None, level=None):
         """Returns a dict.  The dict keys are the valid data id keys at or
         above the given level of hierarchy for the dataset type or the entire
@@ -183,9 +179,9 @@ class Butler(object):
         @param level (str)        the hierarchy level to descend to or None.
         @returns (dict) valid data id keys; values are corresponding types.
         """
-
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        return self.mapper.getKeys(datasetType, level)
+        return self.repository.getKeys(datasetType, level)
+
 
     def queryMetadata(self, datasetType, key, format=None, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
@@ -202,15 +198,29 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        dataId = self._combineDicts(dataId, **rest)
+        dataId = copy.copy(dataId)
+        dataId.update(**rest)
         if format is None:
             format = (key,)
         elif not hasattr(format, '__iter__'):
             format = (format,)
-        tuples = self.mapper.queryMetadata(datasetType, key, format, dataId)
+
+        tuples = self.repository.queryMetadata(datasetType, key, format, dataId)
+
+        if tuples is None:
+            return []
+
         if len(format) == 1:
-            return [x[0] for x in tuples]
+            ret = []
+            for x in tuples:
+                try:
+                    ret.append(x[0])
+                except TypeError:
+                    ret.append(x)
+            return ret
+
         return tuples
+
 
     def datasetExists(self, datasetType, dataId={}, **rest):
         """Determines if a dataset file exists.
@@ -222,8 +232,18 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        dataId = self._combineDicts(dataId, **rest)
-        location = self.mapper.map(datasetType, dataId)
+
+        locations = self.repository.map(datasetType, dataId)
+        if locations is None:
+            return False
+        try:
+            if len(locations) is not 1:
+                raise RuntimeError("Multiple (or none) locations for datasetExists(%s, %s)" %(datasetType, dataId))
+            location = locations[0]
+        except TypeError:
+            # locations might not be a list; that's ok.
+            location = locations
+
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
@@ -244,6 +264,7 @@ class Butler(object):
                 (storageName, datasetType, str(dataId)))
         return True
 
+
     def get(self, datasetType, dataId={}, immediate=False, **rest):
         """Retrieves a dataset given an input collection data id.
 
@@ -255,35 +276,50 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        dataId = self._combineDicts(dataId, **rest)
-        location = self.mapper.map(datasetType, dataId)
-        self.log.log(pexLog.Log.DEBUG, "Get type=%s keys=%s from %s" %
-                (datasetType, dataId, str(location)))
+        dataId = copy.copy(dataId)
+        dataId.update(**rest)
 
-        if location.getPythonType() is not None:
-            # import this pythonType dynamically
-            pythonTypeTokenList = location.getPythonType().split('.')
-            importClassString = pythonTypeTokenList.pop()
-            importClassString = importClassString.strip()
-            importPackage = ".".join(pythonTypeTokenList)
-            importType = __import__(importPackage, globals(), locals(), \
-                    [importClassString], -1)
-            pythonType = getattr(importType, importClassString)
-        else:
-            pythonType = None
-        if hasattr(self.mapper, "bypass_" + datasetType):
-            bypassFunc = getattr(self.mapper, "bypass_" + datasetType)
-            callback = lambda: bypassFunc(datasetType, pythonType,
-                    location, dataId)
+        locations = self.repository.map(datasetType, dataId)
+        if locations is None:
+            raise butlerExceptions.NoResults("No locations for get:", datasetType, dataId)
+        try:
+            if len(locations) is 0:
+                raise butlerExceptions.NoResults("No locations for get:", datasetType, dataId)
+            if len(locations) is not 1:
+                raise butlerExceptions.MultipleResults("Multiple locations for get:", datasetType, dataId,
+                                                       locations)
+            location = locations[0]
+        except TypeError:
+            # locations might not be a list; that's ok.
+            location = locations
+
+        self.log.log(pexLog.Log.DEBUG, "Get type=%s keys=%s from %s" % (datasetType, dataId, str(location)))
+
+        pythonType = location.getPythonType()
+        if pythonType is not None:
+            if isinstance(pythonType, basestring):
+                # import this pythonType dynamically
+                pythonTypeTokenList = location.getPythonType().split('.')
+                importClassString = pythonTypeTokenList.pop()
+                importClassString = importClassString.strip()
+                importPackage = ".".join(pythonTypeTokenList)
+                importType = __import__(importPackage, globals(), locals(), \
+                        [importClassString], -1)
+                pythonType = getattr(importType, importClassString)
+
+
+        if hasattr(location.mapper, "bypass_" + datasetType):
+            bypassFunc = getattr(location.mapper, "bypass_" + datasetType)
+            callback = lambda: bypassFunc(datasetType, pythonType, location, dataId)
         else:
             callback = lambda: self._read(pythonType, location)
-        if self.mapper.canStandardize(datasetType):
+        if location.mapper.canStandardize(datasetType):
             innerCallback = callback
-            callback = lambda: self.mapper.standardize(datasetType,
-                    innerCallback(), dataId)
+            callback = lambda: location.mapper.standardize(datasetType, innerCallback(), dataId)
         if immediate:
             return callback()
         return ReadProxy(callback)
+
 
     def put(self, obj, datasetType, dataId={}, doBackup=False, **rest):
         """Persists a dataset given an output collection data id.
@@ -300,59 +336,14 @@ class Butler(object):
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         if doBackup:
-            self.mapper.backup(datasetType, dataId)
-        dataId = self._combineDicts(dataId, **rest)
-        location = self.mapper.map(datasetType, dataId, write=True)
-        self.log.log(pexLog.Log.DEBUG, "Put type=%s keys=%s to %s" %
-                (datasetType, dataId, str(location)))
-        additionalData = location.getAdditionalData()
-        storageName = location.getStorageName()
-        locations = location.getLocations()
-        # TODO support multiple output locations
-        with SafeFilename(locations[0]) as locationString:
-            logLoc = LogicalLocation(locationString, additionalData)
-            trace = pexLog.BlockTimingLog(self.log, "put",
-                                          pexLog.BlockTimingLog.INSTRUM+1)
-            trace.setUsageFlags(trace.ALLUDATA)
+            self.repository.backup(datasetType, dataId)
+        dataId = copy.copy(dataId)
+        dataId.update(**rest)
 
-            if storageName == "PickleStorage":
-                trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-                with open(logLoc.locString(), "wb") as outfile:
-                    cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
-                trace.done()
-                return
-
-            if storageName == "ConfigStorage":
-                trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-                obj.save(logLoc.locString())
-                trace.done()
-                return
-
-            if storageName == "FitsCatalogStorage":
-                trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-                flags = additionalData.getInt("flags", 0)
-                obj.writeFits(logLoc.locString(), flags=flags)
-                trace.done()
-                return
-
-            # Create a list of Storages for the item.
-            storageList = StorageList()
-            storage = self.persistence.getPersistStorage(storageName, logLoc)
-            storageList.append(storage)
-            trace.start("write to %s(%s)" % (storageName, logLoc.locString()))
-
-            if storageName == 'FitsStorage':
-                self.persistence.persist(obj, storageList, additionalData)
-                trace.done()
-                return
-
-            # Persist the item.
-            if hasattr(obj, '__deref__'):
-                # We have a smart pointer, so dereference it.
-                self.persistence.persist(obj.__deref__(), storageList, additionalData)
-            else:
-                self.persistence.persist(obj, storageList, additionalData)
-            trace.done()
+        locations = self.repository.map(datasetType, dataId, write=True)
+        if locations is not None:
+            for location in locations:
+                location.repository.write(location, obj)
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
@@ -369,12 +360,16 @@ class Butler(object):
         @returns (ButlerSubset) collection of ButlerDataRefs for datasets
         matching the data id.
         """
-
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         if level is None:
-            level = self.mapper.getDefaultLevel()
-        dataId = self._combineDicts(dataId, **rest)
+            # todo this does not seem safe. what if repo is aggregate, and conained mappers have different
+            # levels? ...it seems wrapped up in the problem with ButlerSubset.
+            level = self.repository.getMapperDefaultLevel()
+
+        dataId = copy.copy(dataId)
+        dataId.update(**rest)
         return ButlerSubset(self, datasetType, level, dataId)
+
 
     def dataRef(self, datasetType, level=None, dataId={}, **rest):
         """Returns a single ButlerDataRef.
@@ -400,15 +395,9 @@ class Butler(object):
     Keywords = %s""" % (str(datasetType), str(level), str(dataId), str(rest))
         return ButlerDataRef(subset, subset.cache[0])
 
-    def _combineDicts(self, dataId, **rest):
-        finalId = {}
-        finalId.update(dataId)
-        finalId.update(rest)
-        return finalId
 
     def _read(self, pythonType, location):
-        trace = pexLog.BlockTimingLog(self.log, "read",
-                                      pexLog.BlockTimingLog.INSTRUM+1)
+        trace = pexLog.BlockTimingLog(self.log, "read", pexLog.BlockTimingLog.INSTRUM+1)
 
         additionalData = location.getAdditionalData()
         # Create a list of Storages for the item.
@@ -459,7 +448,7 @@ class Butler(object):
         return results
 
     def __reduce__(self):
-        return (_unreduce, (self.mapper, self.datasetTypeAliasDict))
+        return (_unreduce, (self._cfg, self.datasetTypeAliasDict))
 
     def _resolveDatasetTypeAlias(self, datasetType):
         """ Replaces all the known alias keywords in the given string with the alias value.
@@ -479,7 +468,7 @@ class Butler(object):
 
         return datasetType
 
-def _unreduce(mapper, datasetTypeAliasDict):
-    butler = Butler(root=None, mapper=mapper)
+def _unreduce(cfg, datasetTypeAliasDict):
+    butler = Butler(cfg)
     butler.datasetTypeAliasDict = datasetTypeAliasDict
     return butler
