@@ -58,6 +58,9 @@ class CameraMapper(dafPersist.Mapper):
 
 
     def getKeys(self, datasetType, level):
+        if level == '':
+            level = self.getDefaultLevel()
+
         keyDict = dict()
         if datasetType is None:
             for t in self.templates.iterkeys():
@@ -80,23 +83,25 @@ class CameraMapper(dafPersist.Mapper):
         return "sensor"
 
     def getDefaultSubLevel(self, level):
+        if level == '':
+            level = self.getDefaultLevel()
         return dict(
                 sensor="amp",
                 raft="sensor",
                 visit="sensor",
                 skyTile="sensor")[level]
 
-    def query(self, datasetType, key, format, dataId):
-        return self.registry.query(datasetType, key, format, dataId)
+    def query(self, datasetType, format, dataId):
+        return self.registry.query(datasetType, format, dataId)
 
     def map(self, datasetType, dataId, write=False):
         path = self.templates[datasetType] % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {})
+        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
 
 for datasetType in ["raw", "flat", "calexp"]:
     setattr(CameraMapper, "map_" + datasetType,
             lambda self, dataId, write:
             CameraMapper.map(self, datasetType, dataId, write))
     setattr(CameraMapper, "query_" + datasetType,
-            lambda self, key, format, dataId:
-            CameraMapper.query(self, datasetType, key, format, dataId))
+            lambda self, format, dataId:
+            CameraMapper.query(self, datasetType, format, dataId))

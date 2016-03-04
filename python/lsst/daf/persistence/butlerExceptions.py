@@ -1,6 +1,8 @@
+#!/usr/bin/env python
+
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2016 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -20,18 +22,18 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-"""Python interface to lsst::daf::persistence classes
-"""
-from persistenceLib import *
-from policy import *
-from butlerLocation import *
-from readProxy import *
-from butlerSubset import *
-from access import *
-from repository import *
-from butler import *
-from mapper import *
-from butlerFactory import *
-from .version import *
-from butlerExceptions import *
+class NoMapperException(Exception):
+    pass
 
+class NoResults(RuntimeError):
+    def __init__(self, message, datasetType, dataId):
+        message += ' datasetType:' + datasetType + ' dataId:' + str(dataId)
+        super(NoResults, self).__init__(message)
+
+class MultipleResults(RuntimeError):
+    def __init__(self, message, datasetType, dataId, locations):
+        message += ' datasetType:' + datasetType + ' dataId:' + str(dataId) + ' locations:'
+        for location in locations:
+            message += ' ' + str(location)
+        super(MultipleResults, self).__init__(message)
+        self.locations = locations

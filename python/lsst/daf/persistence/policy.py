@@ -94,7 +94,8 @@ class Policy(UserDict.UserDict):
                     return
 
         if other is not None:
-            import pdb; pdb.set_trace()
+            self.data = {}
+            self.update(other)
 
     def __initFromFile(self, paths):
         """Load a file from path. If path is a list, will pick one to use, according to order specified

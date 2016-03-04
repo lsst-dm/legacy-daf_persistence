@@ -64,17 +64,20 @@ class ButlerSubset(object):
 
         @param butler (Butler)    butler that is being queried.
         @param datasetType (str)  the type of dataset to query.
-        @param level (str)        the hierarchy level to descend to.
+        @param level (str)        the hierarchy level to descend to. if empty string will look up the default
+                                  level.
         @param dataId (dict)      the (partial or complete) data id.
         """
-
         self.butler = butler
         self.datasetType = datasetType
-        self.level = level
         self.dataId = dataId
         self.cache = []
+        self.level = level
 
-        fmt = list(self.butler.getKeys(datasetType, level).iterkeys())
+        keys = self.butler.getKeys(datasetType, level)
+        if keys is None:
+            return
+        fmt = list(keys.iterkeys())
 
         # Don't query if we already have a complete dataId
         completeId = True
@@ -86,8 +89,8 @@ class ButlerSubset(object):
             self.cache.append(dataId)
             return
 
-        for idTuple in butler.queryMetadata(self.datasetType,
-                level, fmt, self.dataId):
+        idTuples = butler.queryMetadata(self.datasetType, fmt, self.dataId)
+        for idTuple in idTuples:
             tempId = dict(self.dataId)
             if len(fmt) == 1:
                 tempId[fmt[0]] = idTuple
@@ -95,6 +98,10 @@ class ButlerSubset(object):
                 for i in xrange(len(fmt)):
                     tempId[fmt[i]] = idTuple[i]
             self.cache.append(tempId)
+
+    def __repr__(self):
+        return "ButlerSubset(butler=%s, datasetType=%s, dataId=%s, cache=%s, level=%s)" % (
+            self.butler, self.datasetType, self.dataId, self.cache, self.level)
 
     def __len__(self):
         """
@@ -168,6 +175,9 @@ class ButlerDataRef(object):
         self.butlerSubset = butlerSubset
         self.dataId = dataId
 
+    def __repr__(self):
+        return 'ButlerDataRef(butlerSubset=%s, dataId=%s)' %(self.butlerSubset, self.dataId)
+
     def get(self, datasetType=None, **rest):
         """
         Retrieve a dataset of the given type (or the type used when creating
@@ -177,7 +187,6 @@ class ButlerDataRef(object):
         @param **rest             keyword arguments with data identifiers
         @returns object corresponding to the given dataset type.
         """
-
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
         return self.butlerSubset.butler.get(datasetType, self.dataId, **rest)
@@ -229,8 +238,13 @@ class ButlerDataRef(object):
         """
 
         if level is None:
-            level = self.butlerSubset.butler.mapper.getDefaultSubLevel(
-                    self.butlerSubset.level)
+            mappers = self.butlerSubset.butler.repository.mappers()
+            if len(mappers) is not 1:
+                raise RuntimeError("Support for multiple repositories not yet implemented!")
+            mapper = mappers[0]
+
+            # todo: getDefaultSubLevel is not in the mapper API!
+            level = mapper.getDefaultSubLevel(self.butlerSubset.level)
             if level is None:
                 return ()
         return self.butlerSubset.butler.subset(self.butlerSubset.datasetType,

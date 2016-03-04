@@ -94,11 +94,20 @@ class Mapper(object):
     def keys(self):
         raise NotImplementedError("keys() unimplemented")
 
-    def queryMetadata(self, datasetType, key, format, dataId):
-        """Return possible values for keys given a partial data id."""
+    def queryMetadata(self, datasetType, format, dataId):
+        """Get possible values for keys given a partial data id.
+
+        :param datasetType: see documentation about the use of datasetType
+        :param key: this is used as the 'level' parameter
+        :param format:
+        :param dataId: see documentation about the use of dataId
+        :return:
+        """
 
         func = getattr(self, 'query_' + datasetType)
-        return func(key, format, self.validate(dataId))
+
+        val = func(format, self.validate(dataId))
+        return val
 
     def getDatasetTypes(self):
         """Return a list of the mappable dataset types."""
