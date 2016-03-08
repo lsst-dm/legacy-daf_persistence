@@ -104,13 +104,8 @@ class ReposInButler(unittest.TestCase):
     def test(self):
         repoMapperPolicy = {
             'repositories': {
-                'repo': {
-                    'template': 'repos/repo_v%(version)s',
-                    'python':   'lsst.daf.persistence.Repository',
-                },
                 'cfg': {
                     'template': 'repos/repo_v%(version)s/repoCfg.yaml',
-                    'pythonPackage': 'lsst.daf.persistence',
                     'python': 'lsst.daf.persistence.RepositoryCfg',
                     'storage': 'YamlStorage'
                 }
