@@ -34,19 +34,25 @@ import inspect
 import itertools
 import os
 
+import yaml
+
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
-    Persistence, repository, Access, PosixStorage, butlerExceptions, Policy
+    Persistence, Repository, Access, PosixStorage, Policy, NoResults, MultipleResults
 
 def posixRepoCfg(root=None, mapper=None, mapperArgs=None, parentRepoCfgs=[], id=None, parentJoin='left',
                  peerCfgs=[]):
     storageCfg = PosixStorage.cfg(root=root)
     accessCfg = Access.cfg(storageCfg=storageCfg)
-    repoCfg = repository.Repository.cfg(id=id, accessCfg=accessCfg, mapper=mapper, mapperArgs=mapperArgs,
+    repoCfg = Repository.cfg(id=id, accessCfg=accessCfg, mapper=mapper, mapperArgs=mapperArgs,
                                         parentCfgs=parentRepoCfgs, parentJoin=parentJoin, peerCfgs=peerCfgs)
     return repoCfg
 
+class ButlerCfg(Policy, yaml.YAMLObject):
+    yaml_tag = u"!ButlerCfg"
+    def __init__(self, cls, repoCfg):
+        super(ButlerCfg, self).__init__({'repoCfg':repoCfg, 'cls':cls})
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -101,11 +107,10 @@ class Butler(object):
     def cfg(cls, repoCfg):
         """Helper func to create a properly formatted Policy to configure a Repository.
 
-
         :param repoCfg: Cfg used to instantiate the repository.
         :return: a properly populated cfg Policy.
         """
-        return Policy({'repoCfg':repoCfg})
+        return ButlerCfg(cls=cls, repoCfg=repoCfg)
 
     def __init__(self, root, mapper=None, **mapperArgs):
         """Initializer for the Class.
@@ -145,12 +150,18 @@ class Butler(object):
         self._cfg = cfg
         self.datasetTypeAliasDict = {}
 
-        self.repository = repository.Repository.Repository(cfg['repoCfg'])
+        self.repository = Repository.makeFromCfg(self._cfg['repoCfg'])
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
+
+
+    def __repr__(self):
+        return 'Butler(cfg=%s, datasetTypeAliasDict=%s, repository=%s, persistence=%s)' % (
+            self._cfg, self.datasetTypeAliasDict, self.repository, self.persistence)
+
 
     @staticmethod
     def getMapperClass(root):
@@ -310,12 +321,12 @@ class Butler(object):
 
         locations = self.repository.map(datasetType, dataId)
         if locations is None:
-            raise butlerExceptions.NoResults("No locations for get:", datasetType, dataId)
+            raise NoResults("No locations for get:", datasetType, dataId)
         try:
             if len(locations) is 0:
-                raise butlerExceptions.NoResults("No locations for get:", datasetType, dataId)
+                raise NoResults("No locations for get:", datasetType, dataId)
             if len(locations) is not 1:
-                raise butlerExceptions.MultipleResults("Multiple locations for get:", datasetType, dataId,
+                raise MultipleResults("Multiple locations for get:", datasetType, dataId,
                                                        locations)
             location = locations[0]
         except TypeError:
@@ -324,24 +335,22 @@ class Butler(object):
 
         self.log.log(pexLog.Log.DEBUG, "Get type=%s keys=%s from %s" % (datasetType, dataId, str(location)))
 
-        pythonType = location.getPythonType()
-        if pythonType is not None:
-            if isinstance(pythonType, basestring):
-                # import this pythonType dynamically
-                pythonTypeTokenList = location.getPythonType().split('.')
-                importClassString = pythonTypeTokenList.pop()
-                importClassString = importClassString.strip()
-                importPackage = ".".join(pythonTypeTokenList)
-                importType = __import__(importPackage, globals(), locals(), \
-                        [importClassString], -1)
-                pythonType = getattr(importType, importClassString)
-
-
         if hasattr(location.mapper, "bypass_" + datasetType):
+            # this type loader block should get moved into a helper someplace, and duplciations removed.
+            pythonType = location.getPythonType()
+            if pythonType is not None:
+                if isinstance(pythonType, basestring):
+                    # import this pythonType dynamically
+                    pythonTypeTokenList = location.getPythonType().split('.')
+                    importClassString = pythonTypeTokenList.pop()
+                    importClassString = importClassString.strip()
+                    importPackage = ".".join(pythonTypeTokenList)
+                    importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+                    pythonType = getattr(importType, importClassString)
             bypassFunc = getattr(location.mapper, "bypass_" + datasetType)
             callback = lambda: bypassFunc(datasetType, pythonType, location, dataId)
         else:
-            callback = lambda: self._read(pythonType, location)
+            callback = lambda: self._read(location)
         if location.mapper.canStandardize(datasetType):
             innerCallback = callback
             callback = lambda: location.mapper.standardize(datasetType, innerCallback(), dataId)
@@ -429,56 +438,13 @@ class Butler(object):
         return ButlerDataRef(subset, subset.cache[0])
 
 
-    def _read(self, pythonType, location):
+    def _read(self, location):
         trace = pexLog.BlockTimingLog(self.log, "read", pexLog.BlockTimingLog.INSTRUM+1)
-
-        additionalData = location.getAdditionalData()
-        # Create a list of Storages for the item.
-        storageName = location.getStorageName()
-        results = []
-        locations = location.getLocations()
-        returnList = True
-        if len(locations) == 1:
-            returnList = False
-
-        for locationString in locations:
-            logLoc = LogicalLocation(locationString, additionalData)
-            trace.start("read from %s(%s)" % (storageName, logLoc.locString()))
-
-            if storageName == "PafStorage":
-                finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
-            elif storageName == "PickleStorage":
-                if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, \
-                            "No such pickle file: " + logLoc.locString()
-                with open(logLoc.locString(), "rb") as infile:
-                    finalItem = cPickle.load(infile)
-            elif storageName == "FitsCatalogStorage":
-                if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, \
-                            "No such FITS catalog file: " + logLoc.locString()
-                hdu = additionalData.getInt("hdu", 0)
-                flags = additionalData.getInt("flags", 0)
-                finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
-            elif storageName == "ConfigStorage":
-                if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, \
-                            "No such config file: " + logLoc.locString()
-                finalItem = pythonType()
-                finalItem.load(logLoc.locString())
-            else:
-                storageList = StorageList()
-                storage = self.persistence.getRetrieveStorage(storageName, logLoc)
-                storageList.append(storage)
-                itemData = self.persistence.unsafeRetrieve(
-                        location.getCppType(), storageList, additionalData)
-                finalItem = pythonType.swigConvert(itemData)
-            trace.done()
-            results.append(finalItem)
-
-        if not returnList:
+        results = location.repository.read(location)
+        if len(results) == 1:
             results = results[0]
         return results
+        trace.done()
 
     def __reduce__(self):
         return (_unreduce, (self._cfg, self.datasetTypeAliasDict))

@@ -27,12 +27,20 @@
 
 import lsst.daf.base as dafBase
 
-class ButlerLocation(object):
+import yaml
+
+
+
+class ButlerLocation(yaml.YAMLObject):
     """ButlerLocation is a struct-like class that holds information needed to
     persist and retrieve an object using the LSST Persistence Framework.
 
     Mappers should create and return ButlerLocations from their
     map_{datasetType} methods."""
+
+    yaml_tag = u"!ButlerLocation"
+    yaml_loader = yaml.Loader
+    yaml_dumper = yaml.Dumper
 
     def __repr__(self):
         return \
@@ -52,11 +60,29 @@ class ButlerLocation(object):
         self.additionalData = dafBase.PropertySet()
         for k, v in dataId.iteritems():
             self.additionalData.set(k, v)
+        self.dataId=dataId
 
     def __str__(self):
         s = "%s at %s(%s)" % (self.pythonType, self.storageName,
                 ", ".join(self.locationList))
         return s
+
+    @staticmethod
+    def to_yaml(dumper, obj):
+        """Representer for dumping to YAML
+        :param dumper:
+        :param obj:
+        :return:
+        """
+        return dumper.represent_mapping(ButlerLocation.yaml_tag,
+            {'pythonType':obj.pythonType, 'cppType':obj.cppType, 'storageName':obj.storageName,
+             'locationList':obj.locationList, 'mapper':obj.mapper, 'access':obj.access, 'dataId':obj.dataId})
+
+    @staticmethod
+    def from_yaml(loader, node):
+        obj = loader.construct_mapping(node)
+        return ButlerLocation(**obj)
+
 
     def setRepository(self, repository):
         self.repository = repository
@@ -66,6 +92,23 @@ class ButlerLocation(object):
 
     def getPythonType(self):
         return self.pythonType
+
+    def getPythonTypeInstance(self):
+        pythonType = self.getPythonType()
+        if pythonType is None:
+            return None
+        if isinstance(pythonType, basestring):
+            # import this pythonType dynamically
+            pythonTypeTokenList = pythonType.split('.')
+            importClassString = pythonTypeTokenList.pop()
+            importClassString = importClassString.strip()
+            importPackage = ".".join(pythonTypeTokenList)
+            try:
+                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+            except:
+                import pdb; pdb.set_trace()
+            pythonType = getattr(importType, importClassString)
+        return pythonType
 
     def getCppType(self):
         return self.cppType
@@ -78,3 +121,7 @@ class ButlerLocation(object):
 
     def getAdditionalData(self):
         return self.additionalData
+
+
+# yaml.add_representer(ButlerLocation, ButlerLocation.yaml_representer)
+# yaml.add_constructor(ButlerLocation.yaml_tag, ButlerLocation.yaml_constructor)

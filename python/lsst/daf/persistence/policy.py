@@ -29,10 +29,13 @@ import UserDict
 import warnings
 import yaml
 
+from yaml.representer import Representer
+yaml.add_representer(collections.defaultdict, Representer.represent_dict)
+
 import lsst.pex.policy as pexPolicy
 import lsst.utils
 
-class Policy(UserDict.UserDict):
+class Policy(UserDict.UserDict, yaml.YAMLObject):
     """Policy implements a datatype that is used by Butler for configuration parameters.
     It is essentially a dict with key/value pairs, including nested dicts (as values). In fact, it can be
     initialized with a dict. The only caveat is that keys may NOT contain dots ('.'). This is explained next:
@@ -50,6 +53,9 @@ class Policy(UserDict.UserDict):
     # product name: the name of the pacage
     # filePath: the name of the policy file
     # the file path from the root of the directory to the dir that contains the file.
+
+    # def __dict__(self):
+    #     return self.data.__dict__()
 
     def __init__(self, other=None, preference=('data', 'policy', 'pexPolicy', 'filePath', 'defaultInitData'),
                  **kwargs):
@@ -71,8 +77,19 @@ class Policy(UserDict.UserDict):
         UserDict.UserDict.__init__(self)
         self.__init(other, preference, **kwargs)
 
-    def __init(self, other, preference, **kwargs):
+    def ppprint(self):
+        """helper function for debugging, prints a policy out in a readable way in the debugger.
 
+        use: pdb> print myPolicyObject.pprint()
+        :return: a prettyprint formatted string representing the policy
+        """
+        import pprint
+        return pprint.pformat(self.data, indent=2, width=1)
+
+    def __repr__(self):
+        return self.data.__repr__()
+
+    def __init(self, other, preference, **kwargs):
         for p in preference:
             if p in kwargs:
                 if p == 'policy':
@@ -185,6 +202,8 @@ class Policy(UserDict.UserDict):
     def __getitem__ (self, name):
         data = self.data
         for key in name.split('.'):
+            if data is None:
+                return None
             if key in data:
                 data = data[key]
             else:
@@ -375,7 +394,8 @@ class Policy(UserDict.UserDict):
         :param stream:
         :return:
         """
-        yaml.dump(self.data, output)
+        data = copy.copy(self.data)
+        yaml.dump(data, output)
 
     def dumpToFile(self, path):
         """Writes the policy to a file.
