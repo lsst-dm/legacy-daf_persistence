@@ -262,16 +262,13 @@ class TestWriting(unittest.TestCase):
 
         # create butlers where the output repos are now input repos
 
-        repoCfg = dp.Repository.cfg(id='repoC',
-            accessCfg=dp.Access.cfg(storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoC')),
-            parentCfgs=[dp.Access(dp.Access.cfg(storageCfg=dp.PosixStorage.cfg('tests/repository/repoA'))).loadCfg()],
-            mapper=MapperForTestWriting(root='tests/repository/repoC'))
+        # currently must pass a mapper to the repo cfg, even though we are not going to write to this repo
+        # (only read from parent repos). So it's ok to set root to an empty path, it will just treat the
+        # current dir as root, and we won't write to it.
+        repoCfg = dp.Repository.cfg(parentCfgs=(repoACfg,), mapper=MapperForTestWriting(root=''))
         butlerC = dp.Butler(dp.Butler.cfg(repoCfg=repoCfg))
 
-        repoCfg = dp.Repository.cfg(id='repoD',
-            accessCfg=dp.Access.cfg(storageCfg=dp.PosixStorage.cfg('tests/repository/repoD')),
-            parentCfgs=[dp.Access(dp.Access.cfg(storageCfg=dp.PosixStorage.cfg('tests/repository/repoB'))).loadCfg()],
-            mapper=MapperForTestWriting(root='tests/repository/repoD'))
+        repoCfg = dp.Repository.cfg(parentCfgs=(repoBCfg,), mapper=MapperForTestWriting(root=''))
         butlerD = dp.Butler(dp.Butler.cfg(repoCfg=repoCfg))
 
         # # verify the objects exist by getting them
