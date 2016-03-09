@@ -117,9 +117,6 @@ class Repository(object):
 
         self._id = cfg['id']
 
-        if cfg['accessCfg.storageCfg.root'] is not None:
-            self._access.setCfg(cfg)
-
         self._initMapper(cfg)
 
 
