@@ -28,7 +28,7 @@ import os
 
 import yaml
 
-from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList
+from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList, Registry
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
@@ -78,6 +78,8 @@ class PosixStorage(object):
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
+
+        self.registry = Registry.create(location=self.root)
 
     def __repr__(self):
         return 'PosixStorage(root=%s)' % self.root
@@ -275,3 +277,7 @@ class PosixStorage(object):
         :return:
         """
         return os.path.join(self.root, location)
+
+    def lookup(self, *args, **kwargs):
+        """Perform a lookup in the registry"""
+        return self.registry.lookup(*args, **kwargs)
