@@ -1,7 +1,7 @@
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -9,22 +9,25 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-"""This module provides registry classes for maintaining dataset metadata for
-use by the Data Butler.  Currently only a SQLite3-based registry is
-implemented, but registries based on a text file, a policy file, a MySQL (or
-other) relational database, and data gathered from scanning a filesystem are
-all anticipated."""
+"""This module provides registry classes for maintaining dataset metadata for use by the Data Butler.  Currently only a
+SQLite3-based registry is implemented, but registries based on a text file, a policy file, a MySQL (or other) relational
+database, and data gathered from scanning a filesystem are all anticipated.
+
+Currently this module assumes posix access (for both PosixRegistry AND SqliteRegistry). It is possible that it can be
+factored so that at least the SqliteRegistry can be remote/not on the local filesystem. For now this module is only used
+by CameraMapper and by PosixStorage, both of which work on the local filesystem only, so this works for the time being.
+"""
 
 import copy
 import fsScanner
@@ -58,14 +61,22 @@ class Registry(object):
         #     return FileRegistry(location)
         # if re.match(r'.*\.paf', location):
         #     return CalibRegistry(location)
+
+        # look for an sqlite3 registry
         if haveSqlite3 and re.match(r'.*\.sqlite3', location):
             registry = SqliteRegistry(location)
             if registry.conn is None:
                 return None
             return registry
+
         # if re.match(r'mysql:', location):
         #     return DbRegistry(location)
         # return FsRegistry(location)
+
+        # next try to create a PosixRegistry
+        if os.path.exists(location):
+            return PosixRegistry(root=location)
+
         raise RuntimeError("Unable to create registry using location: " + location)
 
 class PosixRegistry(Registry):
@@ -328,7 +339,7 @@ class SqliteRegistry(Registry):
         cmd += ", ".join(returnFields)
         cmd += " FROM " + " NATURAL JOIN ".join(joinClause)
         whereList = []
-        if whereFields: 
+        if whereFields:
             for k, v in whereFields:
                 whereList.append("(%s = %s)" % (k, v))
         if range is not None:

@@ -127,3 +127,9 @@ class Access:
         :return: True if location exists, else False.
         """
         return self.storage.exists(location)
+
+    def lookup(self, *args, **kwargs):
+        """Perform a lookup in the registry.
+
+        Returns a list of dataId for each valid lookup (right? TODO VERIFY)"""
+        return self.storage.lookup(*args, **kwargs)
