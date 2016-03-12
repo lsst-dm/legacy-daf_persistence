@@ -25,6 +25,7 @@
 from persistenceLib import *
 from butlerExceptions import *
 from policy import *
+from registries import *
 from butlerLocation import *
 from readProxy import *
 from butlerSubset import *
