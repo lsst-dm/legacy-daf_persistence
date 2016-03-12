@@ -40,6 +40,8 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
 
     def __init__(self, cls, id, accessCfg, parentCfgs, parentJoin, peerCfgs, mapper, mapperArgs):
         super(RepositoryCfg, self).__init__()
+        if not hasattr(parentCfgs, '__iter__'):
+            parentCfgs = (parentCfgs,)
         self.update({'cls':cls, 'id':id, 'accessCfg':accessCfg, 'parentCfgs':parentCfgs,
                    'parentJoin':parentJoin, 'peerCfgs':peerCfgs, 'mapper':mapper,
                    'mapperArgs':mapperArgs})
