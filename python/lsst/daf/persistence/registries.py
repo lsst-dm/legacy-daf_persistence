@@ -57,6 +57,9 @@ class Registry(object):
         @param location (string) Path or URL for registry, or None if
                                  unavailable"""
 
+        if location is None:
+            return
+
         # if re.match(r'.*\.registry', location):
         #     return FileRegistry(location)
         # if re.match(r'.*\.paf', location):
