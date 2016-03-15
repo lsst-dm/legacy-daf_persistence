@@ -30,6 +30,13 @@ class RepositoryMapperCfg(MapperCfg):
     pass
 
 class RepositoryMapper(Mapper):
+    """"Base class for a mapper to find repository configurations within a butler repository.
+
+    .. warning::
+
+            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old
+            butler' API is strongly discouraged.
+    """
 
     def __init__(self, cfg):
         # todo I'm guessing the policy would probably want to come from the default in-package location, and

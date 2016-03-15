@@ -115,6 +115,13 @@ class Repository(object):
     def cfg(cls, id=None, accessCfg=None, parentCfgs=[], parentJoin='left', peerCfgs=[], mapper=None, mapperArgs=None):
         """
         Helper func to create a properly formatted Policy to configure a Repository.
+
+        .. warning::
+
+            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old
+            butler' API is strongly discouraged.
+
+
         :param id: an identifier for this repository. Currently only used for debugging.
         :param accessCfg: cfg for the Access class
         :param parentCfgs: a tuple of repo cfgs of parent repositories, in search-priority order.
@@ -137,6 +144,12 @@ class Repository(object):
         '''Instantiate a Repository from a configuration.
         In come cases the repoCfg may have already been instantiated into a Repository, this is allowed and
         the input var is simply returned.
+
+        .. warning::
+
+            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old
+            butler' API is strongly discouraged.
+
 
         :param repoCfg: the cfg for this repository. It is recommended this be created by calling
                         Repository.cfg()
@@ -227,7 +240,13 @@ class Repository(object):
 
     @staticmethod
     def loadCfg(accessCfg):
-        """Load a repository cfg that has been saved in a location specified by accessCfg"""
+        """Load a repository cfg that has been saved in a location specified by accessCfg
+
+        .. warning::
+
+            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old
+            butler' API is strongly discouraged.
+        """
         access = Access(accessCfg)
         return access.loadCfg()
 

@@ -29,6 +29,14 @@ from lsst.daf.persistence import Policy
 """This module defines the Mapper base class."""
 
 class MapperCfg(Policy):
+    """Represents a mapper configuration.
+
+        .. warning::
+
+            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
+            API is strongly discouraged.
+    """
+
     yaml_tag = u"!MapperCfg"
     yaml_loader = yaml.Loader
     yaml_dumper = yaml.Dumper

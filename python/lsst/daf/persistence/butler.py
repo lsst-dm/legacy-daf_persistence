@@ -50,6 +50,13 @@ def posixRepoCfg(root=None, mapper=None, mapperArgs=None, parentRepoCfgs=[], id=
     return repoCfg
 
 class ButlerCfg(Policy, yaml.YAMLObject):
+    """Represents a Butler configuration.
+
+        .. warning::
+
+        cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
+        API is strongly discouraged.
+    """
     yaml_tag = u"!ButlerCfg"
     def __init__(self, cls, repoCfg):
         super(ButlerCfg, self).__init__({'repoCfg':repoCfg, 'cls':cls})
@@ -106,6 +113,11 @@ class Butler(object):
     @classmethod
     def cfg(cls, repoCfg):
         """Helper func to create a properly formatted Policy to configure a Repository.
+
+        .. warning::
+
+            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
+            API is strongly discouraged.
 
         :param repoCfg: Cfg used to instantiate the repository.
         :return: a properly populated cfg Policy.

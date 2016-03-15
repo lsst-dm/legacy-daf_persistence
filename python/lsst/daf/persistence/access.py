@@ -36,7 +36,14 @@ class AccessCfg(Policy, yaml.YAMLObject):
         super(AccessCfg, self).__init__({'storageCfg':storageCfg, 'cls':cls})
 
 class Access:
-    """Implements an butler framework interface for Transport, Storage, and Registry"""
+    """Implements an butler framework interface for Transport, Storage, and Registry
+
+    .. warning::
+
+        Access is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
+        API is strongly discouraged.
+
+    """
 
     @classmethod
     def cfg(cls, storageCfg):
