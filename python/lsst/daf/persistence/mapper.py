@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 
 #
 # LSST Data Management System
@@ -22,8 +22,38 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import yaml
+
+from lsst.daf.persistence import Policy
 
 """This module defines the Mapper base class."""
+
+class MapperCfg(Policy):
+    """Represents a mapper configuration.
+
+        .. warning::
+
+            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
+            API is strongly discouraged.
+    """
+
+    yaml_tag = u"!MapperCfg"
+    yaml_loader = yaml.Loader
+    yaml_dumper = yaml.Dumper
+
+    def __init__(self, cls, policy, access):
+        super(MapperCfg, self).__init__()
+        self.update({'cls':cls, 'policy':policy, 'access':access})
+
+    @staticmethod
+    def to_yaml(dumper, obj):
+        return dumper.represent_mapping(RepositoryMapperCfg.yaml_tag,
+                                        {'cls':obj['cls'], 'policy':obj['policy'], 'access':obj['access']})
+
+    @staticmethod
+    def from_yaml(loader, node):
+        obj = loader.construct_mapping(node)
+        return RepositoryMapperCfg(**obj)
 
 class Mapper(object):
     """Mapper is a base class for all mappers.
@@ -63,6 +93,20 @@ class Mapper(object):
 
     validate(self, dataId)
     """
+
+    @staticmethod
+    def Mapper(cfg):
+        '''Instantiate a Mapper from a configuration.
+        In come cases the cfg may have already been instantiated into a Mapper, this is allowed and
+        the input var is simply returned.
+
+        :param cfg: the cfg for this mapper. It is recommended this be created by calling
+                    Mapper.cfg()
+        :return: a Mapper instance
+        '''
+        if isinstance(cfg, Policy):
+            return cfg['cls'](cfg)
+        return cfg
 
     def __new__(cls, *args, **kwargs):
         """Create a new Mapper, saving arguments for pickling.
