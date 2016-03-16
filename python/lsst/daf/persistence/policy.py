@@ -48,15 +48,6 @@ class Policy(UserDict.UserDict, yaml.YAMLObject):
     - pex policy: read is supported, although this is deprecated and will at some point be removed.
     """
 
-    defaultPolicyInitData = collections.namedtuple('defaultPolicyInitData', 'productName filePath repos')
-    # Contains data for loading a default policy from a package:
-    # product name: the name of the pacage
-    # filePath: the name of the policy file
-    # the file path from the root of the directory to the dir that contains the file.
-
-    # def __dict__(self):
-    #     return self.data.__dict__()
-
     def __init__(self, other=None, preference=('data', 'policy', 'pexPolicy', 'filePath', 'defaultInitData'),
                  **kwargs):
         """Constructor. Accepts an optional vars, one of which will be used to initalize the Policy.
