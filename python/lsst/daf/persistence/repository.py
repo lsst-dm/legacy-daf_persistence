@@ -219,12 +219,17 @@ class Repository(object):
         # now if mapper is a class type (not instance), instantiate it:
         if inspect.isclass(mapper):
             # cameraMapper requires root which is not ideal. it should be accessing objects via storage.
-            # cameraMapper will require much refactoring to support this.
-            try:
-                # try new style init first; pass cfg to mapper
-                mapper = mapper(cfg=repoCfg['mapperCfg'])
-            except TypeError:
-                # try old style cfg, using mapperArgs keyword
+            # cameraMapper and other existing mappers (hscMapper) will require much refactoring to support this.
+            args = inspect.getargspec(mapper.__init__)
+            useRootKeyword = not 'cfg' in args.args
+            if not useRootKeyword:
+                try:
+                    # try new style init first; pass cfg to mapper
+                    mapper = mapper(cfg=repoCfg['mapperCfg'])
+                except TypeError:
+                    # try again, using old style cfg: using mapperArgs and root keywords
+                    useRootKeyword = True
+            if useRootKeyword:
                 mapperArgs = copy.copy(repoCfg['mapperArgs'])
                 if mapperArgs is None:
                     mapperArgs = {}
