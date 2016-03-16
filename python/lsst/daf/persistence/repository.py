@@ -61,7 +61,7 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
     # todo these load & write methods are coupled to posix storage. need to invent butler mechanism for
     # multiple dispatch and implement it.
     @staticmethod
-    def get(butlerLocation):
+    def butlerRead(butlerLocation):
         if butlerLocation.getStorageName() is not "YamlStorage":
             raise NotImplementedError("RepositoryCfg only supports YamlStorage")
         ret = []
@@ -74,7 +74,7 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
         return ret
 
     @staticmethod
-    def put(obj, butlerLocation):
+    def butlerWrite(obj, butlerLocation):
         if butlerLocation.getStorageName() is not "YamlStorage":
             raise NotImplementedError("RepositoryCfg only supports YamlStorage")
         ret = []

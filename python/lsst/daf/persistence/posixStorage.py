@@ -151,22 +151,28 @@ class PosixStorage(object):
         """
         self.log.log(pexLog.Log.DEBUG, "Put location=%s obj=%s" % (butlerLocation, obj))
 
-        # We need a way to reference de/serializer. For now, let's say we have API on the python type: get
-        # and put for read & write. Maybe it's correct API. Maybe it wants to be on the python type,
-        # might need an option for a separate de/serializer. (maybe the de/serializer IS the python
-        # type...)
-        pythonType = butlerLocation.getPythonTypeInstance()
-        if pythonType is not None:
-            try:
-                pythonType.put(obj, butlerLocation=butlerLocation)
-                return # this must be temp once all the tests are turned back on, need a way to know if should return here.
-            except (TypeError, AttributeError):
-                pass
-        # if the python type did not support deserialization with a butlerLocation, then try old style:
-
         additionalData = butlerLocation.getAdditionalData()
         storageName = butlerLocation.getStorageName()
         locations = butlerLocation.getLocations()
+
+        pythonType = butlerLocation.getPythonType()
+        if pythonType is not None:
+            if isinstance(pythonType, basestring):
+                # import this pythonType dynamically
+                pythonTypeTokenList = pythonType.split('.')
+                importClassString = pythonTypeTokenList.pop()
+                importClassString = importClassString.strip()
+                importPackage = ".".join(pythonTypeTokenList)
+                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+                pythonType = getattr(importType, importClassString)
+        # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
+        # implications; write now I'm worried that any python type that can be written to disk and has a method
+        # called 'put' will be called here (even if it's e.g. destined for FitsStorage). We might want a somewhat
+        # more specific API.
+        if hasattr(pythonType, 'butlerWrite'):
+            pythonType.butlerWrite(obj, butlerLocation=butlerLocation)
+            return
+
         with SafeFilename(locations[0]) as locationString:
             logLoc = LogicalLocation(locationString, additionalData)
 
@@ -207,48 +213,48 @@ class PosixStorage(object):
         :return: a list of objects as described by the butler location. One item for each location in
                  butlerLocation.getLocations()
         """
-
-        # We need a way to reference de/serializer. For now, let's say we have API on the python type: get
-        # and put for read & write. Maybe it's correct API. Maybe it wants to be on the python type,
-        # might need an option for a separate de/serializer. (maybe the de/serializer IS the python
-        # type...)
-        pythonType = butlerLocation.getPythonTypeInstance()
-        if pythonType is not None:
-            try:
-                results = pythonType.get(butlerLocation=butlerLocation)
-                return results
-            except (TypeError, AttributeError):
-                pass
-        # if the python type did not support deserialization with a butlerLocation, then try old style:
-
         additionalData = butlerLocation.getAdditionalData()
         # Create a list of Storages for the item.
         storageName = butlerLocation.getStorageName()
         results = []
         locations = butlerLocation.getLocations()
+        pythonType = butlerLocation.getPythonType()
+        if pythonType is not None:
+            if isinstance(pythonType, basestring):
+                # import this pythonType dynamically
+                pythonTypeTokenList = pythonType.split('.')
+                importClassString = pythonTypeTokenList.pop()
+                importClassString = importClassString.strip()
+                importPackage = ".".join(pythonTypeTokenList)
+                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+                pythonType = getattr(importType, importClassString)
+
+        # see note re. discomfort with the name 'butlerWrite' in the write method, above. Same applies to butlerRead.
+        if hasattr(pythonType, 'butlerRead'):
+            results = pythonType.butlerRead(butlerLocation=butlerLocation)
+            return results
+
         for locationString in locations:
             logLoc = LogicalLocation(locationString, additionalData)
+
             if storageName == "PafStorage":
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
             elif storageName == "YamlStorage":
                 finalItem = Policy(filePath=logLoc.locString())
             elif storageName == "PickleStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, \
-                            "No such pickle file: " + logLoc.locString()
+                    raise RuntimeError, "No such pickle file: " + logLoc.locString()
                 with open(logLoc.locString(), "rb") as infile:
                     finalItem = cPickle.load(infile)
             elif storageName == "FitsCatalogStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, \
-                            "No such FITS catalog file: " + logLoc.locString()
+                    raise RuntimeError, "No such FITS catalog file: " + logLoc.locString()
                 hdu = additionalData.getInt("hdu", 0)
                 flags = additionalData.getInt("flags", 0)
                 finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
             elif storageName == "ConfigStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, \
-                            "No such config file: " + logLoc.locString()
+                    raise RuntimeError, "No such config file: " + logLoc.locString()
                 finalItem = pythonType()
                 finalItem.load(logLoc.locString())
             else:

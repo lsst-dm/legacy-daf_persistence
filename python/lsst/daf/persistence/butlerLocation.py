@@ -83,7 +83,6 @@ class ButlerLocation(yaml.YAMLObject):
         obj = loader.construct_mapping(node)
         return ButlerLocation(**obj)
 
-
     def setRepository(self, repository):
         self.repository = repository
 
@@ -92,23 +91,6 @@ class ButlerLocation(yaml.YAMLObject):
 
     def getPythonType(self):
         return self.pythonType
-
-    def getPythonTypeInstance(self):
-        pythonType = self.getPythonType()
-        if pythonType is None:
-            return None
-        if isinstance(pythonType, basestring):
-            # import this pythonType dynamically
-            pythonTypeTokenList = pythonType.split('.')
-            importClassString = pythonTypeTokenList.pop()
-            importClassString = importClassString.strip()
-            importPackage = ".".join(pythonTypeTokenList)
-            try:
-                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
-            except:
-                import pdb; pdb.set_trace()
-            pythonType = getattr(importType, importClassString)
-        return pythonType
 
     def getCppType(self):
         return self.cppType
@@ -121,7 +103,3 @@ class ButlerLocation(yaml.YAMLObject):
 
     def getAdditionalData(self):
         return self.additionalData
-
-
-# yaml.add_representer(ButlerLocation, ButlerLocation.yaml_representer)
-# yaml.add_constructor(ButlerLocation.yaml_tag, ButlerLocation.yaml_constructor)

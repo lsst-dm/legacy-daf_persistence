@@ -95,8 +95,4 @@ class RepositoryMapper(Mapper):
                 dataId = dataId,
                 mapper = self)
             return bl
-
         return None
-
-# repoCfg = butler.get('repo', {version:123})
-# repoCfg = butler.get('repo', {validRange:('2016-02-09T14:23:44.885709', '2016-02-10T14:23:44.885709')})
