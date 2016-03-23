@@ -333,6 +333,8 @@ class Repository(object):
 
         if len(ret) is 0:
             ret = None
+        elif len(ret) is 1:
+            ret = ret[0]
         return ret
 
     def read(self, butlerLocation):
