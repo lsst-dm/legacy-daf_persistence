@@ -66,7 +66,7 @@ class RepositoryMapper(Mapper):
         # todo check: do we need keys to complete dataId? (search Registry)
         template = self.policy['repositories.cfg.template']
         location = template % dataId
-        if write is False and self.access.storage.exists(location) is False:
+        if not write and not self.access.storage.exists(location):
             return None
         bl = ButlerLocation(
             pythonType = self.policy['repositories.cfg.python'],
@@ -79,7 +79,7 @@ class RepositoryMapper(Mapper):
 
 
     def map_repo(self, dataId, write):
-        if write is True:
+        if write:
             return None
 
         # todo check: do we need keys to complete dataId? (search Registry)

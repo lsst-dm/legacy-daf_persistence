@@ -197,7 +197,7 @@ class Butler(object):
         #verify formatting of alias:
         # it can have '@' as the first character (if not it's okay, we will add it) or not at all.
         atLoc = alias.rfind('@')
-        if atLoc is -1:
+        if atLoc == -1:
             alias = "@" + str(alias)
         elif atLoc > 0:
             raise RuntimeError("Badly formatted alias string: %s" %(alias,))
@@ -289,7 +289,7 @@ class Butler(object):
         if locations is None:
             return False
         try:
-            if len(locations) is not 1:
+            if len(locations) != 1:
                 raise RuntimeError("Multiple (or none) locations for datasetExists(%s, %s)" %(datasetType, dataId))
             location = locations[0]
         except TypeError:
@@ -335,9 +335,9 @@ class Butler(object):
         if locations is None:
             raise NoResults("No locations for get:", datasetType, dataId)
         try:
-            if len(locations) is 0:
+            if len(locations) == 0:
                 raise NoResults("No locations for get:", datasetType, dataId)
-            if len(locations) is not 1:
+            if len(locations) != 1:
                 raise MultipleResults("Multiple locations for get:", datasetType, dataId,
                                                        locations)
             location = locations[0]
