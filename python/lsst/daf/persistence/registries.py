@@ -306,7 +306,7 @@ class SqliteRegistry(Registry):
             whereList = []
             for k, v in dataId.items():
                 if hasattr(k, '__iter__'):
-                    if len(k) is not 2:
+                    if len(k) != 2:
                         raise RuntimeError("Wrong number of keys for range:%s" % (k,))
                     whereList.append("(? BETWEEN %s AND %s)" %(k[0], k[1]))
                     valueList.append(v)

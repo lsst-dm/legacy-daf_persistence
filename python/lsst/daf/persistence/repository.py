@@ -292,7 +292,7 @@ class Repository(object):
                     ret.extend(res)
                 except TypeError:
                     ret.append(res)
-        if len(ret) is 0:
+        if not len(ret):
             ret = None
         return ret
 
@@ -326,14 +326,14 @@ class Repository(object):
             if res is None:
                 res = parent.doParents(func, *args, **kwargs)
             if res is not None:
-                if self._parentJoin is 'left':
+                if self._parentJoin == 'left':
                     return res
                 else:
                     ret.append(res)
 
-        if len(ret) is 0:
+        if len(ret) == 0:
             ret = None
-        elif len(ret) is 1:
+        elif len(ret) == 1:
             ret = ret[0]
         return ret
 
