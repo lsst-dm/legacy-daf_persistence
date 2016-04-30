@@ -73,11 +73,11 @@ public:
     virtual boost::archive::text_iarchive& getIArchive(void);
 
 private:
-    boost::scoped_ptr<std::ofstream> _ostream; ///< Output stream.
-    boost::scoped_ptr<std::ifstream> _istream; ///< Input stream.
-    boost::scoped_ptr<boost::archive::text_oarchive> _oarchive;
+    std::unique_ptr<std::ofstream> _ostream; ///< Output stream.
+    std::unique_ptr<std::ifstream> _istream; ///< Input stream.
+    std::unique_ptr<boost::archive::text_oarchive> _oarchive;
         ///< boost::serialization archive wrapper for output stream.
-    boost::scoped_ptr<boost::archive::text_iarchive> _iarchive;
+    std::unique_ptr<boost::archive::text_iarchive> _iarchive;
         ///< boost::serialization archive wrapper for input stream.
 };
 

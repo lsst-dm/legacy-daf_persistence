@@ -110,7 +110,7 @@ protected:
     explicit DbStorage(std::type_info const& type);
 
 private:
-    boost::scoped_ptr<DbStorageImpl> _impl;
+    std::unique_ptr<DbStorageImpl> _impl;
         ///< Implementation class for isolation.
 };
 

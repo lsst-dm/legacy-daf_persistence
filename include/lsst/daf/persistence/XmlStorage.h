@@ -72,13 +72,13 @@ public:
     virtual boost::archive::xml_iarchive& getIArchive(void);
 
 private:
-    boost::scoped_ptr<std::ofstream> _ostream;
+    std::unique_ptr<std::ofstream> _ostream;
         ///< Underlying output stream.
-    boost::scoped_ptr<std::ifstream> _istream;
+    std::unique_ptr<std::ifstream> _istream;
         ///< Underlying input stream.
-    boost::scoped_ptr<boost::archive::xml_oarchive> _oarchive;
+    std::unique_ptr<boost::archive::xml_oarchive> _oarchive;
         ///< Boost XML output archive.
-    boost::scoped_ptr<boost::archive::xml_iarchive> _iarchive;
+    std::unique_ptr<boost::archive::xml_iarchive> _iarchive;
         ///< Boost XML input archive.
 };
 

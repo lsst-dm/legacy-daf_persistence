@@ -106,7 +106,7 @@ private:
     std::map<std::string, int> _colMap; ///< Map from column names to positions.
     std::ostringstream _convertStream;  ///< Stream to convert to text.
     std::vector<std::string> _rowBuffer;
-    boost::scoped_ptr<std::ofstream> _osp;  ///< Output TSV stream.
+    std::unique_ptr<std::ofstream> _osp;  ///< Output TSV stream.
 
     int _getColumnIndex(std::string const& columnName);
 };
