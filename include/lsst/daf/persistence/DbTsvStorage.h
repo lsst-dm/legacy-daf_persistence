@@ -50,7 +50,7 @@
 
 #include "lsst/daf/persistence/DbStorage.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -65,7 +65,7 @@ namespace persistence {
 
 class DbTsvStorage : public DbStorage {
 public:
-    typedef boost::shared_ptr<DbTsvStorage> Ptr;
+    typedef std::shared_ptr<DbTsvStorage> Ptr;
 
     DbTsvStorage(void);
     ~DbTsvStorage(void);

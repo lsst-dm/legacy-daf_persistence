@@ -47,7 +47,7 @@
 
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <fstream>
 
 namespace lsst {
@@ -56,7 +56,7 @@ namespace persistence {
 
 class XmlStorage : public Storage {
 public:
-    typedef boost::shared_ptr<XmlStorage> Ptr;
+    typedef std::shared_ptr<XmlStorage> Ptr;
 
     XmlStorage(void);
     virtual ~XmlStorage(void);

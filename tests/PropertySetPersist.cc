@@ -96,10 +96,10 @@ BOOST_AUTO_TEST_CASE(PersistDifferentTypes) {
 
 BOOST_AUTO_TEST_CASE(PersistManyTypes) {
     dafBase::PropertySet::Ptr additionalData =
-        boost::make_shared<dafBase::PropertySet>(); // empty for testing
+        std::make_shared<dafBase::PropertySet>(); // empty for testing
 
     dafBase::PropertySet::Ptr fooProp =
-        boost::make_shared<dafBase::PropertySet>();
+        std::make_shared<dafBase::PropertySet>();
     fooProp->set<char>("char", 'x');
     fooProp->set<signed char>("schar", 'y');
     fooProp->set<unsigned char>("uchar", 'z');
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(PersistManyTypes) {
     fooProp->set("date", now);
 
     lsst::pex::policy::Policy::Ptr policyPtr =
-        boost::make_shared<lsst::pex::policy::Policy>();
+        std::make_shared<lsst::pex::policy::Policy>();
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policyPtr);
 
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(PersistManyTypes) {
     BOOST_CHECK(pp);
     BOOST_CHECK(typeid(*pp) == typeid(dafBase::PropertySet));
     dafBase::PropertySet::Ptr ps =
-        boost::dynamic_pointer_cast<dafBase::PropertySet,
+        std::dynamic_pointer_cast<dafBase::PropertySet,
                                     dafBase::Persistable>(pp);
     BOOST_CHECK(ps);
     BOOST_CHECK(ps.get() != fooProp.get());
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(PersistManyTypes) {
     pp = persist->retrieve("PropertySet", storageList, additionalData);
     BOOST_CHECK(pp);
     BOOST_CHECK(typeid(*pp) == typeid(dafBase::PropertySet));
-    ps = boost::dynamic_pointer_cast<dafBase::PropertySet,
+    ps = std::dynamic_pointer_cast<dafBase::PropertySet,
                                      dafBase::Persistable>(pp);
     BOOST_CHECK(ps);
     BOOST_CHECK(ps.get() != fooProp.get());

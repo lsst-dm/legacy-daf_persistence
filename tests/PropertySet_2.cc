@@ -48,7 +48,7 @@ class MyFormatter;
 
 class MyPersistable : public dafBase::Persistable {
 public:
-    typedef boost::shared_ptr<MyPersistable> Ptr;
+    typedef std::shared_ptr<MyPersistable> Ptr;
     MyPersistable(double ra = 0.0, double decl = 0.0) : _ra(ra), _decl(decl) { };
     double getRa(void) const { return _ra; };
     double getDecl(void) const { return _decl; };
@@ -152,9 +152,9 @@ BOOST_AUTO_TEST_CASE(PropertySet2Test) {
     additionalData->add("visitId", testId);
     additionalData->add("sliceId", 0);
 
-    boost::shared_ptr<MyPersistable> mp(new MyPersistable(1.73205, 1.61803));
+    std::shared_ptr<MyPersistable> mp(new MyPersistable(1.73205, 1.61803));
     dafBase::PropertySet ps;
-    ps.add("mp", boost::static_pointer_cast<dafBase::Persistable, MyPersistable>(mp));
+    ps.add("mp", std::static_pointer_cast<dafBase::Persistable, MyPersistable>(mp));
     ps.add("first.second", 8118);
 
     dafPersist::LogicalLocation pathLoc("tests/data/PropSet.boost." + testIdString);
@@ -175,11 +175,11 @@ BOOST_AUTO_TEST_CASE(PropertySet2Test) {
         dafBase::Persistable::Ptr pp = persist->retrieve("PropertySet", storageList, additionalData);
         BOOST_CHECK(pp != 0);
         BOOST_CHECK(typeid(*pp) == typeid(dafBase::PropertySet));
-        dafBase::PropertySet::Ptr ps1 = boost::dynamic_pointer_cast<dafBase::PropertySet, dafBase::Persistable>(pp);
+        dafBase::PropertySet::Ptr ps1 = std::dynamic_pointer_cast<dafBase::PropertySet, dafBase::Persistable>(pp);
         BOOST_CHECK(ps1);
         BOOST_CHECK(ps1.get() != &ps);
         BOOST_CHECK_EQUAL(ps1->get<int>("first.second"), 8118);
-        boost::shared_ptr<MyPersistable> mp1 = boost::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(ps1->getAsPersistablePtr("mp"));
+        std::shared_ptr<MyPersistable> mp1 = std::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(ps1->getAsPersistablePtr("mp"));
         BOOST_CHECK(mp1);
         BOOST_CHECK_EQUAL(mp1->getRa(), 1.73205);
         BOOST_CHECK_EQUAL(mp1->getDecl(), 1.61803);

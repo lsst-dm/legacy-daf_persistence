@@ -51,7 +51,7 @@ namespace persistence {
 
 class FitsStorage : public Storage {
 public:
-    typedef boost::shared_ptr<FitsStorage> Ptr;
+    typedef std::shared_ptr<FitsStorage> Ptr;
 
     FitsStorage(void);
     virtual ~FitsStorage(void);

@@ -43,7 +43,7 @@
   * @ingroup daf_persistence
   */
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <map>
 #include <string>
 #include <typeinfo>
@@ -59,7 +59,7 @@ class LogicalLocation;
 
 class Storage : public lsst::daf::base::Citizen {
 public:
-    typedef boost::shared_ptr<Storage> Ptr;
+    typedef std::shared_ptr<Storage> Ptr;
     typedef std::vector<Ptr> List;
 
     virtual ~Storage(void);

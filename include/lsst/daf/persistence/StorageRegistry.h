@@ -43,7 +43,7 @@
   * @ingroup daf_persistence
   */
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 
 // #include "lsst/daf/base/Citizen.h"

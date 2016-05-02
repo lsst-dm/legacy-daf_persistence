@@ -53,7 +53,7 @@
   * @ingroup daf_persistence
   */
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 #include <typeinfo>
 
@@ -78,7 +78,7 @@ class LogicalLocation;
 
 class Formatter : public lsst::daf::base::Citizen {
 public:
-    typedef boost::shared_ptr<Formatter> Ptr;
+    typedef std::shared_ptr<Formatter> Ptr;
 
     /** Pointer to a (static) factory function for a Formatter subclass.
       */

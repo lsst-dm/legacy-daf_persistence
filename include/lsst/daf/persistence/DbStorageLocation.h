@@ -45,7 +45,7 @@
   * @ingroup daf_persistence
   */
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 
 #include "lsst/daf/base/Citizen.h"
@@ -57,7 +57,7 @@ namespace persistence {
 
 class DbStorageLocation : public lsst::daf::base::Citizen {
 public:
-    typedef boost::shared_ptr<DbStorageLocation> Ptr;
+    typedef std::shared_ptr<DbStorageLocation> Ptr;
 
     DbStorageLocation(void);
     DbStorageLocation(std::string const& url);

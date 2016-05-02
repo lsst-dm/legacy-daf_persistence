@@ -48,7 +48,7 @@
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <fstream>
 
 namespace lsst {
@@ -57,7 +57,7 @@ namespace persistence {
 
 class BoostStorage : public Storage {
 public:
-    typedef boost::shared_ptr<BoostStorage> Ptr;
+    typedef std::shared_ptr<BoostStorage> Ptr;
 
     BoostStorage(void);
     virtual ~BoostStorage(void);

@@ -50,7 +50,7 @@
 
 #include <string>
 #include <vector>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 namespace lsst {
 namespace daf {
@@ -62,7 +62,7 @@ class DbStorageLocation;
 
 class DbStorage : public Storage {
 public:
-    typedef boost::shared_ptr<DbStorage> Ptr;
+    typedef std::shared_ptr<DbStorage> Ptr;
 
     DbStorage(void);
     ~DbStorage(void);

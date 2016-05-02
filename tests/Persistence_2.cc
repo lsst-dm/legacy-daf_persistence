@@ -51,7 +51,7 @@ class MyFormatter;
 
 class MyPersistable : public dafBase::Persistable {
 public:
-    typedef boost::shared_ptr<MyPersistable> Ptr;
+    typedef std::shared_ptr<MyPersistable> Ptr;
     MyPersistable(double ra = 0.0, double decl = 0.0) : _ra(ra), _decl(decl) { };
     double getRa(void) const { return _ra; };
     double getDecl(void) const { return _decl; };
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(Persistence2Test) {
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);
         BOOST_CHECK_MESSAGE(pp != 0, "Didn't get a Persistable");
         BOOST_CHECK_MESSAGE(typeid(*pp) == typeid(MyPersistable), "Didn't get MyPersistable");
-        MyPersistable::Ptr mp1 = boost::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
+        MyPersistable::Ptr mp1 = std::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
         BOOST_CHECK_MESSAGE(mp1, "Couldn't cast to MyPersistable");
         BOOST_CHECK_MESSAGE(mp1.get() != &mp, "Got same MyPersistable");
         BOOST_CHECK_MESSAGE(mp1->getRa() == 1.73205, "RA is incorrect");
