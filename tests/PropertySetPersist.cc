@@ -27,7 +27,7 @@
 #include <lsst/pex/logging/Trace.h>
 #include <lsst/utils/Utils.h>
 
-#include "boost/make_shared.hpp"
+#include <memory>
 #include "lsst/pex/policy/Policy.h"
 #include "lsst/daf/persistence/Persistence.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
