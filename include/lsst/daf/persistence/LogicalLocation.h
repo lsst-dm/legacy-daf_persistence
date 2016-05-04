@@ -44,7 +44,7 @@
   * @ingroup daf_persistence
   */
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 
 #include "lsst/base.h"
@@ -59,7 +59,7 @@ namespace dafBase = lsst::daf::base;
 
 class LogicalLocation : public dafBase::Citizen {
 public:
-    typedef boost::shared_ptr<LogicalLocation> Ptr;
+    typedef std::shared_ptr<LogicalLocation> Ptr;
 
     LogicalLocation(std::string const& locString,
                     CONST_PTR(dafBase::PropertySet) additionalData = CONST_PTR(dafBase::PropertySet)());

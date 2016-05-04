@@ -50,7 +50,7 @@ class MyFormatter;
 
 class MyPersistable : public dafBase::Persistable {
 public:
-    typedef boost::shared_ptr<MyPersistable> Ptr;
+    typedef std::shared_ptr<MyPersistable> Ptr;
     MyPersistable(double ra = 0.0, double decl = 0.0) : _ra(ra), _decl(decl) { };
     double getRa(void) const { return _ra; };
     double getDecl(void) const { return _decl; };
@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);
         BOOST_CHECK(pp != 0);
         BOOST_CHECK(typeid(*pp) == typeid(MyPersistable));
-        MyPersistable::Ptr mp1 = boost::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
+        MyPersistable::Ptr mp1 = std::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
         BOOST_CHECK(mp1);
         BOOST_CHECK(mp1.get() != &mp);
         BOOST_CHECK_EQUAL(mp1->getRa(), 1.73205);
@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);
         BOOST_CHECK(pp);
         BOOST_CHECK(typeid(*pp) == typeid(MyPersistable));
-        MyPersistable::Ptr mp1 = boost::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
+        MyPersistable::Ptr mp1 = std::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
         BOOST_CHECK(mp1);
         BOOST_CHECK(mp1.get() != &mp);
         BOOST_CHECK_EQUAL(mp1->getRa(), 1.73205);
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);
         BOOST_CHECK(pp);
         BOOST_CHECK(typeid(*pp) == typeid(MyPersistable));
-        MyPersistable::Ptr mp1 = boost::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
+        MyPersistable::Ptr mp1 = std::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp);
         BOOST_CHECK(mp1);
         BOOST_CHECK(mp1.get() != &mp);
         BOOST_CHECK_EQUAL(mp1->getRa(), 1.73205);

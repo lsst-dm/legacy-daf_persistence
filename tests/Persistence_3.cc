@@ -54,7 +54,7 @@ class MyFormatter;
 
 class MyPersistable : public dafBase::Persistable {
 public:
-    typedef boost::shared_ptr<MyPersistable> Ptr;
+    typedef std::shared_ptr<MyPersistable> Ptr;
     MyPersistable(double ra = 0.0, double decl = 0.0) : _ra(ra), _decl(decl) { };
     double getRa(void) const { return _ra; };
     double getDecl(void) const { return _decl; };
@@ -158,13 +158,13 @@ BOOST_AUTO_TEST_CASE(Persistence3Test) {
         dafBase::Persistable::Ptr pp = persist->retrieve("PropertySet", storageList, additionalData);
         BOOST_CHECK_MESSAGE(pp != 0, "Didn't get a Persistable");
         BOOST_CHECK_MESSAGE(typeid(*pp) == typeid(dafBase::PropertySet), "Didn't get PropertySet");
-        dafBase::PropertySet::Ptr dp = boost::dynamic_pointer_cast<dafBase::PropertySet, dafBase::Persistable>(pp);
+        dafBase::PropertySet::Ptr dp = std::dynamic_pointer_cast<dafBase::PropertySet, dafBase::Persistable>(pp);
         BOOST_CHECK_MESSAGE(dp, "Couldn't cast to PropertySet");
         BOOST_CHECK_MESSAGE(dp != theProperty, "Got same PropertySet");
         dafBase::Persistable::Ptr pp1 = dp->getAsPersistablePtr("prop");
         BOOST_CHECK_MESSAGE(pp1, "Couldn't retrieve Persistable");
         BOOST_CHECK_MESSAGE(typeid(*pp1) == typeid(MyPersistable), "Not a MyPersistable");
-        MyPersistable::Ptr mp = boost::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp1);
+        MyPersistable::Ptr mp = std::dynamic_pointer_cast<MyPersistable, dafBase::Persistable>(pp1);
         BOOST_CHECK_MESSAGE(mp, "Couldn't retrieve MyPersistable");
         BOOST_CHECK_MESSAGE(mp->getRa() == 1.73205, "RA is incorrect");
         BOOST_CHECK_MESSAGE(mp->getDecl() == 1.61803, "Decl is incorrect");

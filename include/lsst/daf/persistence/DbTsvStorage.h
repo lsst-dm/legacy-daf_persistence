@@ -50,7 +50,7 @@
 
 #include "lsst/daf/persistence/DbStorage.h"
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -65,7 +65,7 @@ namespace persistence {
 
 class DbTsvStorage : public DbStorage {
 public:
-    typedef boost::shared_ptr<DbTsvStorage> Ptr;
+    typedef std::shared_ptr<DbTsvStorage> Ptr;
 
     DbTsvStorage(void);
     ~DbTsvStorage(void);
@@ -106,7 +106,7 @@ private:
     std::map<std::string, int> _colMap; ///< Map from column names to positions.
     std::ostringstream _convertStream;  ///< Stream to convert to text.
     std::vector<std::string> _rowBuffer;
-    boost::scoped_ptr<std::ofstream> _osp;  ///< Output TSV stream.
+    std::unique_ptr<std::ofstream> _osp;  ///< Output TSV stream.
 
     int _getColumnIndex(std::string const& columnName);
 };

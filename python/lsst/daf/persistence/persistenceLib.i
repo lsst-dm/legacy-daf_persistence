@@ -63,7 +63,7 @@ Access to the lsst::daf::persistence classes
 %newobject lsst::daf::persistence::Persistence::getRetrieveStorage;
 %newobject lsst::daf::persistence::Persistence::unsafeRetrieve;
 
-%template(StorageList) std::vector<boost::shared_ptr<lsst::daf::persistence::Storage> >;
+%template(StorageList) std::vector<std::shared_ptr<lsst::daf::persistence::Storage> >;
 %template(TableList) std::vector<std::string>;
 
 %include "lsst/daf/persistence/DbAuth.h"

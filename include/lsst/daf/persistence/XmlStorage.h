@@ -43,12 +43,13 @@
   * @ingroup daf_persistence
   */
 
+#include <fstream>
+#include <memory>
+
 #include "lsst/daf/persistence/Storage.h"
 
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <fstream>
 
 namespace lsst {
 namespace daf {
@@ -56,7 +57,7 @@ namespace persistence {
 
 class XmlStorage : public Storage {
 public:
-    typedef boost::shared_ptr<XmlStorage> Ptr;
+    typedef std::shared_ptr<XmlStorage> Ptr;
 
     XmlStorage(void);
     virtual ~XmlStorage(void);
@@ -72,13 +73,13 @@ public:
     virtual boost::archive::xml_iarchive& getIArchive(void);
 
 private:
-    boost::scoped_ptr<std::ofstream> _ostream;
+    std::unique_ptr<std::ofstream> _ostream;
         ///< Underlying output stream.
-    boost::scoped_ptr<std::ifstream> _istream;
+    std::unique_ptr<std::ifstream> _istream;
         ///< Underlying input stream.
-    boost::scoped_ptr<boost::archive::xml_oarchive> _oarchive;
+    std::unique_ptr<boost::archive::xml_oarchive> _oarchive;
         ///< Boost XML output archive.
-    boost::scoped_ptr<boost::archive::xml_iarchive> _iarchive;
+    std::unique_ptr<boost::archive::xml_iarchive> _iarchive;
         ///< Boost XML input archive.
 };
 

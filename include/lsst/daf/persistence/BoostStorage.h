@@ -44,12 +44,13 @@
   */
 
 
+#include <fstream>
+#include <memory>
+
 #include "lsst/daf/persistence/Storage.h"
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <fstream>
 
 namespace lsst {
 namespace daf {
@@ -57,7 +58,7 @@ namespace persistence {
 
 class BoostStorage : public Storage {
 public:
-    typedef boost::shared_ptr<BoostStorage> Ptr;
+    typedef std::shared_ptr<BoostStorage> Ptr;
 
     BoostStorage(void);
     virtual ~BoostStorage(void);
@@ -73,11 +74,11 @@ public:
     virtual boost::archive::text_iarchive& getIArchive(void);
 
 private:
-    boost::scoped_ptr<std::ofstream> _ostream; ///< Output stream.
-    boost::scoped_ptr<std::ifstream> _istream; ///< Input stream.
-    boost::scoped_ptr<boost::archive::text_oarchive> _oarchive;
+    std::unique_ptr<std::ofstream> _ostream; ///< Output stream.
+    std::unique_ptr<std::ifstream> _istream; ///< Input stream.
+    std::unique_ptr<boost::archive::text_oarchive> _oarchive;
         ///< boost::serialization archive wrapper for output stream.
-    boost::scoped_ptr<boost::archive::text_iarchive> _iarchive;
+    std::unique_ptr<boost::archive::text_iarchive> _iarchive;
         ///< boost::serialization archive wrapper for input stream.
 };
 

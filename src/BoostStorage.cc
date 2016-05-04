@@ -55,7 +55,7 @@ namespace persistence {
 /** Constructor.
  */
 BoostStorage::BoostStorage(void) : Storage(typeid(*this)),
-    _ostream(0), _istream(0), _oarchive(0), _iarchive(0) {
+    _ostream{}, _istream{}, _oarchive{}, _iarchive{} {
 }
 
 /** Destructor.
@@ -102,10 +102,10 @@ void BoostStorage::startTransaction(void) {
  * No transaction support for now.
  */
 void BoostStorage::endTransaction(void) {
-    _oarchive.reset(0);
-    _ostream.reset(0);
-    _iarchive.reset(0);
-    _istream.reset(0);
+    _oarchive.reset();
+    _ostream.reset();
+    _iarchive.reset();
+    _istream.reset();
 }
 
 /** Get a \c boost::serialization archive suitable for output.
