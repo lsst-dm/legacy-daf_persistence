@@ -22,12 +22,13 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
  
+#include <memory>
+
 #include <lsst/daf/base/PropertySet.h>
 #include <lsst/daf/base/Citizen.h>
 #include <lsst/pex/logging/Trace.h>
 #include <lsst/utils/Utils.h>
 
-#include <memory>
 #include "lsst/pex/policy/Policy.h"
 #include "lsst/daf/persistence/Persistence.h"
 #include "lsst/daf/persistence/LogicalLocation.h"

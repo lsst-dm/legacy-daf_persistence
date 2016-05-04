@@ -43,12 +43,13 @@
   * @ingroup daf_persistence
   */
 
+#include <fstream>
+#include <memory>
+
 #include "lsst/daf/persistence/Storage.h"
 
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <memory>
-#include <fstream>
 
 namespace lsst {
 namespace daf {

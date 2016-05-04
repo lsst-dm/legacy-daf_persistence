@@ -44,13 +44,13 @@
   */
 
 
+#include <fstream>
+#include <memory>
+
 #include "lsst/daf/persistence/Storage.h"
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
-
-#include <memory>
-#include <fstream>
 
 namespace lsst {
 namespace daf {
