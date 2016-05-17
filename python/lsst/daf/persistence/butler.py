@@ -119,8 +119,8 @@ class Butler(object):
             cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
             API is strongly discouraged.
 
-        :param repoCfg: Cfg used to instantiate the repository.
-        :return: a properly populated cfg Policy.
+        @param repoCfg (RepositoryCfg) Cfg used to instantiate the repository.
+        @returns a properly populated cfg Policy.
         """
         return ButlerCfg(cls=cls, repoCfg=repoCfg)
 
@@ -136,11 +136,11 @@ class Butler(object):
         both an input and an output repository. This is NOT preferred, and will likely break any provenance
         system we have in place.
 
-        :param root: Best practice is to pass in a cfg created by Butler.cfg(). But for backward
+        @param root (str) Best practice is to pass in a cfg created by Butler.cfg(). But for backward
                           compatibility this can also be a fileysystem path. Will only work with a
                           PosixRepository.
-        :param mapper: Deprecated. Provides a mapper to be used with Butler.
-        :param mapperArgs: Deprecated. Provides arguments to be passed to the mapper if the mapper input arg
+        @param mapper Deprecated. Provides a mapper to be used with Butler.
+        @param mapperArgs Deprecated. Provides arguments to be passed to the mapper if the mapper input arg
                            is a class type to be instantiated by Butler.
         :return:
         """
@@ -155,9 +155,9 @@ class Butler(object):
     def _initWithCfg(self, cfg):
         """Initialize this Butler with cfg
 
-        :param cfg: a dict (or daf_persistence.Policy) of key-value pairs that describe the configuration.
+        @param cfg (dict) (or daf_persistence.Policy) of key-value pairs that describe the configuration.
                     Best practice is to create this object by calling Butler.cfg()
-        :return: None
+        @returns None
         """
         self._cfg = cfg
         self.datasetTypeAliasDict = {}
