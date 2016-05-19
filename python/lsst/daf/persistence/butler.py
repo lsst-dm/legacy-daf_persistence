@@ -124,7 +124,15 @@ class Butler(object):
         """
         return ButlerCfg(cls=cls, repoCfg=repoCfg)
 
-    def __init__(self, root, mapper=None, **mapperArgs):
+    class RepoData(object):
+        def __init__(self, cfg, tags=[]):
+            self.cfg = cfg
+            self.repo = None
+            # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
+            # the cfg (e.g. parents inherit their childrens' tags)
+            self.tags = set(tags) 
+
+    def __init__(self, root=None, mapper=None, inputs=[], outputs=[], **mapperArgs):
         """Initializer for the Class.
 
         The prefered initialization argument is to pass a single arg; cfg created by Butler.cfg();
@@ -142,33 +150,75 @@ class Butler(object):
         @param mapper Deprecated. Provides a mapper to be used with Butler.
         @param mapperArgs Deprecated. Provides arguments to be passed to the mapper if the mapper input arg
                            is a class type to be instantiated by Butler.
+        @param inputs (RepositoryCfg) Can be a single item or a list. These describe repositories that will be
+                                      used as inputs to the Butler.
+        @param outputs (RepositoryCfg) Can be a single item or a list. These describe repositories that will 
+                                       be used for Butler outputs.
+
         :return:
         """
-        if (isinstance(root, Policy)):
-            config = root
-        else:
-            parentCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs)
-            repoCfg = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs, parentRepoCfgs=(parentCfg,))
-            config = Butler.cfg(repoCfg=repoCfg)
-        self._initWithCfg(config)
+        if root is not None and (len(inputs) != 0 or len(outputs) != 0):
+            raise RuntimeError(
+                'root is a deprecated parameter and may not be used with the parameters input and output')
 
-    def _initWithCfg(self, cfg):
-        """Initialize this Butler with cfg
-
-        @param cfg (dict) (or daf_persistence.Policy) of key-value pairs that describe the configuration.
-                    Best practice is to create this object by calling Butler.cfg()
-        @returns None
-        """
-        self._cfg = cfg
-        self.datasetTypeAliasDict = {}
-
-        self.repository = Repository.makeFromCfg(self._cfg['repoCfg'])
+        if root is not None:
+            outputs = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs, mode='rw')
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
+        
+        if not hasattr(inputs, '__iter__'):
+            inputs = [inputs]
+        if not hasattr(outputs, '__iter__'):
+            outputs = [outputs]
+        
+        self.inputs = []
+        self.outputs = [] 
 
+        for cfg in outputs:
+            if cfg['mode'] == 'r':
+                raise RuntimeError('Output repositories must not be read only.')
+            # All inputs become parents of each output, so add them to each output cfg:
+            cfg['parentCfgs'].extend(inputs)
+            # Outputs must not be read-only:
+            if cfg['mode'] == 'r':
+                raise RuntimeError('Output repositoires must not be read only.')
+            repoData = Butler.RepoData(cfg)
+            # readable outputs are also used as inputs:
+            if cfg['mode'] == 'rw':
+                self._addInputs(repoData.cfg)
+            self.outputs.append(repoData)
+
+#        import pdb; pdb.set_trace()
+        for cfg in inputs:
+            self._addInputs(cfg)
+
+        for repoData in self.outputs + self.inputs:
+            repoData.repo = Repository.makeFromCfg(repoData.cfg)
+
+    def _addInputs(self, cfg, tags=[]):
+        """Add a RepoData for cfg if it is not already represented in self.inputs."""
+        # Inputs must not be write-only:
+        tags = copy.copy(tags) # (make a copy so the default value does not get overwritten)
+        if cfg['mode'] == 'w':
+            raise RuntimeError('Input repositoires must not be write only.')
+        repoData = None
+        # do we already have an entry in inputs for this cfg?
+        tags.extend(cfg['tags'])
+        for d in self.inputs:
+            if d.cfg == cfg:
+                repoData = d
+                break
+        if not repoData:
+            repoData = Butler.RepoData(cfg, copy.copy(tags))
+            self.inputs.append(repoData)
+        else:
+            repoData.tags.update(tags)
+        # add the parents to the input list
+        for parentCfg in cfg.get('parentCfgs', []):
+            self._addInputs(parentCfg, tags)
 
     def __repr__(self):
         return 'Butler(cfg=%s, datasetTypeAliasDict=%s, repository=%s, persistence=%s)' % (
