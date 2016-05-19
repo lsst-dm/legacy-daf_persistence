@@ -38,13 +38,20 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
     yaml_loader = yaml.Loader
     yaml_dumper = yaml.Dumper
 
-    def __init__(self, cls, id, accessCfg, parentCfgs, parentJoin, peerCfgs, mapper, mapperArgs):
+    def __init__(self, cls, mapper, mapperArgs, storageCfg, parentCfgs, tags, mode):
         super(RepositoryCfg, self).__init__()
-        if not hasattr(parentCfgs, '__iter__'):
-            parentCfgs = (parentCfgs,)
-        self.update({'cls':cls, 'id':id, 'accessCfg':accessCfg, 'parentCfgs':parentCfgs,
-                   'parentJoin':parentJoin, 'peerCfgs':peerCfgs, 'mapper':mapper,
-                   'mapperArgs':mapperArgs})
+        def listify(x):
+            if x is None:
+                raise RuntimeError("Unexpected None value")
+            if not hasattr(x, '__iter__'):
+                x = [x]
+            return x
+        
+        tags = listify(tags)
+        parentCfgs = listify(parentCfgs)
+
+        self.update({'cls':cls, 'mapper':mapper, 'mapperArgs':mapperArgs, 'storageCfg':storageCfg, 
+                     'parentCfgs':parentCfgs, 'tags':tags, 'mode':mode})
 
     @staticmethod
     def to_yaml(dumper, obj):
@@ -109,10 +116,9 @@ class Repository(object):
 
 
     """
-    _supportedParentJoin = ('left', 'outer')
 
     @classmethod
-    def cfg(cls, id=None, accessCfg=None, parentCfgs=[], parentJoin='left', peerCfgs=[], mapper=None, mapperArgs=None):
+    def cfg(cls, mode, mapper=None, mapperArgs=None, parentCfgs=[], storageCfg=None, tags=[]):
         """
         Helper func to create a properly formatted Policy to configure a Repository.
 
@@ -133,11 +139,8 @@ class Repository(object):
         :param mapperArgs: a dict of arguments to pass to the Mapper if it is to be instantiated.
         :return: a properly populated cfg Policy.
         """
-        if parentJoin not in Repository._supportedParentJoin:
-            raise RuntimeError('Repository.cfg parentJoin:%s not supported, must be one of:'
-                               % (parentJoin, Repository._supportedParentJoin))
-        return RepositoryCfg(cls=cls, id=id, accessCfg=accessCfg, parentCfgs=parentCfgs,
-                             parentJoin=parentJoin, peerCfgs=peerCfgs, mapper=mapper, mapperArgs=mapperArgs)
+        return RepositoryCfg(cls=cls, storageCfg=storageCfg, parentCfgs=parentCfgs, mapper=mapper, 
+                             mapperArgs=mapperArgs, tags=tags, mode=mode)
 
     @staticmethod
     def makeFromCfg(repoCfg):
@@ -168,22 +171,7 @@ class Repository(object):
         :return:
         '''
         self.cfg = cfg
-        self._access = Access(self.cfg['accessCfg']) if self.cfg['accessCfg'] is not None else None
-        self._parentJoin = self.cfg['parentJoin']
-        if not self._parentJoin in Repository._supportedParentJoin:
-            raise RuntimeError('Repository.__init__ parentJoin:%s not supported, must be one of:'
-                               % (self._parentJoin, Repository._supportedParentJoin))
-        self._parents = []
-        parentCfgs = self.cfg['parentCfgs']
-        if not hasattr(parentCfgs, '__iter__'):
-            parentCfgs = (parentCfgs,)
-        for parentCfg in parentCfgs:
-            self._parents.append(Repository.makeFromCfg(parentCfg))
-        self._peers = []
-        for peerCfg in self.cfg['peerCfgs']:
-            self._peers.append(Repository.makeFromCfg(peerCfg))
-        self._id = self.cfg['id']
-
+        self._storage = cfg['storageCfg']
         self._initMapper(cfg)
 
     def _initMapper(self, repoCfg):
@@ -200,8 +188,8 @@ class Repository(object):
         # - None: look for the mapper named in 'access' and use that string as in item 2.
         mapper = repoCfg['mapper']
         if mapper is None:
-            if self._access is not None:
-                mapper = self._access.mapperClass()
+            if self._storage is not None:
+                mapper = self._storage.mapperClass()
             if mapper is None:
                 self._mapper = None
                 return None
