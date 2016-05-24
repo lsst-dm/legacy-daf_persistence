@@ -26,7 +26,7 @@
 
 """This module defines the ButlerFactory class."""
 
-from lsst.daf.persistence import Butler
+from lsst.daf.persistence import Butler, Repository, PosixStorage
 
 class ButlerFactory(object):
     """ButlerFactory creates data Butlers containing data mappers.  Use of it
@@ -63,6 +63,10 @@ class ButlerFactory(object):
         """
 
         self.mapper = mapper
+        if hasattr(mapper, 'root'):
+          self.storageCfg = PosixStorage.cfg(mapper.root)
+        else:
+          self.storageCfg = None
 
     def create(self):
         """Create a Butler.
@@ -70,4 +74,4 @@ class ButlerFactory(object):
         @returns a new Butler.
         """
 
-        return Butler(None, mapper=self.mapper)
+        return Butler(outputs=Repository.cfg(mode='rw', mapper=self.mapper, storageCfg=self.storageCfg))

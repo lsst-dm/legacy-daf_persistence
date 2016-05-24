@@ -122,11 +122,7 @@ class ButlerTestCase(unittest.TestCase):
             self.butler.getKeys('@bar')
 
     def testOverlappingAlias(self):
-        storageCfg = dafPersist.PosixStorage.cfg(root='tests/butlerAlias/data/input')
-        accessCfg = dafPersist.Access.cfg(storageCfg=storageCfg)
-        repoCfg = dafPersist.Repository.cfg(accessCfg=accessCfg, mapper=MinMapper())
-        butlerCfg = dafPersist.Butler.cfg(repoCfg=repoCfg)
-        self.butler = dafPersist.Butler(butlerCfg)
+        self.butler = dafPersist.Butler()
 
         self.butler.defineAlias('foo', 'raw')
         with self.assertRaises(RuntimeError):

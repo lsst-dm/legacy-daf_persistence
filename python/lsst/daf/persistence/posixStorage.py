@@ -28,31 +28,14 @@ import os
 
 import yaml
 
-from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList, Registry
+from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, \
+    StorageCfg
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
 
-class StorageCfg(Policy):
-    yaml_tag = u"!StorageCfg"
-    yaml_loader = yaml.Loader
-    yaml_dumper = yaml.Dumper
 
-    def __init__(self, cls, root=None):
-        super(StorageCfg, self).__init__()
-        self.update({'root':root, 'cls':cls})
-
-    @staticmethod
-    def to_yaml(dumper, obj):
-        return dumper.represent_mapping(StorageCfg.yaml_tag, {'cls':obj['cls']})
-
-    @staticmethod
-    def from_yaml(loader, node):
-        obj = loader.construct_mapping(node)
-        return StorageCfg(**obj)
-
-
-class PosixStorage(object):
+class PosixStorage(Storage):
 
     @classmethod
     def cfg(cls, root=None):
