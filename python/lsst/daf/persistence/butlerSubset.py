@@ -238,7 +238,10 @@ class ButlerDataRef(object):
         """
 
         if level is None:
-            mappers = self.butlerSubset.butler.repository.mappers()
+            mappers = []
+            for repoData in self.butlerSubset.butler.inputs + self.butlerSubset.butler.inputs:
+                if repoData.repo._mapper not in mappers:
+                    mappers.append(repoData.repo._mapper)
             if len(mappers) != 1:
                 raise RuntimeError("Support for multiple repositories not yet implemented!")
             mapper = mappers[0]

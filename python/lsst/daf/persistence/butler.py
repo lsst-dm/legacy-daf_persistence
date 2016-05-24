@@ -39,15 +39,8 @@ import yaml
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
-    Persistence, Repository, Access, PosixStorage, Policy, NoResults, MultipleResults
+    Persistence, Repository, Access, PosixStorage, Policy, NoResults, MultipleResults, Repository
 
-def posixRepoCfg(root=None, mapper=None, mapperArgs=None, parentRepoCfgs=[], id=None, parentJoin='left',
-                 peerCfgs=[]):
-    storageCfg = PosixStorage.cfg(root=root)
-    accessCfg = Access.cfg(storageCfg=storageCfg)
-    repoCfg = Repository.cfg(id=id, accessCfg=accessCfg, mapper=mapper, mapperArgs=mapperArgs,
-                                        parentCfgs=parentRepoCfgs, parentJoin=parentJoin, peerCfgs=peerCfgs)
-    return repoCfg
 
 class ButlerCfg(Policy, yaml.YAMLObject):
     """Represents a Butler configuration.
@@ -60,6 +53,25 @@ class ButlerCfg(Policy, yaml.YAMLObject):
     yaml_tag = u"!ButlerCfg"
     def __init__(self, cls, repoCfg):
         super(ButlerCfg, self).__init__({'repoCfg':repoCfg, 'cls':cls})
+
+class RepoData(object):
+    def __init__(self, cfg, tags=[]):
+        self.cfg = cfg
+        self.repo = None
+        # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
+        # the cfg (e.g. parents inherit their childrens' tags)
+        self.tags = set(tags) 
+
+    def __reduce__(self):
+        return (_unreduceRepoData, (self.cfg.data, self.tags))
+
+    def __repr__(self):
+        return "RepoData(cfg=%s repo=%s tags=%s" % (self.cfg, self.repo, self.tags)
+
+def _unreduceRepoData(cfg, tags):
+    repoData = RepoData(Policy(cfg), tags)
+    repoData.repo = Repository.makeFromCfg(repoData.cfg)
+    return repoData
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -124,15 +136,7 @@ class Butler(object):
         """
         return ButlerCfg(cls=cls, repoCfg=repoCfg)
 
-    class RepoData(object):
-        def __init__(self, cfg, tags=[]):
-            self.cfg = cfg
-            self.repo = None
-            # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
-            # the cfg (e.g. parents inherit their childrens' tags)
-            self.tags = set(tags) 
-
-    def __init__(self, root=None, mapper=None, inputs=[], outputs=[], **mapperArgs):
+    def __init__(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
         """Initializer for the Class.
 
         The prefered initialization argument is to pass a single arg; cfg created by Butler.cfg();
@@ -157,21 +161,31 @@ class Butler(object):
 
         :return:
         """
-        if root is not None and (len(inputs) != 0 or len(outputs) != 0):
+        if root is not None and (inputs or outputs):
             raise RuntimeError(
                 'root is a deprecated parameter and may not be used with the parameters input and output')
 
         if root is not None:
-            outputs = posixRepoCfg(root=root, mapper=mapper, mapperArgs=mapperArgs, mode='rw')
+            outputs = Repository.cfg(mode='rw',
+                                     storageCfg=PosixStorage.cfg(root=root), 
+                                     mapper=mapper, 
+                                     mapperArgs=mapperArgs)
+
+        self.datasetTypeAliasDict = {}
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
         
-        if not hasattr(inputs, '__iter__'):
+        if inputs is None:
+            inputs = []
+        elif not hasattr(inputs, '__iter__'):
             inputs = [inputs]
-        if not hasattr(outputs, '__iter__'):
+        
+        if outputs is None:
+            outputs = []
+        elif not hasattr(outputs, '__iter__'):
             outputs = [outputs]
         
         self.inputs = []
@@ -185,13 +199,12 @@ class Butler(object):
             # Outputs must not be read-only:
             if cfg['mode'] == 'r':
                 raise RuntimeError('Output repositoires must not be read only.')
-            repoData = Butler.RepoData(cfg)
+            repoData = RepoData(cfg)
             # readable outputs are also used as inputs:
             if cfg['mode'] == 'rw':
                 self._addInputs(repoData.cfg)
             self.outputs.append(repoData)
 
-#        import pdb; pdb.set_trace()
         for cfg in inputs:
             self._addInputs(cfg)
 
@@ -212,7 +225,7 @@ class Butler(object):
                 repoData = d
                 break
         if not repoData:
-            repoData = Butler.RepoData(cfg, copy.copy(tags))
+            repoData = RepoData(cfg, copy.copy(tags))
             self.inputs.append(repoData)
         else:
             repoData.tags.update(tags)
@@ -221,9 +234,8 @@ class Butler(object):
             self._addInputs(parentCfg, tags)
 
     def __repr__(self):
-        return 'Butler(cfg=%s, datasetTypeAliasDict=%s, repository=%s, persistence=%s)' % (
-            self._cfg, self.datasetTypeAliasDict, self.repository, self.persistence)
-
+        return 'Butler(datasetTypeAliasDict=%s, inputs=%s, outputs=%s, persistence=%s)' % (
+            self.datasetTypeAliasDict, self.inputs, self.outputs, self.persistence)
 
     @staticmethod
     def getMapperClass(root):
@@ -279,7 +291,14 @@ class Butler(object):
         @returns (dict) valid data id keys; values are corresponding types.
         """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        return self.repository.getKeys(datasetType, level)
+
+        ret = None
+        for repoData in self.inputs:
+            keys = repoData.repo.getKeys(datasetType, level)
+            if keys:
+                ret = keys
+                break
+        return ret
 
 
     def queryMetadata(self, datasetType, format=None, dataId={}, **rest):
@@ -305,9 +324,13 @@ class Butler(object):
         elif not hasattr(format, '__iter__'):
             format = (format,)
 
-        tuples = self.repository.queryMetadata(datasetType, format, dataId)
+        tuples = None
+        for repoData in self.inputs:
+            tuples = repoData.repo.queryMetadata(datasetType, format, dataId)
+            if tuples is not None:
+                break
 
-        if tuples is None:
+        if not tuples:
             return []
 
         if len(format) == 1:
@@ -335,16 +358,14 @@ class Butler(object):
         dataId = copy.copy(dataId)
         dataId.update(**rest)
 
-        locations = self.repository.map(datasetType, dataId)
-        if locations is None:
+        location = None
+        for repoData in self.inputs:
+            location = repoData.repo.map(datasetType, dataId)
+            if location is not None:
+                break
+
+        if location is None:
             return False
-        try:
-            if len(locations) != 1:
-                raise RuntimeError("Multiple (or none) locations for datasetExists(%s, %s)" %(datasetType, dataId))
-            location = locations[0]
-        except TypeError:
-            # locations might not be a list; that's ok.
-            location = locations
 
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
@@ -381,19 +402,13 @@ class Butler(object):
         dataId = copy.copy(dataId)
         dataId.update(**rest)
 
-        locations = self.repository.map(datasetType, dataId)
-        if locations is None:
+        location = None
+        for repoData in self.inputs:
+            location = repoData.repo.map(datasetType, dataId)
+            if location is not None:
+                break
+        if location is None:
             raise NoResults("No locations for get:", datasetType, dataId)
-        try:
-            if len(locations) == 0:
-                raise NoResults("No locations for get:", datasetType, dataId)
-            if len(locations) != 1:
-                raise MultipleResults("Multiple locations for get:", datasetType, dataId,
-                                                       locations)
-            location = locations[0]
-        except TypeError:
-            # locations might not be a list; that's ok.
-            location = locations
 
         self.log.log(pexLog.Log.DEBUG, "Get type=%s keys=%s from %s" % (datasetType, dataId, str(location)))
 
@@ -435,15 +450,15 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        if doBackup:
-            self.repository.backup(datasetType, dataId)
         dataId = copy.copy(dataId)
         dataId.update(**rest)
 
-        locations = self.repository.map(datasetType, dataId, write=True)
-        if locations is not None:
-            for location in locations:
-                location.repository.write(location, obj)
+        for repoData in self.outputs:
+            location = repoData.repo.map(datasetType, dataId, write=True)
+            if location is not None:
+                if doBackup:
+                    repoData.repo.backup(datasetType, dataId)
+                repoData.repo.write(location, obj)
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
@@ -509,7 +524,8 @@ class Butler(object):
         trace.done()
 
     def __reduce__(self):
-        return (_unreduce, (self._cfg, self.datasetTypeAliasDict))
+        ret = (_unreduce, (self.inputs, self.outputs, self.datasetTypeAliasDict))
+        return ret
 
     def _resolveDatasetTypeAlias(self, datasetType):
         """ Replaces all the known alias keywords in the given string with the alias value.
@@ -529,7 +545,9 @@ class Butler(object):
 
         return datasetType
 
-def _unreduce(cfg, datasetTypeAliasDict):
-    butler = Butler(cfg)
+def _unreduce(inputs, outputs, datasetTypeAliasDict):
+    butler = Butler()
     butler.datasetTypeAliasDict = datasetTypeAliasDict
+    butler.inputs = inputs
+    butler.outputs = outputs
     return butler

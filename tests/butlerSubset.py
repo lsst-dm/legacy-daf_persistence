@@ -94,8 +94,9 @@ class ButlerSubsetTestCase(unittest.TestCase):
         return butler
 
     def testSingleIteration(self):
-        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
-        butler = bf.create()
+        butler = dafPersist.Butler(inputs=dafPersist.Repository.cfg(mode='r', mapper=ImgMapper(),
+            storageCfg=dafPersist.PosixStorage.cfg(root='.')))
+
         ButlerSubsetTestCase.registerAliases(butler)
 
         inputList = ["calexp_v123456_R1,2_S2,1.pickle",
@@ -157,9 +158,8 @@ class ButlerSubsetTestCase(unittest.TestCase):
         for fileName in inputList:
             with open(fileName, "w") as f:
                 pickle.dump(inputList, f)
-
-        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
-        butler = bf.create()
+        butler = dafPersist.Butler(outputs=dafPersist.Repository.cfg(mode='rw', mapper=ImgMapper(),
+            storageCfg=dafPersist.PosixStorage.cfg(root='.')))
         ButlerSubsetTestCase.registerAliases(butler)
 
         subset = butler.subset(self.rawTypeName, visit=123456)

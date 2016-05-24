@@ -43,11 +43,8 @@ class MapperImportTestCase(unittest.TestCase):
         if os.path.exists('tests/root/out'):
             shutil.rmtree('tests/root/out')
 
-
     def testMapperClass(self):
-        repository = self.butler.repository
-        if hasattr(repository, 'repositories'):
-            raise RuntimeError('this test is not implemented for an AggregateRepository')
+        repository = self.butler.outputs[0].repo
         self.assertTrue(isinstance(repository._mapper, pickleMapper.PickleMapper))
 
     def checkIO(self, butler, bbox, ccd):
