@@ -124,8 +124,6 @@ class TestCfgRelationship(unittest.TestCase):
 		self.assertEqual(butler.inputs[4].cfg, cfgE)
 		self.assertEqual(butler.inputs[4].tags, set(['configD', 'configE']))
 
-
-
 		# A has parent B, B has parents C and D. E has parent F. 
 		# search order should be A, B, C, D, E, F
 		cfgD = dp.Repository.cfg(mode='r', tags='configD')

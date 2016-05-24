@@ -29,7 +29,7 @@ import itertools
 import os
 import uuid
 
-from lsst.daf.persistence import Access, Policy, Mapper, LogicalLocation, ButlerLocation
+from lsst.daf.persistence import Access, Policy, Mapper, LogicalLocation, ButlerLocation, Storage
 
 import yaml
 
@@ -56,10 +56,13 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
     @staticmethod
     def to_yaml(dumper, obj):
         return dumper.represent_mapping(RepositoryCfg.yaml_tag,
-                                        {'cls':obj['cls'], 'id':obj['id'], 'accessCfg':obj['accessCfg'],
-                                         'parentCfgs':obj['parentCfgs'], 'parentJoin':obj['parentJoin'],
-                                         'peerCfgs':obj['peerCfgs'], 'mapper':obj['mapper'],
-                                         'mapperArgs':obj['mapperArgs']})
+                                        {'mode':obj['mode'],
+                                         'cls':obj['cls'], 
+                                         'storageCfg':obj['storageCfg'],
+                                         'parentCfgs':obj['parentCfgs'],
+                                         'mapper':obj['mapper'],
+                                         'mapperArgs':obj['mapperArgs'],
+                                         'tags':obj['tags']})
     @staticmethod
     def from_yaml(loader, node):
         obj = loader.construct_mapping(node)
@@ -76,7 +79,7 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
             logLoc = LogicalLocation(location, butlerLocation.getAdditionalData())
             with open(logLoc.locString()) as f:
                 cfg = yaml.load(f)
-            cfg['accessCfg.storageCfg.root'] = os.path.dirname(location)
+            cfg['storageCfg.root'] = os.path.dirname(location)
             ret.append(cfg)
         return ret
 
@@ -93,32 +96,11 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
                 yaml.dump(obj, f)
 
 class Repository(object):
-    """
-    Default Multiple Parent & Output Behaviors.
-    * put/write operates only in non-parent repositories.
-    * get/read operates only in parent repositories.
-    Multiple output support:
-    * a Repository can have peer repositories.
-    * all outputs (writes) go to all non-parent repositories. (e.g. mapping with write==False will return
-      mappings for from all peer Repositories.
-    Multiple parent support:
-    * parents are processed in priority order, as defined by the order of the tuple passed in as
-      cfg['parentCfgs']
-    * parent search is depth first (1st parent, parents of 1st parent, grandparents of 1st parent, 2nd parent,
-      etc)
-    * if parentJoin is 'left' returns after first result is found.
-    * if parentJoin is 'outer' will return all results found.
-
-    Recursion is implemented in a few functions which may be overridden to alter recursive behavior:
-    def doPeersAndParents()
-    def doPeers()
-    def doParents()
-
-
+    """Represents a repository of persisted data and has methods to access that data.
     """
 
     @classmethod
-    def cfg(cls, mode, mapper=None, mapperArgs=None, parentCfgs=[], storageCfg=None, tags=[]):
+    def cfg(cls, mode, mapper=None, mapperArgs=None, parentCfgs=None, storageCfg=None, tags=[]):
         """
         Helper func to create a properly formatted Policy to configure a Repository.
 
@@ -129,7 +111,6 @@ class Repository(object):
 
 
         :param id: an identifier for this repository. Currently only used for debugging.
-        :param accessCfg: cfg for the Access class
         :param parentCfgs: a tuple of repo cfgs of parent repositories, in search-priority order.
         :param parentJoin: behavior specifier for searching parents. must be one of _supportedParentJoin.
         :param peerCfgs: tuple of repo cfgs of peer repositories.
@@ -139,6 +120,8 @@ class Repository(object):
         :param mapperArgs: a dict of arguments to pass to the Mapper if it is to be instantiated.
         :return: a properly populated cfg Policy.
         """
+        if parentCfgs is None:
+            parentCfgs = []
         return RepositoryCfg(cls=cls, storageCfg=storageCfg, parentCfgs=parentCfgs, mapper=mapper, 
                              mapperArgs=mapperArgs, tags=tags, mode=mode)
 
@@ -171,7 +154,7 @@ class Repository(object):
         :return:
         '''
         self.cfg = cfg
-        self._storage = cfg['storageCfg']
+        self._storage = Storage.makeFromCfg(cfg['storageCfg'])
         self._initMapper(cfg)
 
     def _initMapper(self, repoCfg):
@@ -197,9 +180,9 @@ class Repository(object):
         if isinstance(mapper, Policy):
             # code at this location that knows that the mapper needs to share the repo's access instance is
             # not ideal IMO. Not sure how to rectify in a good way.
-            if mapper['access'] is None:
+            if mapper['storage'] is None:
                 #mapper = copy.copy(mapper)
-                mapper['access'] = self._access
+                mapper['storage'] = self._storage
             mapper = Mapper.Mapper(mapper)
         # if mapper is a string, import it:
         if isinstance(mapper, basestring):
@@ -221,15 +204,20 @@ class Repository(object):
                 mapperArgs = copy.copy(repoCfg['mapperArgs'])
                 if mapperArgs is None:
                     mapperArgs = {}
+                # so that root doesn't have to be redundantly passed in cfgs, if root is specified in the
+                # storage and if it is an argument to the mapper, make sure that it's present in mapperArgs.
                 if 'root' not in mapperArgs:
-                    mapperArgs['root'] = self._access.root()
+                    for c in inspect.getmro(mapper):
+                        if 'root' in inspect.getargspec(c.__init__ ).args:
+                            mapperArgs['root'] = self._storage.root
+                            break
                 mapper = mapper(**mapperArgs)
         self._mapper = mapper
 
 
         def __repr__(self):
-            return 'config(id=%s, accessCfg=%s, parent=%s, mapper=%s, mapperArgs=%s, cls=%s)' % \
-                   (self.id, self.accessCfg, self.parent, self.mapper, self.mapperArgs, self.cls)
+            return 'config(id=%s, storage=%s, parent=%s, mapper=%s, mapperArgs=%s, cls=%s)' % \
+                   (self.id, self._storage, self.parent, self.mapper, self.mapperArgs, self.cls)
 
     @staticmethod
     def loadCfg(accessCfg):
@@ -251,79 +239,7 @@ class Repository(object):
         :param dataset: The dataset to be written.
         :return:
         """
-        return self._access.write(butlerLocation, obj)
-
-    #######################
-    ## Recursion support ##
-
-    def doSelfAndPeers(self, func, *args, **kwargs):
-        """Performs a function on self and each repository in _peers
-
-        :param func: The fucntion to be performed
-        :param args: args for the function
-        :param kwargs: kwargs for the function
-        :return: a list of return values from peers where the func did not return None.
-                 if the func returned None from all peers, then returns None.
-        """
-        ret = []
-        res = func(self, *args, **kwargs)
-        if res is not None:
-            # if res is a list, extend ret. else append ret:
-            try:
-                ret.extend(res)
-            except TypeError:
-                ret.append(res)
-        for child in self._peers:
-            res = func(child, *args, **kwargs)
-            if res is not None:
-                try:
-                    ret.extend(res)
-                except TypeError:
-                    ret.append(res)
-        if not len(ret):
-            ret = None
-        return ret
-
-    def doParents(self, func, *args, **kwargs):
-        """Performas a depth-first search on parents.
-
-        For each parent:
-            performs func.
-            if results are none:
-                performs func on parent.
-            if results are not none and join is 'left':
-                returns result
-            else
-                appends result to list of results
-        returns results if the list is not empty, else None
-
-        If self._parentJoin is 'left' will return the return value of the first func that does not return
-        None. If self._parentJoin is 'outer' will return a list of all the results of first-level parents
-        (i.e. not grandparents) from func that are not None.
-
-        :param func: a function to perform parents
-        :param args: args for the function
-        :param kwargs: kwargs for the function
-        :return: if only 1 parent is to be used: the element to return: the element.
-                 if many parents used: a list of results; one element from each parent.
-                 if all the parents returned None, then None.
-        """
-        ret = []
-        for parent in self._parents:
-            res = func(parent, *args, **kwargs)
-            if res is None:
-                res = parent.doParents(func, *args, **kwargs)
-            if res is not None:
-                if self._parentJoin == 'left':
-                    return res
-                else:
-                    ret.append(res)
-
-        if len(ret) == 0:
-            ret = None
-        elif len(ret) == 1:
-            ret = ret[0]
-        return ret
+        return self._storage.write(butlerLocation, obj)
 
     def read(self, butlerLocation):
         """Read a dataset from Storage.
@@ -331,7 +247,7 @@ class Repository(object):
         :param butlerLocation: Contains the details needed to find the desired dataset.
         :return: An instance of the dataset requested by butlerLocation.
         """
-        return self._access.read(butlerLocation)
+        return self._storage.read(butlerLocation)
 
     ###################
     ## Mapper Access ##
@@ -344,44 +260,18 @@ class Repository(object):
         Get the keys available in the repository/repositories.
         :param args:
         :param kwargs:
-        :return: A dict of {key:valueType} or a list of these dicts, depending on the parentJoin rules.
-        """
-        return self.doParents(Repository.doGetKeys, *args, **kwargs)
-
-    def doGetKeys(self, *args, **kwargs):
-        """Get the keys from this repository only. Typically this function is called only by doParents, and
-        other classes should call getKeys.
-
-        :param args:
-        :param kwargs:
         :return: A dict of {key:valueType}
         """
         # todo: getKeys is not in the mapper API
         if self._mapper is None:
             return None
-        return self._mapper.getKeys(*args, **kwargs)
+        keys = self._mapper.getKeys(*args, **kwargs)
+        if not keys:
+            return None
+        return keys
 
     def map(self, *args, **kwargs):
         """Find a butler location for the given arguments.
-
-        If 'write' is in the kwargs and set to True then this is treated as a mapping intended to be used in a
-        call to butler.put and will look in the output repositories. Otherwise it's treated as a mapping for
-        butler.get and will look in the input repositories.
-
-        See mapper documentation for more detials about the use of map.
-        :param args: arguments to be passed on to mapper.map
-        :param kwargs: keyword arguments to be passed on to mapper.map
-        :return: An item or a list, depending on parentJoin rules. The type of item is dependent on the mapper
-        being used but is typically a ButlerLocation.
-        """
-        if 'write' in kwargs and kwargs['write'] is True:
-            return self.doSelfAndPeers(Repository.doMap, *args, **kwargs)
-        else:
-            return self.doParents(Repository.doMap, *args, **kwargs)
-
-    def doMap(self, *args, **kwargs):
-        """Perform the map function on this repository only.
-
         See mapper.map for more information about args and kwargs.
 
         :param args: arguments to be passed on to mapper.map
@@ -401,19 +291,6 @@ class Repository(object):
 
         See mapper documentation for more explanation about queryMetadata.
 
-        :param args: arguments to be passed on to mapper.map
-        :param kwargs: keyword arguments to be passed on to mapper.map
-        :return: An item or a list, depending on parentJoin rules. The type of item is dependent on the mapper
-        being used but is typically a set that contains available values for the keys in the format iarg.
-        """
-        mdList= self.doParents(Repository.doQueryMetadata, *args, **kwargs)
-        return mdList
-
-    def doQueryMetadata(self, *args, **kwargs):
-        """Perform the queryMetadata function on this repository only.
-
-        See mapper.queryMetadata for more information about args and kwargs.
-
         :param args: arguments to be passed on to mapper.queryMetadata
         :param kwargs: keyword arguments to be passed on to mapper.queryMetadata
         :return:The type of item is dependent on the mapper being used but is typically a set that contains
@@ -425,16 +302,7 @@ class Repository(object):
         return ret
 
     def backup(self, *args, **kwargs):
-        """Calls mapper.backup on all output repositories.
-
-        :param args: arguments to be passed on to mapper.backup
-        :param kwargs: keyword arguments to be passed on to mapper.backup
-        :return: None
-        """
-        self.doSelfAndPeers(Repository.doBackup, *args, **kwargs)
-
-    def doBackup(self, *args, **kwargs):
-        """Perform mapper.backup on this repository only.
+        """Perform mapper.backup.
 
         See mapper.backup for more information about args and kwargs.
 
@@ -447,7 +315,7 @@ class Repository(object):
         self._mapper.backup(*args, **kwargs)
 
     def getMapperDefaultLevel(self):
-        """Get the default level for this repository only.
+        """Get the default level of the mapper.
 
         This is typically used if no level is passed into butler methods that call repository.getKeys and/or
         repository.queryMetadata. There is a bug in that code because it gets the default level from this
