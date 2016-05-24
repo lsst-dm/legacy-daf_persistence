@@ -2,7 +2,7 @@
 
 /* 
  * LSST Data Management System
- * Copyright 2008, 2009, 2010 LSST Corporation.
+ * Copyright 2008, 2009, 2010, 2016 LSST Corporation.
  * 
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -44,11 +44,14 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/DbStorageImpl.h"
 #include "boost/regex.hpp"
-#include <ctime>
-#include <iostream>
-#include <sstream>
+
 #include <stdlib.h>
 #include <unistd.h>
+
+#include <ctime>
+#include <iostream>
+#include <memory>
+#include <sstream>
 #include <vector>
 
 #include <mysql/mysql.h>
@@ -441,7 +444,7 @@ void dafPer::DbStorageImpl::insertRow(void) {
 
     std::string query = "INSERT INTO " + quote(_insertTable) + " (";
 
-    boost::scoped_array<MYSQL_BIND> binder(new MYSQL_BIND[_inputVars.size()]);
+    std::unique_ptr<MYSQL_BIND[]> binder(new MYSQL_BIND[_inputVars.size()]);
     memset(binder.get(), 0, _inputVars.size() * sizeof(MYSQL_BIND));
 
     int i = 0;
@@ -720,7 +723,7 @@ void dafPer::DbStorageImpl::query(void) {
 
     // Create bindings for input WHERE clause variables, if any
 
-    boost::scoped_array<MYSQL_BIND> inBinder(
+    std::unique_ptr<MYSQL_BIND[]> inBinder(
         new MYSQL_BIND[whereBindings.size()]);
     memset(inBinder.get(), 0, whereBindings.size() * sizeof(MYSQL_BIND));
     for (size_t i = 0; i < whereBindings.size(); ++i) {
@@ -791,7 +794,7 @@ void dafPer::DbStorageImpl::query(void) {
 
     _resultFields = mysql_fetch_fields(queryMetadata);
 
-    boost::scoped_array<MYSQL_BIND> outBinder(new MYSQL_BIND[_numResultFields]);
+    std::unique_ptr<MYSQL_BIND[]> outBinder(new MYSQL_BIND[_numResultFields]);
     memset(outBinder.get(), 0, _numResultFields * sizeof(MYSQL_BIND));
     _fieldLengths.reset(new unsigned long[_numResultFields]);
     _fieldNulls.reset(new my_bool[_numResultFields]);
@@ -922,7 +925,7 @@ std::string const& dafPer::DbStorageImpl::getColumnByPos(int pos) {
     if (_resultFields[pos].type == MYSQL_TYPE_BIT) {
         error("Invalid type for string retrieval", false);
     }
-    boost::scoped_array<char> t(new char[_fieldLengths[pos]]);
+    std::unique_ptr<char[]> t(new char[_fieldLengths[pos]]);
     bind.buffer_type = BoundVarTraits<std::string>::mysqlType;
     bind.is_unsigned = BoundVarTraits<std::string>::isUnsigned;
     bind.buffer = t.get();

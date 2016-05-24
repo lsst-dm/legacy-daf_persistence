@@ -2,7 +2,7 @@
 
 /* 
  * LSST Data Management System
- * Copyright 2008, 2009, 2010 LSST Corporation.
+ * Copyright 2008, 2009, 2010, 2016 LSST Corporation.
  * 
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -43,9 +43,9 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/persistence/DbAuth.h"
 
-#include "boost/scoped_array.hpp"
 #include <cstdlib>
 #include <fstream>
+#include <memory>
 
 extern "C" {
     #include <pwd.h>
@@ -68,7 +68,7 @@ search(std::string const& host, std::string const& port) {
         passwd pwd;
         passwd *pw;
         long maxbuf = sysconf(_SC_GETPW_R_SIZE_MAX);
-        boost::scoped_array<char> buffer(new char[maxbuf]);
+        std::unique_ptr<char[]> buffer(new char[maxbuf]);
         int ret = getpwuid_r(geteuid(), &pwd, buffer.get(), maxbuf, &pw);
         if (ret != 0 || pw->pw_dir == 0) {
             throw LSST_EXCEPT(pexExcept::RuntimeError,
