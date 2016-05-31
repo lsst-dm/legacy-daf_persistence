@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 #!/usr/bin/env python
 
 #
@@ -397,6 +398,137 @@ class TestMultipleInputs(unittest.TestCase):
         self.assertEqual(butler.get('foo', {'bar':3}), objJkl)
 
 
+class TestTagging(unittest.TestCase):
+    """A test case for the tagging of repository classes.
+    """
+
+    def tearDown(self):
+        if os.path.exists('tests/repository'):
+            shutil.rmtree('tests/repository')
+
+
+    def testOneLevelInputs(self):
+        """
+        1. put an object with the same ID but slightly different value into 2 repositories.
+        2. use those repositories as inputs to a butler, and tag them
+        3. make sure that the correct object is gotten for each of
+            a. one tag
+            b. the other tag
+            c. no tag
+        4. repeat step 3 but reverse the order of input cfgs to a new butler.
+        5. use the butler from step 4 and write an output. The inputs will get recorded as parents of the 
+           output repo.
+        6. create a new butler with a new overlapping repo, and verify that objects can be gotten from the 
+           other's parent repos via tagging.
+        """
+        objA = TestObject('a')
+        objB = TestObject('b')
+
+        # put objA in repo1:
+        repo1Cfg = dp.Repository.cfg(mode='rw',
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repo1'), 
+                                     mapper=MapperForTestWriting)
+        butler = dp.Butler(outputs=repo1Cfg)
+        butler.put(objA, 'foo', {'bar':1})
+        # TODO butler should persist the cfg
+        del butler
+
+        # put objB in repo2:
+        repo2Cfg = dp.Repository.cfg(mode='rw',
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repo2'), 
+                                     mapper=MapperForTestWriting)
+        butler = dp.Butler(outputs=repo2Cfg)
+        butler.put(objB, 'foo', {'bar':1})
+        # TODO butler should persist the cfg
+        del butler
+
+        repo1Cfg.tag('one')
+        repo2Cfg.tag('two')
+
+        # make the objects inputs of repos
+        # and verify the correct object can ge fetched using the tag and not using the tag
+
+        # todo should get the cfg from the repo
+        butler = dp.Butler(inputs=(repo1Cfg, repo2Cfg))
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
+        self.assertEqual(butler.get('foo', {'bar':1}), objA)
+
+        butler = dp.Butler(inputs=(repo2Cfg, repo1Cfg))
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
+        self.assertEqual(butler.get('foo', {'bar':1}), objB)
+
+        # create butler with repo1 and repo2 as parents, and an output repo3.
+        repo3Cfg = dp.Repository.cfg(mode='rw',
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repo3'), 
+                                     mapper=MapperForTestWriting)
+        butler = dp.Butler(inputs=(repo1Cfg, repo2Cfg), outputs=repo3Cfg)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
+        self.assertEqual(butler.get('foo', {'bar':1}), objA)
+        # add an object to the output repo. note since the output repo mode is 'rw' that object is gettable
+        # and it has first priority in search order. Other repos should be searchable by tagging.
+        objC = TestObject('c')
+        butler.put(objC, 'foo', {'bar':1})
+        self.assertEqual(butler.get('foo', {'bar':1}), objC)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
+        del butler
+
+        # expand the structure to look like this:
+        # ┌────────────────────────┐ ┌────────────────────────┐
+        # │repo1                   │ │repo2                   │
+        # │ tag:"one"              │ │ tag:"two"              │
+        # │ TestObject('a')        │ │ TestObject('b')        │
+        # │   at ('foo', {'bar:1'})│ │   at ('foo', {'bar:1'})│
+        # └───────────┬────────────┘ └───────────┬────────────┘
+        #             └─────────────┬────────────┘
+        #              ┌────────────┴───────────┐ ┌────────────────────────┐
+        #              │repo4                   │ │repo5                   │
+        #              │ tag:"four"             │ │ tag:"five"             │
+        #              │ TestObject('d')        │ │ TestObject('e')        │
+        #              │   at ('foo', {'bar:2'})│ │   at ('foo', {'bar:1'})│
+        #              └───────────┬────────────┘ └───────────┬────────────┘
+        #                          └─────────────┬────────────┘
+        #                                     ┌──┴───┐ 
+        #                                     │butler│ 
+        #                                     └──────┘ 
+
+
+        repo4Cfg = dp.Repository.cfg(mode='rw',
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repo4'), 
+                                     mapper=MapperForTestWriting)
+        repo4Cfg.tag('four')
+        butler = dp.Butler(inputs=(repo1Cfg, repo2Cfg), outputs=repo4Cfg)
+        objD = TestObject('d')
+        butler.put(objD, 'foo', {'bar':2})
+        del butler
+
+        repo5Cfg = dp.Repository.cfg(mode='rw',
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repo5'), 
+                                     mapper=MapperForTestWriting)
+        repo5Cfg.tag('five')
+        butler = dp.Butler(outputs=repo5Cfg)
+        objE = TestObject('e')
+        butler.put(objE, 'foo', {'bar':1})
+        del butler
+
+        butler = dp.Butler(inputs=(repo4Cfg, repo5Cfg))
+        self.assertEqual(butler.get('foo', {'bar':1}), objA)
+        self.assertEqual(butler.get('foo', {'bar':2}), objD)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='four'), objA)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='five'), objE)
+        del butler
+
+        butler = dp.Butler(inputs=(repo5Cfg, repo4Cfg))
+        self.assertEqual(butler.get('foo', {'bar':1}), objE)
+        self.assertEqual(butler.get('foo', {'bar':2}), objD)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='four'), objA)
+        self.assertEqual(butler.get('foo', {'bar':1}, tag='five'), objE)
+        del butler
+
+
 def suite():
     utilsTests.init()
     suites = []
@@ -405,6 +537,7 @@ def suite():
     suites += unittest.makeSuite(TestMasking)
     suites += unittest.makeSuite(TestMultipleOutputsPut)
     suites += unittest.makeSuite(TestMultipleInputs)
+    suites += unittest.makeSuite(TestTagging)
     return unittest.TestSuite(suites)
 
 def run(shouldExit = False):
