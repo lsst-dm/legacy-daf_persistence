@@ -47,11 +47,21 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
                 x = [x]
             return x
         
-        tags = listify(tags)
+        tags = set(listify(tags))
         parentCfgs = listify(parentCfgs)
 
         self.update({'cls':cls, 'mapper':mapper, 'mapperArgs':mapperArgs, 'storageCfg':storageCfg, 
                      'parentCfgs':parentCfgs, 'tags':tags, 'mode':mode})
+
+    def tag(self, tag):
+        """add a tag to the repository cfg"""
+        if isinstance(tag, basestring):
+            self['tags'].add(tag)
+        else:
+            try:
+                self['tags'].update(tag)
+            except TypeError:
+                self['tags'].add(tag)
 
     @staticmethod
     def to_yaml(dumper, obj):
