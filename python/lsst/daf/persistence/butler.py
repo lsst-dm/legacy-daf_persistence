@@ -60,7 +60,7 @@ class RepoData(object):
         self.repo = None
         # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
         # the cfg (e.g. parents inherit their childrens' tags)
-        self.tags = set(tags) 
+        self.tags = Butler.setify(tags)
 
     def __reduce__(self):
         return (_unreduceRepoData, (self.cfg.data, self.tags))
@@ -72,6 +72,7 @@ def _unreduceRepoData(cfg, tags):
     repoData = RepoData(Policy(cfg), tags)
     repoData.repo = Repository.makeFromCfg(repoData.cfg)
     return repoData
+
 
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
@@ -214,18 +215,19 @@ class Butler(object):
     def _addInputs(self, cfg, tags=[]):
         """Add a RepoData for cfg if it is not already represented in self.inputs."""
         # Inputs must not be write-only:
-        tags = copy.copy(tags) # (make a copy so the default value does not get overwritten)
         if cfg['mode'] == 'w':
             raise RuntimeError('Input repositoires must not be write only.')
         repoData = None
-        # do we already have an entry in inputs for this cfg?
-        tags.extend(cfg['tags'])
+        tags = set(tags)
+        tags.update(set(cfg['tags']))
+        # if there is already an InputData instance for a given cfg, don't create a new one, just update its
+        # tags.
         for d in self.inputs:
             if d.cfg == cfg:
                 repoData = d
                 break
         if not repoData:
-            repoData = RepoData(cfg, copy.copy(tags))
+            repoData = RepoData(cfg, tags)
             self.inputs.append(repoData)
         else:
             repoData.tags.update(tags)
@@ -277,7 +279,7 @@ class Butler(object):
         self.datasetTypeAliasDict[alias] = datasetType
 
 
-    def getKeys(self, datasetType=None, level=None):
+    def getKeys(self, datasetType=None, level=None, tag=None):
         """Returns a dict.  The dict keys are the valid data id keys at or
         above the given level of hierarchy for the dataset type or the entire
         collection if None.  The dict values are the basic Python types
@@ -294,14 +296,15 @@ class Butler(object):
 
         ret = None
         for repoData in self.inputs:
-            keys = repoData.repo.getKeys(datasetType, level)
-            if keys:
-                ret = keys
-                break
+            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+                keys = repoData.repo.getKeys(datasetType, level)
+                if keys:
+                    ret = keys
+                    break
         return ret
 
 
-    def queryMetadata(self, datasetType, format=None, dataId={}, **rest):
+    def queryMetadata(self, datasetType, format=None, dataId={}, tag=None, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
 
@@ -326,9 +329,10 @@ class Butler(object):
 
         tuples = None
         for repoData in self.inputs:
-            tuples = repoData.repo.queryMetadata(datasetType, format, dataId)
-            if tuples:
-                break
+            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+                tuples = repoData.repo.queryMetadata(datasetType, format, dataId)
+                if tuples:
+                    break
 
         if not tuples:
             return []
@@ -345,7 +349,7 @@ class Butler(object):
         return tuples
 
 
-    def datasetExists(self, datasetType, dataId={}, **rest):
+    def datasetExists(self, datasetType, dataId={}, tag=None, **rest):
         """Determines if a dataset file exists.
 
         @param datasetType (str)   the type of dataset to inquire about.
@@ -360,9 +364,10 @@ class Butler(object):
 
         location = None
         for repoData in self.inputs:
-            location = repoData.repo.map(datasetType, dataId)
-            if location:
-                break
+            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+                location = repoData.repo.map(datasetType, dataId)
+                if location:
+                    break
 
         if location is None:
             return False
@@ -388,7 +393,7 @@ class Butler(object):
         return True
 
 
-    def get(self, datasetType, dataId={}, immediate=False, **rest):
+    def get(self, datasetType, dataId={}, immediate=False, tag=None, **rest):
         """Retrieves a dataset given an input collection data id.
 
         @param datasetType (str)   the type of dataset to retrieve.
@@ -403,10 +408,16 @@ class Butler(object):
         dataId.update(**rest)
 
         location = None
+
+        if tag is not None:
+            tag = Butler.setify(tag)
+    
+        location = None
         for repoData in self.inputs:
-            location = repoData.repo.map(datasetType, dataId)
-            if location:
-                break
+            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+                location = repoData.repo.map(datasetType, dataId)
+                if location:
+                    break
         if location is None:
             raise NoResults("No locations for get:", datasetType, dataId)
 
@@ -460,7 +471,7 @@ class Butler(object):
                     repoData.repo.backup(datasetType, dataId)
                 repoData.repo.write(location, obj)
 
-    def subset(self, datasetType, level=None, dataId={}, **rest):
+    def subset(self, datasetType, level=None, dataId={}, tag=None, **rest):
         """Extracts a subset of a dataset collection.
 
         Given a partial dataId specified in dataId and **rest, find all
@@ -487,10 +498,10 @@ class Butler(object):
 
         dataId = copy.copy(dataId)
         dataId.update(**rest)
-        return ButlerSubset(self, datasetType, level, dataId)
+        return ButlerSubset(self, datasetType, level, dataId, tag)
 
 
-    def dataRef(self, datasetType, level=None, dataId={}, **rest):
+    def dataRef(self, datasetType, level=None, dataId={}, tag=None, **rest):
         """Returns a single ButlerDataRef.
 
         Given a complete dataId specified in dataId and **rest, find the
@@ -505,7 +516,7 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        subset = self.subset(datasetType, level, dataId, **rest)
+        subset = self.subset(datasetType, level, dataId, tag, **rest)
         if len(subset) != 1:
             raise RuntimeError, """No unique dataset for:
     Dataset type = %s
@@ -544,6 +555,25 @@ class Butler(object):
             raise RuntimeError("Unresolvable alias specifier in datasetType: %s" %(datasetType))
 
         return datasetType
+
+    @staticmethod
+    def setify(x):
+        """Take an object x and return it in a set. 
+
+        If x is a container, will create a set from the contents of the container.
+        If x is an object, will create a set with a single item in it.
+        If x is a string, will treat the string as a single object (i.e. not as a list of chars)"""
+        if x is None:
+            x = set()
+        if isinstance(x, basestring):
+            x = set([x])
+        else:
+            try:
+                x = set(x)
+            except TypeError:
+                x= set([x])
+        return x
+
 
 def _unreduce(inputs, outputs, datasetTypeAliasDict):
     butler = Butler()
