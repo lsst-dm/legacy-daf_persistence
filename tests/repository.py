@@ -25,7 +25,7 @@
 import collections
 import copy
 import os
-import pyfits
+import astropy.io.fits as pyfits
 import shutil
 import types
 import unittest

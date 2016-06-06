@@ -27,7 +27,7 @@ import lsst.daf.persistence as dafPersist
 import lsst.utils.tests as utilsTests
 import os
 import pickle
-import pyfits
+import astropy.io.fits as pyfits
 import types
 import unittest
 

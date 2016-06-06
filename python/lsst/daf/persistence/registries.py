@@ -32,7 +32,7 @@ by CameraMapper and by PosixStorage, both of which work on the local filesystem 
 import copy
 import fsScanner
 import os
-import pyfits
+import astropy.io.fits as pyfits
 import re
 try:
     import sqlite3
