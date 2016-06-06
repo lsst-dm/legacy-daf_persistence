@@ -202,9 +202,9 @@ class Butler(object):
                 raise RuntimeError('Output repositoires must not be read only.')
             repoData = RepoData(cfg)
             # readable outputs are also used as inputs:
+            self.outputs.append(repoData)
             if cfg['mode'] == 'rw':
                 self._addInputs(repoData.cfg)
-            self.outputs.append(repoData)
 
         for cfg in inputs:
             self._addInputs(cfg)
@@ -220,12 +220,23 @@ class Butler(object):
         repoData = None
         tags = set(tags)
         tags.update(set(cfg['tags']))
-        # if there is already an InputData instance for a given cfg, don't create a new one, just update its
-        # tags.
-        for d in self.inputs:
+
+        # If there is already an output RepoData instance for a given cfg, don't create a new one. Add it to
+        # the inputs list if it's not there, and update its tags.
+        for d in self.outputs:
             if d.cfg == cfg:
+                self.inputs.append(d)
                 repoData = d
-                break
+
+        # If there is already an input RepoData instance for a given cfg, don't create a new one, just update 
+        # its tags.
+        if not repoData:
+            for d in self.inputs:
+                if d.cfg == cfg:
+                    repoData = d
+                    break
+
+        # If no repoData exists for the cfg yet, then create a new one.
         if not repoData:
             repoData = RepoData(cfg, tags)
             self.inputs.append(repoData)
