@@ -357,6 +357,8 @@ class Butler(object):
                     importClassString = pythonTypeTokenList.pop()
                     importClassString = importClassString.strip()
                     importPackage = ".".join(pythonTypeTokenList)
+                    if importPackage == "pyfits":
+                        importPackage = "astropy.io.fits"
                     importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
                     pythonType = getattr(importType, importClassString)
             bypassFunc = getattr(location.mapper, "bypass_" + datasetType)
