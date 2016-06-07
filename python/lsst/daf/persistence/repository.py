@@ -276,8 +276,6 @@ class Repository(object):
         if self._mapper is None:
             return None
         keys = self._mapper.getKeys(*args, **kwargs)
-        if not keys:
-            return None
         return keys
 
     def map(self, *args, **kwargs):

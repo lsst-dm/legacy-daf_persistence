@@ -305,14 +305,15 @@ class Butler(object):
         """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
 
-        ret = None
+        keys = None
         for repoData in self.inputs:
             if tag is None or len(tag.intersection(repoData.tags)) > 0:
                 keys = repoData.repo.getKeys(datasetType, level)
-                if keys:
-                    ret = keys
+                # An empty dict is a valid "found" condition for keys. The only value for keys that should
+                # cause the search to continue is None
+                if keys is not None:
                     break
-        return ret
+        return keys
 
 
     def queryMetadata(self, datasetType, format=None, dataId={}, tag=None, **rest):
