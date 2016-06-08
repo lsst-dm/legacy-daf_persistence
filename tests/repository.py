@@ -450,30 +450,30 @@ class TestTagging(unittest.TestCase):
 
         # todo should get the cfg from the repo
         butler = dp.Butler(inputs=(repo1Cfg, repo2Cfg))
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='one')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='two')), objB)
         self.assertEqual(butler.get('foo', {'bar':1}), objA)
 
         butler = dp.Butler(inputs=(repo2Cfg, repo1Cfg))
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
-        self.assertEqual(butler.get('foo', {'bar':1}), objB)
+        self.assertEqual(butler.get('foo', dp.DataId(bar=1, tag='one')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId(bar=1, tag='two')), objB)
+        self.assertEqual(butler.get('foo', dp.DataId(bar=1)), objB)
 
         # create butler with repo1 and repo2 as parents, and an output repo3.
         repo3Cfg = dp.Repository.cfg(mode='rw',
                                      storageCfg=dp.PosixStorage.cfg(root='tests/repository/repo3'), 
                                      mapper=MapperForTestWriting)
         butler = dp.Butler(inputs=(repo1Cfg, repo2Cfg), outputs=repo3Cfg)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='one')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='two')), objB)
         self.assertEqual(butler.get('foo', {'bar':1}), objA)
         # add an object to the output repo. note since the output repo mode is 'rw' that object is gettable
         # and it has first priority in search order. Other repos should be searchable by tagging.
         objC = TestObject('c')
         butler.put(objC, 'foo', {'bar':1})
         self.assertEqual(butler.get('foo', {'bar':1}), objC)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='one'), objA)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='two'), objB)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='one')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='two')), objB)
         del butler
 
         # expand the structure to look like this:
@@ -517,15 +517,15 @@ class TestTagging(unittest.TestCase):
         butler = dp.Butler(inputs=(repo4Cfg, repo5Cfg))
         self.assertEqual(butler.get('foo', {'bar':1}), objA)
         self.assertEqual(butler.get('foo', {'bar':2}), objD)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='four'), objA)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='five'), objE)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='four')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='five')), objE)
         del butler
 
         butler = dp.Butler(inputs=(repo5Cfg, repo4Cfg))
         self.assertEqual(butler.get('foo', {'bar':1}), objE)
         self.assertEqual(butler.get('foo', {'bar':2}), objD)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='four'), objA)
-        self.assertEqual(butler.get('foo', {'bar':1}, tag='five'), objE)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='four')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='five')), objE)
         del butler
 
 
