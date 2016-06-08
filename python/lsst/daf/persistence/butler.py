@@ -39,7 +39,7 @@ import yaml
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
-    Persistence, Repository, Access, PosixStorage, Policy, NoResults, MultipleResults, Repository
+    Persistence, Repository, Access, PosixStorage, Policy, NoResults, MultipleResults, Repository, DataId
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -307,7 +307,7 @@ class Butler(object):
 
         keys = None
         for repoData in self.inputs:
-            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+            if not tag or len(tag.intersection(repoData.tags)) > 0:
                 keys = repoData.repo.getKeys(datasetType, level)
                 # An empty dict is a valid "found" condition for keys. The only value for keys that should
                 # cause the search to continue is None
@@ -316,22 +316,22 @@ class Butler(object):
         return keys
 
 
-    def queryMetadata(self, datasetType, format=None, dataId={}, tag=None, **rest):
+    def queryMetadata(self, datasetType, format=None, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
 
-        @param datasetType (str)    the type of dataset to inquire about.
-        @param key (str)            a key giving the level of granularity of the inquiry.
-        @param format (str, tuple)  an optional key or tuple of keys to be returned.
-        @param dataId (dict)        the partial data id.
-        @param **rest               keyword arguments for the partial data id.
+        @param datasetType (str) the type of dataset to inquire about.
+        @param key (str) a key giving the level of granularity of the inquiry.
+        @param format (str, tuple) an optional key or tuple of keys to be returned.
+        @param dataId (DataId, dict) the partial data id.
+        @param **rest keyword arguments for the partial data id.
         @returns (list) a list of valid values or tuples of valid values as
         specified by the format (defaulting to the same as the key) at the
         key's level of granularity.
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        dataId = copy.copy(dataId)
+        dataId = DataId(dataId)
         dataId.update(**rest)
 
         if format is None:
@@ -341,7 +341,7 @@ class Butler(object):
 
         tuples = None
         for repoData in self.inputs:
-            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+            if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 tuples = repoData.repo.queryMetadata(datasetType, format, dataId)
                 if tuples:
                     break
@@ -361,22 +361,22 @@ class Butler(object):
         return tuples
 
 
-    def datasetExists(self, datasetType, dataId={}, tag=None, **rest):
+    def datasetExists(self, datasetType, dataId={}, **rest):
         """Determines if a dataset file exists.
 
-        @param datasetType (str)   the type of dataset to inquire about.
-        @param dataId (dict)       the data id of the dataset.
-        @param **rest              keyword arguments for the data id.
+        @param datasetType (str) the type of dataset to inquire about.
+        @param dataId (DataId, dict) the data id of the dataset.
+        @param **rest keyword arguments for the data id.
         @returns (bool) True if the dataset exists or is non-file-based.
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        dataId = copy.copy(dataId)
+        dataId = DataId(dataId)
         dataId.update(**rest)
 
         location = None
         for repoData in self.inputs:
-            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+            if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 location = repoData.repo.map(datasetType, dataId)
                 if location:
                     break
@@ -405,7 +405,7 @@ class Butler(object):
         return True
 
 
-    def get(self, datasetType, dataId={}, immediate=False, tag=None, **rest):
+    def get(self, datasetType, dataId=None, immediate=False, **rest):
         """Retrieves a dataset given an input collection data id.
 
         @param datasetType (str)   the type of dataset to retrieve.
@@ -416,17 +416,14 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        dataId = copy.copy(dataId)
+        dataId = DataId(dataId)
         dataId.update(**rest)
 
         location = None
-
-        if tag is not None:
-            tag = Butler.setify(tag)
     
         location = None
         for repoData in self.inputs:
-            if tag is None or len(tag.intersection(repoData.tags)) > 0:
+            if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 location = repoData.repo.map(datasetType, dataId)
                 if location:
                     break
@@ -473,7 +470,7 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        dataId = copy.copy(dataId)
+        dataId = DataId(dataId)
         dataId.update(**rest)
 
         for repoData in self.outputs:
@@ -483,7 +480,7 @@ class Butler(object):
                     repoData.repo.backup(datasetType, dataId)
                 repoData.repo.write(location, obj)
 
-    def subset(self, datasetType, level=None, dataId={}, tag=None, **rest):
+    def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
 
         Given a partial dataId specified in dataId and **rest, find all
@@ -508,12 +505,12 @@ class Butler(object):
         if level is None:
             level = ''
 
-        dataId = copy.copy(dataId)
+        dataId = DataId(dataId)
         dataId.update(**rest)
-        return ButlerSubset(self, datasetType, level, dataId, tag)
+        return ButlerSubset(self, datasetType, level, dataId)
 
 
-    def dataRef(self, datasetType, level=None, dataId={}, tag=None, **rest):
+    def dataRef(self, datasetType, level=None, dataId={}, **rest):
         """Returns a single ButlerDataRef.
 
         Given a complete dataId specified in dataId and **rest, find the
@@ -528,13 +525,11 @@ class Butler(object):
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
-        subset = self.subset(datasetType, level, dataId, tag, **rest)
+        dataId = DataId(dataId)
+        subset = self.subset(datasetType, level, dataId, **rest)
         if len(subset) != 1:
-            raise RuntimeError, """No unique dataset for:
-    Dataset type = %s
-    Level = %s
-    Data ID = %s
-    Keywords = %s""" % (str(datasetType), str(level), str(dataId), str(rest))
+            raise RuntimeError("No unique dataset for: Dataset type:%s Level:%s Data ID:%s Keywords:%s" % 
+                (str(datasetType), str(level), str(dataId), str(rest)))
         return ButlerDataRef(subset, subset.cache[0])
 
 
