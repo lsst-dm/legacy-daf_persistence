@@ -528,6 +528,75 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='five')), objE)
         del butler
 
+class TestMapperInference(unittest.TestCase):
+    """A test for inferring mapper in the cfg from parent cfgs"""
+
+    def tearDown(self):
+        if os.path.exists('tests/repository'):
+            shutil.rmtree('tests/repository')
+        # del self.butler
+
+    def testSingleParent(self):
+        """ 
+        creates a repo that:
+          a. does not have a mapper specified in the cfg
+          b. has a parent that does have a mapper specified in the cfg
+        verifies that the child repo inherits the parent's mapper via inference.
+        """
+        repoACfg = dp.Repository.cfg(mode='r', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoA'),
+                                     mapper=MapperForTestWriting)
+        repoBCfg = dp.Repository.cfg(mode='rw', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoB'), 
+                                     parentCfgs=repoACfg)
+        butler = dp.Butler(outputs=repoBCfg)
+        self.assertTrue(isinstance(butler.outputs[0].repo._mapper, MapperForTestWriting))
+
+
+    def testMultipleParentsSameMapper(self):
+        """
+        creates a repo that:
+          a. does not have a mapper specified in the cfg
+          b. has 2 parents that do have the same mapper specified in the cfg
+        verifies that the child repo inherits the parent's mapper via inference.
+
+        """
+        repoACfg = dp.Repository.cfg(mode='r', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoA'),
+                                     mapper=MapperForTestWriting)
+        repoBCfg = dp.Repository.cfg(mode='r', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoB'), 
+                                     mapper=MapperForTestWriting)
+        repoCCfg = dp.Repository.cfg(mode='w', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoC'), 
+                                     parentCfgs=(repoACfg, repoBCfg))
+        butler = dp.Butler(outputs=repoCCfg)
+        self.assertTrue(isinstance(butler.outputs[0].repo._mapper, MapperForTestWriting))
+
+
+    class AlternateMapper(object) :
+        pass
+
+
+    def testMultipleParentsDifferentMappers(self):
+        """
+        creates a repo that:
+          a. does not have a mapper specified in the cfg
+          b. has 2 parent repos that have different mappers
+        verifies that the constructor raises a RuntimeError because the mapper can not be inferred.
+        """
+        repoACfg = dp.Repository.cfg(mode='r', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoA'),
+                                     mapper=MapperForTestWriting)
+        repoBCfg = dp.Repository.cfg(mode='r', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoB'), 
+                                     mapper=TestMapperInference.AlternateMapper)
+        repoCCfg = dp.Repository.cfg(mode='w', 
+                                     storageCfg=dp.PosixStorage.cfg(root='tests/repository/repoC'), 
+                                     parentCfgs=(repoACfg, repoBCfg))
+        self.assertRaises(RuntimeError, dp.Butler, outputs=repoCCfg)
+
+
 
 def suite():
     utilsTests.init()
@@ -538,6 +607,7 @@ def suite():
     suites += unittest.makeSuite(TestMultipleOutputsPut)
     suites += unittest.makeSuite(TestMultipleInputs)
     suites += unittest.makeSuite(TestTagging)
+    suites += unittest.makeSuite(TestMapperInference)
     return unittest.TestSuite(suites)
 
 def run(shouldExit = False):

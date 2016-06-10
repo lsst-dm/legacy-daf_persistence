@@ -85,20 +85,23 @@ class PosixStorage(Storage):
             if os.path.exists(os.path.join(basePath, "_parent")):
                 basePath = os.path.join(basePath, "_parent")
             else:
-                raise RuntimeError(
-                        "No mapper provided and no %s available" %
-                        (mapperFile,))
-        mapperFile = os.path.join(basePath, mapperFile)
+                mapperFile = None
+                break
 
-        # Read the name of the mapper class and instantiate it
-        with open(mapperFile, "r") as f:
-            mapperName = f.readline().strip()
-        components = mapperName.split(".")
-        if len(components) <= 1:
-            raise RuntimeError("Unqualified mapper name %s in %s" %
-                    (mapperName, mapperFile))
-        pkg = importlib.import_module(".".join(components[:-1]))
-        return getattr(pkg, components[-1])
+        if mapperFile is not None:
+            mapperFile = os.path.join(basePath, mapperFile)
+
+            # Read the name of the mapper class and instantiate it
+            with open(mapperFile, "r") as f:
+                mapperName = f.readline().strip()
+            components = mapperName.split(".")
+            if len(components) <= 1:
+                raise RuntimeError("Unqualified mapper name %s in %s" %
+                        (mapperName, mapperFile))
+            pkg = importlib.import_module(".".join(components[:-1]))
+            return getattr(pkg, components[-1])
+
+        return None
 
     def mapperClass(self):
         """Get the class object for the mapper specified in the stored repository"""

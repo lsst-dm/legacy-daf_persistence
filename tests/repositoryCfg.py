@@ -27,6 +27,10 @@ import unittest
 import lsst.utils.tests as utilsTests
 import lsst.daf.persistence as dp
 
+class NullMapper:
+	def __init__(self):
+		pass
+
 class TestCfgRelationship(unittest.TestCase):
 
 	def setUp(self):
@@ -37,25 +41,25 @@ class TestCfgRelationship(unittest.TestCase):
 
 	def testRWModes(self):
 		# inputs must be read-only or read-write and not write-only
-		cfg = dp.Repository.cfg(mode='r')
+		cfg = dp.Repository.cfg(mode='r', mapper=NullMapper)
 		butler = dp.Butler(inputs=cfg)
-		cfg = dp.Repository.cfg(mode='rw')
+		cfg = dp.Repository.cfg(mode='rw', mapper=NullMapper)
 		butler = dp.Butler(inputs=cfg)
-		cfg = dp.Repository.cfg(mode='w')
+		cfg = dp.Repository.cfg(mode='w', mapper=NullMapper)
 		self.assertRaises(RuntimeError, dp.Butler, inputs=cfg)
 
 		# outputs must be write-only or read-write and not read-only
-		cfg = dp.Repository.cfg(mode='w')
+		cfg = dp.Repository.cfg(mode='w', mapper=NullMapper)
 		butler = dp.Butler(outputs=cfg)
-		cfg = dp.Repository.cfg(mode='rw')
+		cfg = dp.Repository.cfg(mode='rw', mapper=NullMapper)
 		butler = dp.Butler(outputs=cfg)
-		cfg = dp.Repository.cfg(mode='r')
+		cfg = dp.Repository.cfg(mode='r', mapper=NullMapper)
 		self.assertRaises(RuntimeError, dp.Butler, outputs=cfg)
 
 
 	def testExistingParents(self):
 		# parents of inputs should be added to the inputs list
-		cfgA = dp.Repository.cfg(mode='r')
+		cfgA = dp.Repository.cfg(mode='r', mapper=NullMapper())
 		cfgB = dp.Repository.cfg(mode='r', parentCfgs=cfgA)
 		butler = dp.Butler(inputs=cfgB)
 		self.assertEqual(len(butler.inputs), 2)
@@ -65,7 +69,7 @@ class TestCfgRelationship(unittest.TestCase):
 		self.assertEqual(len(butler.outputs), 0)
 
 		# parents of readable outputs should be added to the inputs list
-		cfgA = dp.Repository.cfg(mode='r')
+		cfgA = dp.Repository.cfg(mode='r', mapper=NullMapper())
 		cfgB = dp.Repository.cfg(mode='rw', parentCfgs=cfgA)
 		butler = dp.Butler(outputs=cfgB)
 		self.assertEqual(len(butler.inputs), 2)
@@ -76,7 +80,7 @@ class TestCfgRelationship(unittest.TestCase):
 		self.assertEqual(butler.outputs[0].cfg, cfgB)
 
 		# if an output repository is write-only its parents should not be added to the inputs.
-		cfgA = dp.Repository.cfg(mode='r')
+		cfgA = dp.Repository.cfg(mode='r', mapper=NullMapper())
 		cfgB = dp.Repository.cfg(mode='w', parentCfgs=cfgA)
 		butler = dp.Butler(outputs=cfgB)
 		self.assertEqual(len(butler.inputs), 0)
@@ -86,11 +90,11 @@ class TestCfgRelationship(unittest.TestCase):
 	def testInputsOrderAndTagging(self):
 		# input A has parents B and C. input D has parents E and F. 
 		# Search order should be A, B, C, D, E, F
-		cfgC = dp.Repository.cfg(mode='r', tags='configC')
-		cfgB = dp.Repository.cfg(mode='r', tags='configB')
+		cfgC = dp.Repository.cfg(mode='r', tags='configC', mapper=NullMapper)
+		cfgB = dp.Repository.cfg(mode='r', tags='configB', mapper=NullMapper)
 		cfgA = dp.Repository.cfg(mode='r', parentCfgs=[cfgB, cfgC], tags='configA')
-		cfgF = dp.Repository.cfg(mode='r', tags='configF')
-		cfgE = dp.Repository.cfg(mode='r', tags='configE')
+		cfgF = dp.Repository.cfg(mode='r', tags='configF', mapper=NullMapper)
+		cfgE = dp.Repository.cfg(mode='r', tags='configE', mapper=NullMapper)
 		cfgD = dp.Repository.cfg(mode='r', parentCfgs=[cfgE, cfgF], tags='configD')
 		butler = dp.Butler(inputs=[cfgA, cfgD])
 		self.assertEqual(len(butler.inputs), 6)
@@ -105,10 +109,10 @@ class TestCfgRelationship(unittest.TestCase):
 		# A has parents B and C, D has parents E and C. 
 		# Search order should be A, B, C, D, E
 		# C should get tagged with both repos that it's a parent of: A and D.
-		cfgC = dp.Repository.cfg(mode='r', tags='configC')
-		cfgB = dp.Repository.cfg(mode='r', tags='configB')
+		cfgC = dp.Repository.cfg(mode='r', tags='configC', mapper=NullMapper)
+		cfgB = dp.Repository.cfg(mode='r', tags='configB', mapper=NullMapper)
 		cfgA = dp.Repository.cfg(mode='r', tags='configA', parentCfgs=[cfgB, cfgC])
-		cfgE = dp.Repository.cfg(mode='r', tags='configE')
+		cfgE = dp.Repository.cfg(mode='r', tags='configE', mapper=NullMapper)
 		cfgD = dp.Repository.cfg(mode='r', tags='configD', parentCfgs=[cfgE, cfgC])
 		butler = dp.Butler(inputs=[cfgA, cfgD])
 		self.assertEqual(len(butler.inputs), 5)
@@ -126,11 +130,11 @@ class TestCfgRelationship(unittest.TestCase):
 
 		# A has parent B, B has parents C and D. E has parent F. 
 		# search order should be A, B, C, D, E, F
-		cfgD = dp.Repository.cfg(mode='r', tags='configD')
-		cfgC = dp.Repository.cfg(mode='r', tags='configC')
+		cfgD = dp.Repository.cfg(mode='r', tags='configD', mapper=NullMapper)
+		cfgC = dp.Repository.cfg(mode='r', tags='configC', mapper=NullMapper)
 		cfgB = dp.Repository.cfg(mode='r', tags='configB', parentCfgs=[cfgC, cfgD])
 		cfgA = dp.Repository.cfg(mode='r', tags='configA', parentCfgs=cfgB)
-		cfgF = dp.Repository.cfg(mode='r', tags='configF')
+		cfgF = dp.Repository.cfg(mode='r', tags='configF', mapper=NullMapper)
 		cfgE = dp.Repository.cfg(mode='r', tags='configE', parentCfgs=cfgF)
 		butler = dp.Butler(inputs=[cfgA, cfgE])
 		self.assertEqual(len(butler.inputs), 6)

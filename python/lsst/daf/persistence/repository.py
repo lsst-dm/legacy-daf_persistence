@@ -45,6 +45,8 @@ class RepositoryCfg(Policy, yaml.YAMLObject):
                 raise RuntimeError("Unexpected None value")
             if not hasattr(x, '__iter__'):
                 x = [x]
+            else:
+                x = list(x)
             return x
         
         tags = set(listify(tags))
@@ -183,9 +185,28 @@ class Repository(object):
         if mapper is None:
             if self._storage is not None:
                 mapper = self._storage.mapperClass()
-            if mapper is None:
-                self._mapper = None
+        
+        def inferMapper(cfg):
+            if cfg['mapper']:
+                return cfg['mapper']
+            # if this cfg does not have a mapper specified, then check parents for consensus
+            parentMappers = set()
+            for parentCfg in cfg['parentCfgs']:
+                parentMapper = inferMapper(parentCfg)
+                if parentMapper is not None:
+                    parentMappers.add(parentMapper)
+            if len(parentMappers) > 1:
+                raise RuntimeError("Mapper is unspecified and parents have different mappers.")
+            elif len(parentMappers) == 0:
                 return None
+            return parentMappers.pop()
+
+        if mapper is None:
+            mapper = inferMapper(repoCfg)
+
+        if mapper is None:
+            raise RuntimeError("Can not determine a mapper to use.")
+
         # if mapper is a cfg (IE an instance of the badly-named Policy class), instantiate via the cfg.
         if isinstance(mapper, Policy):
             # code at this location that knows that the mapper needs to share the repo's access instance is
