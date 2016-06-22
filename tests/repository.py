@@ -596,22 +596,5 @@ class TestMapperInference(unittest.TestCase):
                                      parentCfgs=(repoACfg, repoBCfg))
         self.assertRaises(RuntimeError, dp.Butler, outputs=repoCCfg)
 
-
-
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(TestBasics)
-    suites += unittest.makeSuite(TestWriting)
-    suites += unittest.makeSuite(TestMasking)
-    suites += unittest.makeSuite(TestMultipleOutputsPut)
-    suites += unittest.makeSuite(TestMultipleInputs)
-    suites += unittest.makeSuite(TestTagging)
-    suites += unittest.makeSuite(TestMapperInference)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
-
 if __name__ == '__main__':
-    run(True)
+    unittest.main()
