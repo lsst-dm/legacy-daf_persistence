@@ -52,10 +52,11 @@ class DataId(UserDict.IterableUserDict):
         if tag is not None:
             if isinstance(tag, basestring):
                 self.tag.update([tag])
-            try:
-                self.tag.update(tag)
-            except TypeError:
-                self.tag.update([tag])
+            else:
+                try:
+                    self.tag.update(tag)
+                except TypeError:
+                    self.tag.update([tag])
             
         self.data.update(kwargs)
 

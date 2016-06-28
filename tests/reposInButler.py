@@ -34,9 +34,14 @@ import uuid
 
 import yaml
 
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import lsst.daf.persistence as dp
 from lsst.daf.persistence import Policy
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 
 class PosixPickleStringHanlder:
     @staticmethod
@@ -171,14 +176,13 @@ class ReposInButler(unittest.TestCase):
         self.assertEqual(obj123, 'abc')
         self.assertEqual(obj124, 'abcd')
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(ReposInButler)
-    return unittest.TestSuite(suites)
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
+class MemoryTester(lsst.utils.tests.MemoryTestCase):
+    pass
+
 
 if __name__ == '__main__':
-    run(True)
+    # disable this test until we work more on repo of repos; starting with DM-6227
+    # lsst.utils.tests.init()
+    # unittest.main()
+    pass

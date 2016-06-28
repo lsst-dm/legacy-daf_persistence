@@ -22,146 +22,78 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import os
+import shutil
 import unittest
 
-import lsst.utils.tests as utilsTests
 import lsst.daf.persistence as dp
+import lsst.utils.tests
 
 class NullMapper:
-	def __init__(self):
-		pass
+    def __init__(self):
+        pass
 
 class TestCfgRelationship(unittest.TestCase):
 
-	def setUp(self):
-		pass
+    def setUp(self):
+        self.tearDown()
 
-	def tearDown(self):
-		pass
+    def tearDown(self):
+        if os.path.exists('tests/repository'):
+            shutil.rmtree('tests/repository')
 
-	def testRWModes(self):
-		# inputs must be read-only or read-write and not write-only
-		cfg = dp.Repository.cfg(mode='r', mapper=NullMapper)
-		butler = dp.Butler(inputs=cfg)
-		cfg = dp.Repository.cfg(mode='rw', mapper=NullMapper)
-		butler = dp.Butler(inputs=cfg)
-		cfg = dp.Repository.cfg(mode='w', mapper=NullMapper)
-		self.assertRaises(RuntimeError, dp.Butler, inputs=cfg)
+    def testRWModes(self):
+        # inputs must be read-only or read-write and not write-only
+        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root='tests/repository')
+        butler = dp.Butler(inputs=args)
+        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root='tests/repository')
+        butler = dp.Butler(inputs=args)
+        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root='tests/repository')
+        self.assertRaises(RuntimeError, dp.Butler, inputs=args)
 
-		# outputs must be write-only or read-write and not read-only
-		cfg = dp.Repository.cfg(mode='w', mapper=NullMapper)
-		butler = dp.Butler(outputs=cfg)
-		cfg = dp.Repository.cfg(mode='rw', mapper=NullMapper)
-		butler = dp.Butler(outputs=cfg)
-		cfg = dp.Repository.cfg(mode='r', mapper=NullMapper)
-		self.assertRaises(RuntimeError, dp.Butler, outputs=cfg)
-
-
-	def testExistingParents(self):
-		# parents of inputs should be added to the inputs list
-		cfgA = dp.Repository.cfg(mode='r', mapper=NullMapper())
-		cfgB = dp.Repository.cfg(mode='r', parentCfgs=cfgA)
-		butler = dp.Butler(inputs=cfgB)
-		self.assertEqual(len(butler.inputs), 2)
-		# verify serach order:
-		self.assertEqual(butler.inputs[0].cfg, cfgB)
-		self.assertEqual(butler.inputs[1].cfg, cfgA)
-		self.assertEqual(len(butler.outputs), 0)
-
-		# parents of readable outputs should be added to the inputs list
-		cfgA = dp.Repository.cfg(mode='r', mapper=NullMapper())
-		cfgB = dp.Repository.cfg(mode='rw', parentCfgs=cfgA)
-		butler = dp.Butler(outputs=cfgB)
-		self.assertEqual(len(butler.inputs), 2)
-		# verify serach order:
-		self.assertEqual(butler.inputs[0].cfg, cfgB)
-		self.assertEqual(butler.inputs[1].cfg, cfgA)
-		self.assertEqual(len(butler.outputs), 1)
-		self.assertEqual(butler.outputs[0].cfg, cfgB)
-
-		# if an output repository is write-only its parents should not be added to the inputs.
-		cfgA = dp.Repository.cfg(mode='r', mapper=NullMapper())
-		cfgB = dp.Repository.cfg(mode='w', parentCfgs=cfgA)
-		butler = dp.Butler(outputs=cfgB)
-		self.assertEqual(len(butler.inputs), 0)
-		self.assertEqual(len(butler.outputs), 1)
-		self.assertEqual(butler.outputs[0].cfg, cfgB)
-
-	def testInputsOrderAndTagging(self):
-		# input A has parents B and C. input D has parents E and F. 
-		# Search order should be A, B, C, D, E, F
-		cfgC = dp.Repository.cfg(mode='r', tags='configC', mapper=NullMapper)
-		cfgB = dp.Repository.cfg(mode='r', tags='configB', mapper=NullMapper)
-		cfgA = dp.Repository.cfg(mode='r', parentCfgs=[cfgB, cfgC], tags='configA')
-		cfgF = dp.Repository.cfg(mode='r', tags='configF', mapper=NullMapper)
-		cfgE = dp.Repository.cfg(mode='r', tags='configE', mapper=NullMapper)
-		cfgD = dp.Repository.cfg(mode='r', parentCfgs=[cfgE, cfgF], tags='configD')
-		butler = dp.Butler(inputs=[cfgA, cfgD])
-		self.assertEqual(len(butler.inputs), 6)
-		# verify serach order:
-		self.assertEqual(butler.inputs[0].cfg, cfgA)
-		self.assertEqual(butler.inputs[1].cfg, cfgB)
-		self.assertEqual(butler.inputs[2].cfg, cfgC)
-		self.assertEqual(butler.inputs[3].cfg, cfgD)
-		self.assertEqual(butler.inputs[4].cfg, cfgE)
-		self.assertEqual(butler.inputs[5].cfg, cfgF)
-
-		# A has parents B and C, D has parents E and C. 
-		# Search order should be A, B, C, D, E
-		# C should get tagged with both repos that it's a parent of: A and D.
-		cfgC = dp.Repository.cfg(mode='r', tags='configC', mapper=NullMapper)
-		cfgB = dp.Repository.cfg(mode='r', tags='configB', mapper=NullMapper)
-		cfgA = dp.Repository.cfg(mode='r', tags='configA', parentCfgs=[cfgB, cfgC])
-		cfgE = dp.Repository.cfg(mode='r', tags='configE', mapper=NullMapper)
-		cfgD = dp.Repository.cfg(mode='r', tags='configD', parentCfgs=[cfgE, cfgC])
-		butler = dp.Butler(inputs=[cfgA, cfgD])
-		self.assertEqual(len(butler.inputs), 5)
-		# verify serach order:
-		self.assertEqual(butler.inputs[0].cfg, cfgA)
-		self.assertEqual(butler.inputs[0].tags, set(['configA']))
-		self.assertEqual(butler.inputs[1].cfg, cfgB)
-		self.assertEqual(butler.inputs[1].tags, set(['configA', 'configB']))
-		self.assertEqual(butler.inputs[2].cfg, cfgC)
-		self.assertEqual(butler.inputs[2].tags, set(['configA', 'configC', 'configD']))
-		self.assertEqual(butler.inputs[3].cfg, cfgD)
-		self.assertEqual(butler.inputs[3].tags, set(['configD']))
-		self.assertEqual(butler.inputs[4].cfg, cfgE)
-		self.assertEqual(butler.inputs[4].tags, set(['configD', 'configE']))
-
-		# A has parent B, B has parents C and D. E has parent F. 
-		# search order should be A, B, C, D, E, F
-		cfgD = dp.Repository.cfg(mode='r', tags='configD', mapper=NullMapper)
-		cfgC = dp.Repository.cfg(mode='r', tags='configC', mapper=NullMapper)
-		cfgB = dp.Repository.cfg(mode='r', tags='configB', parentCfgs=[cfgC, cfgD])
-		cfgA = dp.Repository.cfg(mode='r', tags='configA', parentCfgs=cfgB)
-		cfgF = dp.Repository.cfg(mode='r', tags='configF', mapper=NullMapper)
-		cfgE = dp.Repository.cfg(mode='r', tags='configE', parentCfgs=cfgF)
-		butler = dp.Butler(inputs=[cfgA, cfgE])
-		self.assertEqual(len(butler.inputs), 6)
-		# verify serach order:
-		self.assertEqual(butler.inputs[0].cfg, cfgA)
-		self.assertEqual(butler.inputs[1].cfg, cfgB)
-		self.assertEqual(butler.inputs[2].cfg, cfgC)
-		self.assertEqual(butler.inputs[3].cfg, cfgD)
-		self.assertEqual(butler.inputs[4].cfg, cfgE)
-		self.assertEqual(butler.inputs[5].cfg, cfgF)
-
-		self.assertEqual(butler.inputs[0].tags, set(['configA']))
-		self.assertEqual(butler.inputs[1].tags, set(['configA', 'configB']))
-		self.assertEqual(butler.inputs[2].tags, set(['configA', 'configB', 'configC']))
-		self.assertEqual(butler.inputs[3].tags, set(['configA', 'configB', 'configD']))
-		self.assertEqual(butler.inputs[4].tags, set(['configE']))
-		self.assertEqual(butler.inputs[5].tags, set(['configE', 'configF']))
+        # outputs must be write-only or read-write and not read-only
+        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root='tests/repository')
+        butler = dp.Butler(outputs=args)
+        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root='tests/repository')
+        butler = dp.Butler(outputs=args)
+        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root='tests/repository')
+        self.assertRaises(RuntimeError, dp.Butler, outputs=args)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(TestCfgRelationship)
-    return unittest.TestSuite(suites)
+    def testExistingParents(self):
+        # parents of inputs should be added to the inputs list
+        butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w', 
+                                                     mapper=NullMapper(), 
+                                                     root='tests/repository/a'))
+        del butler
+        butler = dp.Butler(inputs='tests/repository/a', outputs='tests/repository/b')
+        del butler
+        butler = dp.Butler(inputs='tests/repository/b')
+        self.assertEqual(len(butler._repos.inputs()), 2)
+        # verify serach order:
+        self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/repository/b')
+        self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/repository/a')
+        self.assertEqual(len(butler._repos.outputs()), 0)
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
+        # parents of readable outputs should be added to the inputs list
+        butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot='tests/repository/b', mode='rw'))
+        self.assertEqual(len(butler._repos.inputs()), 2)
+        # verify serach order:
+        self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/repository/b')
+        self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/repository/a')
+        self.assertEqual(len(butler._repos.outputs()), 1)
+        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repository/b')
+
+        # if an output repository is write-only its parents should not be added to the inputs.
+        butler = dp.Butler(outputs='tests/repository/b')
+        self.assertEqual(len(butler._repos.inputs()), 0)
+        self.assertEqual(len(butler._repos.outputs()), 1)
+        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repository/b')
+
+
+class MemoryTester(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == '__main__':
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

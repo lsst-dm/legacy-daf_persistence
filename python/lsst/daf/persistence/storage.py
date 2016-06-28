@@ -22,48 +22,56 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import os
+import urlparse
 import yaml
 
-from lsst.daf.persistence import Policy
+from lsst.daf.persistence import PosixStorage
 
 class Storage(object):
-    """Base class for storages"""
+    """Interface class for storages"""
 
     @staticmethod
-    def makeFromCfg(storageCfg):
-        '''Instantiate from a configuration.
+    def getRepositoryCfg(uri):
+        ret = None
+        parseRes = urlparse.urlparse(uri)
+        if parseRes.scheme == '' or parseRes.scheme == 'file':
+            ret = PosixStorage.getRepositoryCfg(uri)
+        return ret
+
+    @staticmethod
+    def putRepositoryCfg(cfg, loc=None):
+        ret = None
+        uri = loc if loc is not None else cfg.dataRoot
+        parseRes = urlparse.urlparse(uri)
+        if parseRes.scheme == '' or parseRes.scheme == 'file':
+            PosixStorage.putRepositoryCfg(cfg, loc)
+
+    @staticmethod
+    def getMapperClass(uri):
+        ret = None
+        parseRes = urlparse.urlparse(uri)
+        if parseRes.scheme == '' or parseRes.scheme == 'file':
+            ret = PosixStorage.getMapperClass(uri)
+        return ret
+
+    @staticmethod
+    def makeFromURI(uri):
+        '''Instantiate from a URI.
         In come cases the storageCfg may have already been instantiated into a Repository, this is allowed and
         the input var is simply returned.
 
         .. warning::
 
-            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old
-            butler' API is strongly discouraged.
+            makeFromURI is 'wet paint' and very likely to change. Use of it in production code other than via 
+            the 'old butler' API is strongly discouraged.
 
 
-        :param storageCfg: the cfg for this repository. It is recommended this be created by calling
-                           a the cfg member function of a Storage subclass.
+        :param uri: the uri to a locaiton that contains a repositoryCfg.
         :return: a Storage instance. Exactly what type depends on how the cfg was made.
         '''
-        if isinstance(storageCfg, Policy):
-            return storageCfg['cls'](storageCfg)
-        return storageCfg
+        parseRes = urlparse.urlparse(uri)
+        if parseRes.scheme == '' or parseRes.scheme == 'file':
+            return PosixStorage(uri)
 
 
-class StorageCfg(Policy):
-    yaml_tag = u"!StorageCfg"
-    yaml_loader = yaml.Loader
-    yaml_dumper = yaml.Dumper
-
-    def __init__(self, cls, root=None):
-        super(StorageCfg, self).__init__()
-        self.update({'root':root, 'cls':cls})
-
-    @staticmethod
-    def to_yaml(dumper, obj):
-        return dumper.represent_mapping(StorageCfg.yaml_tag, {'cls':obj['cls']})
-
-    @staticmethod
-    def from_yaml(loader, node):
-        obj = loader.construct_mapping(node)
-        return StorageCfg(**obj)

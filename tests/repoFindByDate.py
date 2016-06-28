@@ -30,8 +30,12 @@ import shutil
 import unittest
 import yaml
 
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import lsst.daf.persistence as dp
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class PosixPickleStringHanlder:
@@ -254,14 +258,12 @@ class RepoFindByDate(unittest.TestCase):
                 self.assertEqual(obj, verificationDate)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(RepoFindByDate)
-    return unittest.TestSuite(suites)
+class MemoryTester(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 
 if __name__ == '__main__':
-    run(True)
+    # disable this test until we work more on repo of repos; starting with DM-6227
+    # lsst.utils.tests.init()
+    # unittest.main()
+    pass

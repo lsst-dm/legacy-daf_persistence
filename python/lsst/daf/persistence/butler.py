@@ -39,7 +39,8 @@ import yaml
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
-    Persistence, Repository, Access, PosixStorage, Policy, NoResults, MultipleResults, Repository, DataId
+    Persistence, Repository, Access, Storage, Policy, NoResults, MultipleResults, Repository, DataId, \
+    RepositoryCfg, RepositoryArgs, listify, setify
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -55,23 +56,58 @@ class ButlerCfg(Policy, yaml.YAMLObject):
         super(ButlerCfg, self).__init__({'repoCfg':repoCfg, 'cls':cls})
 
 class RepoData(object):
-    def __init__(self, cfg, tags=[]):
+    def __init__(self, args, cfg, repo, tags):
+        self.args = args
         self.cfg = cfg
-        self.repo = None
+        self.repo = repo
+        self.mode = args.mode
         # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
         # the cfg (e.g. parents inherit their childrens' tags)
-        self.tags = Butler.setify(tags)
+        if not isinstance(tags, set):
+            raise RuntimeError("tags passed into RepoData must be in a set.")
+        self.tags = tags
 
     def __reduce__(self):
-        return (_unreduceRepoData, (self.cfg.data, self.tags))
+        return (RepoData, (self.args, self.cfg, self.repo, self.mode, self.tags))
 
     def __repr__(self):
-        return "RepoData(cfg=%s repo=%s tags=%s" % (self.cfg, self.repo, self.tags)
+        return "RepoData(args=%s cfg=%s repo=%s tags=%s" % (self.args, self.cfg, self.repo, self.tags)
 
-def _unreduceRepoData(cfg, tags):
-    repoData = RepoData(Policy(cfg), tags)
-    repoData.repo = Repository.makeFromCfg(repoData.cfg)
-    return repoData
+
+class RepoDataContainer(object):
+    def __init__(self):
+        self.byRepoRoot = collections.OrderedDict()  # {repo root, RepoData}
+        self.byCfgRoot = {}                          # {repo cfgRoot, RepoData}
+        self._inputs = None
+        self._outputs = None
+        self._all = None
+    def add(self, repoData):
+        self._inputs = None
+        self._outputs = None
+        self._all = None
+        self.byRepoRoot[repoData.cfg.root] = repoData
+        self.byCfgRoot[repoData.args.cfgRoot] = repoData
+    def inputs(self):
+        if self._inputs is not None:
+            return self._inputs
+        self._inputs = [rd for rd in self.byRepoRoot.itervalues() if 'r' in rd.mode]
+        return self._inputs
+    def outputs(self):
+        if self._outputs is not None:
+            return self._outputs
+        self._outputs = [rd for rd in self.byRepoRoot.itervalues() if 'w' in rd.mode]
+        return self._outputs
+    def all(self):
+        self._all = [rd for rd in self.byRepoRoot.itervalues()]
+        return self._all
+    def __repr__(self):
+        return "%s(\nbyRepoRoot=%r, \nbyCfgRoot=%r, \n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
+            self.__class__.__name__, 
+            self.byRepoRoot,
+            self.byCfgRoot,
+            self._inputs,
+            self._outputs,
+            self._all)
 
 
 class Butler(object):
@@ -123,20 +159,6 @@ class Butler(object):
     dataRef(self, datasetType, level=None, dataId={}, **rest)
     """
 
-    @classmethod
-    def cfg(cls, repoCfg):
-        """Helper func to create a properly formatted Policy to configure a Repository.
-
-        .. warning::
-
-            cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
-            API is strongly discouraged.
-
-        @param repoCfg (RepositoryCfg) Cfg used to instantiate the repository.
-        @returns a properly populated cfg Policy.
-        """
-        return ButlerCfg(cls=cls, repoCfg=repoCfg)
-
     def __init__(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
         """Initializer for the Class.
 
@@ -155,22 +177,39 @@ class Butler(object):
         @param mapper Deprecated. Provides a mapper to be used with Butler.
         @param mapperArgs Deprecated. Provides arguments to be passed to the mapper if the mapper input arg
                            is a class type to be instantiated by Butler.
-        @param inputs (RepositoryCfg) Can be a single item or a list. These describe repositories that will be
-                                      used as inputs to the Butler.
-        @param outputs (RepositoryCfg) Can be a single item or a list. These describe repositories that will 
-                                       be used for Butler outputs.
+        @param inputs (RepositoryArg or string) Can be a single item or a list. Provides arguments to load an 
+                                                existing repository (or repositories). String is assumed to be 
+                                                a URI and is used as the cfgRoot (URI to the location of the 
+                                                cfg file). (Local file system URI does not have to start with 
+                                                'file://' and in this way can be a relative path).
+        @param outputs (RepositoryArg) Can be a single item or a list. Provides arguments to load one or more
+                                       existing repositories or create new ones. String is assumed to be a 
+                                       URI and as used as the repository root.
 
         :return:
         """
-        if root is not None and (inputs or outputs):
+        self._initArgs = {'root':root, 'mapper':mapper, 'inputs':inputs, 'outputs':outputs, 
+                          'mapperArgs':mapperArgs}
+
+        isLegacyRepository = inputs is None and outputs is None
+
+        if root is not None and not isLegacyRepository:
             raise RuntimeError(
                 'root is a deprecated parameter and may not be used with the parameters input and output')
 
-        if root is not None:
-            outputs = Repository.cfg(mode='rw',
-                                     storageCfg=PosixStorage.cfg(root=root), 
+        if isLegacyRepository:
+            if root is None:
+                if hasattr(mapper, 'root'):
+                    # in legacy repos, the mapper may be given the root directly.
+                    root = mapper.root
+                else:
+                    # in the past root="None" could be used to mean root='.'
+                    root = '.'
+            outputs = RepositoryArgs(mode='rw',
+                                     root=root, 
                                      mapper=mapper, 
                                      mapperArgs=mapperArgs)
+            outputs.isLegacyRepository = True
 
         self.datasetTypeAliasDict = {}
 
@@ -179,76 +218,118 @@ class Butler(object):
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
         
-        if inputs is None:
-            inputs = []
-        elif not hasattr(inputs, '__iter__'):
-            inputs = [inputs]
-        
-        if outputs is None:
-            outputs = []
-        elif not hasattr(outputs, '__iter__'):
-            outputs = [outputs]
-        
-        self.inputs = []
-        self.outputs = [] 
+        inputs = listify(inputs)
+        outputs = listify(outputs)
 
-        for cfg in outputs:
-            if cfg['mode'] == 'r':
-                raise RuntimeError('Output repositories must not be read only.')
-            # All inputs become parents of each output, so add them to each output cfg:
-            cfg['parentCfgs'].extend(inputs)
-            # Outputs must not be read-only:
-            if cfg['mode'] == 'r':
-                raise RuntimeError('Output repositoires must not be read only.')
-            repoData = RepoData(cfg)
-            # readable outputs are also used as inputs:
-            self.outputs.append(repoData)
-            if cfg['mode'] == 'rw':
-                self._addInputs(repoData.cfg)
+        # if only a string is passed for inputs or outputs, assumption is that it's a URI;
+        # place it in a RepositoryArgs instance; cfgRoot for inputs, root for outputs.
+        for n in xrange(len(inputs)):
+            if isinstance(inputs[n], basestring):
+                inputs[n] = RepositoryArgs(cfgRoot=inputs[n])
+        for n in xrange(len(outputs)):
+            if isinstance(outputs[n], basestring):
+                outputs[n] = RepositoryArgs(root=outputs[n])
 
-        for cfg in inputs:
-            self._addInputs(cfg)
+        self._repos = RepoDataContainer()
 
-        for repoData in self.outputs + self.inputs:
-            repoData.repo = Repository.makeFromCfg(repoData.cfg)
+        defaultMapper = self.getDefaultMapper(inputs)
 
-    def _addInputs(self, cfg, tags=[]):
-        """Add a RepoData for cfg if it is not already represented in self.inputs."""
-        # Inputs must not be write-only:
-        if cfg['mode'] == 'w':
-            raise RuntimeError('Input repositoires must not be write only.')
-        repoData = None
-        tags = set(tags)
-        tags.update(set(cfg['tags']))
+        for args in outputs:
+            self._addRepo(args, inout='out', defaultMapper=defaultMapper)
 
-        # If there is already an output RepoData instance for a given cfg, don't create a new one. Add it to
-        # the inputs list if it's not there, and update its tags.
-        for d in self.outputs:
-            if d.cfg == cfg:
-                self.inputs.append(d)
-                repoData = d
+        for args in inputs:
+            self._addRepo(args, inout='in')
 
-        # If there is already an input RepoData instance for a given cfg, don't create a new one, just update 
-        # its tags.
-        if not repoData:
-            for d in self.inputs:
-                if d.cfg == cfg:
-                    repoData = d
-                    break
+        for repoData in self._repos.outputs():
+            inputCfgRoots = [rd.args.cfgRoot for rd in self._repos.inputs() if rd is not repoData]
+            repoData.cfg.addParents(inputCfgRoots)
+            Storage.putRepositoryCfg(repoData.cfg, repoData.args.cfgRoot)
 
-        # If no repoData exists for the cfg yet, then create a new one.
-        if not repoData:
-            repoData = RepoData(cfg, tags)
-            self.inputs.append(repoData)
+    def _addRepo(self, args, inout, defaultMapper=None, tags=None):
+        if args.cfgRoot is None:
+            args.cfgRoot = args.root
+
+        tags = copy.copy(setify(tags))
+        tags.update(args.tags)
+
+        # If this repository has already been loaded/created, compare the input args to the exsisting repo;
+        # if they don't match raise an exception - the caller has to sort this out.
+        if args.cfgRoot in self._repos.byCfgRoot:
+            repoData = self._repos.byCfgRoot[args.cfgRoot]
+            if not repoData.cfg.matchesArgs(args):
+                raise RuntimeError("Mismatched repository configurations passed in or loaded:" +
+                                   "\n\tnew args:%s" + 
+                                   "\n\texisting repoData:%s" %
+                                   (args, repoData))
+            repoData.tags.update(setify(tags))
         else:
-            repoData.tags.update(tags)
-        # add the parents to the input list
-        for parentCfg in cfg.get('parentCfgs', []):
-            self._addInputs(parentCfg, tags)
+            # If we are here, the repository is not yet loaded by butler. Do the loading:
+
+            # Verify mode is legal (must be writeable for outputs, readable for inputs).
+            # And set according to the default value if needed.
+            if inout == 'out':
+                if args.mode is None:
+                    args.mode = 'w'
+                elif 'w' not in args.mode:
+                    raise RuntimeError('Output repositories must be writable.')
+            elif inout == 'in':
+                if args.mode is None:
+                    args.mode = 'r'
+                elif 'r' not in args.mode:
+                    raise RuntimeError('Input repositories must be readable.')
+            else:
+                raise RuntimeError('Unrecognized value for inout:' % inout)
+            
+            # Try to get the cfg.
+            # If it exists, verify no mismatch with args.
+            # If it does not exist, make the cfg and save the cfg at cfgRoot.
+            cfg = Storage.getRepositoryCfg(args.cfgRoot)
+            if cfg is not None:
+                if not cfg.matchesArgs(args):
+                    raise RuntimeError(
+                       "Persisted RepositoryCfg and passed-in RepositoryArgs have conflicting parameters:\n" +
+                       "\t%s\n\t%s", (cfg, args))
+                if args.mapperArgs is not None:
+                    if cfg.mapperArgs is None:
+                        cfg.mapperArgs = args.mapperArgs
+                    else:
+                        cfg.mapperArgs.update(args.mapperArgs)
+            else:
+                if args.mapper is None:
+                    if defaultMapper is None:
+                        raise RuntimeError(
+                            "Could not infer mapper and one not specified in repositoryArgs:%s" % args)
+                    args.mapper = defaultMapper
+                cfg = RepositoryCfg.makeFromArgs(args)
+                Storage.putRepositoryCfg(cfg, args.cfgRoot)
+
+            repo = Repository(cfg)
+            self._repos.add(RepoData(args, cfg, repo, tags))
+            if 'r' in args.mode:
+                if cfg.parents is not None:
+                    for parentCfgRoot in cfg.parents:
+                        self._addRepo(args=RepositoryArgs(cfgRoot=parentCfgRoot, mode='r'), 
+                                      inout='in',
+                                      tags=tags)
+
 
     def __repr__(self):
-        return 'Butler(datasetTypeAliasDict=%s, inputs=%s, outputs=%s, persistence=%s)' % (
-            self.datasetTypeAliasDict, self.inputs, self.outputs, self.persistence)
+        return 'Butler(datasetTypeAliasDict=%s, repos=%s, persistence=%s)' % (
+            self.datasetTypeAliasDict, self._repos, self.persistence)
+
+    @staticmethod
+    def getDefaultMapper(inputs):
+        mappers = set()
+        for args in inputs:
+            if args.mapper is not None:
+                mappers.add(args.mapper)
+            else:
+                cfgRoot = args.cfgRoot if args.cfgRoot is not None else args.root
+                mappers.add(Butler.getMapperClass(cfgRoot))
+        if len(mappers) == 1:
+            return mappers.pop()
+        else:
+            return None
 
     @staticmethod
     def getMapperClass(root):
@@ -257,7 +338,7 @@ class Butler(object):
 
         As we abstract the storage and support different types of storage locaitons this method will be
         moved entirely into Butler Access, or made more dynamic, and the API will very likely change."""
-        return PosixStorage.getMapperClass(root)
+        return Storage.getMapperClass(root)
 
 
     def defineAlias(self, alias, datasetType):
@@ -265,8 +346,8 @@ class Butler(object):
 
         @param alias (str) the alias keyword. it may start with @ or not. It may not contain @ except as the
                            first character.
-        @param datasetType (str) the string that will be substituted when @alias is passed into datasetType. It may
-                                 not contain '@'
+        @param datasetType (str) the string that will be substituted when @alias is passed into datasetType. 
+                                 It may not contain '@'
         """
 
         #verify formatting of alias:
@@ -306,7 +387,7 @@ class Butler(object):
         datasetType = self._resolveDatasetTypeAlias(datasetType)
 
         keys = None
-        for repoData in self.inputs:
+        for repoData in self._repos.inputs():
             if not tag or len(tag.intersection(repoData.tags)) > 0:
                 keys = repoData.repo.getKeys(datasetType, level)
                 # An empty dict is a valid "found" condition for keys. The only value for keys that should
@@ -340,7 +421,7 @@ class Butler(object):
             format = (format,)
 
         tuples = None
-        for repoData in self.inputs:
+        for repoData in self._repos.inputs():
             if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 tuples = repoData.repo.queryMetadata(datasetType, format, dataId)
                 if tuples:
@@ -375,7 +456,7 @@ class Butler(object):
         dataId.update(**rest)
 
         location = None
-        for repoData in self.inputs:
+        for repoData in self._repos.inputs():
             if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 location = repoData.repo.map(datasetType, dataId)
                 if location:
@@ -418,11 +499,8 @@ class Butler(object):
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
-
         location = None
-    
-        location = None
-        for repoData in self.inputs:
+        for repoData in self._repos.inputs():
             if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 location = repoData.repo.map(datasetType, dataId)
                 if location:
@@ -473,7 +551,7 @@ class Butler(object):
         dataId = DataId(dataId)
         dataId.update(**rest)
 
-        for repoData in self.outputs:
+        for repoData in self._repos.outputs():
             location = repoData.repo.map(datasetType, dataId, write=True)
             if location:
                 if doBackup:
@@ -542,7 +620,7 @@ class Butler(object):
         trace.done()
 
     def __reduce__(self):
-        ret = (_unreduce, (self.inputs, self.outputs, self.datasetTypeAliasDict))
+        ret = (_unreduce, (self._initArgs, self.datasetTypeAliasDict))
         return ret
 
     def _resolveDatasetTypeAlias(self, datasetType):
@@ -563,28 +641,10 @@ class Butler(object):
 
         return datasetType
 
-    @staticmethod
-    def setify(x):
-        """Take an object x and return it in a set. 
 
-        If x is a container, will create a set from the contents of the container.
-        If x is an object, will create a set with a single item in it.
-        If x is a string, will treat the string as a single object (i.e. not as a list of chars)"""
-        if x is None:
-            x = set()
-        if isinstance(x, basestring):
-            x = set([x])
-        else:
-            try:
-                x = set(x)
-            except TypeError:
-                x= set([x])
-        return x
-
-
-def _unreduce(inputs, outputs, datasetTypeAliasDict):
-    butler = Butler()
+def _unreduce(initArgs, datasetTypeAliasDict):
+    mapperArgs = initArgs.pop('mapperArgs')
+    initArgs.update(mapperArgs)
+    butler = Butler(**initArgs)
     butler.datasetTypeAliasDict = datasetTypeAliasDict
-    butler.inputs = inputs
-    butler.outputs = outputs
     return butler

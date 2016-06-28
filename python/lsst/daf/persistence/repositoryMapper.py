@@ -24,10 +24,7 @@
 
 import yaml
 
-from lsst.daf.persistence import Mapper, Policy, ButlerLocation, MapperCfg
-
-class RepositoryMapperCfg(MapperCfg):
-    pass
+from lsst.daf.persistence import Mapper, ButlerLocation, Policy
 
 class RepositoryMapper(Mapper):
     """"Base class for a mapper to find repository configurations within a butler repository.
@@ -38,16 +35,13 @@ class RepositoryMapper(Mapper):
             butler' API is strongly discouraged.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, storage, policy):
         # todo I'm guessing the policy would probably want to come from the default in-package location, and
         # then be overridden where desired by policy in repository root, and then
         # have the cfg policy applied
-        self.policy = cfg['policy']
-        self.storage = cfg['storage']
+        self.policy = Policy(policy)
+        self.storage = storage
 
-    @classmethod
-    def cfg(cls, policy=None, storageCfg=None):
-        return RepositoryMapperCfg(cls=cls, policy=policy, storage=storageCfg)
 
     def __repr__(self):
         if 'policy' in self.__dict__ and 'storageCfg' in self.__dict__:

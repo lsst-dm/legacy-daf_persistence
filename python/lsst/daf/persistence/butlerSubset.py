@@ -243,7 +243,7 @@ class ButlerDataRef(object):
 
         if level is None:
             mappers = []
-            for repoData in self.butlerSubset.butler.inputs + self.butlerSubset.butler.outputs:
+            for repoData in self.butlerSubset.butler._repos.all():
                 if repoData.repo._mapper not in mappers:
                     mappers.append(repoData.repo._mapper)
             if len(mappers) != 1:

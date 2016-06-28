@@ -25,36 +25,26 @@
 import cPickle
 import importlib
 import os
+import urlparse
 
 import yaml
 
 from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, \
-    StorageCfg
+                                 RepositoryCfg
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
 
 
-class PosixStorage(Storage):
+class PosixStorage(object):
 
-    @classmethod
-    def cfg(cls, root=None):
-        """Helper func to create a properly formatted Policy to configure a PosixStorage instance.
-
-        :param root: a posix path where the repository is or should be created.
-        :return:
-        """
-        return StorageCfg(root=root, cls=cls)
-
-    def __init__(self, cfg):
+    def __init__(self, uri):
         """Initializer
 
-        :param cfg: a Policy that defines the configuration for this class. It is recommended that the cfg be
-                    created by calling PosixStorage.cfg()
         :return:
         """
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
-        self.root = cfg['root']
+        self.root = parseRes = urlparse.urlparse(uri).path
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
 
@@ -68,6 +58,55 @@ class PosixStorage(Storage):
         return 'PosixStorage(root=%s)' % self.root
 
     @staticmethod
+    def _getRepositoryCfg(uri):
+        """Get a persisted RepositoryCfg
+        """        
+        repositoryCfg = None
+        parseRes = urlparse.urlparse(uri)
+        loc = os.path.join(parseRes.path, 'repositoryCfg.yaml')
+        if os.path.exists(loc):
+            with open(loc, 'r') as f:
+                repositoryCfg = yaml.load(f)
+            if repositoryCfg.root is None:
+                repositoryCfg.root = parseRes.path
+        return repositoryCfg
+
+    @staticmethod
+    def getRepositoryCfg(uri):
+        repositoryCfg = PosixStorage._getRepositoryCfg(uri)
+        if repositoryCfg is not None:
+            return repositoryCfg
+
+        # if no repository cfg, is it a legacy repository?
+        parseRes = urlparse.urlparse(uri)
+        if repositoryCfg is None:
+            mapper = PosixStorage.getMapperClass(parseRes.path)
+            if mapper is not None:
+                repositoryCfg = RepositoryCfg(mapper=mapper, 
+                                              root=parseRes.path, 
+                                              mapperArgs=None, 
+                                              parents=None,
+                                              isLegacyRepository=True)
+        return repositoryCfg        
+
+    @staticmethod
+    def putRepositoryCfg(cfg, loc=None):
+        if cfg.isLegacyRepository:
+            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by 
+            # the _parent symlink)
+            return
+        if loc is None:
+            # the cfg is at the root location of the repository so don't write root, let it be implicit in the 
+            # location of the cfg.
+            loc = cfg.root
+            cfg.root = None
+        if not os.path.exists(loc):
+            os.makedirs(loc)
+        loc = os.path.join(loc, 'repositoryCfg.yaml')
+        with open(loc, 'w') as f:
+            yaml.dump(cfg, f)
+
+    @staticmethod
     def getMapperClass(root):
         """Returns the mapper class associated with a repository root.
 
@@ -75,6 +114,10 @@ class PosixStorage(Storage):
         new code and repositories; they should use the Repository parentCfg mechanism."""
         if not (root):
             return None
+
+        cfg = PosixStorage._getRepositoryCfg(root)
+        if cfg is not None:
+            return cfg.mapper
 
         # Find a "_mapper" file containing the mapper class name
         basePath = root

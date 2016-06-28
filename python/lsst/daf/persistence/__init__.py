@@ -22,6 +22,7 @@
 
 """Python interface to lsst::daf::persistence classes
 """
+from utils import *
 from registries import *
 from fsScanner import *
 from persistenceLib import *
@@ -33,8 +34,9 @@ from butlerLocation import *
 from readProxy import *
 from butlerSubset import *
 from access import *
-from storage import *
+from repositoryCfg import *
 from posixStorage import *
+from storage import *
 from mapper import *
 from repositoryMapper import *
 from repository import *
