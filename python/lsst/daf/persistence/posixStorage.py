@@ -22,6 +22,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import copy
 import cPickle
 import importlib
 import os
@@ -95,9 +96,10 @@ class PosixStorage(object):
             # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by 
             # the _parent symlink)
             return
-        if loc is None:
+        if loc is None or cfg.root == loc:
             # the cfg is at the root location of the repository so don't write root, let it be implicit in the 
             # location of the cfg.
+            cfg = copy.copy(cfg)
             loc = cfg.root
             cfg.root = None
         if not os.path.exists(loc):

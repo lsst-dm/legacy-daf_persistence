@@ -25,6 +25,7 @@
 import os
 import shutil
 import unittest
+import yaml
 
 import lsst.daf.persistence as dp
 import lsst.utils.tests
@@ -89,6 +90,42 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(len(butler._repos.inputs()), 0)
         self.assertEqual(len(butler._repos.outputs()), 1)
         self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repository/b')
+
+
+# "fake" repository version 0
+class RepositoryCfg(yaml.YAMLObject):
+    yaml_tag = u"!RepositoryCfg_v0"
+
+    def __init__(self, mapper, mapperArgs):
+        self._mapper = mapper
+        self._mapperArgs = mapperArgs
+
+    @staticmethod
+    def v0Constructor(loader, node):
+        d = loader.construct_mapping(node)
+        return dp.RepositoryCfg(root=d['_root'], mapper=None, mapperArgs=None, parents=None)
+
+yaml.add_constructor(u"!RepositoryCfg_v0", RepositoryCfg.v0Constructor)
+
+class TestCfgFileVersion(unittest.TestCase):
+    """Proof-of-concept test case for a fictitious version 0 of a persisted repository cfg. 
+    """
+
+    def setUp(self):
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists('tests/repository'):
+            shutil.rmtree('tests/repository')
+
+    def test(self):
+        os.makedirs('tests/repository')
+        f = open('tests/repository/repositoryCfg.yaml', 'w')
+        f.write("""!RepositoryCfg_v0
+                   _root: 'foo/bar'""")
+        f.close()
+        cfg = dp.PosixStorage.getRepositoryCfg('tests/repository')
+
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
