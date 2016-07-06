@@ -124,7 +124,6 @@ class PosixStorage(object):
         # Find a "_mapper" file containing the mapper class name
         basePath = root
         mapperFile = "_mapper"
-        globals = {}
         while not os.path.exists(os.path.join(basePath, mapperFile)):
             # Break abstraction by following _parent links from CameraMapper
             if os.path.exists(os.path.join(basePath, "_parent")):
