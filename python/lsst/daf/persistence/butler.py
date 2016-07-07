@@ -88,17 +88,16 @@ class RepoDataContainer(object):
         self.byRepoRoot[repoData.cfg.root] = repoData
         self.byCfgRoot[repoData.args.cfgRoot] = repoData
     def inputs(self):
-        if self._inputs is not None:
-            return self._inputs
-        self._inputs = [rd for rd in self.byRepoRoot.itervalues() if 'r' in rd.mode]
+        if self._inputs is None:
+            self._inputs = [rd for rd in self.byRepoRoot.itervalues() if 'r' in rd.mode]
         return self._inputs
     def outputs(self):
-        if self._outputs is not None:
-            return self._outputs
-        self._outputs = [rd for rd in self.byRepoRoot.itervalues() if 'w' in rd.mode]
+        if self._outputs is None:
+            self._outputs = [rd for rd in self.byRepoRoot.itervalues() if 'w' in rd.mode]
         return self._outputs
     def all(self):
-        self._all = [rd for rd in self.byRepoRoot.itervalues()]
+        if self._all is None:
+            self._all = [rd for rd in self.byRepoRoot.itervalues()]
         return self._all
     def __repr__(self):
         return "%s(\nbyRepoRoot=%r, \nbyCfgRoot=%r, \n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
