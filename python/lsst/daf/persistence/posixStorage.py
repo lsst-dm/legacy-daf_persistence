@@ -37,7 +37,7 @@ import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
 
 
-class PosixStorage(object):
+class PosixStorage(Storage):
 
     def __init__(self, uri):
         """Initializer
@@ -150,27 +150,6 @@ class PosixStorage(object):
     def mapperClass(self):
         """Get the class object for the mapper specified in the stored repository"""
         return PosixStorage.getMapperClass(self.root)
-
-    def setCfg(self, repoCfg):
-        """Writes the configuration to root in the repository on disk.
-
-        :param repoCfg: the Policy cfg to be written
-        :return: None
-        """
-        if self.root is None:
-            raise RuntimeError("Storage root was declared to be None.")
-        path = os.path.join(self.root, 'repoCfg.yaml')
-        repoCfg.dumpToFile(path)
-
-    def loadCfg(self):
-        """Reads the configuration from the repository on disk at root.
-
-        :return: the Policy cfg
-        """
-        if not self.root:
-            raise RuntimeError("Storage root was declared to be None.")
-        path = os.path.join(self.root, 'repoCfg.yaml')
-        return Policy(filePath=path)
 
     def write(self, butlerLocation, obj):
         """Writes an object to a location and persistence format specified by ButlerLocation
@@ -317,3 +296,7 @@ class PosixStorage(object):
     def lookup(self, *args, **kwargs):
         """Perform a lookup in the registry"""
         return self.registry.lookup(*args, **kwargs)
+
+
+Storage.registerStorageClass(scheme='', cls=PosixStorage)
+Storage.registerStorageClass(scheme='file', cls=PosixStorage)
