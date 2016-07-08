@@ -367,8 +367,11 @@ class Butler(object):
             if args.mapper is not None:
                 mappers.add(args.mapper)
             else:
-                cfgRoot = args.cfgRoot if args.cfgRoot is not None else args.root
-                mappers.add(Butler.getMapperClass(cfgRoot))
+                cfgRoot = args.cfgRoot
+                mapper = Butler.getMapperClass(cfgRoot)
+                mappers.add(mapper)
+        
+        # print "getDefaultMapper \n\tinputs:%s \n\tfound:%s" % (inputs, mappers)
         if len(mappers) == 1:
             return mappers.pop()
         else:
