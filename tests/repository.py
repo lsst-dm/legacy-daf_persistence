@@ -216,6 +216,8 @@ class TestObject(object):
     def __eq__(self, other):
         return self.data == other.data
 
+    def __repr__(self):
+        return "TestObject(data=%r)" % self.data
 
 class TestWriting(unittest.TestCase):
     """A test case for the repository classes.

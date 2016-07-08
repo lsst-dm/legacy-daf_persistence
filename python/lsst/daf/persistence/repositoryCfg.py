@@ -116,11 +116,11 @@ class RepositoryCfg(yaml.YAMLObject):
         return self._isLegacyRepository
 
     @staticmethod
-    def makeFromArgs(repositoryArgs):
+    def makeFromArgs(repositoryArgs, parents):
         cfg = RepositoryCfg(root=repositoryArgs.root, 
                             mapper = repositoryArgs.mapper, 
                             mapperArgs = repositoryArgs.mapperArgs,
-                            parents=None,
+                            parents=parents,
                             isLegacyRepository=repositoryArgs.isLegacyRepository)
         return cfg
 

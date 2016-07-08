@@ -37,7 +37,7 @@ class RepositoryArgs(object):
     def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None, 
                  mode=None):        
         self.root = root
-        self.cfgRoot = cfgRoot
+        self._cfgRoot = cfgRoot
         self.mapper = mapper
         self.mapperArgs = mapperArgs
         self.tags = set(listify(tags))
@@ -46,8 +46,15 @@ class RepositoryArgs(object):
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r)" % (
-            self.__class__.__name__, self.root, self.cfgRoot, self.mapper, self.mapperArgs, self.tags, 
+            self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags, 
             self.mode)
+
+    @property
+    def cfgRoot(self):
+        if self._cfgRoot is not None:
+            return self._cfgRoot
+        else:
+            return self.root
 
     @staticmethod
     def inputRepo(storage, tags=None):
