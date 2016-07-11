@@ -23,10 +23,12 @@
 """
 Utilities for safe file IO
 """
+from contextlib import contextmanager
 import errno
+import filecmp
 import os
 import tempfile
-from contextlib import contextmanager
+
 
 def safeMakeDir(directory):
     """Make a directory in a manner avoiding race conditions"""
@@ -46,6 +48,43 @@ def setFileMode(filename):
     # chmod the new file to match what it would have been if it hadn't started life as a temporary
     # file (which have more restricted permissions).
     os.chmod(filename, (~umask & 0o666))
+
+@contextmanager
+def FileForWriteOnceCompareSame(name):
+    """Context manager to get a file that can be written only once and all other writes will succeed only if
+    they match the inital write.
+
+    The context manager provides a temporary file object. After the user is done, the temporary file becomes
+    the permanent file if the file at name does not already exist. If the file at name does exist the 
+    temporary file is compared to the file at name. If they are the same then this is good and the temp file
+    is silently thrown away. If they are not the same then a runtime error is raised.
+    """
+    outDir, outName = os.path.split(name)
+    safeMakeDir(outDir)
+    temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
+    try: 
+        yield temp
+    finally:
+        try:
+            temp.close()
+            # If the symlink cannot be created then it will raise. If it can't be created because a file at
+            # 'name' already exists then we'll do a compare-same check.
+            os.symlink(temp.name, name)
+            # If the symlink was created then this is the process that created the first instance of the 
+            # file, and we know its contents match. Move the temp file over the symlink.
+            os.rename(temp.name, name)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise e
+            filesMatch = filecmp.cmp(temp.name, name, shallow=False)
+            os.remove(temp.name)
+            if filesMatch:
+                # if the files match then the compare-same check succeeded and we can silently return.
+                return
+            else:
+                # if the files do not match then the calling code was trying to write a non-matching file over
+                # the previous file, maybe it's a race condition? Iny any event, raise a runtime error.
+                raise RuntimeError("Written file does not match existing file.")
 
 @contextmanager
 def SafeFile(name):

@@ -31,7 +31,7 @@ import urlparse
 import yaml
 
 from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, \
-                                 RepositoryCfg
+                                 RepositoryCfg, safeFileIo
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
@@ -105,7 +105,7 @@ class PosixStorage(Storage):
         if not os.path.exists(loc):
             os.makedirs(loc)
         loc = os.path.join(loc, 'repositoryCfg.yaml')
-        with open(loc, 'w') as f:
+        with safeFileIo.FileForWriteOnceCompareSame(loc) as f:
             yaml.dump(cfg, f)
 
     @staticmethod
