@@ -29,8 +29,8 @@ from lsst.daf.persistence import LogicalLocation
 from lsst.daf.base import PropertySet
 
 import lsst.utils.tests
-import lsst.pex.logging
-lsst.pex.logging.Trace_setVerbosity("daf.persistence.LogicalLocation", 10)
+import lsst.log
+lsst.log.setLevel("daf.persistence.LogicalLocation", lsst.log.TRACE)
 
 
 class LogicalLocationTestCase(unittest.TestCase):

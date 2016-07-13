@@ -26,7 +26,6 @@
 
 #include <lsst/daf/base/PropertySet.h>
 #include <lsst/daf/base/Citizen.h>
-#include <lsst/pex/logging/Trace.h>
 #include <lsst/utils/Utils.h>
 
 #include "lsst/pex/policy/Policy.h"

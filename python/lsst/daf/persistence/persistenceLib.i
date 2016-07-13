@@ -39,7 +39,6 @@ Access to the lsst::daf::persistence classes
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/DbTsvStorage.h"
 #include "lsst/daf/base.h"
-#include "lsst/pex/logging.h"
 #include "lsst/pex/policy.h"
 %}
 
@@ -55,7 +54,6 @@ Access to the lsst::daf::persistence classes
 
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %import "lsst/daf/base/baseLib.i"
-%import "lsst/pex/logging/loggingLib.i"
 %import "lsst/pex/policy/policyLib.i"
 
 %newobject lsst::daf::persistence::Persistence::getPersistence;
