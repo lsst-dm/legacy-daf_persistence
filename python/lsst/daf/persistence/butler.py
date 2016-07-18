@@ -38,9 +38,9 @@ import yaml
 
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
-from lsst.daf.persistence import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, \
-    Persistence, Repository, Access, Storage, Policy, NoResults, MultipleResults, Repository, DataId, \
-    RepositoryCfg, RepositoryArgs, listify, setify
+from . import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, Repository, \
+              Access, Storage, Policy, NoResults, MultipleResults, Repository, DataId, RepositoryCfg, \
+              RepositoryArgs, listify, setify
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):

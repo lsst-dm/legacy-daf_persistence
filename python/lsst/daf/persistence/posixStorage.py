@@ -30,8 +30,7 @@ import urlparse
 
 import yaml
 
-from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, \
-                                 RepositoryCfg, safeFileIo
+from . import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, RepositoryCfg, safeFileIo
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename

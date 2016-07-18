@@ -29,7 +29,7 @@ within it as well as an iterator over the subset."""
 
 from __future__ import with_statement
 
-from lsst.daf.persistence import DataId
+from . import DataId
 
 class ButlerSubset(object):
 

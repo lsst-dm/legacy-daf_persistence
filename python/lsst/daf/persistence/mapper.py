@@ -24,7 +24,7 @@
 
 import yaml
 
-from lsst.daf.persistence import Policy
+from . import Policy
 
 """This module defines the Mapper base class."""
 
