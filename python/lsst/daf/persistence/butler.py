@@ -56,7 +56,16 @@ class ButlerCfg(Policy, yaml.YAMLObject):
         super(ButlerCfg, self).__init__({'repoCfg':repoCfg, 'cls':cls})
 
 class RepoData(object):
+    """Container object for repository data used by Butler"""
+
     def __init__(self, args, cfg, repo, tags):
+        """Initializer for RepoData
+
+        @param args (RepositoryArgs) Arguments used to initialize self.repo
+        @param cfg (RepositoryCfg) Configuration of repository (this is persisted)
+        @param repo (Repository) The repository class instance
+        @param tags (set) The tags that apply to this repository, if any
+        """
         self.args = args
         self.cfg = cfg
         self.repo = repo
@@ -75,30 +84,55 @@ class RepoData(object):
 
 
 class RepoDataContainer(object):
+    """Container object for RepoData instances owned by a Butler instance."""
     def __init__(self):
         self.byRepoRoot = collections.OrderedDict()  # {repo root, RepoData}
         self.byCfgRoot = {}                          # {repo cfgRoot, RepoData}
         self._inputs = None
         self._outputs = None
         self._all = None
+
     def add(self, repoData):
+        """Add a RepoData to the container
+
+        @param (RepoData) RepoData instance to add
+        """
         self._inputs = None
         self._outputs = None
         self._all = None
         self.byRepoRoot[repoData.cfg.root] = repoData
         self.byCfgRoot[repoData.args.cfgRoot] = repoData
+    
     def inputs(self):
+        """Get a list of RepoData that are used to as inputs to the Butler.
+
+        The list is created lazily as needed, and cached.
+        @return a list of RepoData with readable repositories. List is in the order to be use when searching.
+        """
         if self._inputs is None:
             self._inputs = [rd for rd in self.byRepoRoot.itervalues() if 'r' in rd.mode]
         return self._inputs
+    
     def outputs(self):
+        """Get a list of RepoData that are used to as outputs to the Butler.
+
+        The list is created lazily as needed, and cached.
+        @return a list of RepoData with writable repositories. List is in the order to be use when searching.
+        """
         if self._outputs is None:
             self._outputs = [rd for rd in self.byRepoRoot.itervalues() if 'w' in rd.mode]
         return self._outputs
+    
     def all(self):
+        """Get a list of all RepoData that are used to as by the Butler.
+
+        The list is created lazily as needed, and cached.
+        @return a list of RepoData with writable repositories. List is in the order to be use when searching.
+        """
         if self._all is None:
             self._all = [rd for rd in self.byRepoRoot.itervalues()]
         return self._all
+    
     def __repr__(self):
         return "%s(\nbyRepoRoot=%r, \nbyCfgRoot=%r, \n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
             self.__class__.__name__, 
@@ -264,13 +298,6 @@ class Butler(object):
                                               This is all the explicit input and output repositories to the
                                               butler __init__ function, it is used when determining what the
                                               parents of writable repositories are.
-        (list of string) URI to parent cfg, of repositories that are directly passed
-                                                to inputs and outputs (if readable) to the butler. Should not
-                                                include parent-of-parent, etc; parent repositories keep track
-                                                of their own parents.
-                                                This list will be used to create the list of parents when 
-                                                creating a repositoryCfg, and will be used to compare expected
-                                                parents in already-existing output repositoryCfgs.
         @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId 
                                          passed into butler input functions. Applies only to input 
                                          repositories: If tag is specified by the dataId then the repo will 
