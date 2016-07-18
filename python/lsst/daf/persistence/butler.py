@@ -445,16 +445,18 @@ class Butler(object):
 
 
     def getKeys(self, datasetType=None, level=None, tag=None):
-        """Returns a dict.  The dict keys are the valid data id keys at or
-        above the given level of hierarchy for the dataset type or the entire
-        collection if None.  The dict values are the basic Python types
+        """Returns a dict.  The dict keys are the valid data id keys at or above the given level of hierarchy 
+        for the dataset type or the entire collection if None.  The dict values are the basic Python types 
         corresponding to the keys (int, float, str).
 
-        @param datasetType (str)  the type of dataset to get keys for, entire
-                                  collection if None.
-        @param level (str)        the hierarchy level to descend to.
-                                  None if it should not be restricted.
-                                  empty string if the mapper should lookup the default level.
+        @param datasetType (str) the type of dataset to get keys for, entire collection if None.
+        @param level (str) the hierarchy level to descend to. None if it should not be restricted. Use an
+                           empty string if the mapper should lookup the default level.
+        @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId 
+                                         passed into butler input functions. Applies only to input 
+                                         repositories: If tag is specified by the dataId then the repo will 
+                                         only be read from used if the tag in the dataId matches a tag used
+                                         for that repository.
         @returns (dict) valid data id keys; values are corresponding types.
         """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
