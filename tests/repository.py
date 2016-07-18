@@ -186,12 +186,42 @@ class TestBasics(unittest.TestCase):
 
 
     def testQueryMetadata(self):
-        keys = self.butler.getKeys('raw')
-        expectedKeyValues = {'filter':['g', 'r'], 'visit':[1, 2, 3]}
-        for key in keys:
-            format = (key, )
-            val = self.butler.queryMetadata('raw', format)
-            self.assertEqual(val.sort(), expectedKeyValues[key].sort())
+        val = self.butler.queryMetadata('raw', ('filter',))
+        val.sort()
+        self.assertEqual(val, ['g', 'r'])
+
+        val = self.butler.queryMetadata('raw', ('visit',))
+        val.sort()
+        self.assertEqual(val, [1, 2, 3])
+
+        val = self.butler.queryMetadata('raw', ('visit',), dataId={'filter':'g'})
+        val.sort()
+        self.assertEqual(val, [1, 2])
+
+        val = self.butler.queryMetadata('raw', ('visit',), dataId={'filter':'r'})
+        self.assertEqual(val, [3])
+
+        val = self.butler.queryMetadata('raw', ('filter',), dataId={'visit':1})
+        self.assertEqual(val, ['g'])
+
+        val = self.butler.queryMetadata('raw', ('filter',), dataId={'visit':2})
+        self.assertEqual(val, ['g'])
+
+        val = self.butler.queryMetadata('raw', ('filter',), dataId={'visit':3})
+        self.assertEqual(val, ['r'])
+
+        val = self.butler.queryMetadata('raw', ('visit',), dataId={'filter':'h'})
+        self.assertEqual(val, [])
+
+        dataId = dp.DataId({'filter':'g'}, tag='baArgs')
+        val = self.butler.queryMetadata('raw', ('visit',), dataId={'filter':'g'})
+        val.sort()
+        self.assertEqual(val, [1, 2])
+
+        dataId = dp.DataId({'filter':'g'}, tag='foo')
+        val = self.butler.queryMetadata('raw', ('visit',), dataId=dataId)
+        self.assertEqual(val, [])
+
 
     def testDatasetExists(self):
         # test the valeus that are expected to be true:
@@ -704,28 +734,3 @@ class MemoryTester(lsst.utils.tests.MemoryTestCase):
 if __name__ == '__main__':
     lsst.utils.tests.init()
     unittest.main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
