@@ -462,6 +462,7 @@ class Butler(object):
         datasetType = self._resolveDatasetTypeAlias(datasetType)
 
         keys = None
+        tag = setify(tag)
         for repoData in self._repos.inputs():
             if not tag or len(tag.intersection(repoData.tags)) > 0:
                 keys = repoData.repo.getKeys(datasetType, level)

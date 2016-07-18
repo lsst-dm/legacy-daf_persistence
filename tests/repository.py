@@ -133,7 +133,8 @@ class TestBasics(unittest.TestCase):
         self.tearDown()
 
         inputRepoArgs = dp.RepositoryArgs(root='tests/butlerAlias',
-                                          mapper=ParentMapper)
+                                          mapper=ParentMapper,
+                                          tags='baArgs')
         # mode of output repos is write-only by default
         outputRepoArgs = dp.RepositoryArgs(root='tests/repository/repoA',
                                            mapper=ChildrenMapper,
@@ -159,8 +160,30 @@ class TestBasics(unittest.TestCase):
         keys = self.butler.getKeys('raw')
         self.assertEqual('filter' in keys, True)
         self.assertEqual('visit' in keys, True)
-        self.assertEqual(keys['filter'], type("")) # todo how to define a string type?
-        self.assertEqual(keys['visit'], type(1)) # todo how to define an int type?
+        self.assertEqual(keys['filter'], types.StringType)
+        self.assertEqual(keys['visit'], types.IntType)
+
+        keys = self.butler.getKeys('raw', tag='baArgs')
+        self.assertEqual('filter' in keys, True)
+        self.assertEqual('visit' in keys, True)
+        self.assertEqual(keys['filter'], types.StringType)
+        self.assertEqual(keys['visit'], types.IntType)
+
+        keys = self.butler.getKeys('raw', tag=('baArgs', 'foo'))
+        self.assertEqual('filter' in keys, True)
+        self.assertEqual('visit' in keys, True)
+        self.assertEqual(keys['filter'], types.StringType)
+        self.assertEqual(keys['visit'], types.IntType)
+
+        keys = self.butler.getKeys('raw', tag='foo')
+        self.assertEqual(keys, None)
+
+        keys = self.butler.getKeys('raw', tag=set(['baArgs', 'foo']))
+        self.assertEqual('filter' in keys, True)
+        self.assertEqual('visit' in keys, True)
+        self.assertEqual(keys['filter'], types.StringType)
+        self.assertEqual(keys['visit'], types.IntType)
+
 
     def testQueryMetadata(self):
         keys = self.butler.getKeys('raw')
