@@ -48,6 +48,12 @@ def setify(x):
     If x is a string, will treat the string as a single object (i.e. not as a list of chars)"""
     if x is None:
         x = set()
+
+    # Here we have to explicity for strings because the set initializer will use each character in a string as
+    # a separate element. We cannot use the braces initialization because x might be a list, and we do not
+    # want the list to be an item; we want each item in the list to be represented by an item in the set.
+    # Then, we have to fall back to braces init because if the item is NOT a list then the set initializer
+    # won't take it.
     if isinstance(x, basestring):
         x = set([x])
     else:
