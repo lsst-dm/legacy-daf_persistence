@@ -404,8 +404,6 @@ class Butler(object):
             else:
                 cfgRoot = args.cfgRoot
                 mapper = Butler.getMapperClass(cfgRoot)
-                if not inspect.isclass(mapper):
-                    raise RuntimeError("Unexpected type for mapper:%s at cfgRoot:%s" % (mapper, cfgRoot))
             mappers.add(mapper)
         
         if len(mappers) == 1:

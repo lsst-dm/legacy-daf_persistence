@@ -109,10 +109,16 @@ class PosixStorage(Storage):
 
     @staticmethod
     def getMapperClass(root):
-        """Returns the mapper class associated with a repository root.
+        """Get the mapper class associated with a repository root.
 
         Supports the legacy _parent symlink search (which was only ever posix-only. This should not be used by
-        new code and repositories; they should use the Repository parentCfg mechanism."""
+        new code and repositories; they should use the Repository parentCfg mechanism.
+        
+        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a 
+                     _mapper file is (old style repos).
+        :return: a class object or a class instance, depending on the state of the mapper when the repository
+                 was created.
+        """
         if not (root):
             return None
 
