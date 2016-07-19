@@ -150,7 +150,7 @@ class TestBasics(unittest.TestCase):
     def testGet(self):
         raw_image = self.butler.get('raw', {'visit':'2', 'filter':'g'})
         # in this case the width is known to be 1026:
-        self.assertEqual(raw_image[1].header["NAXIS1"], 1026) # raw_image is an lsst.afw.ExposureU
+        self.assertEqual(raw_image[1].header["NAXIS1"], 1026) 
 
     def testSubset(self):
         subset = self.butler.subset('raw')
