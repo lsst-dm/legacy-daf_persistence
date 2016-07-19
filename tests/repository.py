@@ -136,14 +136,14 @@ class TestBasics(unittest.TestCase):
                                           mapper=ParentMapper,
                                           tags='baArgs')
         # mode of output repos is write-only by default
-        outputRepoArgs = dp.RepositoryArgs(root='tests/repository/repoA',
+        outputRepoArgs = dp.RepositoryArgs(root='tests/TestBasics/repoA',
                                            mapper=ChildrenMapper,
                                            mode='rw')
         self.butler = dp.Butler(inputs=inputRepoArgs, outputs=outputRepoArgs)
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestBasics'):
+            shutil.rmtree('tests/TestBasics')
         if os.path.exists('tests/butlerAlias/repositoryCfg.yaml'):
             os.remove('tests/butlerAlias/repositoryCfg.yaml')
 
@@ -286,8 +286,8 @@ class TestWriting(unittest.TestCase):
     """
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestWriting'):
+            shutil.rmtree('tests/TestWriting')
         # del self.butler
 
     def testCreateAggregateAndLoadingAChild(self):
@@ -296,10 +296,10 @@ class TestWriting(unittest.TestCase):
         """
 
         repoAArgs = dp.RepositoryArgs(mode='w', 
-                                      root='tests/repository/repoA',
+                                      root='tests/TestWriting/repoA',
                                       mapper=MapperForTestWriting)
         repoBArgs = dp.RepositoryArgs(mode='w', 
-                                      root='tests/repository/repoB', 
+                                      root='tests/TestWriting/repoB', 
                                       mapper=MapperForTestWriting)
         butlerAB = dp.Butler(outputs=[repoAArgs, repoBArgs])
 
@@ -309,8 +309,8 @@ class TestWriting(unittest.TestCase):
         butlerAB.put(objB, 'foo', {'val':2})
 
         # create butlers where the output repos are now input repos
-        butlerC = dp.Butler(inputs=dp.RepositoryArgs(root='tests/repository/repoA'))
-        butlerD = dp.Butler(inputs=dp.RepositoryArgs(root='tests/repository/repoB'))
+        butlerC = dp.Butler(inputs=dp.RepositoryArgs(root='tests/TestWriting/repoA'))
+        butlerD = dp.Butler(inputs=dp.RepositoryArgs(root='tests/TestWriting/repoB'))
 
         # # verify the objects exist by getting them
         self.assertEqual(objA, butlerC.get('foo', {'val':1}))
@@ -330,12 +330,12 @@ class TestMasking(unittest.TestCase):
     """
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestMasking'):
+            shutil.rmtree('tests/TestMasking')
 
     def test(self):
         repoAArgs = dp.RepositoryArgs(mode='w',
-                                      root='tests/repository/repoA', 
+                                      root='tests/TestMasking/repoA', 
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repoAArgs)
         obj0 = TestObject('abc')
@@ -344,9 +344,9 @@ class TestMasking(unittest.TestCase):
         del repoAArgs
 
         repoBArgs = dp.RepositoryArgs(mode='rw',
-                                      root='tests/repository/repoB', 
+                                      root='tests/TestMasking/repoB', 
                                       mapper=MapperForTestWriting)
-        butler = dp.Butler(inputs='tests/repository/repoA', outputs=repoBArgs)
+        butler = dp.Butler(inputs='tests/TestMasking/repoA', outputs=repoBArgs)
         obj1 = butler.get('foo', {'bar':1})
         self.assertEqual(obj0, obj1)
         obj1.data = "def"
@@ -365,20 +365,20 @@ class TestMultipleOutputsPut(unittest.TestCase):
     """
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestMultipleOutputsPut'):
+            shutil.rmtree('tests/TestMultipleOutputsPut')
 
     def test(self):
-        repoAArgs = dp.RepositoryArgs(root='tests/repository/repoA',
+        repoAArgs = dp.RepositoryArgs(root='tests/TestMultipleOutputsPut/repoA',
                                       mapper=MapperForTestWriting)
-        repoBArgs = dp.RepositoryArgs(root='tests/repository/repoB',
+        repoBArgs = dp.RepositoryArgs(root='tests/TestMultipleOutputsPut/repoB',
                                       mapper=MapperForTestWriting)
 
         butler = dp.Butler(outputs=(repoAArgs, repoBArgs))
         obj0 = TestObject('abc')
         butler.put(obj0, 'foo', {'bar':1})
 
-        for root in ('tests/repository/repoA', 'tests/repository/repoB'):
+        for root in ('tests/TestMultipleOutputsPut/repoA', 'tests/TestMultipleOutputsPut/repoB'):
             butler = dp.Butler(inputs=root)
             self.assertEqual(butler.get('foo', {'bar':1}), obj0)
 
@@ -396,8 +396,8 @@ class TestMultipleInputs(unittest.TestCase):
     """
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestMultipleInputs'):
+            shutil.rmtree('tests/TestMultipleInputs')
 
 
     def test(self):
@@ -407,14 +407,14 @@ class TestMultipleInputs(unittest.TestCase):
         objJkl = TestObject('jkl')
 
         repoAArgs = dp.RepositoryArgs(mode='w',
-                                      root='tests/repository/repoA', 
+                                      root='tests/TestMultipleInputs/repoA', 
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repoAArgs)
         butler.put(objAbc, 'foo', {'bar':1})
         butler.put(objDef, 'foo', {'bar':2})
 
         repoBArgs = dp.RepositoryArgs(mode='w',
-                                      root='tests/repository/repoB', 
+                                      root='tests/TestMultipleInputs/repoB', 
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repoBArgs)
         butler.put(objGhi, 'foo', {'bar':1}) # note different object with overlapping dataId with repoA
@@ -422,13 +422,13 @@ class TestMultipleInputs(unittest.TestCase):
 
 
         # note repo order: A, B
-        butler = dp.Butler(inputs=('tests/repository/repoA', 'tests/repository/repoB'))
+        butler = dp.Butler(inputs=('tests/TestMultipleInputs/repoA', 'tests/TestMultipleInputs/repoB'))
         self.assertEqual(butler.get('foo', {'bar':1}), objAbc)
         self.assertEqual(butler.get('foo', {'bar':2}), objDef)
         self.assertEqual(butler.get('foo', {'bar':3}), objJkl)
 
         # note reversed repo order: B, A
-        butler = dp.Butler(inputs=('tests/repository/repoB', 'tests/repository/repoA'))
+        butler = dp.Butler(inputs=('tests/TestMultipleInputs/repoB', 'tests/TestMultipleInputs/repoA'))
         self.assertEqual(butler.get('foo', {'bar':1}), objGhi)
         self.assertEqual(butler.get('foo', {'bar':2}), objDef)
         self.assertEqual(butler.get('foo', {'bar':3}), objJkl)
@@ -439,8 +439,8 @@ class TestTagging(unittest.TestCase):
     """
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestTagging'):
+            shutil.rmtree('tests/TestTagging')
 
 
     def testOneLevelInputs(self):
@@ -462,7 +462,7 @@ class TestTagging(unittest.TestCase):
 
         # put objA in repo1:
         repo1Args = dp.RepositoryArgs(mode='rw',
-                                      root='tests/repository/repo1', 
+                                      root='tests/TestTagging/repo1', 
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repo1Args)
         butler.put(objA, 'foo', {'bar':1})
@@ -470,7 +470,7 @@ class TestTagging(unittest.TestCase):
 
         # put objB in repo2:
         repo2Args = dp.RepositoryArgs(mode='rw',
-                                      root='tests/repository/repo2', 
+                                      root='tests/TestTagging/repo2', 
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repo2Args)
         butler.put(objB, 'foo', {'bar':1})
@@ -481,8 +481,8 @@ class TestTagging(unittest.TestCase):
         # make the objects inputs of repos
         # and verify the correct object can ge fetched using the tag and not using the tag
 
-        repo1Args = dp.RepositoryArgs(root='tests/repository/repo1', tags='one')
-        repo2Args = dp.RepositoryArgs(root='tests/repository/repo2', tags='two')
+        repo1Args = dp.RepositoryArgs(root='tests/TestTagging/repo1', tags='one')
+        repo2Args = dp.RepositoryArgs(root='tests/TestTagging/repo2', tags='two')
 
         butler = dp.Butler(inputs=(repo1Args, repo2Args))
         self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='one')), objA)
@@ -496,7 +496,7 @@ class TestTagging(unittest.TestCase):
 
         # create butler with repo1 and repo2 as parents, and an output repo3.
         repo3Args = dp.RepositoryArgs(mode='rw',
-                                      root='tests/repository/repo3', 
+                                      root='tests/TestTagging/repo3', 
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(inputs=(repo1Args, repo2Args), outputs=repo3Args)
         self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='one')), objA)
@@ -511,9 +511,9 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(butler.get('foo', dp.DataId({'bar':1}, tag='two')), objB)
         del butler
 
-        repo3Cfg = dp.Storage.getRepositoryCfg('tests/repository/repo3')
-        self.assertEqual(repo3Cfg.parents, ['tests/repository/repo1',
-                                            'tests/repository/repo2'])
+        repo3Cfg = dp.Storage.getRepositoryCfg('tests/TestTagging/repo3')
+        self.assertEqual(repo3Cfg.parents, ['tests/TestTagging/repo1',
+                                            'tests/TestTagging/repo2'])
 
         # expand the structure to look like this:
         # ┌────────────────────────┐ ┌────────────────────────┐
@@ -536,23 +536,23 @@ class TestTagging(unittest.TestCase):
 
 
         repo4Args = dp.RepositoryArgs(mode='rw',
-                                      root='tests/repository/repo4', 
+                                      root='tests/TestTagging/repo4', 
                                       mapper=MapperForTestWriting)
-        butler = dp.Butler(inputs=('tests/repository/repo1', 'tests/repository/repo2'), outputs=repo4Args)
+        butler = dp.Butler(inputs=('tests/TestTagging/repo1', 'tests/TestTagging/repo2'), outputs=repo4Args)
         objD = TestObject('d')
         butler.put(objD, 'foo', {'bar':2})
         del butler
 
         repo5Cfg = dp.RepositoryArgs(mode='rw',
-                                     root='tests/repository/repo5', 
+                                     root='tests/TestTagging/repo5', 
                                      mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repo5Cfg)
         objE = TestObject('e')
         butler.put(objE, 'foo', {'bar':1})
         del butler
 
-        repo4Args = dp.RepositoryArgs(cfgRoot='tests/repository/repo4', tags='four')
-        repo5Args = dp.RepositoryArgs(cfgRoot='tests/repository/repo5', tags='five')
+        repo4Args = dp.RepositoryArgs(cfgRoot='tests/TestTagging/repo4', tags='four')
+        repo5Args = dp.RepositoryArgs(cfgRoot='tests/TestTagging/repo5', tags='five')
         butler = dp.Butler(inputs=(repo4Args, repo5Args))
         self.assertEqual(butler.get('foo', {'bar':1}), objA)
         self.assertEqual(butler.get('foo', {'bar':2}), objD)
@@ -572,8 +572,8 @@ class TestMapperInference(unittest.TestCase):
     """A test for inferring mapper in the cfg from parent cfgs"""
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestMapperInference'):
+            shutil.rmtree('tests/TestMapperInference')
 
     def testSingleParent(self):
         """ 
@@ -582,15 +582,15 @@ class TestMapperInference(unittest.TestCase):
           b. has a parent that does have a mapper specified in the cfg
         verifies that the child repo inherits the parent's mapper via inference.
         """
-        repoACfg = dp.RepositoryCfg(root='tests/repository/repoA',
+        repoACfg = dp.RepositoryCfg(root='tests/TestMapperInference/repoA',
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
                                     parents=None)
-        dp.Storage.putRepositoryCfg(repoACfg, 'tests/repository/repoA')
+        dp.Storage.putRepositoryCfg(repoACfg, 'tests/TestMapperInference/repoA')
 
         repoBArgs = dp.RepositoryArgs(mode='rw', 
-                                      root='tests/repository/repoB')
-        butler = dp.Butler(inputs='tests/repository/repoA', outputs=repoBArgs)
+                                      root='tests/TestMapperInference/repoB')
+        butler = dp.Butler(inputs='tests/TestMapperInference/repoA', outputs=repoBArgs)
         self.assertTrue(isinstance(butler._repos.outputs()[0].repo._mapper, MapperForTestWriting))
 
 
@@ -602,21 +602,22 @@ class TestMapperInference(unittest.TestCase):
         verifies that the child repo inherits the parent's mapper via inference.
 
         """
-        repoACfg = dp.RepositoryCfg(root='tests/repository/repoA',
+        repoACfg = dp.RepositoryCfg(root='tests/TestMapperInference/repoA',
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
                                     parents=None)
-        repoBCfg = dp.RepositoryCfg(root='tests/repository/repoB', 
+        repoBCfg = dp.RepositoryCfg(root='tests/TestMapperInference/repoB', 
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
                                     parents=None)
-        dp.Storage.putRepositoryCfg(repoACfg, 'tests/repository/repoA')
-        dp.Storage.putRepositoryCfg(repoBCfg, 'tests/repository/repoB')
+        dp.Storage.putRepositoryCfg(repoACfg, 'tests/TestMapperInference/repoA')
+        dp.Storage.putRepositoryCfg(repoBCfg, 'tests/TestMapperInference/repoB')
 
         repoCArgs = dp.RepositoryArgs(mode='w', 
-                                      root='tests/repository/repoC') 
+                                      root='tests/TestMapperInference/repoC') 
         
-        butler = dp.Butler(inputs=('tests/repository/repoA', 'tests/repository/repoB'), outputs=repoCArgs)
+        butler = dp.Butler(inputs=('tests/TestMapperInference/repoA', 'tests/TestMapperInference/repoB'), 
+                           outputs=repoCArgs)
         self.assertTrue(isinstance(butler._repos.outputs()[0].repo._mapper, MapperForTestWriting))
 
 
@@ -627,22 +628,22 @@ class TestMapperInference(unittest.TestCase):
           b. has 2 parent repos that have different mappers
         verifies that the constructor raises a RuntimeError because the mapper can not be inferred.
         """
-        repoACfg = dp.RepositoryCfg(root='tests/repository/repoA',
+        repoACfg = dp.RepositoryCfg(root='tests/TestMapperInference/repoA',
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
                                     parents=None)
-        repoBCfg = dp.RepositoryCfg(root='tests/repository/repoB', 
+        repoBCfg = dp.RepositoryCfg(root='tests/TestMapperInference/repoB', 
                                     mapper=AlternateMapper,
                                     mapperArgs=None,
                                     parents=None)
-        dp.Storage.putRepositoryCfg(repoACfg, 'tests/repository/repoA')
-        dp.Storage.putRepositoryCfg(repoBCfg, 'tests/repository/repoB')
+        dp.Storage.putRepositoryCfg(repoACfg, 'tests/TestMapperInference/repoA')
+        dp.Storage.putRepositoryCfg(repoBCfg, 'tests/TestMapperInference/repoB')
 
         repoCArgs = dp.RepositoryArgs(mode='w', 
-                                      root='tests/repository/repoC') 
+                                      root='tests/TestMapperInference/repoC') 
         self.assertRaises(RuntimeError, 
                           dp.Butler, 
-                          inputs=('tests/repository/repoA', 'tests/repository/repoB'), 
+                          inputs=('tests/TestMapperInference/repoA', 'tests/TestMapperInference/repoB'), 
                           outputs=repoCArgs)
 
     
@@ -655,16 +656,18 @@ class TestMovedRepositoryCfg(unittest.TestCase):
         self.tearDown
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')
+        if os.path.exists('tests/TestMovedRepositoryCfg'):
+            shutil.rmtree('tests/TestMovedRepositoryCfg')
 
     def test(self):
-        butler = dp.Butler(outputs=dp.RepositoryArgs(root="tests/repository/a", mapper=MapperForTestWriting))
+        butler = dp.Butler(outputs=dp.RepositoryArgs(root="tests/TestMovedRepositoryCfg/a", 
+                                                     mapper=MapperForTestWriting))
         del butler
-        os.makedirs("tests/repository/b")
-        os.rename('tests/repository/a/repositoryCfg.yaml', 'tests/repository/b/repositoryCfg.yaml')
-        butler = dp.Butler(inputs="tests/repository/b")
-        self.assertEqual(butler._repos.all()[0].cfg, dp.RepositoryCfg(root='tests/repository/b',
+        os.makedirs("tests/TestMovedRepositoryCfg/b")
+        os.rename('tests/TestMovedRepositoryCfg/a/repositoryCfg.yaml', 
+                  'tests/TestMovedRepositoryCfg/b/repositoryCfg.yaml')
+        butler = dp.Butler(inputs="tests/TestMovedRepositoryCfg/b")
+        self.assertEqual(butler._repos.all()[0].cfg, dp.RepositoryCfg(root='tests/TestMovedRepositoryCfg/b',
                                                                       mapper=MapperForTestWriting,
                                                                       mapperArgs=None,
                                                                       parents=None))
@@ -675,56 +678,60 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
         self.tearDown
 
     def tearDown(self):
-        if os.path.exists('tests/repository'):
-            shutil.rmtree('tests/repository')    
+        if os.path.exists('tests/TestOutputAlreadyHasParent'):
+            shutil.rmtree('tests/TestOutputAlreadyHasParent')    
 
     def test(self):
         # create a rewpo where repo 'a' is a parent of repo 'b'
-        butler = dp.Butler(outputs=dp.RepositoryArgs(root='tests/repository/a', mapper=MapperForTestWriting))
+        butler = dp.Butler(outputs=dp.RepositoryArgs(root='tests/TestOutputAlreadyHasParent/a', 
+                                                     mapper=MapperForTestWriting))
         del butler
-        butler = dp.Butler(inputs='tests/repository/a', outputs='tests/repository/b')
+        butler = dp.Butler(inputs='tests/TestOutputAlreadyHasParent/a', 
+                           outputs='tests/TestOutputAlreadyHasParent/b')
         self.assertEqual(len(butler._repos.inputs()), 1)
-        self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/repository/a')
+        self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/TestOutputAlreadyHasParent/a')
         self.assertEqual(len(butler._repos.outputs()), 1)
-        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repository/b')
+        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/TestOutputAlreadyHasParent/b')
         del butler
 
         # load that repo a few times, redundantly include 'a' as an input (redundant because it's implicitly
         # an input by being a parent of 'b')
         for i in range(4):
-            butler = dp.Butler(inputs='tests/repository/a', 
-                               outputs=dp.RepositoryArgs(root='tests/repository/b', mode='rw'))
+            butler = dp.Butler(inputs='tests/TestOutputAlreadyHasParent/a', 
+                               outputs=dp.RepositoryArgs(root='tests/TestOutputAlreadyHasParent/b', 
+                                                         mode='rw'))
             self.assertEqual(len(butler._repos.inputs()), 2)
-            self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/repository/b')
-            self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/repository/a')
+            self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/TestOutputAlreadyHasParent/b')
+            self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/TestOutputAlreadyHasParent/a')
             self.assertEqual(len(butler._repos.outputs()), 1)
-            self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repository/b')
-            cfg = dp.Storage.getRepositoryCfg('tests/repository/b')
-            self.assertEqual(cfg, dp.RepositoryCfg(root='tests/repository/b', 
+            self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/TestOutputAlreadyHasParent/b')
+            cfg = dp.Storage.getRepositoryCfg('tests/TestOutputAlreadyHasParent/b')
+            self.assertEqual(cfg, dp.RepositoryCfg(root='tests/TestOutputAlreadyHasParent/b', 
                                                    mapper=MapperForTestWriting, 
                                                    mapperArgs=None,
-                                                   parents=['tests/repository/a']))
+                                                   parents=['tests/TestOutputAlreadyHasParent/a']))
 
         # load the repo a few times and don't explicitly list 'a' as an input
         for i in range(4):
-            butler = dp.Butler(outputs=dp.RepositoryArgs(root='tests/repository/b', mode='rw'))
+            butler = dp.Butler(outputs=dp.RepositoryArgs(root='tests/TestOutputAlreadyHasParent/b', 
+                                                         mode='rw'))
             self.assertEqual(len(butler._repos.inputs()), 2)
-            self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/repository/b')
-            self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/repository/a')
+            self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/TestOutputAlreadyHasParent/b')
+            self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/TestOutputAlreadyHasParent/a')
             self.assertEqual(len(butler._repos.outputs()), 1)
-            self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repository/b')
-            cfg = dp.Storage.getRepositoryCfg('tests/repository/b')
-            self.assertEqual(cfg, dp.RepositoryCfg(root='tests/repository/b', 
+            self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/TestOutputAlreadyHasParent/b')
+            cfg = dp.Storage.getRepositoryCfg('tests/TestOutputAlreadyHasParent/b')
+            self.assertEqual(cfg, dp.RepositoryCfg(root='tests/TestOutputAlreadyHasParent/b', 
                                                    mapper=MapperForTestWriting, 
                                                    mapperArgs=None,
-                                                   parents=['tests/repository/a']))
+                                                   parents=['tests/TestOutputAlreadyHasParent/a']))
 
         # load 'b' as 'read only' and make sure 'a' does not get used as an input.
-        butler = dp.Butler(outputs='tests/repository/b')
+        butler = dp.Butler(outputs='tests/TestOutputAlreadyHasParent/b')
         self.assertEqual(len(butler._repos.inputs()), 0)
         self.assertEqual(len(butler._repos.outputs()), 1)
-        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repository/b')
-        cfg = dp.Storage.getRepositoryCfg('tests/repository/b')
+        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/TestOutputAlreadyHasParent/b')
+        cfg = dp.Storage.getRepositoryCfg('tests/TestOutputAlreadyHasParent/b')
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
