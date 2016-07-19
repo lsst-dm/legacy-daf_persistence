@@ -56,3 +56,17 @@ def setify(x):
         except TypeError:
             x= set([x])
     return x
+
+
+def doImport(pythonType):
+    """Import a python object given an importable string"""
+    if not isinstance(pythonType, basestring):
+        raise TypeError("Unhandled type of pythonType, val:%s" % pythonType)
+    # import this pythonType dynamically
+    pythonTypeTokenList = pythonType.split('.')
+    importClassString = pythonTypeTokenList.pop()
+    importClassString = importClassString.strip()
+    importPackage = ".".join(pythonTypeTokenList)
+    importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+    pythonType = getattr(importType, importClassString)
+    return pythonType

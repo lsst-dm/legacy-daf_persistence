@@ -40,7 +40,7 @@ import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from . import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, Repository, \
               Access, Storage, Policy, NoResults, MultipleResults, Repository, DataId, RepositoryCfg, \
-              RepositoryArgs, listify, setify
+              RepositoryArgs, listify, setify, doImport
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -269,7 +269,7 @@ class Butler(object):
 
         self._repos = RepoDataContainer()
 
-        defaultMapper = self.getDefaultMapper(inputs)
+        defaultMapper = self._getDefaultMapper(inputs)
 
         butlerIOParents = collections.OrderedDict()
         for args in outputs + inputs:
@@ -388,17 +388,26 @@ class Butler(object):
             self.datasetTypeAliasDict, self._repos, self.persistence)
 
     @staticmethod
-    def getDefaultMapper(inputs):
+    def _getDefaultMapper(inputs):
         mappers = set()
         for args in inputs:
             if args.mapper is not None:
-                mappers.add(args.mapper)
+                mapper = args.mapper
+                # if the mapper is:
+                # * a string, import it.
+                # * a class instance, get its class type
+                # * a class, do nothing; use it
+                if isinstance(mapper, basestring):
+                    mapper = doImport(args.mapper)
+                elif not inspect.isclass(mapper):
+                    mapper = mapper.__class__
             else:
                 cfgRoot = args.cfgRoot
                 mapper = Butler.getMapperClass(cfgRoot)
-                mappers.add(mapper)
+                if not inspect.isclass(mapper):
+                    raise RuntimeError("Unexpected type for mapper:%s at cfgRoot:%s" % (mapper, cfgRoot))
+            mappers.add(mapper)
         
-        # print "getDefaultMapper \n\tinputs:%s \n\tfound:%s" % (inputs, mappers)
         if len(mappers) == 1:
             return mappers.pop()
         else:
