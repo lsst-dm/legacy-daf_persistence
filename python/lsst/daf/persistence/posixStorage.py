@@ -30,7 +30,8 @@ import urlparse
 
 import yaml
 
-from . import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, RepositoryCfg, safeFileIo
+from . import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, RepositoryCfg, \
+              safeFileIo, SerializerRegistry
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
@@ -179,6 +180,17 @@ class PosixStorage(Storage):
                 importPackage = ".".join(pythonTypeTokenList)
                 importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
                 pythonType = getattr(importType, importClassString)
+
+        
+        lookupFormatName = "fits" if storageName == "FitsStorage" else ''
+        serializer = SerializerRegistry.get(objectType=pythonType, storage='posix', format=lookupFormatName,
+                                            which='serializer')
+        if serializer is not None:
+            import pdb; pdb.set_trace()
+            serializer.write(obj=obj, butlerLocation=butlerLocation)
+            return
+
+
         # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
         # implications; write now I'm worried that any python type that can be written to disk and has a method
         # called 'put' will be called here (even if it's e.g. destined for FitsStorage). We might want a somewhat

@@ -24,6 +24,7 @@
 """
 from .utils import *
 from .registries import *
+from .serializerRegistry import *
 from .fsScanner import *
 from .persistenceLib import *
 from .butlerExceptions import *
