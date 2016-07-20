@@ -22,56 +22,29 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import copy
 import cPickle
 import importlib
 import os
+import urlparse
 
 import yaml
 
-from lsst.daf.persistence import LogicalLocation, Persistence, Policy, StorageList, Registry
+from . import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, RepositoryCfg, safeFileIo
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
 
-class StorageCfg(Policy):
-    yaml_tag = u"!StorageCfg"
-    yaml_loader = yaml.Loader
-    yaml_dumper = yaml.Dumper
 
-    def __init__(self, cls, root=None):
-        super(StorageCfg, self).__init__()
-        self.update({'root':root, 'cls':cls})
+class PosixStorage(Storage):
 
-    @staticmethod
-    def to_yaml(dumper, obj):
-        return dumper.represent_mapping(StorageCfg.yaml_tag, {'cls':obj['cls']})
-
-    @staticmethod
-    def from_yaml(loader, node):
-        obj = loader.construct_mapping(node)
-        return StorageCfg(**obj)
-
-
-class PosixStorage(object):
-
-    @classmethod
-    def cfg(cls, root=None):
-        """Helper func to create a properly formatted Policy to configure a PosixStorage instance.
-
-        :param root: a posix path where the repository is or should be created.
-        :return:
-        """
-        return StorageCfg(root=root, cls=cls)
-
-    def __init__(self, cfg):
+    def __init__(self, uri):
         """Initializer
 
-        :param cfg: a Policy that defines the configuration for this class. It is recommended that the cfg be
-                    created by calling PosixStorage.cfg()
         :return:
         """
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
-        self.root = cfg['root']
+        self.root = parseRes = urlparse.urlparse(uri).path
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
 
@@ -85,62 +58,103 @@ class PosixStorage(object):
         return 'PosixStorage(root=%s)' % self.root
 
     @staticmethod
+    def _getRepositoryCfg(uri):
+        """Get a persisted RepositoryCfg
+        """        
+        repositoryCfg = None
+        parseRes = urlparse.urlparse(uri)
+        loc = os.path.join(parseRes.path, 'repositoryCfg.yaml')
+        if os.path.exists(loc):
+            with open(loc, 'r') as f:
+                repositoryCfg = yaml.load(f)
+            if repositoryCfg.root is None:
+                repositoryCfg.root = parseRes.path
+        return repositoryCfg
+
+    @staticmethod
+    def getRepositoryCfg(uri):
+        repositoryCfg = PosixStorage._getRepositoryCfg(uri)
+        if repositoryCfg is not None:
+            return repositoryCfg
+
+        # if no repository cfg, is it a legacy repository?
+        parseRes = urlparse.urlparse(uri)
+        if repositoryCfg is None:
+            mapper = PosixStorage.getMapperClass(parseRes.path)
+            if mapper is not None:
+                repositoryCfg = RepositoryCfg(mapper=mapper, 
+                                              root=parseRes.path, 
+                                              mapperArgs=None, 
+                                              parents=None,
+                                              isLegacyRepository=True)
+        return repositoryCfg        
+
+    @staticmethod
+    def putRepositoryCfg(cfg, loc=None):
+        if cfg.isLegacyRepository:
+            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by 
+            # the _parent symlink)
+            return
+        if loc is None or cfg.root == loc:
+            # the cfg is at the root location of the repository so don't write root, let it be implicit in the 
+            # location of the cfg.
+            cfg = copy.copy(cfg)
+            loc = cfg.root
+            cfg.root = None
+        if not os.path.exists(loc):
+            os.makedirs(loc)
+        loc = os.path.join(loc, 'repositoryCfg.yaml')
+        with safeFileIo.FileForWriteOnceCompareSame(loc) as f:
+            yaml.dump(cfg, f)
+
+    @staticmethod
     def getMapperClass(root):
-        """Returns the mapper class associated with a repository root.
+        """Get the mapper class associated with a repository root.
 
         Supports the legacy _parent symlink search (which was only ever posix-only. This should not be used by
-        new code and repositories; they should use the Repository parentCfg mechanism."""
+        new code and repositories; they should use the Repository parentCfg mechanism.
+        
+        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a 
+                     _mapper file is (old style repos).
+        :return: a class object or a class instance, depending on the state of the mapper when the repository
+                 was created.
+        """
         if not (root):
             return None
+
+        cfg = PosixStorage._getRepositoryCfg(root)
+        if cfg is not None:
+            return cfg.mapper
 
         # Find a "_mapper" file containing the mapper class name
         basePath = root
         mapperFile = "_mapper"
-        globals = {}
         while not os.path.exists(os.path.join(basePath, mapperFile)):
             # Break abstraction by following _parent links from CameraMapper
             if os.path.exists(os.path.join(basePath, "_parent")):
                 basePath = os.path.join(basePath, "_parent")
             else:
-                raise RuntimeError(
-                        "No mapper provided and no %s available" %
-                        (mapperFile,))
-        mapperFile = os.path.join(basePath, mapperFile)
+                mapperFile = None
+                break
 
-        # Read the name of the mapper class and instantiate it
-        with open(mapperFile, "r") as f:
-            mapperName = f.readline().strip()
-        components = mapperName.split(".")
-        if len(components) <= 1:
-            raise RuntimeError("Unqualified mapper name %s in %s" %
-                    (mapperName, mapperFile))
-        pkg = importlib.import_module(".".join(components[:-1]))
-        return getattr(pkg, components[-1])
+        if mapperFile is not None:
+            mapperFile = os.path.join(basePath, mapperFile)
+
+            # Read the name of the mapper class and instantiate it
+            with open(mapperFile, "r") as f:
+                mapperName = f.readline().strip()
+            components = mapperName.split(".")
+            if len(components) <= 1:
+                raise RuntimeError("Unqualified mapper name %s in %s" %
+                        (mapperName, mapperFile))
+            pkg = importlib.import_module(".".join(components[:-1]))
+            return getattr(pkg, components[-1])
+
+        return None
 
     def mapperClass(self):
         """Get the class object for the mapper specified in the stored repository"""
         return PosixStorage.getMapperClass(self.root)
-
-    def setCfg(self, repoCfg):
-        """Writes the configuration to root in the repository on disk.
-
-        :param repoCfg: the Policy cfg to be written
-        :return: None
-        """
-        if self.root is None:
-            raise RuntimeError("Storage root was declared to be None.")
-        path = os.path.join(self.root, 'repoCfg.yaml')
-        repoCfg.dumpToFile(path)
-
-    def loadCfg(self):
-        """Reads the configuration from the repository on disk at root.
-
-        :return: the Policy cfg
-        """
-        if not self.root:
-            raise RuntimeError("Storage root was declared to be None.")
-        path = os.path.join(self.root, 'repoCfg.yaml')
-        return Policy(filePath=path)
 
     def write(self, butlerLocation, obj):
         """Writes an object to a location and persistence format specified by ButlerLocation
@@ -287,3 +301,7 @@ class PosixStorage(object):
     def lookup(self, *args, **kwargs):
         """Perform a lookup in the registry"""
         return self.registry.lookup(*args, **kwargs)
+
+
+Storage.registerStorageClass(scheme='', cls=PosixStorage)
+Storage.registerStorageClass(scheme='file', cls=PosixStorage)

@@ -23,14 +23,18 @@
 #
 
 
+import shutil
 import unittest
-import lsst.utils.tests as utilsTests
 
 import os
 import pickle
 import re
 import lsst.daf.persistence as dafPersist
+import lsst.utils.tests
 from cameraMapper import CameraMapper
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 class Registry(object):
     def __init__(self, dictList):
@@ -56,6 +60,7 @@ class Registry(object):
 class ImgMapper(CameraMapper):
     def __init__(self):
         CameraMapper.__init__(self)
+        self.root = 'tests/butlerSubset'
         self.registry = Registry([
                 dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
                     snap=0, skyTile=5),
@@ -87,6 +92,15 @@ class ButlerSubsetTestCase(unittest.TestCase):
     calexpTypeName = "@goBears"
     rawTypeName = "@veggies"
 
+    def setUp(self):
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists('tests/butlerSubset'):
+            shutil.rmtree('tests/butlerSubset')
+        if os.path.exists('repositoryCfg.yaml'):
+            os.remove('repositoryCfg.yaml')
+
     @staticmethod
     def registerAliases(butler):
         butler.defineAlias(ButlerSubsetTestCase.calexpTypeName, "calexp")
@@ -94,8 +108,9 @@ class ButlerSubsetTestCase(unittest.TestCase):
         return butler
 
     def testSingleIteration(self):
-        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
-        butler = bf.create()
+        args = dafPersist.RepositoryArgs(mode='r', root='tests/butlerSubset', mapper=ImgMapper())
+        butler = dafPersist.Butler(inputs=args)
+
         ButlerSubsetTestCase.registerAliases(butler)
 
         inputList = ["calexp_v123456_R1,2_S2,1.pickle",
@@ -158,8 +173,8 @@ class ButlerSubsetTestCase(unittest.TestCase):
             with open(fileName, "w") as f:
                 pickle.dump(inputList, f)
 
-        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
-        butler = bf.create()
+        butler = dafPersist.Butler(outputs=dafPersist.RepositoryArgs(root='.', mode='rw', mapper=ImgMapper()))
+
         ButlerSubsetTestCase.registerAliases(butler)
 
         subset = butler.subset(self.rawTypeName, visit=123456)
@@ -223,16 +238,9 @@ class ButlerSubsetTestCase(unittest.TestCase):
         ref = butler.dataRef(self.rawTypeName, visit=314159, raft="ab", sensor="cd", amp="ef", snap=9)
         self.assertFalse(ref.datasetExists(self.rawTypeName))
 
-def suite():
-    utilsTests.init()
-
-    suites = []
-    suites += unittest.makeSuite(ButlerSubsetTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
+class MemoryTester(lsst.utils.tests.MemoryTestCase):
+    pass
 
 if __name__ == '__main__':
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

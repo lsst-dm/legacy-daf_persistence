@@ -24,7 +24,7 @@
 
 import yaml
 
-from lsst.daf.persistence import Policy
+from . import Policy
 
 """This module defines the Mapper base class."""
 
@@ -41,14 +41,14 @@ class MapperCfg(Policy):
     yaml_loader = yaml.Loader
     yaml_dumper = yaml.Dumper
 
-    def __init__(self, cls, policy, access):
+    def __init__(self, cls, policy, storage):
         super(MapperCfg, self).__init__()
-        self.update({'cls':cls, 'policy':policy, 'access':access})
+        self.update({'cls':cls, 'policy':policy, 'storage':storage})
 
     @staticmethod
     def to_yaml(dumper, obj):
         return dumper.represent_mapping(RepositoryMapperCfg.yaml_tag,
-                                        {'cls':obj['cls'], 'policy':obj['policy'], 'access':obj['access']})
+                                        {'cls':obj['cls'], 'policy':obj['policy'], 'storage':obj['storage']})
 
     @staticmethod
     def from_yaml(loader, node):

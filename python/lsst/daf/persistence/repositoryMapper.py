@@ -24,10 +24,7 @@
 
 import yaml
 
-from lsst.daf.persistence import Mapper, Policy, ButlerLocation, MapperCfg
-
-class RepositoryMapperCfg(MapperCfg):
-    pass
+from lsst.daf.persistence import Mapper, ButlerLocation, Policy
 
 class RepositoryMapper(Mapper):
     """"Base class for a mapper to find repository configurations within a butler repository.
@@ -38,20 +35,17 @@ class RepositoryMapper(Mapper):
             butler' API is strongly discouraged.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, storage, policy):
         # todo I'm guessing the policy would probably want to come from the default in-package location, and
         # then be overridden where desired by policy in repository root, and then
         # have the cfg policy applied
-        self.policy = cfg['policy']
-        self.access = cfg['access']
+        self.policy = Policy(policy)
+        self.storage = storage
 
-    @classmethod
-    def cfg(cls, policy=None, access=None):
-        return RepositoryMapperCfg(cls=cls, policy=policy, access=access)
 
     def __repr__(self):
-        if 'policy' in self.__dict__ and 'access' in self.__dict__:
-            return 'RepositoryMapper(policy=%s, access=%s)' %(self.policy, self.access)
+        if 'policy' in self.__dict__ and 'storageCfg' in self.__dict__:
+            return 'RepositoryMapper(policy=%s, storageCfg=%s)' %(self.policy, self.storageCfg)
         else:
             return 'uninitialized RepositoryMapper'
 
@@ -66,13 +60,13 @@ class RepositoryMapper(Mapper):
         # todo check: do we need keys to complete dataId? (search Registry)
         template = self.policy['repositories.cfg.template']
         location = template % dataId
-        if not write and not self.access.storage.exists(location):
+        if not write and not self.storage.exists(location):
             return None
         bl = ButlerLocation(
             pythonType = self.policy['repositories.cfg.python'],
             cppType = None,
             storageName = self.policy['repositories.cfg.storage'],
-            locationList = (self.access.storage.locationWithRoot(location),),
+            locationList = (self.storage.locationWithRoot(location),),
             dataId = dataId,
             mapper = self)
         return bl
@@ -86,7 +80,7 @@ class RepositoryMapper(Mapper):
 
         template = self.policy['repositories.repo.template']
         location = template % dataId
-        if self.access.storage.exists(location):
+        if self.storage.exists(location):
             bl = ButlerLocation(
                 pythonType = self.policy['repositories.repo.python'],
                 cppType = None,

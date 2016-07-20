@@ -29,6 +29,8 @@ within it as well as an iterator over the subset."""
 
 from __future__ import with_statement
 
+from . import DataId
+
 class ButlerSubset(object):
 
     """ButlerSubset is a container for ButlerDataRefs.  It represents a
@@ -70,11 +72,11 @@ class ButlerSubset(object):
         """
         self.butler = butler
         self.datasetType = datasetType
-        self.dataId = dataId
+        self.dataId = DataId(dataId)
         self.cache = []
         self.level = level
 
-        keys = self.butler.getKeys(datasetType, level)
+        keys = self.butler.getKeys(datasetType, level, tag=dataId.tag)
         if keys is None:
             return
         fmt = list(keys.iterkeys())
@@ -218,11 +220,13 @@ class ButlerDataRef(object):
 
         return set(
                 self.butlerSubset.butler.getKeys(
-                    self.butlerSubset.datasetType).keys()
+                    self.butlerSubset.datasetType, 
+                    tag=self.butlerSubset.dataId.tag).keys()
             ) - set(
                 self.butlerSubset.butler.getKeys(
                     self.butlerSubset.datasetType,
-                    self.butlerSubset.level).keys()
+                    self.butlerSubset.level,
+                    tag=self.butlerSubset.dataId.tag).keys()
             )
 
     def subItems(self, level=None):
@@ -238,7 +242,10 @@ class ButlerDataRef(object):
         """
 
         if level is None:
-            mappers = self.butlerSubset.butler.repository.mappers()
+            mappers = []
+            for repoData in self.butlerSubset.butler._repos.all():
+                if repoData.repo._mapper not in mappers:
+                    mappers.append(repoData.repo._mapper)
             if len(mappers) != 1:
                 raise RuntimeError("Support for multiple repositories not yet implemented!")
             mapper = mappers[0]

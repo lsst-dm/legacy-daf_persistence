@@ -47,12 +47,12 @@ class ButlerLocation(yaml.YAMLObject):
         'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, locationList=%r, additionalData=%r, mapper=%r)' % \
         (self.pythonType, self.cppType, self.storageName, self.locationList, self.additionalData, self.mapper)
 
-    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, access=None):
+    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None):
         self.pythonType = pythonType
         self.cppType = cppType
         self.storageName = storageName
         self.mapper = mapper
-        self.access = access
+        self.storage = storage
         if hasattr(locationList, '__iter__'):
             self.locationList = locationList
         else:
@@ -76,7 +76,7 @@ class ButlerLocation(yaml.YAMLObject):
         """
         return dumper.represent_mapping(ButlerLocation.yaml_tag,
             {'pythonType':obj.pythonType, 'cppType':obj.cppType, 'storageName':obj.storageName,
-             'locationList':obj.locationList, 'mapper':obj.mapper, 'access':obj.access, 'dataId':obj.dataId})
+             'locationList':obj.locationList, 'mapper':obj.mapper, 'storage':obj.storage, 'dataId':obj.dataId})
 
     @staticmethod
     def from_yaml(loader, node):

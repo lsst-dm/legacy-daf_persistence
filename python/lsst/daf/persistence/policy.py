@@ -376,6 +376,36 @@ class Policy(UserDict.UserDict, yaml.YAMLObject):
             val = [val]
         return val
 
+    def __lt__(self, other):
+        if isinstance(other, Policy):
+            other = other.data
+        return self.data < other
+
+    def __le__(self, other):
+        if isinstance(other, Policy):
+            other = other.data
+        return self.data <= other
+
+    def __eq__(self, other):
+        if isinstance(other, Policy):
+            other = other.data
+        return self.data == other
+
+    def __ne__(self, other):
+        if isinstance(other, Policy):
+            other = other.data
+        return self.data != other
+
+    def __gt__(self, other):
+        if isinstance(other, Policy):
+            other = other.data
+        return self.data > other
+
+    def __ge__(self, other):
+        if isinstance(other, Policy):
+            other = other.data
+        return self.data >= other
+
     #######
     # i/o #
 

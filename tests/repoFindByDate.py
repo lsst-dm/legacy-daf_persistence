@@ -30,8 +30,12 @@ import shutil
 import unittest
 import yaml
 
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import lsst.daf.persistence as dp
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 
 class PosixPickleStringHanlder:
@@ -69,7 +73,7 @@ class TestMapper(dp.Mapper):
     def __init__(self, cfg):
         super(TestMapper, self).__init__()
         # self.root = cfg['root']
-        self.access = cfg['access']
+        self.storage = cfg['storage']
         self.cfg = cfg
 
     def __repr__(self):
@@ -79,12 +83,12 @@ class TestMapper(dp.Mapper):
         template = "ccd_%(ccdNum)s.pickle"
         path = template % dataId
         if not write:
-            if not self.access.exists(path):
+            if not self.storage.exists(path):
                 return None
-        location = self.access.storage.locationWithRoot(path)
+        location = self.storage.locationWithRoot(path)
         return dp.ButlerLocation(pythonType=PosixPickleStringHanlder, cppType=None,
                                  storageName='PickleStorage', locationList=location, dataId=dataId,
-                                 mapper=self, access=self.access)
+                                 mapper=self, storage=self.storage)
 
 #####################
 # Repository Mapper #
@@ -95,18 +99,18 @@ class TestMapper(dp.Mapper):
 class RepoDateMapper(dp.RepositoryMapper):
 
     @classmethod
-    def cfg(cls, policy=None, access=None):
+    def cfg(cls, policy=None, storage=None):
         # note: using RepositoryMapperCfg; there's no need for a derived cfg class.
-        return dp.RepositoryMapperCfg(cls=cls, policy=policy, access=access)
+        return dp.RepositoryMapperCfg(cls=cls, policy=policy, storage=storage)
 
     def getButlerLocationIfExists(self, template, dataId):
         location = template % dataId
-        if self.access.storage.exists(location):
+        if self.storage.exists(location):
             return dp.ButlerLocation(
                 pythonType = self.policy['repositories.cfg.python'],
                 cppType = None,
                 storageName = self.policy['repositories.cfg.storage'],
-                locationList = (self.access.storage.locationWithRoot(location),),
+                locationList = (self.storage.locationWithRoot(location),),
                 dataId = dataId,
                 mapper = self)
         return None
@@ -129,7 +133,7 @@ class RepoDateMapper(dp.RepositoryMapper):
                 pythonType = self.policy['repositories.cfg.python'],
                 cppType = None,
                 storageName = self.policy['repositories.cfg.storage'],
-                locationList = (self.access.storage.locationWithRoot(location),),
+                locationList = (self.storage.locationWithRoot(location),),
                 dataId = dataId,
                 mapper = self)
 
@@ -145,7 +149,7 @@ class RepoDateMapper(dp.RepositoryMapper):
         dataIdDate = datetime.datetime.strptime(dataId['date'], "%Y-%m-%d").date()
         del dataId['date']
         dateToUse = None
-        lookups = self.access.lookup(lookupProperties='date', reference=None,
+        lookups = self.storage.lookup(lookupProperties='date', reference=None,
                                      dataId=dataId, template=template)
         lookups.sort()
         if len(lookups) is not 0:
@@ -191,24 +195,23 @@ class RepoFindByDate(unittest.TestCase):
         for date in dates:
             for type in types:
                 # create a cfg of a repository for our repositories
-                storageCfg = dp.PosixStorage.cfg(root=self.calibsRoot)
-                accessCfg = dp.Access.cfg(storageCfg=storageCfg)
-                mapperCfg = dp.RepositoryMapper.cfg(policy=self.repoMapperPolicy)
-                # Note that right now a repo is either input OR output, there is no input-output repo, this design
-                # is result of butler design conversations. Right now, if a user wants to write to and then read from
-                # a repo, a repo can have a parent repo with the same access (and mapper) parameters as itself.
-                repoOfRepoCfg = dp.Repository.cfg(accessCfg=accessCfg, mapper=mapperCfg,
-                                                  parentCfgs=dp.Repository.cfg(accessCfg=accessCfg, mapper=mapperCfg))
-                repoButler = dp.Butler(dp.Butler.cfg(repoCfg=repoOfRepoCfg))
+                repoOfRepoCfg = dp.Repository.cfg(
+                    mode='rw', 
+                    storageCfg=dp.PosixStorage.cfg(root=self.calibsRoot), 
+                    mapper=dp.RepositoryMapper.cfg(policy=self.repoMapperPolicy)
+                )
+                repoButler = dp.Butler(outputs=repoOfRepoCfg)
                 # create a cfg of a repository we'd like to use. Note that we don't create the root of the cfg.
                 # this will get populated by the repoOfRepos template.
-                repoCfg = dp.Repository.cfg(accessCfg=dp.Access.cfg(dp.PosixStorage.cfg()), mapper=TestMapper.cfg())
+                repoCfg = dp.Repository.cfg(mode='rw', 
+                                            storageCfg=dp.PosixStorage.cfg(), 
+                                            mapper=TestMapper.cfg())
                 # and put that config into the repoOfRepos.
                 repoButler.put(repoCfg, 'cfg', dataId={'type':type, 'date':date})
                 # get the cfg back out of the butler. This will return a cfg with the root location populated.
-                # i.e. repoCfg['accessCfg.storageCfg.root'] is populated.
+                # i.e. repoCfg['storageCfg.root'] is populated.
                 repoCfg = repoButler.get('cfg', dataId={'type':type, 'date':date}, immediate=True)
-                butler = dp.Butler(dp.Butler.cfg(repoCfg=repoCfg))
+                butler = dp.Butler(outputs=repoCfg)
                 obj = date + '_' + type # object contents do not rely on date & type, but it's an easy way to verify
                 butler.put(obj, 'str', {'ccdNum':1})
 
@@ -231,13 +234,13 @@ class RepoFindByDate(unittest.TestCase):
         self.writeCalibs()
 
         # create a cfg of a repository for our repositories
-        storageCfg = dp.PosixStorage.cfg(root=self.calibsRoot)
-        accessCfg = dp.Access.cfg(storageCfg=storageCfg)
         # Note that RepoDateMaper looks for the dataId['date'], and when looking for a location to read it will use the
         # registry to find the most recent date before dataId['date'].
         mapperCfg = RepoDateMapper.cfg(policy=self.repoMapperPolicy)
-        repoOfRepoCfg = dp.Repository.cfg(parentCfgs=dp.Repository.cfg(accessCfg=accessCfg, mapper=mapperCfg))
-        repoButler = dp.Butler(dp.Butler.cfg(repoCfg=repoOfRepoCfg))
+        repoOfRepoCfg = dp.Repository.cfg(mode='r',
+                                          storageCfg=dp.PosixStorage.cfg(root=self.calibsRoot),
+                                          mapper=mapperCfg)
+        repoButler = dp.Butler(inputs=repoOfRepoCfg)
 
         TestDates = collections.namedtuple('TestDates', ('searchVal', 'expectedVal'))
         dates = (TestDates('2020-02-14', '2020-02-01'),
@@ -249,20 +252,18 @@ class RepoFindByDate(unittest.TestCase):
         for date in dates:
             for type in types:
                 repoCfg = repoButler.get('cfg', dataId={'type':type, 'date':date.searchVal}, immediate=True)
-                butler = dp.Butler(dp.Butler.cfg(repoCfg=dp.Repository.cfg(parentCfgs=repoCfg)))
+                butler = dp.Butler(inputs=repoCfg)
                 obj = butler.get('str', {'ccdNum':1})
                 verificationDate = date.expectedVal + '_' + type
                 self.assertEqual(obj, verificationDate)
 
 
-def suite():
-    utilsTests.init()
-    suites = []
-    suites += unittest.makeSuite(RepoFindByDate)
-    return unittest.TestSuite(suites)
+class MemoryTester(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 
 if __name__ == '__main__':
-    run(True)
+    # disable this test until we work more on repo of repos; starting with DM-6227
+    # lsst.utils.tests.init()
+    # unittest.main()
+    pass
