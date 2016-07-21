@@ -183,10 +183,14 @@ class PosixStorage(Storage):
 
         
         lookupFormatName = "fits" if storageName == "FitsStorage" else ''
-        serializer = SerializerRegistry.get(objectType=pythonType, storage='posix', format=lookupFormatName,
-                                            which='serializer')
+
+        serializer = None if pythonType is None else SerializerRegistry.get(objectType=pythonType, 
+                                                                            storage='posix', 
+                                                                            format=lookupFormatName, 
+                                                                            which='serializer')
+
         if serializer is not None:
-            import pdb; pdb.set_trace()
+            import pdb; pdb.set_trace() # testing to see if/when we ever get here
             serializer.write(obj=obj, butlerLocation=butlerLocation)
             return
 

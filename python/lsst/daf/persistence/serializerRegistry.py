@@ -23,6 +23,7 @@
 #
 
 import inspect
+from . import doImport
 
 class SerializerRegistry(object):
 
@@ -36,7 +37,7 @@ class SerializerRegistry(object):
     registry = {}
 
     @staticmethod
-    def register(objectType, storage, format, serialzier, deserializer):
+    def register(objectType, storage, format, serializer, deserializer):
         """
         Register serializer and deserializer fucntions for a type of python
         object for a type of storage to be written in a particular format. See
@@ -62,16 +63,17 @@ class SerializerRegistry(object):
                        (butlerLocation)
                        This is the class that is used to deserialize the object.
         """
+        if isinstance(objectType, basestring):
+            objectType = doImport(objectType)
         typeReg = SerializerRegistry.registry.setdefault(objectType, {})
         storageReg = typeReg.setdefault(storage, {})
         if format in storageReg:
-            raise RuntimeError "serializer already registered for %s" % \
-                ((objectType, storage, format))
-        storageReg[format] = {‘serializer’:serializer, 
-                              ‘deserializer’:deserializer}
+            raise RuntimeError("serializer already registered for (object:%s, storage:%s, format:%s)" % \
+                (objectType, storage, format))
+        storageReg[format] = {'serializer':serializer, 'deserializer':deserializer}
 
     @staticmethod
-    def get(objectType, storage, format, which=None)
+    def get(objectType, storage, format, which=None):
         """
         Get the serializer for a type of object, storage, and format.
 
@@ -83,14 +85,14 @@ class SerializerRegistry(object):
                 callable serialization objects. If not specified will return a
                 dict with both values.
         """
-        if which not in (‘serializer’, ‘deserializer’, None):
+        if which not in ('serializer', 'deserializer', None):
             raise RuntimeError("invalid value for which:%s" % which)
 
         ret = None
         lookups = inspect.getmro(objectType)
         for cls in lookups:
-            if objectType in SerializerRegistry.registry and
-               storage in SerializerRegistry.registry[objectType] and
+            if objectType in SerializerRegistry.registry and \
+               storage in SerializerRegistry.registry[objectType] and \
                format in SerializerRegistry.registry[objectType][storage]:
                 if which is None:
                     ret = serializers
@@ -98,6 +100,10 @@ class SerializerRegistry(object):
                 ret = serializers[which]
                 break
 
-        if not ret:
-            raise RuntimeError("no serializer registered for type %s" % \
-                ((objectType, storage, format))
+        if ret is not None:
+            import pdb; pdb.set_trace()
+
+        return ret
+        # if not ret:
+        #     raise RuntimeError("no serializer registered for (object:%s, storage:%s, format:%s)" % \
+        #         (objectType, storage, format))

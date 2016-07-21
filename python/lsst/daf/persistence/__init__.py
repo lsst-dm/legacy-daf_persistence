@@ -45,3 +45,8 @@ from .butler import *
 from .butlerFactory import *
 from .version import *
 
+from . import serializers
+
+SerializerRegistry.register('lsst.afw.table.SourceCatalog', storage='posix', format='fits', 
+                            serializer=serializers.readWriteFits.PosixReadWriteFits.write, 
+                            deserializer=serializers.readWriteFits.PosixReadWriteFits.read)
