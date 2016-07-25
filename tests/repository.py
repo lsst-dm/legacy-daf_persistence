@@ -146,6 +146,8 @@ class TestBasics(unittest.TestCase):
             shutil.rmtree('tests/TestBasics')
         if os.path.exists('tests/butlerAlias/repositoryCfg.yaml'):
             os.remove('tests/butlerAlias/repositoryCfg.yaml')
+        if hasattr(self, "butler"):
+            del self.butler
 
     def testGet(self):
         raw_image = self.butler.get('raw', {'visit':'2', 'filter':'g'})
