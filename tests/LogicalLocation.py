@@ -29,7 +29,7 @@ from lsst.daf.persistence import LogicalLocation
 from lsst.daf.base import PropertySet
 
 import lsst.pex.logging
-lsst.pex.logging.Trace_setVerbosity("daf.persistence.LogicalLocation", 10)
+lsst.pex.logging.Trace.setVerbosity("daf.persistence.LogicalLocation", 10)
 
 class LogicalLocationTestCase(unittest.TestCase):
     """A test case for LogicalLocation."""

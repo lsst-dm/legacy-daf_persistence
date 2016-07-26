@@ -49,9 +49,9 @@ class DbPersistence1TestCase(unittest.TestCase):
         storage = persistence.getRetrieveStorage("BoostStorage", loc)
         storageList.append(storage)
 
-        rdp = dafBase.PropertySet.swigConvert(
-                persistence.unsafeRetrieve("PropertySet", storageList,
-                    additionalData))
+        # pybind11 automatically returns most derived type
+        rdp = persistence.unsafeRetrieve("PropertySet", storageList,
+                    additionalData)
 
         self.assertEqual(rdp.nameCount(),1)
         self.assertTrue(rdp.exists("foo"))
