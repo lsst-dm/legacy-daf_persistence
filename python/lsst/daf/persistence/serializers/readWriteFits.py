@@ -25,14 +25,15 @@
 # -*- python -*-
 
 
-from .. import serializerRegistry
+from .. import LogicalLocation, StorageList
+from ..safeFileIo import SafeFilename
 
 
 class PosixReadWriteFits(object):
     """Contains serializer and deserialzer functions that can be registered for any object that has the
     methods writeFits(location, flags) and readFits(location, hdu, flags)"""
     @staticmethod
-    def write(object, butlerLocation):
+    def write_loc_flags(obj, butlerLocation):
         import pdb; pdb.set_trace()
         locations = butlerLocation.getLocations()
         if len(locations) < 1:
@@ -42,7 +43,7 @@ class PosixReadWriteFits(object):
             flags = additionalData.getInt("flags", 0)
             obj.writeFits(logLoc.locString(), flags=flags)
 
-    def read(object, butlerLocation):
+    def read_loc_hdu_flags(butlerLocation):
         import pdb; pdb.set_trace()
         results = []
         for locationString in locations:
@@ -53,5 +54,36 @@ class PosixReadWriteFits(object):
             flags = additionalData.getInt("flags", 0)
             finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
         results.append(finalItem)
+
+    @staticmethod
+    def writeViaPersistence(obj, butlerLocation):
+        additionalData = butlerLocation.getAdditionalData()
+        locations = butlerLocation.getLocations()
+        with SafeFilename(locations[0]) as locationString:
+            logLoc = LogicalLocation(locationString, additionalData)
+            storageList = StorageList()
+            additionalData = butlerLocation.getAdditionalData()
+            storageName = butlerLocation.getStorageName()
+            storage = butlerLocation.persistence.getPersistStorage(storageName, logLoc)
+            storageList.append(storage)
+            butlerLocation.persistence.persist(obj, storageList, additionalData)
+
+    @staticmethod
+    def readViaPersistence(butlerLocation):
+        import pdb; pdb.set_trace()
+        results = []
+        locations = butlerLocation.getLocations()
+        if len(locations) < 1:
+            raise RuntimeError("no location passed in butlerLocation")
+        for locationStr in locations:
+            storageList = StorageList()
+            storage = self.persistence.getRetrieveStorage(storageName, logLoc)
+            storageList.append(storage)
+            itemData = self.persistence.unsafeRetrieve(butlerLocation.getCppType(), storageList, 
+                                                       additionalData)
+            finalItem = pythonType.swigConvert(itemData)
+            results.append(finalItem)
+        return results
+
 
 

@@ -181,18 +181,24 @@ class PosixStorage(Storage):
                 importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
                 pythonType = getattr(importType, importClassString)
 
-        
+  
+        #######################################################
+        ## Demonstrate finding serialzier in SerialzierRegistry      
         lookupFormatName = "fits" if storageName == "FitsStorage" else ''
-
         serializer = None if pythonType is None else SerializerRegistry.get(objectType=pythonType, 
                                                                             storage='posix', 
                                                                             format=lookupFormatName, 
                                                                             which='serializer')
-
         if serializer is not None:
-            import pdb; pdb.set_trace() # testing to see if/when we ever get here
-            serializer.write(obj=obj, butlerLocation=butlerLocation)
+            # I'm not a huge fan of this monkey patching persistence into the butlerLocation. Maybe I can
+            # figure out why persistence is needed and remove it? (probably can't remove it tho) Maybe it's ok
+            # as a legacy thing.
+            butlerLocation.persistence = self.persistence
+            serializer(obj=obj, butlerLocation=butlerLocation)
             return
+
+        ## Everything below here should (eventually) go away
+        #######################################################
 
 
         # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
@@ -225,9 +231,10 @@ class PosixStorage(Storage):
             storage = self.persistence.getPersistStorage(storageName, logLoc)
             storageList.append(storage)
 
-            if storageName == 'FitsStorage':
-                self.persistence.persist(obj, storageList, additionalData)
-                return
+            # if storageName == 'FitsStorage':
+            #     import pdb; pdb.set_trace()
+            #     self.persistence.persist(obj, storageList, additionalData)
+            #     return
 
             # Persist the item.
             if hasattr(obj, '__deref__'):

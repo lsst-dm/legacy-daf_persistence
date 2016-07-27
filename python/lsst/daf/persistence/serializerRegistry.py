@@ -91,17 +91,25 @@ class SerializerRegistry(object):
         ret = None
         lookups = inspect.getmro(objectType)
         for cls in lookups:
-            if objectType in SerializerRegistry.registry and \
-               storage in SerializerRegistry.registry[objectType] and \
-               format in SerializerRegistry.registry[objectType][storage]:
-                if which is None:
-                    ret = serializers
-                    break
-                ret = serializers[which]
-                break
+            clsData = SerializerRegistry.registry.get(cls)
+            if clsData is not None:
+                storageData = clsData.get(storage)
+                if storageData is not None:
+                    formatData = storageData.get(format)
+                    if formatData is not None:
+                        ret = formatData if which is None else formatData[which]
 
-        if ret is not None:
-            import pdb; pdb.set_trace()
+            # if cls in SerializerRegistry.registry and \
+            #    storage in SerializerRegistry.registry[cls] and \
+            #    format in SerializerRegistry.registry[cls][storage]:
+            #     if which is None:
+            #         ret = serializers
+            #         break
+            #     ret = serializers[which]
+            #     break
+
+        # if ret is not None:
+        #     import pdb; pdb.set_trace()
 
         return ret
         # if not ret:

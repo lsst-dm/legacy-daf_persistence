@@ -47,6 +47,9 @@ from .version import *
 
 from . import serializers
 
-SerializerRegistry.register('lsst.afw.table.SourceCatalog', storage='posix', format='fits', 
-                            serializer=serializers.readWriteFits.PosixReadWriteFits.write, 
-                            deserializer=serializers.readWriteFits.PosixReadWriteFits.read)
+SerializerRegistry.register(objectType='lsst.afw.table.SourceCatalog', storage='posix', format='fits', 
+                            serializer=serializers.readWriteFits.PosixReadWriteFits.write_loc_flags, 
+                            deserializer=serializers.readWriteFits.PosixReadWriteFits.read_loc_hdu_flags)
+
+
+
