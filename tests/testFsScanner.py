@@ -23,7 +23,7 @@
 #
 
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 from lsst.daf.persistence import FsScanner
 
 
@@ -41,15 +41,14 @@ class FsScannerTestCase(unittest.TestCase):
         res = scanner.processPath('tests/testFsScanner')
         self.assertEqual(res, {'raw_v1_fg.fits.gz': {'visit': 1, 'filter': 'g'}})
 
-def suite():
-    utilsTests.init()
 
-    suites = []
-    suites += unittest.makeSuite(FsScannerTestCase)
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 
-if __name__ == '__main__':
-    run(True)
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

@@ -34,7 +34,6 @@ import uuid
 
 import yaml
 
-import lsst.utils.tests as utilsTests
 import lsst.daf.persistence as dp
 from lsst.daf.persistence import Policy
 import lsst.utils.tests

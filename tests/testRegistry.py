@@ -24,7 +24,7 @@
 
 import collections
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
 
@@ -77,15 +77,13 @@ class PosixRegistryTestCase(unittest.TestCase):
             self.assertEqual(lookups, expectedLookup)
 
 
-def suite():
-    utilsTests.init()
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    suites = []
-    suites += unittest.makeSuite(PosixRegistryTestCase)
-    return unittest.TestSuite(suites)
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
-if __name__ == '__main__':
-    run(True)
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

@@ -27,7 +27,7 @@ import os
 import pickle
 import shutil
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
 import pickleMapper
@@ -66,16 +66,14 @@ class MapperImportTestCase(unittest.TestCase):
         bbox = [[1, 2], [8, 9]]
         self.checkIO(butler, bbox, 1)
 
-def suite():
-    utilsTests.init()
 
-    suites = []
-    suites += unittest.makeSuite(MapperImportTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 
-if __name__ == '__main__':
-    run(True)
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

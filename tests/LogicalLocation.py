@@ -28,6 +28,7 @@ import unittest
 from lsst.daf.persistence import LogicalLocation
 from lsst.daf.base import PropertySet
 
+import lsst.utils.tests
 import lsst.pex.logging
 lsst.pex.logging.Trace_setVerbosity("daf.persistence.LogicalLocation", 10)
 
@@ -55,5 +56,14 @@ class LogicalLocationTestCase(unittest.TestCase):
         l = LogicalLocation("%(foo)%3d(y)", ad2)
         self.assertEqual(l.locString(), "baz2009")
 
-if __name__ == '__main__':
+
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
     unittest.main()

@@ -24,6 +24,7 @@ import unittest
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy
+import lsst.utils.tests
 
 class DbPersistence1TestCase(unittest.TestCase):
 
@@ -57,5 +58,14 @@ class DbPersistence1TestCase(unittest.TestCase):
         self.assertTrue(rdp.exists("foo"))
         self.assertEqual(rdp.getInt("foo"), 3)
 
-if __name__ == '__main__':
+
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
     unittest.main()

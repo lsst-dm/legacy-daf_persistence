@@ -24,7 +24,7 @@
 
 from __future__ import print_function
 import lsst.daf.persistence as dafPersist
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import os
 import pickle
 import pyfits
@@ -135,16 +135,14 @@ class ButlerTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.butler.defineAlias('abc@xyz', 'calexp')
 
-def suite():
-    utilsTests.init()
 
-    suites = []
-    suites += unittest.makeSuite(ButlerTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 
-if __name__ == '__main__':
-    run(True)
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

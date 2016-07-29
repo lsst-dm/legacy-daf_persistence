@@ -25,6 +25,7 @@ import sys
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy as pexPolicy
+import lsst.utils.tests
 
 HOST = "lsst10.ncsa.uiuc.edu"
 PORT = "3306"
@@ -130,5 +131,14 @@ class DbPersistence2TestCase(unittest.TestCase):
         storageList.append(storage)
         persistence.persist(dp, storageList, additionalData)
 
-if __name__ == '__main__':
+
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
     unittest.main()

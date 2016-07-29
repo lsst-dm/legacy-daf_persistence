@@ -74,9 +74,12 @@ class TestDataId(unittest.TestCase):
         self.assertEqual(dataId, {'a':1, 'b':2})
         self.assertEqual(dataId.tag, set(['foo', 'bar', 'baz']))
 
+
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
 
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == '__main__':
     lsst.utils.tests.init()

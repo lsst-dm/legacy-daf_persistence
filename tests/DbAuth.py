@@ -25,7 +25,7 @@
 
 import unittest
 
-import lsst.utils.tests as tests
+import lsst.utils.tests
 from lsst.daf.base import Citizen
 from lsst.daf.persistence import DbAuth
 from lsst.pex.policy import Policy
@@ -64,12 +64,13 @@ class DbAuthTestCase(unittest.TestCase):
         self.assertEqual(DbAuth.password("lsst9.ncsa.uiuc.edu", "3306"),
                 "squirrel")
 
-def run():
-    tests.init()
-    suites = []
-    suites.append(unittest.makeSuite(DbAuthTestCase))
-    suites.append(unittest.makeSuite(tests.MemoryTestCase))
-    tests.run(unittest.TestSuite(suites))
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-if __name__ == '__main__':
-    run()
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

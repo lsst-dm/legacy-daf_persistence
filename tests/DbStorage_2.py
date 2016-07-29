@@ -27,6 +27,7 @@ import unittest
 import sys
 import time
 
+import lsst.utils.tests
 import lsst.daf.persistence as dafPers
 import lsst.pex.policy
 
@@ -107,5 +108,14 @@ WHERE id = %ld
 
         db.endTransaction()
 
-if __name__ == '__main__':
+
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
     unittest.main()
