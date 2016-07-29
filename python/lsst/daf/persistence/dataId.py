@@ -26,7 +26,7 @@ import copy
 import UserDict
 
 class DataId(UserDict.IterableUserDict):
-    """DataId is used to pass scientifically meaningful key-value pairs. It may be tagged as applicable only 
+    """DataId is used to pass scientifically meaningful key-value pairs. It may be tagged as applicable only
     to repositories that are tagged with the same value"""
 
     def __init__(self, initialdata=None, tag=None, **kwargs):
@@ -37,8 +37,8 @@ class DataId(UserDict.IterableUserDict):
         initialdata : dict or dataId
             A dict of initial data for the DataId
         tag : any type, or a container of any type
-            A value or container of values used to restrict the DataId to one or more repositories that 
-            share that tag value. It will be stored in a set for comparison with the set of tags assigned to 
+            A value or container of values used to restrict the DataId to one or more repositories that
+            share that tag value. It will be stored in a set for comparison with the set of tags assigned to
             repositories.
         kwargs : any values
             key-value pairs to be used as part of the DataId's data.
@@ -57,7 +57,7 @@ class DataId(UserDict.IterableUserDict):
                     self.tag.update(tag)
                 except TypeError:
                     self.tag.update([tag])
-            
+
         self.data.update(kwargs)
 
     def __repr__(self):

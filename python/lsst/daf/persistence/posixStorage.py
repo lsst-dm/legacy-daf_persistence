@@ -60,7 +60,7 @@ class PosixStorage(Storage):
     @staticmethod
     def _getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
-        """        
+        """
         repositoryCfg = None
         parseRes = urlparse.urlparse(uri)
         loc = os.path.join(parseRes.path, 'repositoryCfg.yaml')
@@ -82,21 +82,21 @@ class PosixStorage(Storage):
         if repositoryCfg is None:
             mapper = PosixStorage.getMapperClass(parseRes.path)
             if mapper is not None:
-                repositoryCfg = RepositoryCfg(mapper=mapper, 
-                                              root=parseRes.path, 
-                                              mapperArgs=None, 
+                repositoryCfg = RepositoryCfg(mapper=mapper,
+                                              root=parseRes.path,
+                                              mapperArgs=None,
                                               parents=None,
                                               isLegacyRepository=True)
-        return repositoryCfg        
+        return repositoryCfg
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
         if cfg.isLegacyRepository:
-            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by 
+            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by
             # the _parent symlink)
             return
         if loc is None or cfg.root == loc:
-            # the cfg is at the root location of the repository so don't write root, let it be implicit in the 
+            # the cfg is at the root location of the repository so don't write root, let it be implicit in the
             # location of the cfg.
             cfg = copy.copy(cfg)
             loc = cfg.root
@@ -113,8 +113,8 @@ class PosixStorage(Storage):
 
         Supports the legacy _parent symlink search (which was only ever posix-only. This should not be used by
         new code and repositories; they should use the Repository parentCfg mechanism.
-        
-        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a 
+
+        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a
                      _mapper file is (old style repos).
         :return: a class object or a class instance, depending on the state of the mapper when the repository
                  was created.

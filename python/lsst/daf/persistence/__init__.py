@@ -43,4 +43,3 @@ from .repository import *
 from .butler import *
 from .butlerFactory import *
 from .version import *
-

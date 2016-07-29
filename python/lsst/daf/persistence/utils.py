@@ -41,7 +41,7 @@ def listify(x):
 
 
 def setify(x):
-    """Take an object x and return it in a set. 
+    """Take an object x and return it in a set.
 
     If x is a container, will create a set from the contents of the container.
     If x is an object, will create a set with a single item in it.

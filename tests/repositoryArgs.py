@@ -35,7 +35,7 @@ class TestMapper(dp.Mapper):
 
 
 class DefaultMapper(unittest.TestCase):
-    
+
     def testClassObjAndString(self):
         args1 = dp.RepositoryArgs(mapper=dp.Mapper)
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')

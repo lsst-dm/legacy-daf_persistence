@@ -220,7 +220,7 @@ class ButlerDataRef(object):
 
         return set(
                 self.butlerSubset.butler.getKeys(
-                    self.butlerSubset.datasetType, 
+                    self.butlerSubset.datasetType,
                     tag=self.butlerSubset.dataId.tag).keys()
             ) - set(
                 self.butlerSubset.butler.getKeys(

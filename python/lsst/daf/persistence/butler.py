@@ -102,7 +102,7 @@ class RepoDataContainer(object):
         self._all = None
         self.byRepoRoot[repoData.cfg.root] = repoData
         self.byCfgRoot[repoData.args.cfgRoot] = repoData
-    
+
     def inputs(self):
         """Get a list of RepoData that are used to as inputs to the Butler.
 
@@ -112,7 +112,7 @@ class RepoDataContainer(object):
         if self._inputs is None:
             self._inputs = [rd for rd in self.byRepoRoot.itervalues() if 'r' in rd.mode]
         return self._inputs
-    
+
     def outputs(self):
         """Get a list of RepoData that are used to as outputs to the Butler.
 
@@ -122,7 +122,7 @@ class RepoDataContainer(object):
         if self._outputs is None:
             self._outputs = [rd for rd in self.byRepoRoot.itervalues() if 'w' in rd.mode]
         return self._outputs
-    
+
     def all(self):
         """Get a list of all RepoData that are used to as by the Butler.
 
@@ -132,10 +132,10 @@ class RepoDataContainer(object):
         if self._all is None:
             self._all = [rd for rd in self.byRepoRoot.itervalues()]
         return self._all
-    
+
     def __repr__(self):
         return "%s(\nbyRepoRoot=%r, \nbyCfgRoot=%r, \n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
-            self.__class__.__name__, 
+            self.__class__.__name__,
             self.byRepoRoot,
             self.byCfgRoot,
             self._inputs,
@@ -210,18 +210,18 @@ class Butler(object):
         @param mapper Deprecated. Provides a mapper to be used with Butler.
         @param mapperArgs Deprecated. Provides arguments to be passed to the mapper if the mapper input arg
                            is a class type to be instantiated by Butler.
-        @param inputs (RepositoryArg or string) Can be a single item or a list. Provides arguments to load an 
-                                                existing repository (or repositories). String is assumed to be 
-                                                a URI and is used as the cfgRoot (URI to the location of the 
-                                                cfg file). (Local file system URI does not have to start with 
+        @param inputs (RepositoryArg or string) Can be a single item or a list. Provides arguments to load an
+                                                existing repository (or repositories). String is assumed to be
+                                                a URI and is used as the cfgRoot (URI to the location of the
+                                                cfg file). (Local file system URI does not have to start with
                                                 'file://' and in this way can be a relative path).
         @param outputs (RepositoryArg) Can be a single item or a list. Provides arguments to load one or more
-                                       existing repositories or create new ones. String is assumed to be a 
+                                       existing repositories or create new ones. String is assumed to be a
                                        URI and as used as the repository root.
 
         :return:
         """
-        self._initArgs = {'root':root, 'mapper':mapper, 'inputs':inputs, 'outputs':outputs, 
+        self._initArgs = {'root':root, 'mapper':mapper, 'inputs':inputs, 'outputs':outputs,
                           'mapperArgs':mapperArgs}
 
         isLegacyRepository = inputs is None and outputs is None
@@ -239,8 +239,8 @@ class Butler(object):
                     # in the past root="None" could be used to mean root='.'
                     root = '.'
             outputs = RepositoryArgs(mode='rw',
-                                     root=root, 
-                                     mapper=mapper, 
+                                     root=root,
+                                     mapper=mapper,
                                      mapperArgs=mapperArgs)
             outputs.isLegacyRepository = True
 
@@ -250,7 +250,7 @@ class Butler(object):
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
-        
+
         inputs = listify(inputs)
         outputs = listify(outputs)
 
@@ -287,20 +287,20 @@ class Butler(object):
 
         @param args (RepositoryArgs) settings used to create the repository.
         @param inout (string) must be 'in' our 'out', indicates how the repository is to be used. Input repos
-                              are only read from, and output repositories may be read from and/or written to 
+                              are only read from, and output repositories may be read from and/or written to
                               (w/rw of output repos depends on args.mode)
-        @param defaultMapper (mapper class or None ) if a default mapper could be inferred from inputs then 
-                                                     this will be a class object that can be used for any 
-                                                     outputs that do not explicitly define their mapper. If 
-                                                     None then a mapper class could not be inferred and a 
+        @param defaultMapper (mapper class or None ) if a default mapper could be inferred from inputs then
+                                                     this will be a class object that can be used for any
+                                                     outputs that do not explicitly define their mapper. If
+                                                     None then a mapper class could not be inferred and a
                                                      mapper must be defined by each output.
-        @param butlerIOParents (ordered dict) The keys are cfgRoot of repoArgs, val is the repoArgs. 
+        @param butlerIOParents (ordered dict) The keys are cfgRoot of repoArgs, val is the repoArgs.
                                               This is all the explicit input and output repositories to the
                                               butler __init__ function, it is used when determining what the
                                               parents of writable repositories are.
-        @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId 
-                                         passed into butler input functions. Applies only to input 
-                                         repositories: If tag is specified by the dataId then the repo will 
+        @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId
+                                         passed into butler input functions. Applies only to input
+                                         repositories: If tag is specified by the dataId then the repo will
                                          only be read from used if the tag in the dataId matches a tag used
                                          for that repository.
         """
@@ -316,7 +316,7 @@ class Butler(object):
             repoData = self._repos.byCfgRoot[args.cfgRoot]
             if not repoData.cfg.matchesArgs(args):
                 raise RuntimeError("Mismatched repository configurations passed in or loaded:" +
-                                   "\n\tnew args:%s" + 
+                                   "\n\tnew args:%s" +
                                    "\n\texisting repoData:%s" %
                                    (args, repoData))
             repoData.tags.update(setify(tags))
@@ -333,7 +333,7 @@ class Butler(object):
                     raise RuntimeError('Input repositories must be readable.')
             else:
                 raise RuntimeError('Unrecognized value for inout:' % inout)
-            
+
             # Try to get the cfg.
             # If it exists, verify no mismatch with args.
             # If it does not exist, make the cfg and save the cfg at cfgRoot.
@@ -342,11 +342,11 @@ class Butler(object):
             parentsToAdd = []
             if cfg is not None:
                 if inout == 'out':
-                    # Parents used by this butler instance must match the parents of any existing output 
-                    # repositories used by this butler. (If there is a configuration change a new output 
-                    # repository should be created). 
-                    # IE cfg.parents can have parents that are not passed in as butler inputs or readable 
-                    # outputs, but the butler may not have readable i/o that is not a parent of an already 
+                    # Parents used by this butler instance must match the parents of any existing output
+                    # repositories used by this butler. (If there is a configuration change a new output
+                    # repository should be created).
+                    # IE cfg.parents can have parents that are not passed in as butler inputs or readable
+                    # outputs, but the butler may not have readable i/o that is not a parent of an already
                     # existing output.
                     for cfgRoot in butlerIOParents:
                         if cfgRoot not in cfg.parents and cfgRoot != args.cfgRoot:
@@ -405,7 +405,7 @@ class Butler(object):
                 cfgRoot = args.cfgRoot
                 mapper = Butler.getMapperClass(cfgRoot)
             mappers.add(mapper)
-        
+
         if len(mappers) == 1:
             return mappers.pop()
         else:
@@ -426,7 +426,7 @@ class Butler(object):
 
         @param alias (str) the alias keyword. it may start with @ or not. It may not contain @ except as the
                            first character.
-        @param datasetType (str) the string that will be substituted when @alias is passed into datasetType. 
+        @param datasetType (str) the string that will be substituted when @alias is passed into datasetType.
                                  It may not contain '@'
         """
 
@@ -452,16 +452,16 @@ class Butler(object):
 
 
     def getKeys(self, datasetType=None, level=None, tag=None):
-        """Returns a dict.  The dict keys are the valid data id keys at or above the given level of hierarchy 
-        for the dataset type or the entire collection if None.  The dict values are the basic Python types 
+        """Returns a dict.  The dict keys are the valid data id keys at or above the given level of hierarchy
+        for the dataset type or the entire collection if None.  The dict values are the basic Python types
         corresponding to the keys (int, float, str).
 
         @param datasetType (str) the type of dataset to get keys for, entire collection if None.
         @param level (str) the hierarchy level to descend to. None if it should not be restricted. Use an
                            empty string if the mapper should lookup the default level.
-        @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId 
-                                         passed into butler input functions. Applies only to input 
-                                         repositories: If tag is specified by the dataId then the repo will 
+        @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId
+                                         passed into butler input functions. Applies only to input
+                                         repositories: If tag is specified by the dataId then the repo will
                                          only be read from used if the tag in the dataId matches a tag used
                                          for that repository.
         @returns (dict) valid data id keys; values are corresponding types.
@@ -689,7 +689,7 @@ class Butler(object):
         dataId = DataId(dataId)
         subset = self.subset(datasetType, level, dataId, **rest)
         if len(subset) != 1:
-            raise RuntimeError("No unique dataset for: Dataset type:%s Level:%s Data ID:%s Keywords:%s" % 
+            raise RuntimeError("No unique dataset for: Dataset type:%s Level:%s Data ID:%s Keywords:%s" %
                 (str(datasetType), str(level), str(dataId), str(rest)))
         return ButlerDataRef(subset, subset.cache[0])
 

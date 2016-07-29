@@ -108,7 +108,7 @@ class ButlerTestCase(unittest.TestCase):
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':1}), True)
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':2}), True)
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':3}), True)
-        
+
         # test a few values that are expected to be false:
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'f', 'visit':1}), False)
         self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':1}), False)
@@ -137,7 +137,7 @@ class ButlerTestCase(unittest.TestCase):
 
 def suite():
     utilsTests.init()
-    
+
     suites = []
     suites += unittest.makeSuite(ButlerTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)

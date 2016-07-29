@@ -46,7 +46,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @staticmethod
     def v1Constructor(loader, node):
-        """Constructor for 'version 1' of the serlized RepositoryCfg. 
+        """Constructor for 'version 1' of the serlized RepositoryCfg.
 
         If new parameters are added to RepositoryCfg they will have to be checked for in d; if they are there
         then their value should be used and if they are not there a default value must be used in place.
@@ -56,14 +56,14 @@ class RepositoryCfg(yaml.YAMLObject):
         1. Increment the version number (after _v1) in the yaml_tag of this class.
         2. Add a new constructor (similar to this one) to deserialze new serializations of this class.
         3. Registered the new constructor for the new version with yaml, the same way it is done at the bottom
-           of this file. 
+           of this file.
         4. All constructors for the older version(s) of persisted RepositoryCfg must be changed to adapt
-           the old keys to their new uses and create the current (new) version of a repository cfg, or raise a 
+           the old keys to their new uses and create the current (new) version of a repository cfg, or raise a
            RuntimeError in the case that older versions of serialized RepositoryCfgs can not be adapted.
         There is an example of migrating from a fictitious v0 to v1 in tests/repositoryCfg.py
         """
         d = loader.construct_mapping(node)
-        cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'], 
+        cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
                             parents=d['_parents'], isLegacyRepository=d['_isLegacyRepository'])
         return cfg
 
@@ -84,7 +84,7 @@ class RepositoryCfg(yaml.YAMLObject):
         return self._root
 
     @root.setter
-    def root(self, root):        
+    def root(self, root):
         if root is not None and self._root is not None:
             raise RuntimeError("Explicity clear root (set to None) before changing the value of root.")
         self._root = root
@@ -96,7 +96,7 @@ class RepositoryCfg(yaml.YAMLObject):
     @property
     def mapperArgs(self):
         return self._mapperArgs
-    
+
     @mapperArgs.setter
     def mapperArgs(self, newDict):
         self._mapperArgs = newDict
@@ -117,8 +117,8 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @staticmethod
     def makeFromArgs(repositoryArgs, parents):
-        cfg = RepositoryCfg(root=repositoryArgs.root, 
-                            mapper = repositoryArgs.mapper, 
+        cfg = RepositoryCfg(root=repositoryArgs.root,
+                            mapper = repositoryArgs.mapper,
                             mapperArgs = repositoryArgs.mapperArgs,
                             parents=parents,
                             isLegacyRepository=repositoryArgs.isLegacyRepository)
@@ -145,11 +145,11 @@ class RepositoryCfg(yaml.YAMLObject):
 
     def __repr__(self):
         return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, isLegacyRepository=%s)" % (
-            self.__class__.__name__, 
-            self._root, 
-            self._mapper, 
-            self._mapperArgs, 
+            self.__class__.__name__,
+            self._root,
+            self._mapper,
+            self._mapperArgs,
             self._parents,
-            self._isLegacyRepository) 
+            self._isLegacyRepository)
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)

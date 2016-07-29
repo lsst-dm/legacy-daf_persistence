@@ -63,8 +63,8 @@ class TestCfgRelationship(unittest.TestCase):
 
     def testExistingParents(self):
         # parents of inputs should be added to the inputs list
-        butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w', 
-                                                     mapper=NullMapper(), 
+        butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
+                                                     mapper=NullMapper(),
                                                      root='tests/repositoryCfg/a'))
         del butler
         butler = dp.Butler(inputs='tests/repositoryCfg/a', outputs='tests/repositoryCfg/b')
@@ -108,7 +108,7 @@ class RepositoryCfg(yaml.YAMLObject):
 yaml.add_constructor(u"!RepositoryCfg_v0", RepositoryCfg.v0Constructor)
 
 class TestCfgFileVersion(unittest.TestCase):
-    """Proof-of-concept test case for a fictitious version 0 of a persisted repository cfg. 
+    """Proof-of-concept test case for a fictitious version 0 of a persisted repository cfg.
     """
 
     def setUp(self):

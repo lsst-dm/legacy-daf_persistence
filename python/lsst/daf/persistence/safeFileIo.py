@@ -55,14 +55,14 @@ def FileForWriteOnceCompareSame(name):
     they match the inital write.
 
     The context manager provides a temporary file object. After the user is done, the temporary file becomes
-    the permanent file if the file at name does not already exist. If the file at name does exist the 
+    the permanent file if the file at name does not already exist. If the file at name does exist the
     temporary file is compared to the file at name. If they are the same then this is good and the temp file
     is silently thrown away. If they are not the same then a runtime error is raised.
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
     temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
-    try: 
+    try:
         yield temp
     finally:
         try:
@@ -70,7 +70,7 @@ def FileForWriteOnceCompareSame(name):
             # If the symlink cannot be created then it will raise. If it can't be created because a file at
             # 'name' already exists then we'll do a compare-same check.
             os.symlink(temp.name, name)
-            # If the symlink was created then this is the process that created the first instance of the 
+            # If the symlink was created then this is the process that created the first instance of the
             # file, and we know its contents match. Move the temp file over the symlink.
             os.rename(temp.name, name)
         except OSError as e:

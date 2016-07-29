@@ -196,15 +196,15 @@ class RepoFindByDate(unittest.TestCase):
             for type in types:
                 # create a cfg of a repository for our repositories
                 repoOfRepoCfg = dp.Repository.cfg(
-                    mode='rw', 
-                    storageCfg=dp.PosixStorage.cfg(root=self.calibsRoot), 
+                    mode='rw',
+                    storageCfg=dp.PosixStorage.cfg(root=self.calibsRoot),
                     mapper=dp.RepositoryMapper.cfg(policy=self.repoMapperPolicy)
                 )
                 repoButler = dp.Butler(outputs=repoOfRepoCfg)
                 # create a cfg of a repository we'd like to use. Note that we don't create the root of the cfg.
                 # this will get populated by the repoOfRepos template.
-                repoCfg = dp.Repository.cfg(mode='rw', 
-                                            storageCfg=dp.PosixStorage.cfg(), 
+                repoCfg = dp.Repository.cfg(mode='rw',
+                                            storageCfg=dp.PosixStorage.cfg(),
                                             mapper=TestMapper.cfg())
                 # and put that config into the repoOfRepos.
                 repoButler.put(repoCfg, 'cfg', dataId={'type':type, 'date':date})

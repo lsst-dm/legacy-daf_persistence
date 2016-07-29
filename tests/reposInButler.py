@@ -127,7 +127,7 @@ class ReposInButler(unittest.TestCase):
         repoOfRepoCfg = dp.Repository.cfg(mode='rw',
                                           storageCfg=dp.PosixStorage.cfg(root='tests/repoOfRepos'),
                                           mapper=dp.RepositoryMapper.cfg(policy=repoMapperPolicy))
-        
+
         repoButler = dp.Butler(outputs=repoOfRepoCfg)
         # create a cfg of a repository we'd like to use. Note that we don't create the root of the cfg.
         # this will get populated by the repoOfRepos template.

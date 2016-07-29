@@ -34,8 +34,8 @@ from lsst.daf.persistence import Access, Policy, Mapper, LogicalLocation, Butler
 
 class RepositoryArgs(object):
 
-    def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None, 
-                 mode=None):        
+    def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None,
+                 mode=None):
         self.root = root
         self._cfgRoot = cfgRoot
         self.mapper = mapper
@@ -46,7 +46,7 @@ class RepositoryArgs(object):
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r)" % (
-            self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags, 
+            self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags,
             self.mode)
 
     @property
@@ -226,5 +226,3 @@ class Repository(object):
         if self._mapper is None:
             return None
         return self._mapper.getDefaultLevel()
-
-

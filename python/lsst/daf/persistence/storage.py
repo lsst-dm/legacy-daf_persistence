@@ -49,8 +49,8 @@ class Storage(object):
 
         .. warning::
 
-            Storage is 'wet paint' and very likely to change during factorization of Butler back end and 
-            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is 
+            Storage is 'wet paint' and very likely to change during factorization of Butler back end and
+            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
         Parameters
@@ -91,14 +91,14 @@ class Storage(object):
     def getMapperClass(uri):
         """Get a mapper class cfg value from location described by uri.
 
-        Note that in legacy repositories the mapper may be specified by a file called _mapper at the uri 
+        Note that in legacy repositories the mapper may be specified by a file called _mapper at the uri
         location, and in newer repositories the mapper would be specified by a RepositoryCfg stored at the uri
         location.
 
         .. warning::
 
-            Storage is 'wet paint' and very likely to change during factorization of Butler back end and 
-            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is 
+            Storage is 'wet paint' and very likely to change during factorization of Butler back end and
+            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
         """
@@ -117,8 +117,8 @@ class Storage(object):
 
         .. warning::
 
-            Storage is 'wet paint' and very likely to change during factorization of Butler back end and 
-            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is 
+            Storage is 'wet paint' and very likely to change during factorization of Butler back end and
+            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
         :param uri: the uri to a locaiton that contains a repositoryCfg.
@@ -132,5 +132,3 @@ class Storage(object):
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
-
-
