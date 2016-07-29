@@ -136,7 +136,7 @@ class ButlerSubsetIterator(object):
         return self
 
     def next(self):
-        return ButlerDataRef(self.butlerSubset, self.iter.next())
+        return ButlerDataRef(self.butlerSubset, next(self.iter))
 
 class ButlerDataRef(object):
     """

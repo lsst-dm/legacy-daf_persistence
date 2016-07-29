@@ -65,7 +65,7 @@ class MinMapper(dafPersist.Mapper):
         return 'visit'
 
     def getKeys(self, datasetType, level):
-        return {'filter': types.StringType, 'visit': types.IntType}
+        return {'filter': bytes, 'visit': int}
 
 
 class ButlerTestCase(unittest.TestCase):

@@ -257,18 +257,18 @@ class PosixStorage(Storage):
                 finalItem = Policy(filePath=logLoc.locString())
             elif storageName == "PickleStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, "No such pickle file: " + logLoc.locString()
+                    raise RuntimeError("No such pickle file: " + logLoc.locString())
                 with open(logLoc.locString(), "rb") as infile:
                     finalItem = cPickle.load(infile)
             elif storageName == "FitsCatalogStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, "No such FITS catalog file: " + logLoc.locString()
+                    raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
                 hdu = additionalData.getInt("hdu", 0)
                 flags = additionalData.getInt("flags", 0)
                 finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
             elif storageName == "ConfigStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, "No such config file: " + logLoc.locString()
+                    raise RuntimeError("No such config file: " + logLoc.locString())
                 finalItem = pythonType()
                 finalItem.load(logLoc.locString())
             else:

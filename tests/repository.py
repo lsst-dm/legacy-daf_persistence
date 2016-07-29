@@ -86,7 +86,7 @@ class ParentMapper(dp.Mapper):
         return 'visit'
 
     def getKeys(self, datasetType, level):
-        return {'filter': types.StringType, 'visit': types.IntType}
+        return {'filter': bytes, 'visit': int}
 
     def map_str(self, dataId, write):
         path = os.path.join(self.root, 'data/input/raw')
@@ -123,7 +123,7 @@ class ChildrenMapper(dp.Mapper):
         return 'visit'
 
     def getKeys(self, datasetType, level):
-        return {'filter': types.StringType, 'visit': types.IntType}
+        return {'filter': bytes, 'visit': int}
 
 
 class TestBasics(unittest.TestCase):
@@ -162,20 +162,20 @@ class TestBasics(unittest.TestCase):
         keys = self.butler.getKeys('raw')
         self.assertEqual('filter' in keys, True)
         self.assertEqual('visit' in keys, True)
-        self.assertEqual(keys['filter'], types.StringType)
-        self.assertEqual(keys['visit'], types.IntType)
+        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag='baArgs')
         self.assertEqual('filter' in keys, True)
         self.assertEqual('visit' in keys, True)
-        self.assertEqual(keys['filter'], types.StringType)
-        self.assertEqual(keys['visit'], types.IntType)
+        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag=('baArgs', 'foo'))
         self.assertEqual('filter' in keys, True)
         self.assertEqual('visit' in keys, True)
-        self.assertEqual(keys['filter'], types.StringType)
-        self.assertEqual(keys['visit'], types.IntType)
+        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag='foo')
         self.assertEqual(keys, None)
@@ -183,8 +183,8 @@ class TestBasics(unittest.TestCase):
         keys = self.butler.getKeys('raw', tag=set(['baArgs', 'foo']))
         self.assertEqual('filter' in keys, True)
         self.assertEqual('visit' in keys, True)
-        self.assertEqual(keys['filter'], types.StringType)
-        self.assertEqual(keys['visit'], types.IntType)
+        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['visit'], int)
 
 
     def testQueryMetadata(self):

@@ -40,7 +40,7 @@ class DbStorage1TestCase(unittest.TestCase):
         self.db = dafPers.DbStorage()
         policy = lsst.pex.policy.Policy()
         self.db.setPolicy(policy)
-        self.testId = long(time.time() * 1000000000L);
+        self.testId = long(time.time() * 1000000000);
         print(self.testId)
 
     def tearDown(self):
@@ -83,7 +83,7 @@ class DbStorage1TestCase(unittest.TestCase):
 
         db.query()
 
-        self.assertTrue(db.next())
+        self.assertTrue(next(db))
 
         self.assertFalse(db.columnIsNull(0))
         self.assertFalse(db.columnIsNull(1))
@@ -95,7 +95,7 @@ class DbStorage1TestCase(unittest.TestCase):
         self.assertEqual(db.getColumnByPosString(3), "foo")
         self.assertEqual(db.getColumnByPosDouble(4), 9.87654)
 
-        self.assertFalse(db.next())
+        self.assertFalse(next(db))
 
         db.finishQuery()
 

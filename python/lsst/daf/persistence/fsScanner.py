@@ -22,6 +22,7 @@
 
 
 """This module provides the FsScanner class."""
+from __future__ import print_function
 
 import glob
 import os
@@ -139,6 +140,6 @@ class FsScanner(object):
                         dataId[f] = float(dataId[f])
                 ret[path] = dataId
             else:
-                print >> sys.stderr, "Warning: unmatched path: %s" % (path,)
+                print("Warning: unmatched path: %s" % (path,), file=sys.stderr)
         os.chdir(curdir)
         return ret

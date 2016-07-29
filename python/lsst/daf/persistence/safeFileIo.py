@@ -35,7 +35,7 @@ def safeMakeDir(directory):
     if directory != "" and not os.path.exists(directory):
         try:
             os.makedirs(directory)
-        except OSError, e:
+        except OSError as e:
             # Don't fail if directory exists due to race
             if e.errno != errno.EEXIST:
                 raise e

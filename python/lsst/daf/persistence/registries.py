@@ -28,9 +28,10 @@ Currently this module assumes posix access (for both PosixRegistry AND SqliteReg
 factored so that at least the SqliteRegistry can be remote/not on the local filesystem. For now this module is only used
 by CameraMapper and by PosixStorage, both of which work on the local filesystem only, so this works for the time being.
 """
+from __future__ import absolute_import
 
 import copy
-import fsScanner
+from . import fsScanner
 import os
 import pyfits
 import re

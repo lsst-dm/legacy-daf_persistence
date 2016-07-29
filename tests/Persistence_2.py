@@ -45,7 +45,7 @@ class DbPersistence2TestCase(unittest.TestCase):
         dp.addDouble("doubleField", 1.2)
         dp.addString("varcharField", "Testing")
         dp.addBool("boolField", True)
-        dp.addLongLong("int64Field", 9876543210L)
+        dp.addLongLong("int64Field", 9876543210)
         dp.addFloat("floatField", 3.14)
 
         pol = pexPolicy.Policy()
@@ -73,7 +73,7 @@ class DbPersistence2TestCase(unittest.TestCase):
         dp.addDouble("doubleField", 2.3)
         dp.addString("varcharField", "gnitseT")
         dp.addBool("boolField", False)
-        dp.addLongLong("int64Field", 9988776655L)
+        dp.addLongLong("int64Field", 9988776655)
         dp.addFloat("floatField", 2.718)
 
         pol = pexPolicy.Policy()
@@ -104,7 +104,7 @@ class DbPersistence2TestCase(unittest.TestCase):
         dp.addDouble("d", 3.4)
         dp.addString("v", "LastOne")
         dp.addBool("b", True)
-        dp.addLongLong("I", 9998887776L)
+        dp.addLongLong("I", 9998887776)
         dp.addFloat("f", 1.414)
 
         pol = pexPolicy.Policy()
