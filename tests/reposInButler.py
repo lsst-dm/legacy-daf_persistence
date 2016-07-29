@@ -144,7 +144,7 @@ class ReposInButler(unittest.TestCase):
         butler.put(obj, 'str', {'strId':'a'})
         reloadedObj = butler.get('str', {'strId':'a'})
         self.assertEqual(obj, reloadedObj)
-        self.assertTrue(obj is not reloadedObj) # reloaded object should be a new instance.
+        self.assertIsNot(obj, reloadedObj) # reloaded object should be a new instance.
 
         # explicitly release some objects; these names will be reused momentarily.
         del butler, repoCfg, obj, reloadedObj
@@ -160,7 +160,7 @@ class ReposInButler(unittest.TestCase):
         butler.put(obj, 'str', {'strId':'a'})
         reloadedObj = butler.get('str', {'strId':'a'})
         self.assertEqual(obj, reloadedObj)
-        self.assertTrue(obj is not reloadedObj)
+        self.assertIsNot(obj, reloadedObj)
 
         # release the objects for repo version 124
         del butler, repoCfg, obj, reloadedObj

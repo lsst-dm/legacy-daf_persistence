@@ -91,7 +91,7 @@ class PolicyTestCase(unittest.TestCase):
         policy = self.policy['body']
         self.assertEqual(policy, {'job': {'position': 'Developer', 'company': 'Microsoft'}, 'name': 'John'})
         self.assertEqual(policy['job.position'], 'Developer') # note: verifies dot naming
-        self.assertTrue(isinstance(policy, Policy))
+        self.assertIsInstance(policy, Policy)
 
     def testDotsInBraces(self):
         self.assertEqual(self.policy['body.job.company'], 'Microsoft')

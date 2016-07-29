@@ -42,21 +42,21 @@ class DbAuthTestCase(unittest.TestCase):
         del self.pol
 
     def testSetPolicy(self):
-        self.assert_(DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"))
+        self.assertTrue(DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"))
         self.assertEqual(DbAuth.authString("lsst10.ncsa.uiuc.edu", "3306"),
                 "test:globular.test")
         self.assertEqual(DbAuth.username("lsst10.ncsa.uiuc.edu", "3306"),
                 "test")
         self.assertEqual(DbAuth.password("lsst10.ncsa.uiuc.edu", "3306"),
                 "globular.test")
-        self.assert_(DbAuth.available("lsst10.ncsa.uiuc.edu", "3307"))
+        self.assertTrue(DbAuth.available("lsst10.ncsa.uiuc.edu", "3307"))
         self.assertEqual(DbAuth.authString("lsst10.ncsa.uiuc.edu", "3307"),
                 "boris:natasha")
         self.assertEqual(DbAuth.username("lsst10.ncsa.uiuc.edu", "3307"),
                 "boris")
         self.assertEqual(DbAuth.password("lsst10.ncsa.uiuc.edu", "3307"),
                 "natasha")
-        self.assert_(DbAuth.available("lsst9.ncsa.uiuc.edu", "3306"))
+        self.assertTrue(DbAuth.available("lsst9.ncsa.uiuc.edu", "3306"))
         self.assertEqual(DbAuth.authString("lsst9.ncsa.uiuc.edu", "3306"),
                 "rocky:squirrel")
         self.assertEqual(DbAuth.username("lsst9.ncsa.uiuc.edu", "3306"),

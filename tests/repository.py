@@ -593,7 +593,7 @@ class TestMapperInference(unittest.TestCase):
         repoBArgs = dp.RepositoryArgs(mode='rw',
                                       root='tests/TestMapperInference/repoB')
         butler = dp.Butler(inputs='tests/TestMapperInference/repoA', outputs=repoBArgs)
-        self.assertTrue(isinstance(butler._repos.outputs()[0].repo._mapper, MapperForTestWriting))
+        self.assertIsInstance(butler._repos.outputs()[0].repo._mapper, MapperForTestWriting)
 
 
     def testMultipleParentsSameMapper(self):
@@ -620,7 +620,7 @@ class TestMapperInference(unittest.TestCase):
 
         butler = dp.Butler(inputs=('tests/TestMapperInference/repoA', 'tests/TestMapperInference/repoB'),
                            outputs=repoCArgs)
-        self.assertTrue(isinstance(butler._repos.outputs()[0].repo._mapper, MapperForTestWriting))
+        self.assertIsInstance(butler._repos.outputs()[0].repo._mapper, MapperForTestWriting)
 
 
     def testMultipleParentsDifferentMappers(self):

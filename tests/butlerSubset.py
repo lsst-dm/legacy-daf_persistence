@@ -128,13 +128,13 @@ class ButlerSubsetTestCase(unittest.TestCase):
             # calexp is by sensor, so get the data directly
             self.assertEqual(iterator.dataId["skyTile"], 6)
             if iterator.dataId["raft"] == "1,2":
-                self.assert_(iterator.dataId["sensor"] in ["2,1", "2,2"])
+                self.assertIn(iterator.dataId["sensor"], ["2,1", "2,2"])
                 self.assertEqual(iterator.dataId["visit"], 123456)
             elif iterator.dataId["raft"] == "1,3":
-                self.assert_(iterator.dataId["sensor"] in ["1,1", "1,2"])
+                self.assertIn(iterator.dataId["sensor"], ["1,1", "1,2"])
                 self.assertEqual(iterator.dataId["visit"], 654321)
             else:
-                self.assert_(iterator.dataId["raft"] in ["1,2", "1,3"])
+                self.assertIn(iterator.dataId["raft"], ["1,2", "1,3"])
             image = iterator.get(self.calexpTypeName) # succeeds since deferred
             self.assertEqual(type(image), dafPersist.readProxy.ReadProxy)
             image = iterator.get(self.calexpTypeName, immediate=True) # real test
@@ -193,11 +193,11 @@ class ButlerSubsetTestCase(unittest.TestCase):
             for ampIterator in iterator.subItems(): # default level = "amp"
                 if iterator.dataId["raft"] == "1,1":
                     self.assertEqual(iterator.dataId["sensor"], "2,2")
-                    self.assert_(ampIterator.dataId["amp"] in ["0,0", "0,1",
+                    self.assertIn(ampIterator.dataId["amp"], ["0,0", "0,1",
                         "1,0", "1,1"])
-                    self.assert_(ampIterator.dataId["snap"] in [0, 1])
+                    self.assertIn(ampIterator.dataId["snap"], [0, 1])
                 else:
-                    self.assert_(iterator.dataId["sensor"] in ["2,1", "2,2"])
+                    self.assertIn(iterator.dataId["sensor"], ["2,1", "2,2"])
                 # equivalent to butler.get(self.rawTypeName, ampIterator)
                 self.assertTrue(ampIterator.datasetExists("flat"))
                 flat = ampIterator.get("flat")
