@@ -179,7 +179,7 @@ class PosixStorage(Storage):
                 importClassString = pythonTypeTokenList.pop()
                 importClassString = importClassString.strip()
                 importPackage = ".".join(pythonTypeTokenList)
-                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+                importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
                 pythonType = getattr(importType, importClassString)
         # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
         # implications; write now I'm worried that any python type that can be written to disk and has a method
@@ -242,7 +242,7 @@ class PosixStorage(Storage):
                 importClassString = pythonTypeTokenList.pop()
                 importClassString = importClassString.strip()
                 importPackage = ".".join(pythonTypeTokenList)
-                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+                importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
                 pythonType = getattr(importType, importClassString)
 
         # see note re. discomfort with the name 'butlerWrite' in the write method, above. Same applies to butlerRead.

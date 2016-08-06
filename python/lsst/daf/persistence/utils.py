@@ -107,6 +107,6 @@ def doImport(pythonType):
     importClassString = pythonTypeTokenList.pop()
     importClassString = importClassString.strip()
     importPackage = ".".join(pythonTypeTokenList)
-    importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+    importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
     pythonType = getattr(importType, importClassString)
     return pythonType
