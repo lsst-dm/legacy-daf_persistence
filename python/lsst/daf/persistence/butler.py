@@ -44,7 +44,7 @@ import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
 from . import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, Repository, \
               Access, Storage, Policy, NoResults, MultipleResults, Repository, DataId, RepositoryCfg, \
-              RepositoryArgs, listify, setify, doImport
+              RepositoryArgs, listify, setify, sequencify, doImport
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -504,8 +504,8 @@ class Butler(object):
 
         if format is None:
             format = (key,)
-        elif not hasattr(format, '__iter__'):
-            format = (format,)
+        else:
+            format = sequencify(format)
 
         tuples = None
         for repoData in self._repos.inputs():

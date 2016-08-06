@@ -29,6 +29,7 @@ import lsst.daf.base as dafBase
 
 import yaml
 
+from . import iterify
 
 
 class ButlerLocation(yaml.YAMLObject):
@@ -53,10 +54,7 @@ class ButlerLocation(yaml.YAMLObject):
         self.storageName = storageName
         self.mapper = mapper
         self.storage = storage
-        if hasattr(locationList, '__iter__'):
-            self.locationList = locationList
-        else:
-            self.locationList = [locationList]
+        self.locationList = iterify(locationList)
         self.additionalData = dafBase.PropertySet()
         for k, v in dataId.items():
             self.additionalData.set(k, v)

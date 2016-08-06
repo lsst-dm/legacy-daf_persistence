@@ -27,7 +27,7 @@
 import inspect
 import yaml
 
-from lsst.daf.persistence import listify
+from lsst.daf.persistence import listify, iterify
 
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
@@ -36,12 +36,7 @@ class RepositoryCfg(yaml.YAMLObject):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
-        if parents is None:
-            self._parents = []
-        elif not hasattr(parents, '__iter__'):
-            self._parents = list(parents)
-        else:
-            self._parents = parents
+        self._parents = iterify(parents)
         self._isLegacyRepository = isLegacyRepository
 
     @staticmethod

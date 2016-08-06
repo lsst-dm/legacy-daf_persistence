@@ -30,9 +30,10 @@ by CameraMapper and by PosixStorage, both of which work on the local filesystem 
 """
 from __future__ import absolute_import
 from builtins import object
+from past.builtins import basestring
 
 import copy
-from . import fsScanner
+from . import fsScanner, sequencify
 import os
 import astropy.io.fits
 import re
@@ -118,8 +119,7 @@ class PosixRegistry(Registry):
     class LookupData(object):
         def __init__(self, lookupProperties, dataId):
             self.dataId = copy.copy(dataId)
-            if not hasattr(lookupProperties, '__iter__'):
-                lookupProperties = (lookupProperties,)
+            lookupProperties = sequencify(lookupProperties)
             self.lookupProperties = copy.copy(lookupProperties)
             self.foundItems = {}
             self.cachedStatus = None
@@ -295,10 +295,8 @@ class SqliteRegistry(Registry):
             return None
 
         # input variable sanitization:
-        if not hasattr(reference, '__iter__'):
-            reference = (reference,)
-        if not hasattr(lookupProperties, '__iter__'):
-            lookupProperties = (lookupProperties,)
+        reference = sequencify(reference)
+        lookupProperties = sequencify(lookupProperties)
 
         cmd = "SELECT DISTINCT "
         cmd += ", ".join(lookupProperties)
@@ -307,7 +305,7 @@ class SqliteRegistry(Registry):
         if dataId is not None and len(dataId) > 0:
             whereList = []
             for k, v in dataId.items():
-                if hasattr(k, '__iter__'):
+                if hasattr(k, '__iter__') and not isinstance(k, basestring):
                     if len(k) != 2:
                         raise RuntimeError("Wrong number of keys for range:%s" % (k,))
                     whereList.append("(? BETWEEN %s AND %s)" %(k[0], k[1]))
