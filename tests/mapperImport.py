@@ -32,19 +32,23 @@ import lsst.utils.tests
 import lsst.daf.persistence as dafPersist
 import pickleMapper
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
+
 class MapperImportTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
     def setUp(self):
-        if os.path.exists('tests/root/out'):
-            shutil.rmtree('tests/root/out')
+        if os.path.exists(os.path.join(ROOT, 'root/out')):
+            shutil.rmtree(os.path.join(ROOT, 'root/out'))
 
-        self.butler = dafPersist.Butler(os.path.join("tests", "root"), outPath="out")
+        self.butler = dafPersist.Butler(os.path.join(ROOT, "root"), outPath="out")
 
     def tearDown(self):
         del self.butler
-        if os.path.exists('tests/root/out'):
-            shutil.rmtree('tests/root/out')
+        if os.path.exists(os.path.join(ROOT, 'root/out')):
+            shutil.rmtree(os.path.join(ROOT, 'root/out'))
 
     def testMapperClass(self):
         repository = self.butler._repos.outputs()[0].repo
@@ -55,7 +59,7 @@ class MapperImportTestCase(unittest.TestCase):
         y = butler.get("x", ccd=ccd, immediate=True)
         self.assertEqual(bbox, y)
         self.assert_(os.path.exists(
-            os.path.join("tests", "root", "out", "foo%d.pickle" % ccd)))
+            os.path.join(ROOT, "root", "out", "foo%d.pickle" % ccd)))
 
     def testIO(self):
         bbox = [[3, 4], [5, 6]]

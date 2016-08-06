@@ -21,10 +21,15 @@
 #
 
 import unittest
+import os
 import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.pex.policy
 import lsst.utils.tests
+
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 class DbPersistence1TestCase(unittest.TestCase):
 
@@ -37,7 +42,7 @@ class DbPersistence1TestCase(unittest.TestCase):
         additionalData = dafBase.PropertySet()
         additionalData.addInt("sliceId", 5)
 
-        loc = dafPersist.LogicalLocation("tests/data/test.boost")
+        loc = dafPersist.LogicalLocation(os.path.join(ROOT, "data/test.boost"))
 
         persistence = dafPersist.Persistence.getPersistence(pol)
 

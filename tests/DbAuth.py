@@ -24,17 +24,21 @@
 
 
 import unittest
+import os
 
 import lsst.utils.tests
 from lsst.daf.base import Citizen
 from lsst.daf.persistence import DbAuth
 from lsst.pex.policy import Policy
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 class DbAuthTestCase(unittest.TestCase):
     """A test case for DbAuth."""
 
     def setUp(self):
-        self.pol = Policy("tests/testDbAuth.paf")
+        self.pol = Policy(os.path.join(ROOT, "testDbAuth.paf"))
         DbAuth.setPolicy(self.pol)
 
     def tearDown(self):

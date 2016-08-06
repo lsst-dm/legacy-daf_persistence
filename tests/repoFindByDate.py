@@ -36,6 +36,9 @@ import yaml
 import lsst.utils.tests
 import lsst.daf.persistence as dp
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 def setup_module(module):
     lsst.utils.tests.init()
@@ -183,8 +186,8 @@ class RepoDateMapper(dp.RepositoryMapper):
 class RepoFindByDate(unittest.TestCase):
 
     def clean(self):
-        if os.path.exists('tests/RepoFindByDate'):
-            shutil.rmtree('tests/RepoFindByDate')
+        if os.path.exists(os.path.join(ROOT, 'RepoFindByDate')):
+            shutil.rmtree(os.path.join(ROOT, 'RepoFindByDate'))
 
     def setup(self):
         self.clean()
@@ -220,7 +223,7 @@ class RepoFindByDate(unittest.TestCase):
 
     def test(self):
         # create some objects that will be used when creating repositories AND when finding the created ones:
-        self.calibsRoot = 'tests/RepoFindByDate'
+        self.calibsRoot = os.path.join(ROOT, 'RepoFindByDate')
         self.repoMapperPolicy = {
             'repositories': {
                 'cfg': {

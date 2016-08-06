@@ -40,6 +40,9 @@ import lsst.utils.tests
 import lsst.daf.persistence as dp
 from lsst.daf.persistence import Policy
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 def setup_module(module):
     lsst.utils.tests.init()
@@ -99,8 +102,8 @@ class TestMapper(dp.Mapper):
 class ReposInButler(unittest.TestCase):
 
     def clean(self):
-        if os.path.exists('tests/repoOfRepos'):
-            shutil.rmtree('tests/repoOfRepos')
+        if os.path.exists(os.path.join(ROOT, 'repoOfRepos')):
+            shutil.rmtree(os.path.join(ROOT, 'repoOfRepos'))
 
     def setup(self):
         self.clean()
@@ -120,14 +123,14 @@ class ReposInButler(unittest.TestCase):
         }
 
         # create a cfg of a repository for our repositories
-        storageCfg = dp.PosixStorage.cfg(root='tests/repoOfRepos')
+        storageCfg = dp.PosixStorage.cfg(root=os.path.join(ROOT, 'repoOfRepos'))
         accessCfg = dp.Access.cfg(storageCfg=storageCfg)
         mapperCfg = dp.RepositoryMapper.cfg(policy=repoMapperPolicy)
         # Note that right now a repo is either input OR output, there is no input-output repo, this design
         # is result of butler design conversations. Right now, if a user wants to write to and then read from
         # a repo, a repo can have a parent repo with the same access (and mapper) parameters as itself.
         repoOfRepoCfg = dp.Repository.cfg(mode='rw',
-                                          storageCfg=dp.PosixStorage.cfg(root='tests/repoOfRepos'),
+                                          storageCfg=dp.PosixStorage.cfg(root=os.path.join(ROOT, 'repoOfRepos')),
                                           mapper=dp.RepositoryMapper.cfg(policy=repoMapperPolicy))
 
         repoButler = dp.Butler(outputs=repoOfRepoCfg)

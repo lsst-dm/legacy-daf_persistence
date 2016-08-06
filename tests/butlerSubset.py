@@ -33,6 +33,10 @@ import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
 from cameraMapper import CameraMapper
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
+
 def setup_module(module):
     lsst.utils.tests.init()
 
@@ -60,7 +64,7 @@ class Registry(object):
 class ImgMapper(CameraMapper):
     def __init__(self):
         CameraMapper.__init__(self)
-        self.root = 'tests/butlerSubset'
+        self.root = os.path.join(ROOT, 'butlerSubset')
         self.registry = Registry([
                 dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
                     snap=0, skyTile=5),
@@ -96,8 +100,8 @@ class ButlerSubsetTestCase(unittest.TestCase):
         self.tearDown()
 
     def tearDown(self):
-        if os.path.exists('tests/butlerSubset'):
-            shutil.rmtree('tests/butlerSubset')
+        if os.path.exists(os.path.join(ROOT, 'butlerSubset')):
+            shutil.rmtree(os.path.join(ROOT, 'butlerSubset'))
         if os.path.exists('repositoryCfg.yaml'):
             os.remove('repositoryCfg.yaml')
 
@@ -108,7 +112,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
         return butler
 
     def testSingleIteration(self):
-        args = dafPersist.RepositoryArgs(mode='r', root='tests/butlerSubset', mapper=ImgMapper())
+        args = dafPersist.RepositoryArgs(mode='r', root=os.path.join(ROOT, 'butlerSubset'), mapper=ImgMapper())
         butler = dafPersist.Butler(inputs=args)
 
         ButlerSubsetTestCase.registerAliases(butler)

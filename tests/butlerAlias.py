@@ -28,13 +28,19 @@ import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
 import astropy.io.fits
 import unittest
+import os
+
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 class MinMapper(dafPersist.Mapper):
     def map_raw(self, dataId, write):
         python = 'astropy.io.fits.HDUList'
         persistable = None
         storage = 'FitsStorage'
-        path = 'tests/butlerAlias/data/input/raw/raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz'
+        path = os.path.join(ROOT, 'butlerAlias/data/input/raw/raw_v') + \
+            str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz'
         return dafPersist.ButlerLocation(python, persistable, storage, path, dataId, self)
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
@@ -72,7 +78,7 @@ class ButlerTestCase(unittest.TestCase):
     datasetType = '@foo'
 
     def setUp(self):
-        self.butler = dafPersist.Butler('tests/butlerAlias/data/input', MinMapper())
+        self.butler = dafPersist.Butler(os.path.join(ROOT, 'butlerAlias/data/input'), MinMapper())
         self.butler.defineAlias(self.datasetType, 'raw')
 
     def tearDown(self):

@@ -31,6 +31,10 @@ import yaml
 import lsst.daf.persistence as dp
 import lsst.utils.tests
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
+
 class NullMapper(object):
     def __init__(self):
         pass
@@ -41,24 +45,24 @@ class TestCfgRelationship(unittest.TestCase):
         self.tearDown()
 
     def tearDown(self):
-        if os.path.exists('tests/repositoryCfg'):
-            shutil.rmtree('tests/repositoryCfg')
+        if os.path.exists(os.path.join(ROOT, 'repositoryCfg')):
+            shutil.rmtree(os.path.join(ROOT, 'repositoryCfg'))
 
     def testRWModes(self):
         # inputs must be read-only or read-write and not write-only
-        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root='tests/repositoryCfg')
+        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(inputs=args)
-        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root='tests/repositoryCfg')
+        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(inputs=args)
-        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root='tests/repositoryCfg')
+        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         self.assertRaises(RuntimeError, dp.Butler, inputs=args)
 
         # outputs must be write-only or read-write and not read-only
-        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root='tests/repositoryCfg')
+        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(outputs=args)
-        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root='tests/repositoryCfg')
+        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(outputs=args)
-        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root='tests/repositoryCfg')
+        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         self.assertRaises(RuntimeError, dp.Butler, outputs=args)
 
 
@@ -66,31 +70,32 @@ class TestCfgRelationship(unittest.TestCase):
         # parents of inputs should be added to the inputs list
         butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
                                                      mapper=NullMapper(),
-                                                     root='tests/repositoryCfg/a'))
+                                                     root=os.path.join(ROOT, 'repositoryCfg/a')))
         del butler
-        butler = dp.Butler(inputs='tests/repositoryCfg/a', outputs='tests/repositoryCfg/b')
+        butler = dp.Butler(inputs=os.path.join(ROOT,'repositoryCfg/a'),
+                           outputs=os.path.join(ROOT, 'repositoryCfg/b'))
         del butler
-        butler = dp.Butler(inputs='tests/repositoryCfg/b')
+        butler = dp.Butler(inputs=os.path.join(ROOT, 'repositoryCfg/b'))
         self.assertEqual(len(butler._repos.inputs()), 2)
         # verify serach order:
-        self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/repositoryCfg/b')
-        self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/repositoryCfg/a')
+        self.assertEqual(butler._repos.inputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
+        self.assertEqual(butler._repos.inputs()[1].cfg.root, os.path.join(ROOT, 'repositoryCfg/a'))
         self.assertEqual(len(butler._repos.outputs()), 0)
 
         # parents of readable outputs should be added to the inputs list
-        butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot='tests/repositoryCfg/b', mode='rw'))
+        butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'), mode='rw'))
         self.assertEqual(len(butler._repos.inputs()), 2)
         # verify serach order:
-        self.assertEqual(butler._repos.inputs()[0].cfg.root, 'tests/repositoryCfg/b')
-        self.assertEqual(butler._repos.inputs()[1].cfg.root, 'tests/repositoryCfg/a')
+        self.assertEqual(butler._repos.inputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
+        self.assertEqual(butler._repos.inputs()[1].cfg.root, os.path.join(ROOT, 'repositoryCfg/a'))
         self.assertEqual(len(butler._repos.outputs()), 1)
-        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repositoryCfg/b')
+        self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
 
         # if an output repository is write-only its parents should not be added to the inputs.
-        butler = dp.Butler(outputs='tests/repositoryCfg/b')
+        butler = dp.Butler(outputs=os.path.join(ROOT, 'repositoryCfg/b'))
         self.assertEqual(len(butler._repos.inputs()), 0)
         self.assertEqual(len(butler._repos.outputs()), 1)
-        self.assertEqual(butler._repos.outputs()[0].cfg.root, 'tests/repositoryCfg/b')
+        self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
 
 
 # "fake" repository version 0
@@ -116,16 +121,16 @@ class TestCfgFileVersion(unittest.TestCase):
         self.tearDown()
 
     def tearDown(self):
-        if os.path.exists('tests/repositoryCfg'):
-            shutil.rmtree('tests/repositoryCfg')
+        if os.path.exists(os.path.join(ROOT, 'repositoryCfg')):
+            shutil.rmtree(os.path.join(ROOT, 'repositoryCfg'))
 
     def test(self):
-        os.makedirs('tests/repositoryCfg')
-        f = open('tests/repositoryCfg/repositoryCfg.yaml', 'w')
+        os.makedirs(os.path.join(ROOT, 'repositoryCfg'))
+        f = open(os.path.join(ROOT, 'repositoryCfg/repositoryCfg.yaml'), 'w')
         f.write("""!RepositoryCfg_v0
                    _root: 'foo/bar'""")
         f.close()
-        cfg = dp.PosixStorage.getRepositoryCfg('tests/repositoryCfg')
+        cfg = dp.PosixStorage.getRepositoryCfg(os.path.join(ROOT, 'repositoryCfg'))
 
 
 

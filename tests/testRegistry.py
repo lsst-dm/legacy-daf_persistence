@@ -24,9 +24,13 @@
 
 import collections
 import unittest
+import os
 import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
+
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class PosixRegistryTestCase(unittest.TestCase):
@@ -38,29 +42,29 @@ class PosixRegistryTestCase(unittest.TestCase):
         """
         testData = collections.namedtuple('testData', 'root template returnFields dataId expectedLookup')
         td = (\
-              testData('tests/posixRegistry/repo01',
+              testData(os.path.join(ROOT, 'posixRegistry/repo01'),
                        'foo-%(ccd)02d.fits',
                        ('ccd',),
                        {},
                        [(1,)]),
-              testData('tests/posixRegistry/repo02',
+              testData(os.path.join(ROOT, 'posixRegistry/repo02'),
                        'foo-%(ccd)02d-%(filter)s.fits',
                        ('ccd', 'filter'),
                        {},
                        [(1, 'g'), (1, 'h'), (2, 'g'), (2, 'h'), (3, 'i'),]),
-              testData('tests/posixRegistry/repo02',
+              testData(os.path.join(ROOT, 'posixRegistry/repo02'),
                        'foo-%(ccd)02d-%(filter)s.fits',
                        # intentionally no comma on 'filter'; it becomes a string not a tuple. This is handled,
                        # and here is where it is tested.
                        ('filter'),
                        {'ccd':1},
                        [('g',), ('h',),]),
-              testData('tests/posixRegistry/repo02',
+              testData(os.path.join(ROOT, 'posixRegistry/repo02'),
                        'foo-%(ccd)02d-%(filter)s.fits',
                        ('ccd',),
                        {'filter':'i'},
                        [(3,),]),
-              testData('tests/posixRegistry/lookupMetadata',
+              testData(os.path.join(ROOT, 'posixRegistry/lookupMetadata'),
                        'raw_v%(visit)d_f%(filter)1s.fits.gz',
                        ('visit',),
                        {'MJD-OBS': 51195.2240820278},

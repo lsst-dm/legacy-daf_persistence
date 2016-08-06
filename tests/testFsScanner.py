@@ -23,8 +23,12 @@
 #
 
 import unittest
+import os
 import lsst.utils.tests
 from lsst.daf.persistence import FsScanner
+
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class FsScannerTestCase(unittest.TestCase):
@@ -32,13 +36,13 @@ class FsScannerTestCase(unittest.TestCase):
     def test1(self):
         template = '%(visit)d%(state)1s.fits.fz[%(extension)d]'
         scanner = FsScanner(template)
-        res = scanner.processPath('tests/testFsScanner')
+        res = scanner.processPath(os.path.join(ROOT, 'testFsScanner'))
         self.assertEqual(res, {'1038843o.fits.fz': {'state': 'o', 'visit': 1038843}})
 
     def test2(self):
         template = 'raw_v%(visit)d_f%(filter)1s.fits.gz'
         scanner = FsScanner(template)
-        res = scanner.processPath('tests/testFsScanner')
+        res = scanner.processPath(os.path.join(ROOT, 'testFsScanner'))
         self.assertEqual(res, {'raw_v1_fg.fits.gz': {'visit': 1, 'filter': 'g'}})
 
 
