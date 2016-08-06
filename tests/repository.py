@@ -163,29 +163,29 @@ class TestBasics(unittest.TestCase):
 
     def testGetKeys(self):
         keys = self.butler.getKeys('raw')
-        self.assertEqual('filter' in keys, True)
-        self.assertEqual('visit' in keys, True)
+        self.assertIn('filter', keys)
+        self.assertIn('visit', keys)
         self.assertEqual(keys['filter'], bytes)
         self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag='baArgs')
-        self.assertEqual('filter' in keys, True)
-        self.assertEqual('visit' in keys, True)
+        self.assertIn('filter', keys)
+        self.assertIn('visit', keys)
         self.assertEqual(keys['filter'], bytes)
         self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag=('baArgs', 'foo'))
-        self.assertEqual('filter' in keys, True)
-        self.assertEqual('visit' in keys, True)
+        self.assertIn('filter', keys)
+        self.assertIn('visit', keys)
         self.assertEqual(keys['filter'], bytes)
         self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag='foo')
-        self.assertEqual(keys, None)
+        self.assertIsNone(keys)
 
         keys = self.butler.getKeys('raw', tag=set(['baArgs', 'foo']))
-        self.assertEqual('filter' in keys, True)
-        self.assertEqual('visit' in keys, True)
+        self.assertIn('filter', keys)
+        self.assertIn('visit', keys)
         self.assertEqual(keys['filter'], bytes)
         self.assertEqual(keys['visit'], int)
 

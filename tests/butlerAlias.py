@@ -89,8 +89,8 @@ class ButlerTestCase(unittest.TestCase):
 
     def testGetKeys(self):
         keys = self.butler.getKeys(self.datasetType)
-        self.assertEqual('filter' in keys, True)
-        self.assertEqual('visit' in keys, True)
+        self.assertIn('filter', keys)
+        self.assertIn('visit', keys)
         self.assertEqual(keys['filter'], type("")) # todo how to define a string type?
         self.assertEqual(keys['visit'], type(1)) # todo how to define an int type?
 
@@ -103,14 +103,14 @@ class ButlerTestCase(unittest.TestCase):
 
     def testDatasetExists(self):
         # test the valeus that are expected to be true:
-        self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':1}), True)
-        self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':2}), True)
-        self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':3}), True)
+        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':1}))
+        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':2}))
+        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':3}))
 
         # test a few values that are expected to be false:
-        self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'f', 'visit':1}), False)
-        self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':1}), False)
-        self.assertEqual(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':3}), False)
+        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter':'f', 'visit':1}))
+        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':1}))
+        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':3}))
 
     def testDataRef(self):
         print(self.butler.dataRef(self.datasetType, dataId={'filter':'g', 'visit':1}))

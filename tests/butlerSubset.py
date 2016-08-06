@@ -217,7 +217,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
         for fileName in ["calexp_v123456_R1,1_S2,2.pickle",
                 "calexp_v123456_R1,2_S2,1.pickle",
                 "calexp_v123456_R1,2_S2,2.pickle"]:
-            self.assertEqual(os.path.exists(fileName), True)
+            self.assertTrue(os.path.exists(fileName))
             os.unlink(fileName)
 
     def testCompleteDataRef(self):

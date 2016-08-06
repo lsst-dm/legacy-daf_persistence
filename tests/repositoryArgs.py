@@ -45,7 +45,7 @@ class DefaultMapper(unittest.TestCase):
         args1 = dp.RepositoryArgs(mapper=TestMapper)
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
-        self.assertEqual(mapper, None)
+        self.assertIsNone(mapper)
 
     def testInstanceAndString(self):
         args1 = dp.RepositoryArgs(mapper=dp.Mapper())
@@ -56,7 +56,7 @@ class DefaultMapper(unittest.TestCase):
         args1 = dp.RepositoryArgs(mapper=TestMapper())
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
-        self.assertEqual(mapper, None)
+        self.assertIsNone(mapper)
 
     def testClassObjAndInstance(self):
         args1 = dp.RepositoryArgs(mapper=dp.Mapper)
@@ -67,7 +67,7 @@ class DefaultMapper(unittest.TestCase):
         args1 = dp.RepositoryArgs(mapper=TestMapper)
         args2 = dp.RepositoryArgs(mapper=dp.Mapper())
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
-        self.assertEqual(mapper, None)
+        self.assertIsNone(mapper)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

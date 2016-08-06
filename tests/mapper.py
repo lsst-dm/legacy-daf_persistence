@@ -85,13 +85,13 @@ class MapperTestCase(unittest.TestCase):
         self.assertEqual(self.mapper.canStandardize("badSourceHist"), False)
         self.assertEqual(self.mapper.canStandardize("notPresent"), False)
         result = self.mapper.standardize("x", 3, None)
-        self.assertEqual(isinstance(result, float), True)
+        self.assertIsInstance(result, float)
         self.assertEqual(result, 3.0)
         result = self.mapper.standardize("x", 3.14, None)
-        self.assertEqual(isinstance(result, float), True)
+        self.assertIsInstance(result, float)
         self.assertEqual(result, 3.14)
         result = self.mapper.standardize("x", "3.14", None)
-        self.assertEqual(isinstance(result, float), True)
+        self.assertIsInstance(result, float)
         self.assertEqual(result, 3.14)
 
 
