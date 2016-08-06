@@ -26,19 +26,19 @@ from __future__ import print_function
 from builtins import str
 import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
-import pyfits
+import astropy.io.fits
 import unittest
 
 class MinMapper(dafPersist.Mapper):
     def map_raw(self, dataId, write):
-        python = 'pyfits.HDUList'
+        python = 'astropy.io.fits.HDUList'
         persistable = None
         storage = 'FitsStorage'
         path = 'tests/butlerAlias/data/input/raw/raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz'
         return dafPersist.ButlerLocation(python, persistable, storage, path, dataId, self)
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
-        return pyfits.open(location.getLocations()[0])
+        return astropy.io.fits.open(location.getLocations()[0])
 
     def query_raw(self, format, dataId):
         values = [{'visit':1, 'filter':'g'}, {'visit':2, 'filter':'g'}, {'visit':3, 'filter':'r'}]

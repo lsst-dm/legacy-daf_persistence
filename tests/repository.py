@@ -30,7 +30,7 @@ from builtins import object
 import collections
 import copy
 import os
-import pyfits
+import astropy.io.fits
 import shutil
 import types
 import unittest
@@ -54,7 +54,7 @@ class ParentMapper(dp.Mapper):
         return 'ParentMapper(root=%s)' % self.root
 
     def map_raw(self, dataId, write):
-        python = 'pyfits.HDUList'
+        python = 'astropy.io.fits.HDUList'
         persistable = None
         storage = 'PickleStorage'
         path = os.path.join(self.root, 'data/input/raw')
@@ -64,7 +64,7 @@ class ParentMapper(dp.Mapper):
         return None
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
-        return pyfits.open(location.getLocations()[0])
+        return astropy.io.fits.open(location.getLocations()[0])
 
     def query_raw(self, format, dataId):
         values = [{'visit':1, 'filter':'g'}, {'visit':2, 'filter':'g'}, {'visit':3, 'filter':'r'}]
@@ -105,7 +105,7 @@ class ChildrenMapper(dp.Mapper):
         self.root = root
 
     def map_raw(self, dataId, write):
-        python = 'pyfits.HDUList'
+        python = 'astropy.io.fits.HDUList'
         persistable = None
         storage = 'FitsStorage'
         path = os.path.join(self.root, 'data/input/raw')
@@ -115,7 +115,7 @@ class ChildrenMapper(dp.Mapper):
         return None
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
-        return pyfits.open(location.getLocations()[0])
+        return astropy.io.fits.open(location.getLocations()[0])
 
     def query_raw(self, format, dataId):
         return None

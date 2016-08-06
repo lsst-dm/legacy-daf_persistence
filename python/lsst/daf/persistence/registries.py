@@ -34,7 +34,7 @@ from builtins import object
 import copy
 from . import fsScanner
 import os
-import pyfits
+import astropy.io.fits
 import re
 try:
     import sqlite3
@@ -235,7 +235,7 @@ class PosixRegistry(Registry):
         :return:
         """
         try:
-            hdulist = pyfits.open(filepath, memmap=True)
+            hdulist = astropy.io.fits.open(filepath, memmap=True)
         except IOError:
             return;
         hduNumber = PosixRegistry.getHduNumber(template=template, dataId=dataId)

@@ -29,7 +29,6 @@ import collections
 import copy
 import pickle
 import os
-import pyfits
 import shutil
 import types
 import unittest

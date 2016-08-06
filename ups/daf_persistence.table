@@ -1,7 +1,7 @@
 setupRequired(mariadbclient)
 setupRequired(pex_logging)
 setupRequired(pex_policy)
-setupRequired(pyfits)
+setupRequired(astropy)
 setupRequired(pyyaml)
 
 envPrepend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
