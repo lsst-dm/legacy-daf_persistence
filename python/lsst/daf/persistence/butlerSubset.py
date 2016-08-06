@@ -26,8 +26,9 @@
 
 """This module defines the ButlerSubset class and the ButlerDataRefs contained
 within it as well as an iterator over the subset."""
-
-from __future__ import with_statement
+from builtins import next
+from builtins import range
+from builtins import object
 
 from . import DataId
 
@@ -79,7 +80,7 @@ class ButlerSubset(object):
         keys = self.butler.getKeys(datasetType, level, tag=dataId.tag)
         if keys is None:
             return
-        fmt = list(keys.iterkeys())
+        fmt = list(keys.keys())
 
         # Don't query if we already have a complete dataId
         completeId = True
@@ -97,7 +98,7 @@ class ButlerSubset(object):
             if len(fmt) == 1:
                 tempId[fmt[0]] = idTuple
             else:
-                for i in xrange(len(fmt)):
+                for i in range(len(fmt)):
                     tempId[fmt[i]] = idTuple[i]
             self.cache.append(tempId)
 
@@ -135,7 +136,7 @@ class ButlerSubsetIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         return ButlerDataRef(self.butlerSubset, next(self.iter))
 
 class ButlerDataRef(object):

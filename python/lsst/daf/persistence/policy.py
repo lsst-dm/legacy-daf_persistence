@@ -21,11 +21,16 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from builtins import str
+from past.builtins import basestring
+from future.utils import with_metaclass
+from future.standard_library import install_aliases
+install_aliases()
 
 import collections
 import copy
 import os
-import UserDict
+import sys
 import warnings
 import yaml
 
@@ -35,7 +40,23 @@ yaml.add_representer(collections.defaultdict, Representer.represent_dict)
 import lsst.pex.policy as pexPolicy
 import lsst.utils
 
-class Policy(UserDict.UserDict, yaml.YAMLObject):
+# UserDict and yaml have defined metaclasses and Python 3 does not allow multiple
+# inheritance of classes with distinct metaclasses. We therefore have to
+# create a new baseclass that Policy can inherit from. This is because the metaclass
+# syntax differs between versions
+
+if sys.version_info[0] >= 3:
+    class _PolicyMeta(type(collections.UserDict), type(yaml.YAMLObject)):
+        pass
+
+    class _PolicyBase(with_metaclass(_PolicyMeta, collections.UserDict, yaml.YAMLObject)):
+        pass
+else:
+    class _PolicyBase(collections.UserDict, yaml.YAMLObject):
+        pass
+
+
+class Policy(_PolicyBase):
     """Policy implements a datatype that is used by Butler for configuration parameters.
     It is essentially a dict with key/value pairs, including nested dicts (as values). In fact, it can be
     initialized with a dict. The only caveat is that keys may NOT contain dots ('.'). This is explained next:
@@ -65,7 +86,7 @@ class Policy(UserDict.UserDict, yaml.YAMLObject):
 
         :return:
         """
-        UserDict.UserDict.__init__(self)
+        collections.UserDict.__init__(self)
         self.__init(other, preference, **kwargs)
 
     def ppprint(self):
@@ -177,7 +198,7 @@ class Policy(UserDict.UserDict, yaml.YAMLObject):
         :param path:
         :return:
         """
-        f = file(path, 'r')
+        f = open(path, 'r')
         self.__initFromYaml(f)
 
     def __initFromYaml(self, stream):
@@ -241,7 +262,7 @@ class Policy(UserDict.UserDict, yaml.YAMLObject):
         But if foo is a Policy, then after the update foo == {'a': {'b': 1, 'c': 2}}
         """
         def doUpdate(d, u):
-            for k, v in u.iteritems():
+            for k, v in u.items():
                 if isinstance(d, collections.Mapping):
                     if isinstance(v, collections.Mapping):
                         r = doUpdate(d.get(k, {}), v)
@@ -270,10 +291,10 @@ class Policy(UserDict.UserDict, yaml.YAMLObject):
         keys.
         """
         if topLevelOnly:
-            return self.keys()
+            return list(self.keys())
 
         def getKeys(d, keys, base):
-            for key in d.keys():
+            for key in d:
                 val = d[key]
                 levelKey = base + '.' + key if base is not None else key
                 keys.append(levelKey)

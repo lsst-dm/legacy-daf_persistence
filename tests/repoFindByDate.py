@@ -21,8 +21,11 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 
-import cPickle
+import pickle
 import collections
 import datetime
 import os
@@ -38,14 +41,14 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
-class PosixPickleStringHanlder:
+class PosixPickleStringHanlder(object):
     @staticmethod
     def get(butlerLocation):
         if butlerLocation.storageName != "PickleStorage":
             raise TypeError("PosixStoragePickleMapper only supports PickleStorage")
         location = butlerLocation.getLocations()[0] # should never be more than 1 location
-        with open(location, 'r') as f:
-            ret = cPickle.load(f)
+        with open(location, 'rb') as f:
+            ret = pickle.load(f)
         return ret
 
     @staticmethod
@@ -53,8 +56,8 @@ class PosixPickleStringHanlder:
         if butlerLocation.storageName != "PickleStorage":
             raise TypeError("PosixStoragePickleMapper only supports PickleStorage")
         for location in butlerLocation.getLocations():
-            with open(location, 'w') as f:
-                cPickle.dump(obj, f, cPickle.HIGHEST_PROTOCOL)
+            with open(location, 'wb') as f:
+                pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 #################
 # Object Mapper #

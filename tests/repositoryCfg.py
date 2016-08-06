@@ -21,6 +21,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from builtins import object
 
 import os
 import shutil
@@ -30,7 +31,7 @@ import yaml
 import lsst.daf.persistence as dp
 import lsst.utils.tests
 
-class NullMapper:
+class NullMapper(object):
     def __init__(self):
         pass
 

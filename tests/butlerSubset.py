@@ -21,7 +21,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
+from builtins import object
 
 import shutil
 import unittest
@@ -44,7 +44,7 @@ class Registry(object):
         result = set()
         for d in self.dictList:
             where = True
-            for k in dataId.iterkeys():
+            for k in dataId.keys():
                 if k not in d:
                     raise RuntimeError("%s not in %s" % (k, repr(d)))
                 if d[k] != dataId[k]:
@@ -118,7 +118,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 "calexp_v654321_R1,3_S1,1.pickle",
                 "calexp_v654321_R1,3_S1,2.pickle"]
         for fileName in inputList:
-            with open(fileName, "w") as f:
+            with open(fileName, "wb") as f:
                 pickle.dump(inputList, f)
 
         subset = butler.subset(self.calexpTypeName, skyTile=6)
@@ -170,7 +170,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 "flat_R1,2_S2,1_C0,0_E001.pickle",
                 "flat_R1,2_S2,2_C0,0_E000.pickle"]
         for fileName in inputList:
-            with open(fileName, "w") as f:
+            with open(fileName, "wb") as f:
                 pickle.dump(inputList, f)
 
         butler = dafPersist.Butler(outputs=dafPersist.RepositoryArgs(root='.', mode='rw', mapper=ImgMapper()))

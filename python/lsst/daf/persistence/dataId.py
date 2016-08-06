@@ -21,11 +21,14 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from past.builtins import basestring
+from future.standard_library import install_aliases
+install_aliases()
 
 import copy
-import UserDict
+import collections
 
-class DataId(UserDict.IterableUserDict):
+class DataId(collections.UserDict):
     """DataId is used to pass scientifically meaningful key-value pairs. It may be tagged as applicable only
     to repositories that are tagged with the same value"""
 
@@ -43,7 +46,7 @@ class DataId(UserDict.IterableUserDict):
         kwargs : any values
             key-value pairs to be used as part of the DataId's data.
         """
-        UserDict.UserDict.__init__(self, initialdata)
+        collections.UserDict.__init__(self, initialdata)
         try:
             self.tag = copy.deepcopy(initialdata.tag)
         except AttributeError:

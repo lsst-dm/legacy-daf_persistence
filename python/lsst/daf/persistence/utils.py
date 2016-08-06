@@ -21,7 +21,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
+from past.builtins import basestring
 # -*- python -*-
 
 def listify(x):

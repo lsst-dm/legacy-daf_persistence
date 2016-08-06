@@ -1,3 +1,6 @@
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 #!/usr/bin/env python
 
 #
@@ -22,7 +25,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import cPickle
+import pickle
 import collections
 import os
 
@@ -35,7 +38,7 @@ class AccessCfg(Policy, yaml.YAMLObject):
     def __init__(self, cls, storageCfg):
         super(AccessCfg, self).__init__({'storageCfg':storageCfg, 'cls':cls})
 
-class Access:
+class Access(object):
     """Implements an butler framework interface for Transport, Storage, and Registry
 
     .. warning::

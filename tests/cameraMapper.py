@@ -63,7 +63,7 @@ class CameraMapper(dafPersist.Mapper):
 
         keyDict = dict()
         if datasetType is None:
-            for t in self.templates.iterkeys():
+            for t in self.templates:
                 keyDict.update(self.getKeys(t))
         else:
             d = dict([

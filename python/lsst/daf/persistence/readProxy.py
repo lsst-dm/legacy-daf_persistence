@@ -49,7 +49,7 @@ class ReadProxy(object):
     def __delattr__(self, attr):
         delattr(self.__subject__, attr)
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.__subject__)
 
     def __getitem__(self, arg):

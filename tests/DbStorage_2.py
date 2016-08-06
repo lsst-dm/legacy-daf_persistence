@@ -23,6 +23,8 @@
 #
 
 from __future__ import print_function
+from builtins import next
+from past.builtins import long
 import unittest
 import sys
 import time

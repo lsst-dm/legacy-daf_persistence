@@ -21,9 +21,12 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 
 import os
-import urlparse
+import urllib.parse
 import yaml
 
 class Storage(object):
@@ -68,7 +71,7 @@ class Storage(object):
     def getRepositoryCfg(uri):
         """Get a RepositoryCfg from a location specified by uri."""
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             ret = Storage.storages[parseRes.scheme].getRepositoryCfg(uri)
         else:
@@ -79,7 +82,7 @@ class Storage(object):
     def putRepositoryCfg(cfg, uri):
         """Write a RepositoryCfg object to a location described by uri"""
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             ret = Storage.storages[parseRes.scheme].putRepositoryCfg(cfg, uri)
         else:
@@ -103,7 +106,7 @@ class Storage(object):
 
         """
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             ret = Storage.storages[parseRes.scheme].getMapperClass(uri)
         else:
@@ -125,7 +128,7 @@ class Storage(object):
         :return: a Storage subclass instance.
         '''
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             theClass = Storage.storages[parseRes.scheme]
             ret = theClass(uri)

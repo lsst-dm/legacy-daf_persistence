@@ -61,7 +61,7 @@ def FileForWriteOnceCompareSame(name):
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
-    temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
+    temp = tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False)
     try:
         yield temp
     finally:
@@ -96,7 +96,7 @@ def SafeFile(name):
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
-    with tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False) as temp:
+    with tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False) as temp:
         try:
             yield temp
         finally:
@@ -113,7 +113,7 @@ def SafeFilename(name):
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
-    temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
+    temp = tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False)
     tempName = temp.name
     temp.close() # We don't use the fd, just want a filename
     try:

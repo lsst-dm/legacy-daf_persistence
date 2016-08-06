@@ -23,6 +23,8 @@
 
 """This module provides the FsScanner class."""
 from __future__ import print_function
+from builtins import range
+from builtins import object
 
 import glob
 import os
@@ -98,8 +100,8 @@ class FsScanner(object):
         """Return the list of fields that will be returned from matched
         paths, in order."""
 
-        fieldList = ["" for i in xrange(len(self.fields))]
-        for f in self.fields.keys():
+        fieldList = ["" for i in range(len(self.fields))]
+        for f in list(self.fields.keys()):
             fieldList[self.fields[f]['pos']] = f
         return fieldList
 
@@ -133,7 +135,7 @@ class FsScanner(object):
             m = re.search(self.reString, path)
             if m:
                 dataId = m.groupdict()
-                for f in self.fields.keys():
+                for f in self.fields:
                     if self.isInt(f):
                         dataId[f] = int(dataId[f])
                     elif self.isFloat(f):

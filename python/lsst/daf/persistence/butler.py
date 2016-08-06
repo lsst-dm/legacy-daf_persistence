@@ -25,11 +25,15 @@
 # -*- python -*-
 
 """This module defines the Butler class."""
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from past.builtins import basestring
+from builtins import object
 
-from __future__ import with_statement
 import collections
 import copy
-import cPickle
+import pickle
 import inspect
 import itertools
 import os
@@ -110,7 +114,7 @@ class RepoDataContainer(object):
         @return a list of RepoData with readable repositories. List is in the order to be use when searching.
         """
         if self._inputs is None:
-            self._inputs = [rd for rd in self.byRepoRoot.itervalues() if 'r' in rd.mode]
+            self._inputs = [rd for rd in self.byRepoRoot.values() if 'r' in rd.mode]
         return self._inputs
 
     def outputs(self):
@@ -120,7 +124,7 @@ class RepoDataContainer(object):
         @return a list of RepoData with writable repositories. List is in the order to be use when searching.
         """
         if self._outputs is None:
-            self._outputs = [rd for rd in self.byRepoRoot.itervalues() if 'w' in rd.mode]
+            self._outputs = [rd for rd in self.byRepoRoot.values() if 'w' in rd.mode]
         return self._outputs
 
     def all(self):
@@ -130,7 +134,7 @@ class RepoDataContainer(object):
         @return a list of RepoData with writable repositories. List is in the order to be use when searching.
         """
         if self._all is None:
-            self._all = [rd for rd in self.byRepoRoot.itervalues()]
+            self._all = [rd for rd in self.byRepoRoot.values()]
         return self._all
 
     def __repr__(self):
@@ -369,7 +373,7 @@ class Butler(object):
                         raise RuntimeError(
                             "Could not infer mapper and one not specified in repositoryArgs:%s" % args)
                     args.mapper = defaultMapper
-                parents = [cfgRoot for cfgRoot in butlerIOParents.keys() if cfgRoot != args.cfgRoot]
+                parents = [cfgRoot for cfgRoot in list(butlerIOParents.keys()) if cfgRoot != args.cfgRoot]
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
                 Storage.putRepositoryCfg(cfg, args.cfgRoot)
 

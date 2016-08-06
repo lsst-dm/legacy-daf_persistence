@@ -58,7 +58,7 @@ class ButlerLocation(yaml.YAMLObject):
         else:
             self.locationList = [locationList]
         self.additionalData = dafBase.PropertySet()
-        for k, v in dataId.iteritems():
+        for k, v in dataId.items():
             self.additionalData.set(k, v)
         self.dataId=dataId
 

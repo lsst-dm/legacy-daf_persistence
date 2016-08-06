@@ -25,6 +25,7 @@
 # -*- python -*-
 
 """This module defines the ButlerFactory class."""
+from builtins import object
 
 from lsst.daf.persistence import Butler, RepositoryArgs, PosixStorage
 

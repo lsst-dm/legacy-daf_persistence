@@ -29,6 +29,7 @@ factored so that at least the SqliteRegistry can be remote/not on the local file
 by CameraMapper and by PosixStorage, both of which work on the local filesystem only, so this works for the time being.
 """
 from __future__ import absolute_import
+from builtins import object
 
 import copy
 from . import fsScanner
@@ -114,7 +115,7 @@ class PosixRegistry(Registry):
             return dataId[hduKey]
         return None
 
-    class LookupData:
+    class LookupData(object):
         def __init__(self, lookupProperties, dataId):
             self.dataId = copy.copy(dataId)
             if not hasattr(lookupProperties, '__iter__'):

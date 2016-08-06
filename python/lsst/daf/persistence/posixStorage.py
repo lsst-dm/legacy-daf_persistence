@@ -21,12 +21,14 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
+from future import standard_library
+standard_library.install_aliases()
+from past.builtins import basestring
 import copy
-import cPickle
+import pickle
 import importlib
 import os
-import urlparse
+import urllib.parse
 
 import yaml
 
@@ -44,7 +46,7 @@ class PosixStorage(Storage):
         :return:
         """
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
-        self.root = parseRes = urlparse.urlparse(uri).path
+        self.root = parseRes = urllib.parse.urlparse(uri).path
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
 
@@ -62,7 +64,7 @@ class PosixStorage(Storage):
         """Get a persisted RepositoryCfg
         """
         repositoryCfg = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         loc = os.path.join(parseRes.path, 'repositoryCfg.yaml')
         if os.path.exists(loc):
             with open(loc, 'r') as f:
@@ -78,7 +80,7 @@ class PosixStorage(Storage):
             return repositoryCfg
 
         # if no repository cfg, is it a legacy repository?
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if repositoryCfg is None:
             mapper = PosixStorage.getMapperClass(parseRes.path)
             if mapper is not None:
@@ -192,7 +194,7 @@ class PosixStorage(Storage):
 
             if storageName == "PickleStorage":
                 with open(logLoc.locString(), "wb") as outfile:
-                    cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+                    pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
                 return
 
             if storageName == "ConfigStorage":
@@ -259,7 +261,7 @@ class PosixStorage(Storage):
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError("No such pickle file: " + logLoc.locString())
                 with open(logLoc.locString(), "rb") as infile:
-                    finalItem = cPickle.load(infile)
+                    finalItem = pickle.load(infile)
             elif storageName == "FitsCatalogStorage":
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError("No such FITS catalog file: " + logLoc.locString())

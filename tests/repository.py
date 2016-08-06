@@ -23,6 +23,10 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from builtins import str
+from builtins import range
+from builtins import object
+
 import collections
 import copy
 import os
@@ -249,7 +253,7 @@ class MapperForTestWriting(dp.Mapper):
         persistable = None
         storage = 'PickleStorage'
         fileName = 'filename'
-        for key, value in dataId.iteritems():
+        for key, value in dataId.items():
             fileName += '_' + key + str(value)
         fileName += '.txt'
         path = os.path.join(self.root, fileName)

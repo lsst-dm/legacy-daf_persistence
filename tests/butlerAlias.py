@@ -23,12 +23,10 @@
 #
 
 from __future__ import print_function
+from builtins import str
 import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
-import os
-import pickle
 import pyfits
-import types
 import unittest
 
 class MinMapper(dafPersist.Mapper):
