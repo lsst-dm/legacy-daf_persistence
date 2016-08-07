@@ -111,6 +111,8 @@ class ReposInButler(unittest.TestCase):
     def tearDown(self):
         self.clean()
 
+    # disable this test until we work more on repo of repos; starting with DM-6227
+    @unittest.expectedFailure
     def test(self):
         repoMapperPolicy = {
             'repositories': {
@@ -187,7 +189,5 @@ class MemoryTester(lsst.utils.tests.MemoryTestCase):
 
 
 if __name__ == '__main__':
-    # disable this test until we work more on repo of repos; starting with DM-6227
-    # lsst.utils.tests.init()
-    # unittest.main()
-    pass
+    lsst.utils.tests.init()
+    unittest.main()
