@@ -93,7 +93,7 @@ class ParentMapper(dp.Mapper):
         return 'visit'
 
     def getKeys(self, datasetType, level):
-        return {'filter': bytes, 'visit': int}
+        return {'filter': str, 'visit': int}
 
     def map_str(self, dataId, write):
         path = os.path.join(self.root, 'data/input/raw')
@@ -130,7 +130,7 @@ class ChildrenMapper(dp.Mapper):
         return 'visit'
 
     def getKeys(self, datasetType, level):
-        return {'filter': bytes, 'visit': int}
+        return {'filter': str, 'visit': int}
 
 
 class TestBasics(unittest.TestCase):
@@ -169,19 +169,19 @@ class TestBasics(unittest.TestCase):
         keys = self.butler.getKeys('raw')
         self.assertIn('filter', keys)
         self.assertIn('visit', keys)
-        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['filter'], str)
         self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag='baArgs')
         self.assertIn('filter', keys)
         self.assertIn('visit', keys)
-        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['filter'], str)
         self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag=('baArgs', 'foo'))
         self.assertIn('filter', keys)
         self.assertIn('visit', keys)
-        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['filter'], str)
         self.assertEqual(keys['visit'], int)
 
         keys = self.butler.getKeys('raw', tag='foo')
@@ -190,7 +190,7 @@ class TestBasics(unittest.TestCase):
         keys = self.butler.getKeys('raw', tag=set(['baArgs', 'foo']))
         self.assertIn('filter', keys)
         self.assertIn('visit', keys)
-        self.assertEqual(keys['filter'], bytes)
+        self.assertEqual(keys['filter'], str)
         self.assertEqual(keys['visit'], int)
 
 

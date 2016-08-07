@@ -69,7 +69,7 @@ class MinMapper(dafPersist.Mapper):
         return 'visit'
 
     def getKeys(self, datasetType, level):
-        return {'filter': bytes, 'visit': int}
+        return {'filter': str, 'visit': int}
 
 
 class ButlerTestCase(unittest.TestCase):
@@ -97,8 +97,8 @@ class ButlerTestCase(unittest.TestCase):
         keys = self.butler.getKeys(self.datasetType)
         self.assertIn('filter', keys)
         self.assertIn('visit', keys)
-        self.assertEqual(keys['filter'], type("")) # todo how to define a string type?
-        self.assertEqual(keys['visit'], type(1)) # todo how to define an int type?
+        self.assertEqual(keys['filter'], str)
+        self.assertEqual(keys['visit'], int)
 
     def testQueryMetadata(self):
         keys = self.butler.getKeys(self.datasetType)
