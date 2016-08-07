@@ -120,9 +120,12 @@ class Repository(object):
                     if mro[-1] is object:
                         mro = mro[:-1]
                     for c in mro:
-                        if arg in inspect.getargspec(c.__init__ ).args:
-                            mapperArgs[arg] = self._storage.root
-                            break
+                        try:
+                            if arg in inspect.getargspec(c.__init__ ).args:
+                                mapperArgs[arg] = self._storage.root
+                                break
+                        except TypeError:
+                            pass
             mapper = mapper(**mapperArgs)
 
         self._mapper = mapper
