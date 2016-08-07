@@ -158,7 +158,7 @@ class RepoDateMapper(dp.RepositoryMapper):
         lookups = self.storage.lookup(lookupProperties='date', reference=None,
                                      dataId=dataId, template=template)
         lookups.sort()
-        if len(lookups) is not 0:
+        if len(lookups) > 0:
             itr = iter(lookups)
             item = datetime.date(datetime.MINYEAR, 1, 1)
             lookups.append((datetime.date(datetime.MAXYEAR, 12, 31).strftime("%Y-%m-%d"),))
