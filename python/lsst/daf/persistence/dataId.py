@@ -22,13 +22,19 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 from past.builtins import basestring
-from future.standard_library import install_aliases
-install_aliases()
+
+# On Python 3 collections.UserDict is iterable but on Python 2
+# we have to use UserDict.IterableUserDict. Since collections.UserDict
+# exists on Python 2 we try the Python 2 variant first.
+try:
+    from UserDict import IterableUserDict as UserDict
+except ImportError:
+    from collections import UserDict
 
 import copy
 import collections
 
-class DataId(collections.UserDict):
+class DataId(UserDict):
     """DataId is used to pass scientifically meaningful key-value pairs. It may be tagged as applicable only
     to repositories that are tagged with the same value"""
 
@@ -46,7 +52,7 @@ class DataId(collections.UserDict):
         kwargs : any values
             key-value pairs to be used as part of the DataId's data.
         """
-        collections.UserDict.__init__(self, initialdata)
+        UserDict.__init__(self, initialdata)
         try:
             self.tag = copy.deepcopy(initialdata.tag)
         except AttributeError:
