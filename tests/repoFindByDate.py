@@ -66,24 +66,24 @@ class PosixPickleStringHanlder(object):
 # Object Mapper #
 #################
 
-class TestMapperCfg(dp.Policy, yaml.YAMLObject):
-    yaml_tag = u"!TestMapperCfg"
+class MapperTestCfg(dp.Policy, yaml.YAMLObject):
+    yaml_tag = u"!MapperTestCfg"
     def __init__(self, cls, root):
-        super(TestMapperCfg, self).__init__({'root':root, 'cls':cls})
+        super(MapperTestCfg, self).__init__({'root':root, 'cls':cls})
 
-class TestMapper(dp.Mapper):
+class MapperTest(dp.Mapper):
     @classmethod
     def cfg(cls, root=None):
-        return TestMapperCfg(cls=cls, root=root)
+        return MapperTestCfg(cls=cls, root=root)
 
     def __init__(self, cfg):
-        super(TestMapper, self).__init__()
+        super(MapperTest, self).__init__()
         # self.root = cfg['root']
         self.storage = cfg['storage']
         self.cfg = cfg
 
     def __repr__(self):
-        return 'TestMapper(cfg=%s)' % self.cfg
+        return 'MapperTest(cfg=%s)' % self.cfg
 
     def map_str(self, dataId, write):
         template = "ccd_%(ccdNum)s.pickle"
@@ -211,7 +211,7 @@ class RepoFindByDate(unittest.TestCase):
                 # this will get populated by the repoOfRepos template.
                 repoCfg = dp.Repository.cfg(mode='rw',
                                             storageCfg=dp.PosixStorage.cfg(),
-                                            mapper=TestMapper.cfg())
+                                            mapper=MapperTest.cfg())
                 # and put that config into the repoOfRepos.
                 repoButler.put(repoCfg, 'cfg', dataId={'type':type, 'date':date})
                 # get the cfg back out of the butler. This will return a cfg with the root location populated.

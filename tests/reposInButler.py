@@ -68,25 +68,25 @@ class PosixPickleStringHanlder(object):
 
 
 
-class TestMapperCfg(Policy, yaml.YAMLObject):
-    yaml_tag = u"!TestMapperCfg"
+class MapperTestCfg(Policy, yaml.YAMLObject):
+    yaml_tag = u"!MapperTestCfg"
     def __init__(self, cls, root):
-        super(TestMapperCfg, self).__init__({'root':root, 'cls':cls})
+        super(MapperTestCfg, self).__init__({'root':root, 'cls':cls})
 
-class TestMapper(dp.Mapper):
+class MapperTest(dp.Mapper):
 
     @classmethod
     def cfg(cls, root=None):
-        return TestMapperCfg(cls=cls, root=root)
+        return MapperTestCfg(cls=cls, root=root)
 
     def __init__(self, cfg):
-        super(TestMapper, self).__init__()
+        super(MapperTest, self).__init__()
         # self.root = cfg['root']
         self.storage = cfg['storage']
         self.cfg = cfg
 
     def __repr__(self):
-        return 'TestMapper(cfg=%s)' % self.cfg
+        return 'MapperTest(cfg=%s)' % self.cfg
 
     def map_str(self, dataId, write):
         template = "strfile_%(strId)s.pickle"
@@ -138,7 +138,7 @@ class ReposInButler(unittest.TestCase):
         repoButler = dp.Butler(outputs=repoOfRepoCfg)
         # create a cfg of a repository we'd like to use. Note that we don't create the root of the cfg.
         # this will get populated by the repoOfRepos template.
-        repoCfg = dp.Repository.cfg(mode='rw', storageCfg=dp.PosixStorage.cfg(), mapper=TestMapper.cfg())
+        repoCfg = dp.Repository.cfg(mode='rw', storageCfg=dp.PosixStorage.cfg(), mapper=MapperTest.cfg())
         # and put that config into the repoOfRep
         repoButler.put(repoCfg, 'cfg', dataId={'version':123})
 
@@ -157,7 +157,7 @@ class ReposInButler(unittest.TestCase):
         del butler, repoCfg, obj, reloadedObj
 
         # Create another repository, and put it in the repo of repos, with a new version number.
-        repoCfg = dp.Repository.cfg(mode='rw', storageCfg=dp.PosixStorage.cfg(), mapper=TestMapper.cfg())
+        repoCfg = dp.Repository.cfg(mode='rw', storageCfg=dp.PosixStorage.cfg(), mapper=MapperTest.cfg())
         repoButler.put(repoCfg, 'cfg', dataId={'version':124})
         repoCfg = repoButler.get('cfg', dataId={'version':124}, immediate=True)
         butler = dp.Butler(outputs=repoCfg)

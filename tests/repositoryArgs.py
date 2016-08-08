@@ -30,7 +30,7 @@ import unittest
 def setup_module(module):
     lsst.utils.tests.init()
 
-class TestMapper(dp.Mapper):
+class MapperTest(dp.Mapper):
     pass
 
 
@@ -42,7 +42,7 @@ class DefaultMapper(unittest.TestCase):
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
-        args1 = dp.RepositoryArgs(mapper=TestMapper)
+        args1 = dp.RepositoryArgs(mapper=MapperTest)
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertIsNone(mapper)
@@ -53,7 +53,7 @@ class DefaultMapper(unittest.TestCase):
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
-        args1 = dp.RepositoryArgs(mapper=TestMapper())
+        args1 = dp.RepositoryArgs(mapper=MapperTest())
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertIsNone(mapper)
@@ -64,7 +64,7 @@ class DefaultMapper(unittest.TestCase):
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
-        args1 = dp.RepositoryArgs(mapper=TestMapper)
+        args1 = dp.RepositoryArgs(mapper=MapperTest)
         args2 = dp.RepositoryArgs(mapper=dp.Mapper())
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertIsNone(mapper)
