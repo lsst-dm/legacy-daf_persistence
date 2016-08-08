@@ -23,7 +23,6 @@
 #
 
 from __future__ import print_function
-from builtins import next
 from past.builtins import long
 import unittest
 import sys
@@ -92,7 +91,7 @@ WHERE id = %ld
 
         db.query()
 
-        self.assertTrue(next(db))
+        self.assertTrue(db.next())
 
         self.assertFalse(db.columnIsNull(0))
         self.assertFalse(db.columnIsNull(1))
@@ -104,7 +103,7 @@ WHERE id = %ld
         self.assertEqual(db.getColumnByPosString(3), "foo")
         self.assertEqual(db.getColumnByPosDouble(4), 9876.0)
 
-        self.assertFalse(next(db))
+        self.assertFalse(db.next())
 
         db.finishQuery()
 
