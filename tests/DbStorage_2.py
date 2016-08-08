@@ -25,7 +25,6 @@
 from __future__ import print_function
 from past.builtins import long
 import unittest
-import sys
 import time
 
 import lsst.utils.tests
@@ -35,6 +34,7 @@ import lsst.pex.policy
 HOST = "lsst10.ncsa.uiuc.edu"
 PORT = "3306"
 
+
 class DbStorage2TestCase(unittest.TestCase):
 
     def setUp(self):
@@ -43,7 +43,7 @@ class DbStorage2TestCase(unittest.TestCase):
         self.db = dafPers.DbStorage()
         policy = lsst.pex.policy.Policy()
         self.db.setPolicy(policy)
-        self.testId = long(time.time() * 1000000000);
+        self.testId = long(time.time() * 1000000000)
         print(self.testId)
 
     def tearDown(self):

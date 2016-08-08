@@ -148,7 +148,7 @@ class PosixStorage(Storage):
             components = mapperName.split(".")
             if len(components) <= 1:
                 raise RuntimeError("Unqualified mapper name %s in %s" %
-                        (mapperName, mapperFile))
+                                   (mapperName, mapperFile))
             pkg = importlib.import_module(".".join(components[:-1]))
             return getattr(pkg, components[-1])
 
@@ -182,9 +182,9 @@ class PosixStorage(Storage):
                 importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
                 pythonType = getattr(importType, importClassString)
         # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
-        # implications; write now I'm worried that any python type that can be written to disk and has a method
-        # called 'put' will be called here (even if it's e.g. destined for FitsStorage). We might want a somewhat
-        # more specific API.
+        # implications; write now I'm worried that any python type that can be written to disk and has a
+        # method called 'put' will be called here (even if it's e.g. destined for FitsStorage).
+        # We might want a somewhat more specific API.
         if hasattr(pythonType, 'butlerWrite'):
             pythonType.butlerWrite(obj, butlerLocation=butlerLocation)
             return
@@ -245,7 +245,8 @@ class PosixStorage(Storage):
                 importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
                 pythonType = getattr(importType, importClassString)
 
-        # see note re. discomfort with the name 'butlerWrite' in the write method, above. Same applies to butlerRead.
+        # see note re. discomfort with the name 'butlerWrite' in the write method, above.
+        # Same applies to butlerRead.
         if hasattr(pythonType, 'butlerRead'):
             results = pythonType.butlerRead(butlerLocation=butlerLocation)
             return results
@@ -278,7 +279,7 @@ class PosixStorage(Storage):
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
                 storageList.append(storage)
                 itemData = self.persistence.unsafeRetrieve(
-                        butlerLocation.getCppType(), storageList, additionalData)
+                    butlerLocation.getCppType(), storageList, additionalData)
                 finalItem = pythonType.swigConvert(itemData)
             results.append(finalItem)
 

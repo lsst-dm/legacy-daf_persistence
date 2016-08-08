@@ -31,6 +31,7 @@ import os
 import re
 import sys
 
+
 class FsScanner(object):
     """Class to scan a filesystem location for paths matching a template.
 

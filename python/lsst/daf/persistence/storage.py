@@ -25,9 +25,8 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import object
 
-import os
 import urllib.parse
-import yaml
+
 
 class Storage(object):
     """Base class for storages"""
@@ -89,7 +88,6 @@ class Storage(object):
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
 
-
     @staticmethod
     def getMapperClass(uri):
         """Get a mapper class cfg value from location described by uri.
@@ -112,7 +110,6 @@ class Storage(object):
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
-
 
     @staticmethod
     def makeFromURI(uri):

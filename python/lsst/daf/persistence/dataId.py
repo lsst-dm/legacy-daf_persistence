@@ -32,7 +32,7 @@ except ImportError:
     from collections import UserDict
 
 import copy
-import collections
+
 
 class DataId(UserDict):
     """DataId is used to pass scientifically meaningful key-value pairs. It may be tagged as applicable only
@@ -70,4 +70,4 @@ class DataId(UserDict):
         self.data.update(kwargs)
 
     def __repr__(self):
-        return "DataId(initialdata=%s, tag=%s)" %(self.data.__repr__(), self.tag)
+        return "DataId(initialdata=%s, tag=%s)" % (self.data.__repr__(), self.tag)

@@ -41,35 +41,35 @@ class PosixRegistryTestCase(unittest.TestCase):
         :return:
         """
         testData = collections.namedtuple('testData', 'root template returnFields dataId expectedLookup')
-        td = (\
-              testData(os.path.join(ROOT, 'posixRegistry/repo01'),
-                       'foo-%(ccd)02d.fits',
-                       ('ccd',),
-                       {},
-                       [(1,)]),
-              testData(os.path.join(ROOT, 'posixRegistry/repo02'),
-                       'foo-%(ccd)02d-%(filter)s.fits',
-                       ('ccd', 'filter'),
-                       {},
-                       [(1, 'g'), (1, 'h'), (2, 'g'), (2, 'h'), (3, 'i'),]),
-              testData(os.path.join(ROOT, 'posixRegistry/repo02'),
-                       'foo-%(ccd)02d-%(filter)s.fits',
-                       # intentionally no comma on 'filter'; it becomes a string not a tuple. This is handled,
-                       # and here is where it is tested.
-                       ('filter'),
-                       {'ccd':1},
-                       [('g',), ('h',),]),
-              testData(os.path.join(ROOT, 'posixRegistry/repo02'),
-                       'foo-%(ccd)02d-%(filter)s.fits',
-                       ('ccd',),
-                       {'filter':'i'},
-                       [(3,),]),
-              testData(os.path.join(ROOT, 'posixRegistry/lookupMetadata'),
-                       'raw_v%(visit)d_f%(filter)1s.fits.gz',
-                       ('visit',),
-                       {'MJD-OBS': 51195.2240820278},
-                       [(2,)]),
-              )
+        td = (
+            testData(os.path.join(ROOT, 'posixRegistry/repo01'),
+                     'foo-%(ccd)02d.fits',
+                     ('ccd',),
+                     {},
+                     [(1,)]),
+            testData(os.path.join(ROOT, 'posixRegistry/repo02'),
+                     'foo-%(ccd)02d-%(filter)s.fits',
+                     ('ccd', 'filter'),
+                     {},
+                     [(1, 'g'), (1, 'h'), (2, 'g'), (2, 'h'), (3, 'i'), ]),
+            testData(os.path.join(ROOT, 'posixRegistry/repo02'),
+                     'foo-%(ccd)02d-%(filter)s.fits',
+                     # intentionally no comma on 'filter'; it becomes a string not a tuple. This is handled,
+                     # and here is where it is tested.
+                     ('filter'),
+                     {'ccd': 1},
+                     [('g',), ('h',), ]),
+            testData(os.path.join(ROOT, 'posixRegistry/repo02'),
+                     'foo-%(ccd)02d-%(filter)s.fits',
+                     ('ccd',),
+                     {'filter': 'i'},
+                     [(3,), ]),
+            testData(os.path.join(ROOT, 'posixRegistry/lookupMetadata'),
+                     'raw_v%(visit)d_f%(filter)1s.fits.gz',
+                     ('visit',),
+                     {'MJD-OBS': 51195.2240820278},
+                     [(2,)]),
+        )
 
         policyTables = None
         storage = 'FitsStorage'

@@ -148,14 +148,14 @@ class Policy(_PolicyBase):
                     break
         policy = None
         if matchedPath is None:
-            raise IOError("Could not find policy at %s" %paths)
+            raise IOError("Could not find policy at %s" % paths)
         elif matchedPath.endswith('yaml'):
             self.__initFromYamlFile(matchedPath)
         elif matchedPath.endswith('paf'):
             policy = pexPolicy.Policy.createPolicy(matchedPath)
             self.__initFromPexPolicy(policy)
         else:
-            raise RuntimeError("Unhandled policy file type:%s" %matchedPath)
+            raise RuntimeError("Unhandled policy file type:%s" % matchedPath)
 
     def __initFromDefaultPolicy(self, preference, productName, filePath, repos):
         """Open a policy file by package name + location. Usually used for package-default policies.
@@ -168,7 +168,7 @@ class Policy(_PolicyBase):
         """
         policyPath = os.path.join(lsst.utils.getPackageDir(productName), repos, filePath)
         if not os.path.exists(policyPath):
-            raise RuntimeError("No policy at path:%s" %policyPath)
+            raise RuntimeError("No policy at path:%s" % policyPath)
         self.__init(None, preference=preference, filePath=policyPath)
 
     def __initFromPexPolicy(self, pexPolicy):
@@ -211,7 +211,7 @@ class Policy(_PolicyBase):
         self.data = yaml.load(stream)
         return self
 
-    def __getitem__ (self, name):
+    def __getitem__(self, name):
         data = self.data
         for key in name.split('.'):
             if data is None:

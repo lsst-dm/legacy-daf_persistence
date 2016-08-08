@@ -48,6 +48,7 @@ def listify(x):
         x = [x]
     return x
 
+
 def iterify(x):
     """Takes any object. Returns it if it is iterable. If it
     is not iterable it puts the object in a list and returns
@@ -65,6 +66,7 @@ def iterify(x):
         x = [x]
     return x
 
+
 def sequencify(x):
     """Takes an object, if it is a sequence return it,
     else put it in a tuple. Strings are not sequences."""
@@ -73,6 +75,7 @@ def sequencify(x):
     else:
         x = (x, )
     return x
+
 
 def setify(x):
     """Take an object x and return it in a set.
@@ -94,7 +97,7 @@ def setify(x):
         try:
             x = set(x)
         except TypeError:
-            x= set([x])
+            x = set([x])
     return x
 
 

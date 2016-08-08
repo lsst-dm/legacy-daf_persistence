@@ -40,6 +40,7 @@ def safeMakeDir(directory):
             if e.errno != errno.EEXIST:
                 raise e
 
+
 def setFileMode(filename):
     """Set a file mode according to the user's umask"""
     # Get the current umask, which we can only do by setting it and then reverting to the original.
@@ -48,6 +49,7 @@ def setFileMode(filename):
     # chmod the new file to match what it would have been if it hadn't started life as a temporary
     # file (which have more restricted permissions).
     os.chmod(filename, (~umask & 0o666))
+
 
 @contextmanager
 def FileForWriteOnceCompareSame(name):
@@ -86,6 +88,7 @@ def FileForWriteOnceCompareSame(name):
                 # the previous file, maybe it's a race condition? Iny any event, raise a runtime error.
                 raise RuntimeError("Written file does not match existing file.")
 
+
 @contextmanager
 def SafeFile(name):
     """Context manager to create a file in a manner avoiding race conditions
@@ -103,6 +106,7 @@ def SafeFile(name):
             os.rename(temp.name, name)
             setFileMode(name)
 
+
 @contextmanager
 def SafeFilename(name):
     """Context manager for creating a file in a manner avoiding race conditions
@@ -115,7 +119,7 @@ def SafeFilename(name):
     safeMakeDir(outDir)
     temp = tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False)
     tempName = temp.name
-    temp.close() # We don't use the fd, just want a filename
+    temp.close()  # We don't use the fd, just want a filename
     try:
         yield tempName
     finally:

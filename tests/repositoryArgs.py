@@ -1,5 +1,4 @@
-# -*- coding: UTF-8 -*-
-#!/usr/bin/env python
+#!/usr/bin/env python -*- coding: UTF-8 -*-
 
 #
 # LSST Data Management System
@@ -27,8 +26,10 @@ import lsst.daf.persistence as dp
 import lsst.utils.tests
 import unittest
 
+
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 class MapperTest(dp.Mapper):
     pass

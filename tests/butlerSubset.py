@@ -28,7 +28,6 @@ import unittest
 
 import os
 import pickle
-import re
 import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
 from cameraMapper import CameraMapper
@@ -40,7 +39,9 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 def setup_module(module):
     lsst.utils.tests.init()
 
+
 class Registry(object):
+
     def __init__(self, dictList):
         self.dictList = dictList
 
@@ -61,32 +62,34 @@ class Registry(object):
                 result.add(tuple(values))
         return result
 
+
 class ImgMapper(CameraMapper):
+
     def __init__(self):
         CameraMapper.__init__(self)
         self.root = os.path.join(ROOT, 'butlerSubset')
         self.registry = Registry([
-                dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
-                    snap=0, skyTile=5),
-                dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
-                    snap=1, skyTile=5),
-                dict(visit=123456, raft="1,1", sensor="2,2", amp="0,1",
-                    snap=0, skyTile=5),
-                dict(visit=123456, raft="1,1", sensor="2,2", amp="1,0",
-                    snap=1, skyTile=5),
-                dict(visit=123456, raft="1,1", sensor="2,2", amp="1,1",
-                    snap=0, skyTile=5),
+            dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
+                 snap=0, skyTile=5),
+            dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
+                 snap=1, skyTile=5),
+            dict(visit=123456, raft="1,1", sensor="2,2", amp="0,1",
+                 snap=0, skyTile=5),
+            dict(visit=123456, raft="1,1", sensor="2,2", amp="1,0",
+                 snap=1, skyTile=5),
+            dict(visit=123456, raft="1,1", sensor="2,2", amp="1,1",
+                 snap=0, skyTile=5),
 
-                dict(visit=123456, raft="1,2", sensor="2,1", amp="0,0",
-                    snap=1, skyTile=6),
-                dict(visit=123456, raft="1,2", sensor="2,2", amp="0,0",
-                    snap=0, skyTile=6),
+            dict(visit=123456, raft="1,2", sensor="2,1", amp="0,0",
+                 snap=1, skyTile=6),
+            dict(visit=123456, raft="1,2", sensor="2,2", amp="0,0",
+                 snap=0, skyTile=6),
 
-                dict(visit=654321, raft="1,3", sensor="1,1", amp="0,0",
-                    snap=1, skyTile=6),
-                dict(visit=654321, raft="1,3", sensor="1,2", amp="0,0",
-                    snap=0, skyTile=6)
-                ])
+            dict(visit=654321, raft="1,3", sensor="1,1", amp="0,0",
+                 snap=1, skyTile=6),
+            dict(visit=654321, raft="1,3", sensor="1,2", amp="0,0",
+                 snap=0, skyTile=6)
+        ])
 
 
 class ButlerSubsetTestCase(unittest.TestCase):
@@ -112,15 +115,16 @@ class ButlerSubsetTestCase(unittest.TestCase):
         return butler
 
     def testSingleIteration(self):
-        args = dafPersist.RepositoryArgs(mode='r', root=os.path.join(ROOT, 'butlerSubset'), mapper=ImgMapper())
+        args = dafPersist.RepositoryArgs(mode='r', root=os.path.join(ROOT, 'butlerSubset'),
+                                         mapper=ImgMapper())
         butler = dafPersist.Butler(inputs=args)
 
         ButlerSubsetTestCase.registerAliases(butler)
 
         inputList = ["calexp_v123456_R1,2_S2,1.pickle",
-                "calexp_v123456_R1,2_S2,2.pickle",
-                "calexp_v654321_R1,3_S1,1.pickle",
-                "calexp_v654321_R1,3_S1,2.pickle"]
+                     "calexp_v123456_R1,2_S2,2.pickle",
+                     "calexp_v654321_R1,3_S1,1.pickle",
+                     "calexp_v654321_R1,3_S1,2.pickle"]
         for fileName in inputList:
             with open(fileName, "wb") as f:
                 pickle.dump(inputList, f)
@@ -139,9 +143,9 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 self.assertEqual(iterator.dataId["visit"], 654321)
             else:
                 self.assertIn(iterator.dataId["raft"], ["1,2", "1,3"])
-            image = iterator.get(self.calexpTypeName) # succeeds since deferred
+            image = iterator.get(self.calexpTypeName)  # succeeds since deferred
             self.assertEqual(type(image), dafPersist.readProxy.ReadProxy)
-            image = iterator.get(self.calexpTypeName, immediate=True) # real test
+            image = iterator.get(self.calexpTypeName, immediate=True)  # real test
             self.assertEqual(type(image), list)
             self.assertEqual(image, inputList)
 
@@ -167,12 +171,12 @@ class ButlerSubsetTestCase(unittest.TestCase):
     def testDoubleIteration(self):
         # create a bunch of files for testing
         inputList = ["flat_R1,1_S2,2_C0,0_E000.pickle",
-                "flat_R1,1_S2,2_C0,0_E001.pickle",
-                "flat_R1,1_S2,2_C0,1_E000.pickle",
-                "flat_R1,1_S2,2_C1,0_E001.pickle",
-                "flat_R1,1_S2,2_C1,1_E000.pickle",
-                "flat_R1,2_S2,1_C0,0_E001.pickle",
-                "flat_R1,2_S2,2_C0,0_E000.pickle"]
+                     "flat_R1,1_S2,2_C0,0_E001.pickle",
+                     "flat_R1,1_S2,2_C0,1_E000.pickle",
+                     "flat_R1,1_S2,2_C1,0_E001.pickle",
+                     "flat_R1,1_S2,2_C1,1_E000.pickle",
+                     "flat_R1,2_S2,1_C0,0_E001.pickle",
+                     "flat_R1,2_S2,2_C0,0_E000.pickle"]
         for fileName in inputList:
             with open(fileName, "wb") as f:
                 pickle.dump(inputList, f)
@@ -194,11 +198,11 @@ class ButlerSubsetTestCase(unittest.TestCase):
             else:
                 self.assertEqual(iterator.dataId["raft"], "1,2")
                 self.assertEqual(len(iterator.subItems()), 1)
-            for ampIterator in iterator.subItems(): # default level = "amp"
+            for ampIterator in iterator.subItems():  # default level = "amp"
                 if iterator.dataId["raft"] == "1,1":
                     self.assertEqual(iterator.dataId["sensor"], "2,2")
                     self.assertIn(ampIterator.dataId["amp"], ["0,0", "0,1",
-                        "1,0", "1,1"])
+                                                              "1,0", "1,1"])
                     self.assertIn(ampIterator.dataId["snap"], [0, 1])
                 else:
                     self.assertIn(iterator.dataId["sensor"], ["2,1", "2,2"])
@@ -215,12 +219,12 @@ class ButlerSubsetTestCase(unittest.TestCase):
         for fileName in inputList:
             os.unlink(fileName)
         ref = butler.dataRef(self.rawTypeName,
-                visit=123456, raft="1,1", sensor="2,2", amp="0,1", snap=0)
+                             visit=123456, raft="1,1", sensor="2,2", amp="0,1", snap=0)
         self.assertFalse(ref.datasetExists("flat"))
 
         for fileName in ["calexp_v123456_R1,1_S2,2.pickle",
-                "calexp_v123456_R1,2_S2,1.pickle",
-                "calexp_v123456_R1,2_S2,2.pickle"]:
+                         "calexp_v123456_R1,2_S2,1.pickle",
+                         "calexp_v123456_R1,2_S2,2.pickle"]:
             self.assertTrue(os.path.exists(fileName))
             os.unlink(fileName)
 
@@ -241,6 +245,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
         self.assertEqual(len(subset), 1)
         ref = butler.dataRef(self.rawTypeName, visit=314159, raft="ab", sensor="cd", amp="ef", snap=9)
         self.assertFalse(ref.datasetExists(self.rawTypeName))
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass

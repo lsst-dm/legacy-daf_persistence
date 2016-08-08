@@ -28,7 +28,9 @@ import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
 
+
 class MinMapper(dafPersist.Mapper):
+
     def __init__(self):
         pass
 
@@ -37,18 +39,19 @@ class MinMapper(dafPersist.Mapper):
         if not write:
             path = "parent/" + path
         return dafPersist.ButlerLocation("lsst.afw.image.BBox",
-                "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
+                                         "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
 
     def map_badSourceHist(self, dataId, write):
         path = "badSourceHist%(ccd)d.pickle" % dataId
         return dafPersist.ButlerLocation("lsst.afw.image.BBox",
-                "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
+                                         "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
 
     def query_x(self, format, dataId):
         return [1, 2, 3]
 
     def std_x(self, item, dataId):
         return float(item)
+
 
 class MapperTestCase(unittest.TestCase):
     """A test case for the mapper used by the data butler."""
@@ -58,7 +61,7 @@ class MapperTestCase(unittest.TestCase):
 
     def testGetDatasetTypes(self):
         self.assertEqual(set(self.mapper.getDatasetTypes()),
-                set(["x", "badSourceHist"]))
+                         set(["x", "badSourceHist"]))
 
     def testMap(self):
         loc = self.mapper.map("x", {"ccd": 27})
@@ -78,7 +81,7 @@ class MapperTestCase(unittest.TestCase):
 
     def testQueryMetadata(self):
         self.assertEqual(self.mapper.queryMetadata("x", None, None),
-            [1, 2, 3])
+                         [1, 2, 3])
 
     def testStandardize(self):
         self.assertEqual(self.mapper.canStandardize("x"), True)

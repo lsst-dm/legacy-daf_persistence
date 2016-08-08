@@ -76,7 +76,6 @@ class WriteOnceCompareSameTest(unittest.TestCase):
         self.assertRaises(RuntimeError, writeNonMatchingFile)
 
 
-
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
 

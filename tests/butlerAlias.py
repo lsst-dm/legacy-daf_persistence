@@ -35,6 +35,7 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class MinMapper(dafPersist.Mapper):
+
     def map_raw(self, dataId, write):
         python = 'astropy.io.fits.HDUList'
         persistable = None
@@ -47,7 +48,7 @@ class MinMapper(dafPersist.Mapper):
         return astropy.io.fits.open(location.getLocations()[0])
 
     def query_raw(self, format, dataId):
-        values = [{'visit':1, 'filter':'g'}, {'visit':2, 'filter':'g'}, {'visit':3, 'filter':'r'}]
+        values = [{'visit': 1, 'filter': 'g'}, {'visit': 2, 'filter': 'g'}, {'visit': 3, 'filter': 'r'}]
         matches = []
         for value in values:
             match = True
@@ -85,9 +86,9 @@ class ButlerTestCase(unittest.TestCase):
         del self.butler
 
     def testGet(self):
-        raw_image = self.butler.get(self.datasetType, {'visit':'2', 'filter':'g'})
+        raw_image = self.butler.get(self.datasetType, {'visit': '2', 'filter': 'g'})
         # in this case the width is known to be 1026:
-        self.assertEqual(raw_image[1].header["NAXIS1"], 1026) # raw_image is an lsst.afw.ExposureU
+        self.assertEqual(raw_image[1].header["NAXIS1"], 1026)  # raw_image is an lsst.afw.ExposureU
 
     def testSubset(self):
         subset = self.butler.subset(self.datasetType)
@@ -102,24 +103,24 @@ class ButlerTestCase(unittest.TestCase):
 
     def testQueryMetadata(self):
         keys = self.butler.getKeys(self.datasetType)
-        expectedKeyValues = {'filter':['g', 'r'], 'visit':[1, 2, 3]}
+        expectedKeyValues = {'filter': ['g', 'r'], 'visit': [1, 2, 3]}
         for key in keys:
             val = self.butler.queryMetadata(self.datasetType, key)
             self.assertEqual(val.sort(), expectedKeyValues[key].sort())
 
     def testDatasetExists(self):
         # test the valeus that are expected to be true:
-        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':1}))
-        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':2}))
-        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':3}))
+        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter': 'g', 'visit': 1}))
+        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter': 'g', 'visit': 2}))
+        self.assertTrue(self.butler.datasetExists(self.datasetType, {'filter': 'r', 'visit': 3}))
 
         # test a few values that are expected to be false:
-        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter':'f', 'visit':1}))
-        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter':'r', 'visit':1}))
-        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter':'g', 'visit':3}))
+        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter': 'f', 'visit': 1}))
+        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter': 'r', 'visit': 1}))
+        self.assertFalse(self.butler.datasetExists(self.datasetType, {'filter': 'g', 'visit': 3}))
 
     def testDataRef(self):
-        print(self.butler.dataRef(self.datasetType, dataId={'filter':'g', 'visit':1}))
+        print(self.butler.dataRef(self.datasetType, dataId={'filter': 'g', 'visit': 1}))
 
     def testUnregisteredAlias(self):
         with self.assertRaises(RuntimeError):

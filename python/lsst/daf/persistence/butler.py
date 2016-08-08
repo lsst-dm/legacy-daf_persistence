@@ -33,18 +33,16 @@ from builtins import object
 
 import collections
 import copy
-import pickle
 import inspect
-import itertools
 import os
 
 import yaml
 
 import lsst.pex.logging as pexLog
 import lsst.pex.policy as pexPolicy
-from . import StorageList, LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, Repository, \
-              Access, Storage, Policy, NoResults, MultipleResults, Repository, DataId, RepositoryCfg, \
-              RepositoryArgs, listify, setify, sequencify, doImport
+from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
+    Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
+    RepositoryArgs, listify, setify, sequencify, doImport
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -52,12 +50,14 @@ class ButlerCfg(Policy, yaml.YAMLObject):
 
         .. warning::
 
-        cfg is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
-        API is strongly discouraged.
+        cfg is 'wet paint' and very likely to change. Use of it in production
+        code other than via the 'old butler' API is strongly discouraged.
     """
     yaml_tag = u"!ButlerCfg"
+
     def __init__(self, cls, repoCfg):
-        super(ButlerCfg, self).__init__({'repoCfg':repoCfg, 'cls':cls})
+        super(ButlerCfg, self).__init__({'repoCfg': repoCfg, 'cls': cls})
+
 
 class RepoData(object):
     """Container object for repository data used by Butler"""
@@ -89,6 +89,7 @@ class RepoData(object):
 
 class RepoDataContainer(object):
     """Container object for RepoData instances owned by a Butler instance."""
+
     def __init__(self):
         self.byRepoRoot = collections.OrderedDict()  # {repo root, RepoData}
         self.byCfgRoot = {}                          # {repo cfgRoot, RepoData}
@@ -225,8 +226,8 @@ class Butler(object):
 
         :return:
         """
-        self._initArgs = {'root':root, 'mapper':mapper, 'inputs':inputs, 'outputs':outputs,
-                          'mapperArgs':mapperArgs}
+        self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
+                          'mapperArgs': mapperArgs}
 
         isLegacyRepository = inputs is None and outputs is None
 
@@ -358,8 +359,8 @@ class Butler(object):
                                 "Existing output repository parents do not match butler's inputs.")
                 if not cfg.matchesArgs(args):
                     raise RuntimeError(
-                       "Persisted RepositoryCfg and passed-in RepositoryArgs have conflicting parameters:\n" +
-                       "\t%s\n\t%s", (cfg, args))
+                        "Persisted RepositoryCfg and passed-in RepositoryArgs have"
+                        " conflicting parameters:\n" + "\t%s\n\t%s", (cfg, args))
                 if args.mapperArgs is not None:
                     if cfg.mapperArgs is None:
                         cfg.mapperArgs = args.mapperArgs
@@ -385,7 +386,6 @@ class Butler(object):
                 else:
                     args = RepositoryArgs(cfgRoot=parent, mode='r')
                 self._addRepo(args=args, inout='in', tags=tags)
-
 
     def __repr__(self):
         return 'Butler(datasetTypeAliasDict=%s, repos=%s, persistence=%s)' % (
@@ -424,7 +424,6 @@ class Butler(object):
         moved entirely into Butler Access, or made more dynamic, and the API will very likely change."""
         return Storage.getMapperClass(root)
 
-
     def defineAlias(self, alias, datasetType):
         """Register an alias that will be substituted in datasetTypes.
 
@@ -434,26 +433,25 @@ class Butler(object):
                                  It may not contain '@'
         """
 
-        #verify formatting of alias:
+        # verify formatting of alias:
         # it can have '@' as the first character (if not it's okay, we will add it) or not at all.
         atLoc = alias.rfind('@')
         if atLoc == -1:
             alias = "@" + str(alias)
         elif atLoc > 0:
-            raise RuntimeError("Badly formatted alias string: %s" %(alias,))
+            raise RuntimeError("Badly formatted alias string: %s" % (alias,))
 
         # verify that datasetType does not contain '@'
         if datasetType.count('@') != 0:
-            raise RuntimeError("Badly formatted type string: %s" %(datasetType))
+            raise RuntimeError("Badly formatted type string: %s" % (datasetType))
 
         # verify that the alias keyword does not start with another alias keyword,
         # and vice versa
         for key in self.datasetTypeAliasDict:
             if key.startswith(alias) or alias.startswith(key):
-                raise RuntimeError("Alias: %s overlaps with existing alias: %s" %(alias, key))
+                raise RuntimeError("Alias: %s overlaps with existing alias: %s" % (alias, key))
 
         self.datasetTypeAliasDict[alias] = datasetType
-
 
     def getKeys(self, datasetType=None, level=None, tag=None):
         """Returns a dict.  The dict keys are the valid data id keys at or above the given level of hierarchy
@@ -482,7 +480,6 @@ class Butler(object):
                 if keys is not None:
                     break
         return keys
-
 
     def queryMetadata(self, datasetType, format=None, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
@@ -528,7 +525,6 @@ class Butler(object):
 
         return tuples
 
-
     def datasetExists(self, datasetType, dataId={}, **rest):
         """Determines if a dataset file exists.
 
@@ -555,7 +551,7 @@ class Butler(object):
         additionalData = location.getAdditionalData()
         storageName = location.getStorageName()
         if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
+                           'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
             locations = location.getLocations()
             for locationString in locations:
                 logLoc = LogicalLocation(locationString, additionalData).locString()
@@ -568,10 +564,9 @@ class Butler(object):
                     return False
             return True
         self.log.log(pexLog.Log.WARN,
-                "datasetExists() for non-file storage %s, dataset type=%s, keys=%s" %
-                (storageName, datasetType, str(dataId)))
+                     "datasetExists() for non-file storage %s, dataset type=%s, keys=%s" %
+                     (storageName, datasetType, str(dataId)))
         return True
-
 
     def get(self, datasetType, dataId=None, immediate=False, **rest):
         """Retrieves a dataset given an input collection data id.
@@ -619,7 +614,6 @@ class Butler(object):
         if immediate:
             return callback()
         return ReadProxy(callback)
-
 
     def put(self, obj, datasetType, dataId={}, doBackup=False, **rest):
         """Persists a dataset given an output collection data id.
@@ -674,7 +668,6 @@ class Butler(object):
         dataId.update(**rest)
         return ButlerSubset(self, datasetType, level, dataId)
 
-
     def dataRef(self, datasetType, level=None, dataId={}, **rest):
         """Returns a single ButlerDataRef.
 
@@ -694,12 +687,11 @@ class Butler(object):
         subset = self.subset(datasetType, level, dataId, **rest)
         if len(subset) != 1:
             raise RuntimeError("No unique dataset for: Dataset type:%s Level:%s Data ID:%s Keywords:%s" %
-                (str(datasetType), str(level), str(dataId), str(rest)))
+                               (str(datasetType), str(level), str(dataId), str(rest)))
         return ButlerDataRef(subset, subset.cache[0])
 
-
     def _read(self, location):
-        trace = pexLog.BlockTimingLog(self.log, "read", pexLog.BlockTimingLog.INSTRUM+1)
+        trace = pexLog.BlockTimingLog(self.log, "read", pexLog.BlockTimingLog.INSTRUM + 1)
         results = location.repository.read(location)
         if len(results) == 1:
             results = results[0]
@@ -724,7 +716,7 @@ class Butler(object):
 
         # If an alias specifier can not be resolved then throw.
         if datasetType.find('@') != -1:
-            raise RuntimeError("Unresolvable alias specifier in datasetType: %s" %(datasetType))
+            raise RuntimeError("Unresolvable alias specifier in datasetType: %s" % (datasetType))
 
         return datasetType
 

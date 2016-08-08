@@ -27,12 +27,12 @@ import unittest
 import os
 
 import lsst.utils.tests
-from lsst.daf.base import Citizen
 from lsst.daf.persistence import DbAuth
 from lsst.pex.policy import Policy
 
 # Define the root of the tests relative to this file
 ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 class DbAuthTestCase(unittest.TestCase):
     """A test case for DbAuth."""
@@ -48,25 +48,26 @@ class DbAuthTestCase(unittest.TestCase):
     def testSetPolicy(self):
         self.assertTrue(DbAuth.available("lsst10.ncsa.uiuc.edu", "3306"))
         self.assertEqual(DbAuth.authString("lsst10.ncsa.uiuc.edu", "3306"),
-                "test:globular.test")
+                         "test:globular.test")
         self.assertEqual(DbAuth.username("lsst10.ncsa.uiuc.edu", "3306"),
-                "test")
+                         "test")
         self.assertEqual(DbAuth.password("lsst10.ncsa.uiuc.edu", "3306"),
-                "globular.test")
+                         "globular.test")
         self.assertTrue(DbAuth.available("lsst10.ncsa.uiuc.edu", "3307"))
         self.assertEqual(DbAuth.authString("lsst10.ncsa.uiuc.edu", "3307"),
-                "boris:natasha")
+                         "boris:natasha")
         self.assertEqual(DbAuth.username("lsst10.ncsa.uiuc.edu", "3307"),
-                "boris")
+                         "boris")
         self.assertEqual(DbAuth.password("lsst10.ncsa.uiuc.edu", "3307"),
-                "natasha")
+                         "natasha")
         self.assertTrue(DbAuth.available("lsst9.ncsa.uiuc.edu", "3306"))
         self.assertEqual(DbAuth.authString("lsst9.ncsa.uiuc.edu", "3306"),
-                "rocky:squirrel")
+                         "rocky:squirrel")
         self.assertEqual(DbAuth.username("lsst9.ncsa.uiuc.edu", "3306"),
-                "rocky")
+                         "rocky")
         self.assertEqual(DbAuth.password("lsst9.ncsa.uiuc.edu", "3306"),
-                "squirrel")
+                         "squirrel")
+
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass

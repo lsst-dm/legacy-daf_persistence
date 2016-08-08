@@ -1,8 +1,4 @@
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
 #!/usr/bin/env python
-
 #
 # LSST Data Management System
 # Copyright 2016 LSST Corporation.
@@ -24,27 +20,29 @@ from builtins import object
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
-import pickle
-import collections
-import os
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 
 from lsst.daf.persistence import Policy
 
 import yaml
 
+
 class AccessCfg(Policy, yaml.YAMLObject):
     yaml_tag = u"!AccessCfg"
+
     def __init__(self, cls, storageCfg):
-        super(AccessCfg, self).__init__({'storageCfg':storageCfg, 'cls':cls})
+        super(AccessCfg, self).__init__({'storageCfg': storageCfg, 'cls': cls})
+
 
 class Access(object):
     """Implements an butler framework interface for Transport, Storage, and Registry
 
     .. warning::
 
-        Access is 'wet paint' and very likely to change. Use of it in production code other than via the 'old butler'
-        API is strongly discouraged.
+        Access is 'wet paint' and very likely to change. Use of it in production
+        code other than via the 'old butler' API is strongly discouraged.
 
     """
 

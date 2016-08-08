@@ -24,14 +24,10 @@
 from past.builtins import basestring
 from builtins import object
 
-import collections
 import copy
 import inspect
-import itertools
-import os
-import uuid
 
-from lsst.daf.persistence import Access, Policy, Mapper, LogicalLocation, ButlerLocation, Storage, listify
+from lsst.daf.persistence import Storage, listify
 
 
 class RepositoryArgs(object):
@@ -88,7 +84,7 @@ class Repository(object):
         :return:
         '''
         self._storage = Storage.makeFromURI(repositoryCfg.root)
-        self._mapperArgs = repositoryCfg.mapperArgs # keep for reference in matchesArgs
+        self._mapperArgs = repositoryCfg.mapperArgs  # keep for reference in matchesArgs
         self._initMapper(repositoryCfg)
 
     def _initMapper(self, repositoryCfg):
@@ -121,7 +117,7 @@ class Repository(object):
                         mro = mro[:-1]
                     for c in mro:
                         try:
-                            if arg in inspect.getargspec(c.__init__ ).args:
+                            if arg in inspect.getargspec(c.__init__).args:
                                 mapperArgs[arg] = self._storage.root
                                 break
                         except TypeError:
@@ -130,11 +126,9 @@ class Repository(object):
 
         self._mapper = mapper
 
-
         def __repr__(self):
             return 'config(id=%s, storage=%s, parent=%s, mapper=%s, mapperArgs=%s, cls=%s)' % \
                    (self.id, self._storage, self.parent, self.mapper, self.mapperArgs, self.cls)
-
 
     # todo want a way to make a repository read-only
     def write(self, butlerLocation, obj):
@@ -154,8 +148,8 @@ class Repository(object):
         """
         return self._storage.read(butlerLocation)
 
-    ###################
-    ## Mapper Access ##
+    #################
+    # Mapper Access #
 
     def mappers(self):
         return (self._mapper, )

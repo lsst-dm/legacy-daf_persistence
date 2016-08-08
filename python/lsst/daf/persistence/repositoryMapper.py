@@ -22,9 +22,8 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import yaml
-
 from lsst.daf.persistence import Mapper, ButlerLocation, Policy
+
 
 class RepositoryMapper(Mapper):
     """"Base class for a mapper to find repository configurations within a butler repository.
@@ -42,10 +41,9 @@ class RepositoryMapper(Mapper):
         self.policy = Policy(policy)
         self.storage = storage
 
-
     def __repr__(self):
         if 'policy' in self.__dict__ and 'storageCfg' in self.__dict__:
-            return 'RepositoryMapper(policy=%s, storageCfg=%s)' %(self.policy, self.storageCfg)
+            return 'RepositoryMapper(policy=%s, storageCfg=%s)' % (self.policy, self.storageCfg)
         else:
             return 'uninitialized RepositoryMapper'
 
@@ -63,14 +61,13 @@ class RepositoryMapper(Mapper):
         if not write and not self.storage.exists(location):
             return None
         bl = ButlerLocation(
-            pythonType = self.policy['repositories.cfg.python'],
-            cppType = None,
-            storageName = self.policy['repositories.cfg.storage'],
-            locationList = (self.storage.locationWithRoot(location),),
-            dataId = dataId,
-            mapper = self)
+            pythonType=self.policy['repositories.cfg.python'],
+            cppType=None,
+            storageName=self.policy['repositories.cfg.storage'],
+            locationList=(self.storage.locationWithRoot(location),),
+            dataId=dataId,
+            mapper=self)
         return bl
-
 
     def map_repo(self, dataId, write):
         if write:
@@ -82,11 +79,11 @@ class RepositoryMapper(Mapper):
         location = template % dataId
         if self.storage.exists(location):
             bl = ButlerLocation(
-                pythonType = self.policy['repositories.repo.python'],
-                cppType = None,
-                storageName = None,
-                locationList = (location,),
-                dataId = dataId,
-                mapper = self)
+                pythonType=self.policy['repositories.repo.python'],
+                cppType=None,
+                storageName=None,
+                locationList=(location,),
+                dataId=dataId,
+                mapper=self)
             return bl
         return None

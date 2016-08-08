@@ -29,6 +29,7 @@ import yaml
 
 from lsst.daf.persistence import listify, iterify
 
+
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
 
@@ -66,10 +67,10 @@ class RepositoryCfg(yaml.YAMLObject):
         if not other:
             return False
         return self._root == other._root and \
-               self.mapper == other._mapper and \
-               self.mapperArgs == other._mapperArgs and \
-               self.parents == other._parents and \
-               self._isLegacyRepository == other._isLegacyRepository
+            self.mapper == other._mapper and \
+            self.mapperArgs == other._mapperArgs and \
+            self.parents == other._parents and \
+            self._isLegacyRepository == other._isLegacyRepository
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -113,8 +114,8 @@ class RepositoryCfg(yaml.YAMLObject):
     @staticmethod
     def makeFromArgs(repositoryArgs, parents):
         cfg = RepositoryCfg(root=repositoryArgs.root,
-                            mapper = repositoryArgs.mapper,
-                            mapperArgs = repositoryArgs.mapperArgs,
+                            mapper=repositoryArgs.mapper,
+                            mapperArgs=repositoryArgs.mapperArgs,
                             parents=parents,
                             isLegacyRepository=repositoryArgs.isLegacyRepository)
         return cfg

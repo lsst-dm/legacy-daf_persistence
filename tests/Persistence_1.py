@@ -56,10 +56,10 @@ class DbPersistence1TestCase(unittest.TestCase):
         storageList.append(storage)
 
         rdp = dafBase.PropertySet.swigConvert(
-                persistence.unsafeRetrieve("PropertySet", storageList,
-                    additionalData))
+            persistence.unsafeRetrieve("PropertySet", storageList,
+                                       additionalData))
 
-        self.assertEqual(rdp.nameCount(),1)
+        self.assertEqual(rdp.nameCount(), 1)
         self.assertTrue(rdp.exists("foo"))
         self.assertEqual(rdp.getInt("foo"), 3)
 

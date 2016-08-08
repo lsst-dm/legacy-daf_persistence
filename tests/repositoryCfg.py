@@ -36,8 +36,10 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class NullMapper(object):
+
     def __init__(self):
         pass
+
 
 class TestCfgRelationship(unittest.TestCase):
 
@@ -65,14 +67,13 @@ class TestCfgRelationship(unittest.TestCase):
         args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         self.assertRaises(RuntimeError, dp.Butler, outputs=args)
 
-
     def testExistingParents(self):
         # parents of inputs should be added to the inputs list
         butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
                                                      mapper=NullMapper(),
                                                      root=os.path.join(ROOT, 'repositoryCfg/a')))
         del butler
-        butler = dp.Butler(inputs=os.path.join(ROOT,'repositoryCfg/a'),
+        butler = dp.Butler(inputs=os.path.join(ROOT, 'repositoryCfg/a'),
                            outputs=os.path.join(ROOT, 'repositoryCfg/b'))
         del butler
         butler = dp.Butler(inputs=os.path.join(ROOT, 'repositoryCfg/b'))
@@ -83,7 +84,8 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(len(butler._repos.outputs()), 0)
 
         # parents of readable outputs should be added to the inputs list
-        butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'), mode='rw'))
+        butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'),
+                                                     mode='rw'))
         self.assertEqual(len(butler._repos.inputs()), 2)
         # verify serach order:
         self.assertEqual(butler._repos.inputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
@@ -113,6 +115,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
 yaml.add_constructor(u"!RepositoryCfg_v0", RepositoryCfg.v0Constructor)
 
+
 class TestCfgFileVersion(unittest.TestCase):
     """Proof-of-concept test case for a fictitious version 0 of a persisted repository cfg.
     """
@@ -131,7 +134,6 @@ class TestCfgFileVersion(unittest.TestCase):
                    _root: 'foo/bar'""")
         f.close()
         cfg = dp.PosixStorage.getRepositoryCfg(os.path.join(ROOT, 'repositoryCfg'))
-
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

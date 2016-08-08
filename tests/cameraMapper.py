@@ -26,23 +26,24 @@
 import re
 import lsst.daf.persistence as dafPersist
 
+
 class CameraMapper(dafPersist.Mapper):
+
     def __init__(self):
         self.templates = dict(
             raw="raw_v%(visit)d_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
             flat="flat_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
             calexp="calexp_v%(visit)d_R%(raft)s_S%(sensor)s.pickle")
         self.synonyms = dict(
-                ccd="sensor",
-                channel="amp"
-                )
+            ccd="sensor",
+            channel="amp"
+        )
         self.levels = dict(
-                skyTile=["visit", "raft", "sensor"],
-                visit=["snap", "raft", "sensor", "amp"],
-                raft=["snap", "sensor", "amp"],
-                sensor=["snap", "amp"],
-                amp=[])
-
+            skyTile=["visit", "raft", "sensor"],
+            visit=["snap", "raft", "sensor", "amp"],
+            raft=["snap", "sensor", "amp"],
+            sensor=["snap", "amp"],
+            amp=[])
 
     def _formatMap(self, ch, k, datasetType):
         if ch in "diouxX":
@@ -53,9 +54,8 @@ class CameraMapper(dafPersist.Mapper):
             return str
         else:
             raise RuntimeError("Unexpected format specifier %s"
-                    " for field %s in template for dataset %s" %
-                    (ch, k, datasetType))
-
+                               " for field %s in template for dataset %s" %
+                               (ch, k, datasetType))
 
     def getKeys(self, datasetType, level):
         if level == '':
@@ -70,8 +70,8 @@ class CameraMapper(dafPersist.Mapper):
                 (k, self._formatMap(v, k, datasetType))
                 for k, v in
                 re.findall(r'\%\((\w+)\).*?([diouxXeEfFgGcrs])',
-                    self.templates[datasetType])
-                ])
+                           self.templates[datasetType])
+            ])
             keyDict.update(d)
         if level is not None:
             for l in self.levels[level]:
@@ -86,10 +86,10 @@ class CameraMapper(dafPersist.Mapper):
         if level == '':
             level = self.getDefaultLevel()
         return dict(
-                sensor="amp",
-                raft="sensor",
-                visit="sensor",
-                skyTile="sensor")[level]
+            sensor="amp",
+            raft="sensor",
+            visit="sensor",
+            skyTile="sensor")[level]
 
     def query(self, datasetType, format, dataId):
         return self.registry.query(datasetType, format, dataId)
