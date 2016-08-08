@@ -107,3 +107,49 @@ Access to the lsst::daf::persistence classes
     %template(getColumnByPosString) getColumnByPos<std::string>;
     %template(getColumnByPosBool) getColumnByPos<bool>;
 }
+
+%shared_ptr(Foo)
+%rename(FooWeakPtr) std::weak_ptr<Foo>;
+
+%inline %{
+class Foo {
+public:
+    typedef std::shared_ptr<Foo> Ptr;
+    Foo(int v) : _val(v) {}
+    Foo() : _val(0) {}
+    int getVal() const {return _val;}
+private:
+    int _val;
+};
+
+static int extractValue(const Foo &t) {
+  return t.getVal();
+}
+
+static int extractValueSmart(std::shared_ptr<Foo> t) {
+  return t->getVal();
+}
+
+
+%inline %{
+#include <memory>
+template<class T>
+class weak_ptr_container
+{
+public:
+    weak_ptr_container(std::shared_ptr<T> ptr) : _ptr(ptr) {}
+    std::shared_ptr<T> lock() const { return _ptr.lock(); }
+    bool expired() const { return _ptr.expired(); }
+private:
+    std::weak_ptr<T> _ptr;
+};
+%}
+%template(FooWeakPtr) weak_ptr_container<Foo>;
+
+
+
+
+
+
+
+
