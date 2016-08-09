@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -11,14 +11,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
@@ -26,23 +26,24 @@
 import re
 import lsst.daf.persistence as dafPersist
 
+
 class CameraMapper(dafPersist.Mapper):
+
     def __init__(self):
         self.templates = dict(
             raw="raw_v%(visit)d_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
             flat="flat_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
             calexp="calexp_v%(visit)d_R%(raft)s_S%(sensor)s.pickle")
         self.synonyms = dict(
-                ccd="sensor",
-                channel="amp"
-                )
+            ccd="sensor",
+            channel="amp"
+        )
         self.levels = dict(
-                skyTile=["visit", "raft", "sensor"],
-                visit=["snap", "raft", "sensor", "amp"],
-                raft=["snap", "sensor", "amp"],
-                sensor=["snap", "amp"],
-                amp=[])
-
+            skyTile=["visit", "raft", "sensor"],
+            visit=["snap", "raft", "sensor", "amp"],
+            raft=["snap", "sensor", "amp"],
+            sensor=["snap", "amp"],
+            amp=[])
 
     def _formatMap(self, ch, k, datasetType):
         if ch in "diouxX":
@@ -53,9 +54,8 @@ class CameraMapper(dafPersist.Mapper):
             return str
         else:
             raise RuntimeError("Unexpected format specifier %s"
-                    " for field %s in template for dataset %s" %
-                    (ch, k, datasetType))
-
+                               " for field %s in template for dataset %s" %
+                               (ch, k, datasetType))
 
     def getKeys(self, datasetType, level):
         if level == '':
@@ -63,15 +63,15 @@ class CameraMapper(dafPersist.Mapper):
 
         keyDict = dict()
         if datasetType is None:
-            for t in self.templates.iterkeys():
+            for t in self.templates:
                 keyDict.update(self.getKeys(t))
         else:
             d = dict([
                 (k, self._formatMap(v, k, datasetType))
                 for k, v in
                 re.findall(r'\%\((\w+)\).*?([diouxXeEfFgGcrs])',
-                    self.templates[datasetType])
-                ])
+                           self.templates[datasetType])
+            ])
             keyDict.update(d)
         if level is not None:
             for l in self.levels[level]:
@@ -86,10 +86,10 @@ class CameraMapper(dafPersist.Mapper):
         if level == '':
             level = self.getDefaultLevel()
         return dict(
-                sensor="amp",
-                raft="sensor",
-                visit="sensor",
-                skyTile="sensor")[level]
+            sensor="amp",
+            raft="sensor",
+            visit="sensor",
+            skyTile="sensor")[level]
 
     def query(self, datasetType, format, dataId):
         return self.registry.query(datasetType, format, dataId)

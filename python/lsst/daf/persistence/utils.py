@@ -21,6 +21,13 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from past.builtins import basestring
+
+try:
+    from collections.abc import Sequence, Set
+except ImportError:
+    from collections import Sequence, Set
+
 
 # -*- python -*-
 
@@ -33,15 +40,45 @@ def listify(x):
     """
     if x is None:
         x = []
-    if not hasattr(x, '__iter__'):
+    elif isinstance(x, basestring):
         x = [x]
-    else:
+    elif hasattr(x, '__iter__'):
         x = list(x)
+    else:
+        x = [x]
+    return x
+
+
+def iterify(x):
+    """Takes any object. Returns it if it is iterable. If it
+    is not iterable it puts the object in a list and returns
+    the list. None will return an empty list. If a new list
+    is always required use listify(). Strings will be placed
+    in a list with a single element.
+    """
+    if x is None:
+        x = []
+    elif isinstance(x, basestring):
+        x = [x]
+    elif hasattr(x, '__iter__'):
+        pass
+    else:
+        x = [x]
+    return x
+
+
+def sequencify(x):
+    """Takes an object, if it is a sequence return it,
+    else put it in a tuple. Strings are not sequences."""
+    if isinstance(x, (Sequence, Set)) and not isinstance(x, basestring):
+        pass
+    else:
+        x = (x, )
     return x
 
 
 def setify(x):
-    """Take an object x and return it in a set. 
+    """Take an object x and return it in a set.
 
     If x is a container, will create a set from the contents of the container.
     If x is an object, will create a set with a single item in it.
@@ -60,7 +97,7 @@ def setify(x):
         try:
             x = set(x)
         except TypeError:
-            x= set([x])
+            x = set([x])
     return x
 
 
@@ -73,6 +110,6 @@ def doImport(pythonType):
     importClassString = pythonTypeTokenList.pop()
     importClassString = importClassString.strip()
     importPackage = ".".join(pythonTypeTokenList)
-    importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+    importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
     pythonType = getattr(importType, importClassString)
     return pythonType

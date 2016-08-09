@@ -39,44 +39,48 @@ class TestDataId(unittest.TestCase):
         self.assertEqual(dataId, {})
 
     def testInputDictNoTags(self):
-        dataId = DataId({'a':1, 'b':2})
-        self.assertEqual(dataId, {'a':1, 'b':2})
+        dataId = DataId({'a': 1, 'b': 2})
+        self.assertEqual(dataId, {'a': 1, 'b': 2})
         self.assertEqual(dataId.tag, set())
 
     def testInputDictWithTag(self):
         # single tag
-        dataId = DataId({'a':1, 'b':2}, 'foo')
-        self.assertEqual(dataId, {'a':1, 'b':2})
+        dataId = DataId({'a': 1, 'b': 2}, 'foo')
+        self.assertEqual(dataId, {'a': 1, 'b': 2})
         self.assertEqual(dataId.tag, set(['foo']))
 
         # tag list
-        dataId = DataId({'a':1, 'b':2}, ['foo', 'bar'])
-        self.assertEqual(dataId, {'a':1, 'b':2})
+        dataId = DataId({'a': 1, 'b': 2}, ['foo', 'bar'])
+        self.assertEqual(dataId, {'a': 1, 'b': 2})
         self.assertEqual(dataId.tag, set(['foo', 'bar']))
 
         # tag tuple
-        dataId = DataId({'a':1, 'b':2}, ('foo', 'bar'))
-        self.assertEqual(dataId, {'a':1, 'b':2})
+        dataId = DataId({'a': 1, 'b': 2}, ('foo', 'bar'))
+        self.assertEqual(dataId, {'a': 1, 'b': 2})
         self.assertEqual(dataId.tag, set(['foo', 'bar']))
 
         # tag set
-        dataId = DataId({'a':1, 'b':2}, set(['foo', 'bar']))
-        self.assertEqual(dataId, {'a':1, 'b':2})
+        dataId = DataId({'a': 1, 'b': 2}, set(['foo', 'bar']))
+        self.assertEqual(dataId, {'a': 1, 'b': 2})
         self.assertEqual(dataId.tag, set(['foo', 'bar']))
 
     def testInputDataId(self):
-        initDataId = DataId({'a':1, 'b':2}, ['foo', 'bar'])
+        initDataId = DataId({'a': 1, 'b': 2}, ['foo', 'bar'])
         dataId = DataId(initDataId)
-        self.assertEqual(dataId, {'a':1, 'b':2})
+        self.assertEqual(dataId, {'a': 1, 'b': 2})
         self.assertEqual(dataId.tag, set(['foo', 'bar']))
 
         dataId = DataId(initDataId, 'baz')
-        self.assertEqual(dataId, {'a':1, 'b':2})
+        self.assertEqual(dataId, {'a': 1, 'b': 2})
         self.assertEqual(dataId.tag, set(['foo', 'bar', 'baz']))
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
 
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == '__main__':
     lsst.utils.tests.init()

@@ -21,8 +21,11 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 
-import cPickle
+import pickle
 import collections
 import datetime
 import os
@@ -33,19 +36,23 @@ import yaml
 import lsst.utils.tests
 import lsst.daf.persistence as dp
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 def setup_module(module):
     lsst.utils.tests.init()
 
 
-class PosixPickleStringHanlder:
+class PosixPickleStringHanlder(object):
+
     @staticmethod
     def get(butlerLocation):
         if butlerLocation.storageName != "PickleStorage":
             raise TypeError("PosixStoragePickleMapper only supports PickleStorage")
-        location = butlerLocation.getLocations()[0] # should never be more than 1 location
-        with open(location, 'r') as f:
-            ret = cPickle.load(f)
+        location = butlerLocation.getLocations()[0]  # should never be more than 1 location
+        with open(location, 'rb') as f:
+            ret = pickle.load(f)
         return ret
 
     @staticmethod
@@ -53,31 +60,35 @@ class PosixPickleStringHanlder:
         if butlerLocation.storageName != "PickleStorage":
             raise TypeError("PosixStoragePickleMapper only supports PickleStorage")
         for location in butlerLocation.getLocations():
-            with open(location, 'w') as f:
-                cPickle.dump(obj, f, cPickle.HIGHEST_PROTOCOL)
+            with open(location, 'wb') as f:
+                pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 #################
 # Object Mapper #
 #################
 
-class TestMapperCfg(dp.Policy, yaml.YAMLObject):
-    yaml_tag = u"!TestMapperCfg"
-    def __init__(self, cls, root):
-        super(TestMapperCfg, self).__init__({'root':root, 'cls':cls})
 
-class TestMapper(dp.Mapper):
+class MapperTestCfg(dp.Policy, yaml.YAMLObject):
+    yaml_tag = u"!MapperTestCfg"
+
+    def __init__(self, cls, root):
+        super(MapperTestCfg, self).__init__({'root': root, 'cls': cls})
+
+
+class MapperTest(dp.Mapper):
+
     @classmethod
     def cfg(cls, root=None):
-        return TestMapperCfg(cls=cls, root=root)
+        return MapperTestCfg(cls=cls, root=root)
 
     def __init__(self, cfg):
-        super(TestMapper, self).__init__()
+        super(MapperTest, self).__init__()
         # self.root = cfg['root']
         self.storage = cfg['storage']
         self.cfg = cfg
 
     def __repr__(self):
-        return 'TestMapper(cfg=%s)' % self.cfg
+        return 'MapperTest(cfg=%s)' % self.cfg
 
     def map_str(self, dataId, write):
         template = "ccd_%(ccdNum)s.pickle"
@@ -95,7 +106,6 @@ class TestMapper(dp.Mapper):
 #####################
 
 
-
 class RepoDateMapper(dp.RepositoryMapper):
 
     @classmethod
@@ -107,12 +117,12 @@ class RepoDateMapper(dp.RepositoryMapper):
         location = template % dataId
         if self.storage.exists(location):
             return dp.ButlerLocation(
-                pythonType = self.policy['repositories.cfg.python'],
-                cppType = None,
-                storageName = self.policy['repositories.cfg.storage'],
-                locationList = (self.storage.locationWithRoot(location),),
-                dataId = dataId,
-                mapper = self)
+                pythonType=self.policy['repositories.cfg.python'],
+                cppType=None,
+                storageName=self.policy['repositories.cfg.storage'],
+                locationList=(self.storage.locationWithRoot(location),),
+                dataId=dataId,
+                mapper=self)
         return None
 
     def map_cfg(self, dataId, write):
@@ -130,12 +140,12 @@ class RepoDateMapper(dp.RepositoryMapper):
         if write:
             location = template % dataId
             return ButlerLocation(
-                pythonType = self.policy['repositories.cfg.python'],
-                cppType = None,
-                storageName = self.policy['repositories.cfg.storage'],
-                locationList = (self.storage.locationWithRoot(location),),
-                dataId = dataId,
-                mapper = self)
+                pythonType=self.policy['repositories.cfg.python'],
+                cppType=None,
+                storageName=self.policy['repositories.cfg.storage'],
+                locationList=(self.storage.locationWithRoot(location),),
+                dataId=dataId,
+                mapper=self)
 
         # for read mapping:
         # look for an exact match:
@@ -150,15 +160,16 @@ class RepoDateMapper(dp.RepositoryMapper):
         del dataId['date']
         dateToUse = None
         lookups = self.storage.lookup(lookupProperties='date', reference=None,
-                                     dataId=dataId, template=template)
+                                      dataId=dataId, template=template)
         lookups.sort()
-        if len(lookups) is not 0:
+        if len(lookups) > 0:
             itr = iter(lookups)
             item = datetime.date(datetime.MINYEAR, 1, 1)
             lookups.append((datetime.date(datetime.MAXYEAR, 12, 31).strftime("%Y-%m-%d"),))
             for lookup in lookups:
                 prev = item
-                # we only look for 1 key so lookups ends up being a list of lists that contain 1 item, so grab lookup[0]
+                # we only look for 1 key so lookups ends up being a list of lists that
+                # contain 1 item, so grab lookup[0]
                 item = datetime.datetime.strptime(lookup[0], "%Y-%m-%d").date()
                 if prev <= dataIdDate and dataIdDate < item:
                     dateToUse = prev
@@ -177,11 +188,12 @@ class RepoDateMapper(dp.RepositoryMapper):
 # Test #
 ########
 
+
 class RepoFindByDate(unittest.TestCase):
 
     def clean(self):
-        if os.path.exists('tests/RepoFindByDate'):
-            shutil.rmtree('tests/RepoFindByDate')
+        if os.path.exists(os.path.join(ROOT, 'RepoFindByDate')):
+            shutil.rmtree(os.path.join(ROOT, 'RepoFindByDate'))
 
     def setup(self):
         self.clean()
@@ -196,28 +208,30 @@ class RepoFindByDate(unittest.TestCase):
             for type in types:
                 # create a cfg of a repository for our repositories
                 repoOfRepoCfg = dp.Repository.cfg(
-                    mode='rw', 
-                    storageCfg=dp.PosixStorage.cfg(root=self.calibsRoot), 
+                    mode='rw',
+                    storageCfg=dp.PosixStorage.cfg(root=self.calibsRoot),
                     mapper=dp.RepositoryMapper.cfg(policy=self.repoMapperPolicy)
                 )
                 repoButler = dp.Butler(outputs=repoOfRepoCfg)
                 # create a cfg of a repository we'd like to use. Note that we don't create the root of the cfg.
                 # this will get populated by the repoOfRepos template.
-                repoCfg = dp.Repository.cfg(mode='rw', 
-                                            storageCfg=dp.PosixStorage.cfg(), 
-                                            mapper=TestMapper.cfg())
+                repoCfg = dp.Repository.cfg(mode='rw',
+                                            storageCfg=dp.PosixStorage.cfg(),
+                                            mapper=MapperTest.cfg())
                 # and put that config into the repoOfRepos.
-                repoButler.put(repoCfg, 'cfg', dataId={'type':type, 'date':date})
+                repoButler.put(repoCfg, 'cfg', dataId={'type': type, 'date': date})
                 # get the cfg back out of the butler. This will return a cfg with the root location populated.
                 # i.e. repoCfg['storageCfg.root'] is populated.
-                repoCfg = repoButler.get('cfg', dataId={'type':type, 'date':date}, immediate=True)
+                repoCfg = repoButler.get('cfg', dataId={'type': type, 'date': date}, immediate=True)
                 butler = dp.Butler(outputs=repoCfg)
-                obj = date + '_' + type # object contents do not rely on date & type, but it's an easy way to verify
-                butler.put(obj, 'str', {'ccdNum':1})
+                obj = date + '_' + type  # object contents do not rely on date & type, but it's an easy way to verify
+                butler.put(obj, 'str', {'ccdNum': 1})
 
+    # disable this test until we work more on repo of repos; starting with DM-6227
+    @unittest.expectedFailure
     def test(self):
         # create some objects that will be used when creating repositories AND when finding the created ones:
-        self.calibsRoot = 'tests/RepoFindByDate'
+        self.calibsRoot = os.path.join(ROOT, 'RepoFindByDate')
         self.repoMapperPolicy = {
             'repositories': {
                 'cfg': {
@@ -251,9 +265,9 @@ class RepoFindByDate(unittest.TestCase):
 
         for date in dates:
             for type in types:
-                repoCfg = repoButler.get('cfg', dataId={'type':type, 'date':date.searchVal}, immediate=True)
+                repoCfg = repoButler.get('cfg', dataId={'type': type, 'date': date.searchVal}, immediate=True)
                 butler = dp.Butler(inputs=repoCfg)
-                obj = butler.get('str', {'ccdNum':1})
+                obj = butler.get('str', {'ccdNum': 1})
                 verificationDate = date.expectedVal + '_' + type
                 self.assertEqual(obj, verificationDate)
 
@@ -263,7 +277,5 @@ class MemoryTester(lsst.utils.tests.MemoryTestCase):
 
 
 if __name__ == '__main__':
-    # disable this test until we work more on repo of repos; starting with DM-6227
-    # lsst.utils.tests.init()
-    # unittest.main()
-    pass
+    lsst.utils.tests.init()
+    unittest.main()

@@ -1,7 +1,7 @@
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -9,24 +9,28 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
 
 """This module provides the FsScanner class."""
+from __future__ import print_function
+from builtins import range
+from builtins import object
 
 import glob
 import os
 import re
 import sys
+
 
 class FsScanner(object):
     """Class to scan a filesystem location for paths matching a template.
@@ -40,10 +44,10 @@ class FsScanner(object):
         of a Python string with named format substitution specifications.
         Such a template would be suitable for generating a path given a set of
         fields in a dictionary.  Does not handle hex (%x or %X).
-        
+
         Example:
             %(field)s/%(visit)d/%(exposure)d/raw-%(visit)d-e%(exposure)03d-c%(ccd)03d-a%(amp)03d.fits
-            
+
         Note that fields may appear multiple times; the second and subsequent
         appearances of such fields will have "_{number}" appended to them to
         disambiguate, although it is typically assumed that they will all be
@@ -77,7 +81,7 @@ class FsScanner(object):
             prefix = pathTemplate[last:m.start(0)]
             last = m.end(0)
             self.reString += prefix
-        
+
             if m.group(2) in 'crs':
                 fieldType = str
                 self.reString += r'(?P<' + fieldName + '>.+)'
@@ -91,14 +95,14 @@ class FsScanner(object):
             self.fields[fieldName] = dict(pos=pos, fieldType=fieldType)
             pos += 1
 
-        self.reString += pathTemplate[last:] 
+        self.reString += pathTemplate[last:]
 
     def getFields(self):
         """Return the list of fields that will be returned from matched
         paths, in order."""
 
-        fieldList = ["" for i in xrange(len(self.fields))]
-        for f in self.fields.keys():
+        fieldList = ["" for i in range(len(self.fields))]
+        for f in list(self.fields.keys()):
             fieldList[self.fields[f]['pos']] = f
         return fieldList
 
@@ -132,13 +136,13 @@ class FsScanner(object):
             m = re.search(self.reString, path)
             if m:
                 dataId = m.groupdict()
-                for f in self.fields.keys():
+                for f in self.fields:
                     if self.isInt(f):
                         dataId[f] = int(dataId[f])
                     elif self.isFloat(f):
                         dataId[f] = float(dataId[f])
                 ret[path] = dataId
             else:
-                print >> sys.stderr, "Warning: unmatched path: %s" % (path,)
+                print("Warning: unmatched path: %s" % (path,), file=sys.stderr)
         os.chdir(curdir)
         return ret

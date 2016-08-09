@@ -35,10 +35,11 @@ def safeMakeDir(directory):
     if directory != "" and not os.path.exists(directory):
         try:
             os.makedirs(directory)
-        except OSError, e:
+        except OSError as e:
             # Don't fail if directory exists due to race
             if e.errno != errno.EEXIST:
                 raise e
+
 
 def setFileMode(filename):
     """Set a file mode according to the user's umask"""
@@ -49,20 +50,21 @@ def setFileMode(filename):
     # file (which have more restricted permissions).
     os.chmod(filename, (~umask & 0o666))
 
+
 @contextmanager
 def FileForWriteOnceCompareSame(name):
     """Context manager to get a file that can be written only once and all other writes will succeed only if
     they match the inital write.
 
     The context manager provides a temporary file object. After the user is done, the temporary file becomes
-    the permanent file if the file at name does not already exist. If the file at name does exist the 
+    the permanent file if the file at name does not already exist. If the file at name does exist the
     temporary file is compared to the file at name. If they are the same then this is good and the temp file
     is silently thrown away. If they are not the same then a runtime error is raised.
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
-    temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
-    try: 
+    temp = tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False)
+    try:
         yield temp
     finally:
         try:
@@ -70,7 +72,7 @@ def FileForWriteOnceCompareSame(name):
             # If the symlink cannot be created then it will raise. If it can't be created because a file at
             # 'name' already exists then we'll do a compare-same check.
             os.symlink(temp.name, name)
-            # If the symlink was created then this is the process that created the first instance of the 
+            # If the symlink was created then this is the process that created the first instance of the
             # file, and we know its contents match. Move the temp file over the symlink.
             os.rename(temp.name, name)
         except OSError as e:
@@ -86,6 +88,7 @@ def FileForWriteOnceCompareSame(name):
                 # the previous file, maybe it's a race condition? Iny any event, raise a runtime error.
                 raise RuntimeError("Written file does not match existing file.")
 
+
 @contextmanager
 def SafeFile(name):
     """Context manager to create a file in a manner avoiding race conditions
@@ -96,12 +99,13 @@ def SafeFile(name):
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
-    with tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False) as temp:
+    with tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False) as temp:
         try:
             yield temp
         finally:
             os.rename(temp.name, name)
             setFileMode(name)
+
 
 @contextmanager
 def SafeFilename(name):
@@ -113,9 +117,9 @@ def SafeFilename(name):
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
-    temp = tempfile.NamedTemporaryFile(dir=outDir, prefix=outName, delete=False)
+    temp = tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False)
     tempName = temp.name
-    temp.close() # We don't use the fd, just want a filename
+    temp.close()  # We don't use the fd, just want a filename
     try:
         yield tempName
     finally:

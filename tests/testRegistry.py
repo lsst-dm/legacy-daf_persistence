@@ -24,9 +24,13 @@
 
 import collections
 import unittest
-import lsst.utils.tests as utilsTests
+import os
+import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
+
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class PosixRegistryTestCase(unittest.TestCase):
@@ -37,35 +41,35 @@ class PosixRegistryTestCase(unittest.TestCase):
         :return:
         """
         testData = collections.namedtuple('testData', 'root template returnFields dataId expectedLookup')
-        td = (\
-              testData('tests/posixRegistry/repo01',
-                       'foo-%(ccd)02d.fits',
-                       ('ccd',),
-                       {},
-                       [(1,)]),
-              testData('tests/posixRegistry/repo02',
-                       'foo-%(ccd)02d-%(filter)s.fits',
-                       ('ccd', 'filter'),
-                       {},
-                       [(1, 'g'), (1, 'h'), (2, 'g'), (2, 'h'), (3, 'i'),]),
-              testData('tests/posixRegistry/repo02',
-                       'foo-%(ccd)02d-%(filter)s.fits',
-                       # intentionally no comma on 'filter'; it becomes a string not a tuple. This is handled,
-                       # and here is where it is tested.
-                       ('filter'),
-                       {'ccd':1},
-                       [('g',), ('h',),]),
-              testData('tests/posixRegistry/repo02',
-                       'foo-%(ccd)02d-%(filter)s.fits',
-                       ('ccd',),
-                       {'filter':'i'},
-                       [(3,),]),
-              testData('tests/posixRegistry/lookupMetadata',
-                       'raw_v%(visit)d_f%(filter)1s.fits.gz',
-                       ('visit',),
-                       {'MJD-OBS': 51195.2240820278},
-                       [(2,)]),
-              )
+        td = (
+            testData(os.path.join(ROOT, 'posixRegistry/repo01'),
+                     'foo-%(ccd)02d.fits',
+                     ('ccd',),
+                     {},
+                     [(1,)]),
+            testData(os.path.join(ROOT, 'posixRegistry/repo02'),
+                     'foo-%(ccd)02d-%(filter)s.fits',
+                     ('ccd', 'filter'),
+                     {},
+                     [(1, 'g'), (1, 'h'), (2, 'g'), (2, 'h'), (3, 'i'), ]),
+            testData(os.path.join(ROOT, 'posixRegistry/repo02'),
+                     'foo-%(ccd)02d-%(filter)s.fits',
+                     # intentionally no comma on 'filter'; it becomes a string not a tuple. This is handled,
+                     # and here is where it is tested.
+                     ('filter'),
+                     {'ccd': 1},
+                     [('g',), ('h',), ]),
+            testData(os.path.join(ROOT, 'posixRegistry/repo02'),
+                     'foo-%(ccd)02d-%(filter)s.fits',
+                     ('ccd',),
+                     {'filter': 'i'},
+                     [(3,), ]),
+            testData(os.path.join(ROOT, 'posixRegistry/lookupMetadata'),
+                     'raw_v%(visit)d_f%(filter)1s.fits.gz',
+                     ('visit',),
+                     {'MJD-OBS': 51195.2240820278},
+                     [(2,)]),
+        )
 
         policyTables = None
         storage = 'FitsStorage'
@@ -77,15 +81,13 @@ class PosixRegistryTestCase(unittest.TestCase):
             self.assertEqual(lookups, expectedLookup)
 
 
-def suite():
-    utilsTests.init()
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    suites = []
-    suites += unittest.makeSuite(PosixRegistryTestCase)
-    return unittest.TestSuite(suites)
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
-if __name__ == '__main__':
-    run(True)
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

@@ -21,12 +21,14 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
+from future import standard_library
+standard_library.install_aliases()
+from past.builtins import basestring
 import copy
-import cPickle
+import pickle
 import importlib
 import os
-import urlparse
+import urllib.parse
 
 import yaml
 
@@ -44,7 +46,7 @@ class PosixStorage(Storage):
         :return:
         """
         self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
-        self.root = parseRes = urlparse.urlparse(uri).path
+        self.root = parseRes = urllib.parse.urlparse(uri).path
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
 
@@ -60,9 +62,9 @@ class PosixStorage(Storage):
     @staticmethod
     def _getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
-        """        
+        """
         repositoryCfg = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         loc = os.path.join(parseRes.path, 'repositoryCfg.yaml')
         if os.path.exists(loc):
             with open(loc, 'r') as f:
@@ -78,25 +80,25 @@ class PosixStorage(Storage):
             return repositoryCfg
 
         # if no repository cfg, is it a legacy repository?
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if repositoryCfg is None:
             mapper = PosixStorage.getMapperClass(parseRes.path)
             if mapper is not None:
-                repositoryCfg = RepositoryCfg(mapper=mapper, 
-                                              root=parseRes.path, 
-                                              mapperArgs=None, 
+                repositoryCfg = RepositoryCfg(mapper=mapper,
+                                              root=parseRes.path,
+                                              mapperArgs=None,
                                               parents=None,
                                               isLegacyRepository=True)
-        return repositoryCfg        
+        return repositoryCfg
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
         if cfg.isLegacyRepository:
-            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by 
+            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by
             # the _parent symlink)
             return
         if loc is None or cfg.root == loc:
-            # the cfg is at the root location of the repository so don't write root, let it be implicit in the 
+            # the cfg is at the root location of the repository so don't write root, let it be implicit in the
             # location of the cfg.
             cfg = copy.copy(cfg)
             loc = cfg.root
@@ -113,8 +115,8 @@ class PosixStorage(Storage):
 
         Supports the legacy _parent symlink search (which was only ever posix-only. This should not be used by
         new code and repositories; they should use the Repository parentCfg mechanism.
-        
-        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a 
+
+        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a
                      _mapper file is (old style repos).
         :return: a class object or a class instance, depending on the state of the mapper when the repository
                  was created.
@@ -146,7 +148,7 @@ class PosixStorage(Storage):
             components = mapperName.split(".")
             if len(components) <= 1:
                 raise RuntimeError("Unqualified mapper name %s in %s" %
-                        (mapperName, mapperFile))
+                                   (mapperName, mapperFile))
             pkg = importlib.import_module(".".join(components[:-1]))
             return getattr(pkg, components[-1])
 
@@ -177,12 +179,12 @@ class PosixStorage(Storage):
                 importClassString = pythonTypeTokenList.pop()
                 importClassString = importClassString.strip()
                 importPackage = ".".join(pythonTypeTokenList)
-                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+                importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
                 pythonType = getattr(importType, importClassString)
         # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
-        # implications; write now I'm worried that any python type that can be written to disk and has a method
-        # called 'put' will be called here (even if it's e.g. destined for FitsStorage). We might want a somewhat
-        # more specific API.
+        # implications; write now I'm worried that any python type that can be written to disk and has a
+        # method called 'put' will be called here (even if it's e.g. destined for FitsStorage).
+        # We might want a somewhat more specific API.
         if hasattr(pythonType, 'butlerWrite'):
             pythonType.butlerWrite(obj, butlerLocation=butlerLocation)
             return
@@ -192,7 +194,7 @@ class PosixStorage(Storage):
 
             if storageName == "PickleStorage":
                 with open(logLoc.locString(), "wb") as outfile:
-                    cPickle.dump(obj, outfile, cPickle.HIGHEST_PROTOCOL)
+                    pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
                 return
 
             if storageName == "ConfigStorage":
@@ -240,10 +242,11 @@ class PosixStorage(Storage):
                 importClassString = pythonTypeTokenList.pop()
                 importClassString = importClassString.strip()
                 importPackage = ".".join(pythonTypeTokenList)
-                importType = __import__(importPackage, globals(), locals(), [importClassString], -1)
+                importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
                 pythonType = getattr(importType, importClassString)
 
-        # see note re. discomfort with the name 'butlerWrite' in the write method, above. Same applies to butlerRead.
+        # see note re. discomfort with the name 'butlerWrite' in the write method, above.
+        # Same applies to butlerRead.
         if hasattr(pythonType, 'butlerRead'):
             results = pythonType.butlerRead(butlerLocation=butlerLocation)
             return results
@@ -257,18 +260,18 @@ class PosixStorage(Storage):
                 finalItem = Policy(filePath=logLoc.locString())
             elif storageName == "PickleStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, "No such pickle file: " + logLoc.locString()
+                    raise RuntimeError("No such pickle file: " + logLoc.locString())
                 with open(logLoc.locString(), "rb") as infile:
-                    finalItem = cPickle.load(infile)
+                    finalItem = pickle.load(infile)
             elif storageName == "FitsCatalogStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, "No such FITS catalog file: " + logLoc.locString()
+                    raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
                 hdu = additionalData.getInt("hdu", 0)
                 flags = additionalData.getInt("flags", 0)
                 finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
             elif storageName == "ConfigStorage":
                 if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError, "No such config file: " + logLoc.locString()
+                    raise RuntimeError("No such config file: " + logLoc.locString())
                 finalItem = pythonType()
                 finalItem.load(logLoc.locString())
             else:
@@ -276,7 +279,7 @@ class PosixStorage(Storage):
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
                 storageList.append(storage)
                 itemData = self.persistence.unsafeRetrieve(
-                        butlerLocation.getCppType(), storageList, additionalData)
+                    butlerLocation.getCppType(), storageList, additionalData)
                 finalItem = pythonType.swigConvert(itemData)
             results.append(finalItem)
 

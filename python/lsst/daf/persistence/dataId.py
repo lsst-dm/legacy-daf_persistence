@@ -21,12 +21,21 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from past.builtins import basestring
+
+# On Python 3 collections.UserDict is iterable but on Python 2
+# we have to use UserDict.IterableUserDict. Since collections.UserDict
+# exists on Python 2 we try the Python 2 variant first.
+try:
+    from UserDict import IterableUserDict as UserDict
+except ImportError:
+    from collections import UserDict
 
 import copy
-import UserDict
 
-class DataId(UserDict.IterableUserDict):
-    """DataId is used to pass scientifically meaningful key-value pairs. It may be tagged as applicable only 
+
+class DataId(UserDict):
+    """DataId is used to pass scientifically meaningful key-value pairs. It may be tagged as applicable only
     to repositories that are tagged with the same value"""
 
     def __init__(self, initialdata=None, tag=None, **kwargs):
@@ -37,13 +46,13 @@ class DataId(UserDict.IterableUserDict):
         initialdata : dict or dataId
             A dict of initial data for the DataId
         tag : any type, or a container of any type
-            A value or container of values used to restrict the DataId to one or more repositories that 
-            share that tag value. It will be stored in a set for comparison with the set of tags assigned to 
+            A value or container of values used to restrict the DataId to one or more repositories that
+            share that tag value. It will be stored in a set for comparison with the set of tags assigned to
             repositories.
         kwargs : any values
             key-value pairs to be used as part of the DataId's data.
         """
-        UserDict.UserDict.__init__(self, initialdata)
+        UserDict.__init__(self, initialdata)
         try:
             self.tag = copy.deepcopy(initialdata.tag)
         except AttributeError:
@@ -57,8 +66,8 @@ class DataId(UserDict.IterableUserDict):
                     self.tag.update(tag)
                 except TypeError:
                     self.tag.update([tag])
-            
+
         self.data.update(kwargs)
 
     def __repr__(self):
-        return "DataId(initialdata=%s, tag=%s)" %(self.data.__repr__(), self.tag)
+        return "DataId(initialdata=%s, tag=%s)" % (self.data.__repr__(), self.tag)

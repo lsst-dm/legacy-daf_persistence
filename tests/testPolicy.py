@@ -26,7 +26,7 @@ import os
 import unittest
 
 from lsst.daf.persistence import Policy
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 
 class PolicyTestCase(unittest.TestCase):
@@ -35,23 +35,23 @@ class PolicyTestCase(unittest.TestCase):
     def setUp(self):
         self.policy = Policy(
             data={'body': {'job': {'position': 'Developer', 'company': 'Microsoft'}, 'name': 'John'},
-                           'error': False})
+                  'error': False})
 
     def testBasic(self):
         p = Policy()
-        p['a'] = {1:2}
-        self.assertEqual(p, {'a':{1:2}})
-        p.update({'a':{3:4}})
-        self.assertEqual(p, {'a':{1:2, 3:4}})
+        p['a'] = {1: 2}
+        self.assertEqual(p, {'a': {1: 2}})
+        p.update({'a': {3: 4}})
+        self.assertEqual(p, {'a': {1: 2, 3: 4}})
 
     def testUpdateWithDict(self):
         self.policy.update({'body': {'job': {'position': 'Manager'}}})
         self.assertEqual(self.policy['body'],
                          {'job': {'position': 'Manager', 'company': 'Microsoft'}, 'name': 'John'})
-        self.policy.update({'body': {'name': {'first':'John', 'last':'Smith'}}})
+        self.policy.update({'body': {'name': {'first': 'John', 'last': 'Smith'}}})
         self.assertEqual(self.policy['body'],
                          {'job': {'position': 'Manager', 'company': 'Microsoft'},
-                          'name': {'first':'John', 'last':'Smith'}})
+                          'name': {'first': 'John', 'last': 'Smith'}})
 
     def testUpdateWithPolicy(self):
         p1 = Policy(data={'body': {'job': {'position': 'Manager'}}})
@@ -90,8 +90,8 @@ class PolicyTestCase(unittest.TestCase):
     def testGetPolicy(self):
         policy = self.policy['body']
         self.assertEqual(policy, {'job': {'position': 'Developer', 'company': 'Microsoft'}, 'name': 'John'})
-        self.assertEqual(policy['job.position'], 'Developer') # note: verifies dot naming
-        self.assertTrue(isinstance(policy, Policy))
+        self.assertEqual(policy['job.position'], 'Developer')  # note: verifies dot naming
+        self.assertIsInstance(policy, Policy)
 
     def testDotsInBraces(self):
         self.assertEqual(self.policy['body.job.company'], 'Microsoft')
@@ -125,16 +125,14 @@ class PolicyTestCase(unittest.TestCase):
         self.assertRaises(IOError, Policy, filePath="c:/policy.paf")
         self.assertRaises(IOError, Policy, filePath="c:/policy")
 
-def suite():
-    utilsTests.init()
 
-    suites = []
-    suites += unittest.makeSuite(PolicyTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def run(shouldExit = False):
-    utilsTests.run(suite(), shouldExit)
 
-if __name__ == '__main__':
-    run(True)
+def setup_module(module):
+    lsst.utils.tests.init()
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

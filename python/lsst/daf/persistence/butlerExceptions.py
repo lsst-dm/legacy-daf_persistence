@@ -1,3 +1,4 @@
+from builtins import str
 #!/usr/bin/env python
 
 #
@@ -22,15 +23,20 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+
 class NoMapperException(Exception):
     pass
 
+
 class NoResults(RuntimeError):
+
     def __init__(self, message, datasetType, dataId):
         message += ' datasetType:' + datasetType + ' dataId:' + str(dataId)
         super(NoResults, self).__init__(message)
 
+
 class MultipleResults(RuntimeError):
+
     def __init__(self, message, datasetType, dataId, locations):
         message += ' datasetType:' + datasetType + ' dataId:' + str(dataId) + ' locations:'
         for location in locations:

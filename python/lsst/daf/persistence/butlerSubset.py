@@ -26,10 +26,12 @@
 
 """This module defines the ButlerSubset class and the ButlerDataRefs contained
 within it as well as an iterator over the subset."""
-
-from __future__ import with_statement
+from builtins import next
+from builtins import range
+from builtins import object
 
 from . import DataId
+
 
 class ButlerSubset(object):
 
@@ -79,7 +81,7 @@ class ButlerSubset(object):
         keys = self.butler.getKeys(datasetType, level, tag=dataId.tag)
         if keys is None:
             return
-        fmt = list(keys.iterkeys())
+        fmt = list(keys.keys())
 
         # Don't query if we already have a complete dataId
         completeId = True
@@ -97,7 +99,7 @@ class ButlerSubset(object):
             if len(fmt) == 1:
                 tempId[fmt[0]] = idTuple
             else:
-                for i in xrange(len(fmt)):
+                for i in range(len(fmt)):
                     tempId[fmt[i]] = idTuple[i]
             self.cache.append(tempId)
 
@@ -123,6 +125,7 @@ class ButlerSubset(object):
 
         return ButlerSubsetIterator(self)
 
+
 class ButlerSubsetIterator(object):
     """
     An iterator over the ButlerDataRefs in a ButlerSubset.
@@ -135,8 +138,9 @@ class ButlerSubsetIterator(object):
     def __iter__(self):
         return self
 
-    def next(self):
-        return ButlerDataRef(self.butlerSubset, self.iter.next())
+    def __next__(self):
+        return ButlerDataRef(self.butlerSubset, next(self.iter))
+
 
 class ButlerDataRef(object):
     """
@@ -178,7 +182,7 @@ class ButlerDataRef(object):
         self.dataId = dataId
 
     def __repr__(self):
-        return 'ButlerDataRef(butlerSubset=%s, dataId=%s)' %(self.butlerSubset, self.dataId)
+        return 'ButlerDataRef(butlerSubset=%s, dataId=%s)' % (self.butlerSubset, self.dataId)
 
     def get(self, datasetType=None, **rest):
         """
@@ -219,15 +223,15 @@ class ButlerDataRef(object):
         @returns (iterable)  list of strings with level keys."""
 
         return set(
-                self.butlerSubset.butler.getKeys(
-                    self.butlerSubset.datasetType, 
-                    tag=self.butlerSubset.dataId.tag).keys()
-            ) - set(
-                self.butlerSubset.butler.getKeys(
-                    self.butlerSubset.datasetType,
-                    self.butlerSubset.level,
-                    tag=self.butlerSubset.dataId.tag).keys()
-            )
+            self.butlerSubset.butler.getKeys(
+                self.butlerSubset.datasetType,
+                tag=self.butlerSubset.dataId.tag).keys()
+        ) - set(
+            self.butlerSubset.butler.getKeys(
+                self.butlerSubset.datasetType,
+                self.butlerSubset.level,
+                tag=self.butlerSubset.dataId.tag).keys()
+        )
 
     def subItems(self, level=None):
         """
@@ -255,7 +259,7 @@ class ButlerDataRef(object):
             if level is None:
                 return ()
         return self.butlerSubset.butler.subset(self.butlerSubset.datasetType,
-                level, self.dataId)
+                                               level, self.dataId)
 
     def datasetExists(self, datasetType=None, **rest):
         """
@@ -269,7 +273,7 @@ class ButlerDataRef(object):
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
         return self.butlerSubset.butler.datasetExists(
-                datasetType, self.dataId, **rest)
+            datasetType, self.dataId, **rest)
 
     def getButler(self):
         """

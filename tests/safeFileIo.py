@@ -29,6 +29,10 @@ import unittest
 import lsst.daf.persistence as dp
 import lsst.utils.tests
 
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
+
 def setup_module(module):
     lsst.utils.tests.init()
 
@@ -39,38 +43,37 @@ class WriteOnceCompareSameTest(unittest.TestCase):
         self.tearDown()
 
     def tearDown(self):
-        if os.path.exists('tests/safeFileIo'):
-            shutil.rmtree('tests/safeFileIo')
+        if os.path.exists(os.path.join(ROOT, 'safeFileIo')):
+            shutil.rmtree(os.path.join(ROOT, 'safeFileIo'))
 
     def testCompareSame(self):
 
-        with dp.safeFileIo.FileForWriteOnceCompareSame('tests/safeFileIo/test.txt') as f:
+        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
             f.write('bar\n')
             f.write('baz\n')
-        self.assertTrue(os.path.exists('tests/safeFileIo/test.txt'))
-        self.assertEqual(len(os.listdir('tests/safeFileIo')), 1)
+        self.assertTrue(os.path.exists(os.path.join(ROOT, 'safeFileIo/test.txt')))
+        self.assertEqual(len(os.listdir(os.path.join(ROOT, 'safeFileIo'))), 1)
 
         # write the same file, verify the dir & file stay the same
-        with dp.safeFileIo.FileForWriteOnceCompareSame('tests/safeFileIo/test.txt') as f:
+        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
             f.write('bar\n')
             f.write('baz\n')
-        self.assertTrue(os.path.exists('tests/safeFileIo/test.txt'))
-        self.assertEqual(len(os.listdir('tests/safeFileIo')), 1)
+        self.assertTrue(os.path.exists(os.path.join(ROOT, 'safeFileIo/test.txt')))
+        self.assertEqual(len(os.listdir(os.path.join(ROOT, 'safeFileIo'))), 1)
 
     def testCompareDifferent(self):
-        with dp.safeFileIo.FileForWriteOnceCompareSame('tests/safeFileIo/test.txt') as f:
+        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
             f.write('bar\n')
             f.write('baz\n')
-        self.assertTrue(os.path.exists('tests/safeFileIo/test.txt'))
-        self.assertEqual(len(os.listdir('tests/safeFileIo')), 1)
+        self.assertTrue(os.path.exists(os.path.join(ROOT, 'safeFileIo/test.txt')))
+        self.assertEqual(len(os.listdir(os.path.join(ROOT, 'safeFileIo'))), 1)
 
         # write the same file, verify the dir & file stay the same
         def writeNonMatchingFile():
-            with dp.safeFileIo.FileForWriteOnceCompareSame('tests/safeFileIo/test.txt') as f:
+            with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
                 f.write('boo\n')
                 f.write('fop\n')
         self.assertRaises(RuntimeError, writeNonMatchingFile)
-
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

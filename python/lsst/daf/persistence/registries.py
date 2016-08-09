@@ -20,19 +20,26 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-"""This module provides registry classes for maintaining dataset metadata for use by the Data Butler.  Currently only a
-SQLite3-based registry is implemented, but registries based on a text file, a policy file, a MySQL (or other) relational
-database, and data gathered from scanning a filesystem are all anticipated.
+"""This module provides registry classes for maintaining dataset metadata
+for use by the Data Butler.  Currently only a SQLite3-based registry is
+implemented, but registries based on a text file, a policy file, a MySQL
+(or other) relational database, and data gathered from scanning a filesystem
+are all anticipated.
 
-Currently this module assumes posix access (for both PosixRegistry AND SqliteRegistry). It is possible that it can be
-factored so that at least the SqliteRegistry can be remote/not on the local filesystem. For now this module is only used
-by CameraMapper and by PosixStorage, both of which work on the local filesystem only, so this works for the time being.
+Currently this module assumes posix access (for both PosixRegistry AND
+SqliteRegistry). It is possible that it can be factored so that at least the
+SqliteRegistry can be remote/not on the local filesystem. For now this module
+is only used by CameraMapper and by PosixStorage, both of which work on the
+local filesystem only, so this works for the time being.
 """
+from __future__ import absolute_import
+from builtins import object
+from past.builtins import basestring
 
 import copy
-import fsScanner
+from . import fsScanner, sequencify
 import os
-import pyfits
+import astropy.io.fits
 import re
 try:
     import sqlite3
@@ -44,6 +51,7 @@ except ImportError:
         haveSqlite3 = True
     except ImportError:
         haveSqlite3 = False
+
 
 class Registry(object):
     """The registry base class."""
@@ -82,6 +90,7 @@ class Registry(object):
 
         raise RuntimeError("Unable to create registry using location: " + location)
 
+
 class PosixRegistry(Registry):
     """A glob-based filesystem registry"""
 
@@ -100,24 +109,24 @@ class PosixRegistry(Registry):
         :return: the HDU specified by the template+dataId pair, or None if the
         HDU can not be determined.
         """
-        #sanity check that the template at least ends with a brace.
+        # sanity check that the template at least ends with a brace.
         if not template.endswith(']'):
             return None
 
         # get the key (with formatting) out of the brances
-        hduKey = template[template.rfind('[')+1:template.rfind(']')]
+        hduKey = template[template.rfind('[') + 1:template.rfind(']')]
         # extract the key name from the formatting
-        hduKey = hduKey[hduKey.rfind('(')+1:hduKey.rfind(')')]
+        hduKey = hduKey[hduKey.rfind('(') + 1:hduKey.rfind(')')]
 
         if hduKey in dataId:
             return dataId[hduKey]
         return None
 
-    class LookupData:
+    class LookupData(object):
+
         def __init__(self, lookupProperties, dataId):
             self.dataId = copy.copy(dataId)
-            if not hasattr(lookupProperties, '__iter__'):
-                lookupProperties = (lookupProperties,)
+            lookupProperties = sequencify(lookupProperties)
             self.lookupProperties = copy.copy(lookupProperties)
             self.foundItems = {}
             self.cachedStatus = None
@@ -130,8 +139,8 @@ class PosixRegistry(Registry):
         def status(self):
             """Query the lookup status
 
-            :return: 'match' if the key+value pairs in dataId have been satisifed and keys in lookupProperties have
-            found and their key+value added to resolvedId
+            :return: 'match' if the key+value pairs in dataId have been satisifed and keys in
+            lookupProperties have found and their key+value added to resolvedId
             'incomplete' if the found data matches but there are still incomplete data matching in dataId or
             lookupProperties
             'not match' if data in foundId does not match data in dataId
@@ -195,7 +204,7 @@ class PosixRegistry(Registry):
         lookupData = PosixRegistry.LookupData(lookupProperties, dataId)
         scanner = fsScanner.FsScanner(template)
         allPaths = scanner.processPath(self.root)
-        retItems = [] # one item for each found file that matches
+        retItems = []  # one item for each found file that matches
         for path, foundProperties in allPaths.items():
             # check for dataId keys that are not present in found properties
             # search for those keys in metadata of file at path
@@ -233,11 +242,11 @@ class PosixRegistry(Registry):
         :return:
         """
         try:
-            hdulist = pyfits.open(filepath, memmap=True)
+            hdulist = astropy.io.fits.open(filepath, memmap=True)
         except IOError:
-            return;
+            return
         hduNumber = PosixRegistry.getHduNumber(template=template, dataId=dataId)
-        if hduNumber != None and hduNumber < len(hdulist):
+        if hduNumber is not None and hduNumber < len(hdulist):
             hdu = hdulist[hduNumber]
         else:
             hdu = None
@@ -293,10 +302,8 @@ class SqliteRegistry(Registry):
             return None
 
         # input variable sanitization:
-        if not hasattr(reference, '__iter__'):
-            reference = (reference,)
-        if not hasattr(lookupProperties, '__iter__'):
-            lookupProperties = (lookupProperties,)
+        reference = sequencify(reference)
+        lookupProperties = sequencify(lookupProperties)
 
         cmd = "SELECT DISTINCT "
         cmd += ", ".join(lookupProperties)
@@ -305,13 +312,13 @@ class SqliteRegistry(Registry):
         if dataId is not None and len(dataId) > 0:
             whereList = []
             for k, v in dataId.items():
-                if hasattr(k, '__iter__'):
+                if hasattr(k, '__iter__') and not isinstance(k, basestring):
                     if len(k) != 2:
                         raise RuntimeError("Wrong number of keys for range:%s" % (k,))
-                    whereList.append("(? BETWEEN %s AND %s)" %(k[0], k[1]))
+                    whereList.append("(? BETWEEN %s AND %s)" % (k[0], k[1]))
                     valueList.append(v)
                 else:
-                    whereList.append("%s = ?" %k)
+                    whereList.append("%s = ?" % k)
                     valueList.append(v)
             cmd += " WHERE " + " AND ".join(whereList)
         c = self.conn.execute(cmd, valueList)

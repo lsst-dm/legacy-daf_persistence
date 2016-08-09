@@ -25,8 +25,10 @@
 # -*- python -*-
 
 """This module defines the ButlerFactory class."""
+from builtins import object
 
-from lsst.daf.persistence import Butler, RepositoryArgs, PosixStorage
+from lsst.daf.persistence import Butler
+
 
 class ButlerFactory(object):
     """ButlerFactory creates data Butlers containing data mappers.  Use of it

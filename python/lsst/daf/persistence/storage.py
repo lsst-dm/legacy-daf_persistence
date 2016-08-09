@@ -21,10 +21,12 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 
-import os
-import urlparse
-import yaml
+import urllib.parse
+
 
 class Storage(object):
     """Base class for storages"""
@@ -49,8 +51,8 @@ class Storage(object):
 
         .. warning::
 
-            Storage is 'wet paint' and very likely to change during factorization of Butler back end and 
-            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is 
+            Storage is 'wet paint' and very likely to change during factorization of Butler back end and
+            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
         Parameters
@@ -68,7 +70,7 @@ class Storage(object):
     def getRepositoryCfg(uri):
         """Get a RepositoryCfg from a location specified by uri."""
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             ret = Storage.storages[parseRes.scheme].getRepositoryCfg(uri)
         else:
@@ -79,37 +81,35 @@ class Storage(object):
     def putRepositoryCfg(cfg, uri):
         """Write a RepositoryCfg object to a location described by uri"""
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             ret = Storage.storages[parseRes.scheme].putRepositoryCfg(cfg, uri)
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
 
-
     @staticmethod
     def getMapperClass(uri):
         """Get a mapper class cfg value from location described by uri.
 
-        Note that in legacy repositories the mapper may be specified by a file called _mapper at the uri 
+        Note that in legacy repositories the mapper may be specified by a file called _mapper at the uri
         location, and in newer repositories the mapper would be specified by a RepositoryCfg stored at the uri
         location.
 
         .. warning::
 
-            Storage is 'wet paint' and very likely to change during factorization of Butler back end and 
-            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is 
+            Storage is 'wet paint' and very likely to change during factorization of Butler back end and
+            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
         """
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             ret = Storage.storages[parseRes.scheme].getMapperClass(uri)
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
-
 
     @staticmethod
     def makeFromURI(uri):
@@ -117,20 +117,18 @@ class Storage(object):
 
         .. warning::
 
-            Storage is 'wet paint' and very likely to change during factorization of Butler back end and 
-            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is 
+            Storage is 'wet paint' and very likely to change during factorization of Butler back end and
+            storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
         :param uri: the uri to a locaiton that contains a repositoryCfg.
         :return: a Storage subclass instance.
         '''
         ret = None
-        parseRes = urlparse.urlparse(uri)
+        parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             theClass = Storage.storages[parseRes.scheme]
             ret = theClass(uri)
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
-
-

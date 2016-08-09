@@ -1,5 +1,4 @@
-# -*- coding: UTF-8 -*-
-#!/usr/bin/env python
+#!/usr/bin/env python -*- coding: UTF-8 -*-
 
 #
 # LSST Data Management System
@@ -27,25 +26,27 @@ import lsst.daf.persistence as dp
 import lsst.utils.tests
 import unittest
 
+
 def setup_module(module):
     lsst.utils.tests.init()
 
-class TestMapper(dp.Mapper):
+
+class MapperTest(dp.Mapper):
     pass
 
 
 class DefaultMapper(unittest.TestCase):
-    
+
     def testClassObjAndString(self):
         args1 = dp.RepositoryArgs(mapper=dp.Mapper)
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
-        args1 = dp.RepositoryArgs(mapper=TestMapper)
+        args1 = dp.RepositoryArgs(mapper=MapperTest)
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
-        self.assertEqual(mapper, None)
+        self.assertIsNone(mapper)
 
     def testInstanceAndString(self):
         args1 = dp.RepositoryArgs(mapper=dp.Mapper())
@@ -53,10 +54,10 @@ class DefaultMapper(unittest.TestCase):
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
-        args1 = dp.RepositoryArgs(mapper=TestMapper())
+        args1 = dp.RepositoryArgs(mapper=MapperTest())
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
-        self.assertEqual(mapper, None)
+        self.assertIsNone(mapper)
 
     def testClassObjAndInstance(self):
         args1 = dp.RepositoryArgs(mapper=dp.Mapper)
@@ -64,10 +65,10 @@ class DefaultMapper(unittest.TestCase):
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
-        args1 = dp.RepositoryArgs(mapper=TestMapper)
+        args1 = dp.RepositoryArgs(mapper=MapperTest)
         args2 = dp.RepositoryArgs(mapper=dp.Mapper())
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
-        self.assertEqual(mapper, None)
+        self.assertIsNone(mapper)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
