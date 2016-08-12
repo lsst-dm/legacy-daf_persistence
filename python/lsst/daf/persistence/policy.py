@@ -437,7 +437,16 @@ class Policy(_PolicyBase):
         :return:
         """
         data = copy.copy(self.data)
-        yaml.dump(data, output)
+        keys = ['defects', 'needCalibRegistry', 'levels', 'defaultLevel', 'defaultSubLevels', 
+                     'exposures', 'calibrations', 'datasets']
+        for key in keys:
+            try:
+                yaml.dump({key:data.pop(key)}, output, default_flow_style=False)
+                output.write('\n')
+            except KeyError:
+                pass
+        if data:
+            yaml.dump(data, output, default_flow_style=False)
 
     def dumpToFile(self, path):
         """Writes the policy to a file.
