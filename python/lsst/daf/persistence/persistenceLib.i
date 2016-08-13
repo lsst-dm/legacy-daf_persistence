@@ -106,4 +106,9 @@ Access to the lsst::daf::persistence classes
     %template(getColumnByPosDouble) getColumnByPos<double>;
     %template(getColumnByPosString) getColumnByPos<std::string>;
     %template(getColumnByPosBool) getColumnByPos<bool>;
+
+    %pythoncode %{
+    __next__ = next
+
+    %}
 }
