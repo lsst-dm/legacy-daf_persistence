@@ -198,8 +198,8 @@ class Policy(_PolicyBase):
         :param path:
         :return:
         """
-        f = open(path, 'r')
-        self.__initFromYaml(f)
+        with open(path, 'r') as f:
+            self.__initFromYaml(f)
 
     def __initFromYaml(self, stream):
         """Loads a YAML policy from any readable stream that contains one.
@@ -445,6 +445,5 @@ class Policy(_PolicyBase):
         :param path:
         :return:
         """
-        f = open(path, 'w')
-        self.dump(f)
-        f.close()
+        with open(path, 'w') as f:
+            self.dump(f)
