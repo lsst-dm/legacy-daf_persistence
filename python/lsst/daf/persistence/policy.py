@@ -437,11 +437,11 @@ class Policy(_PolicyBase):
         :return:
         """
         data = copy.copy(self.data)
-        keys = ['defects', 'needCalibRegistry', 'levels', 'defaultLevel', 'defaultSubLevels', 
-                     'exposures', 'calibrations', 'datasets']
+        keys = ['defects', 'needCalibRegistry', 'levels', 'defaultLevel', 'defaultSubLevels',
+                'exposures', 'calibrations', 'datasets']
         for key in keys:
             try:
-                yaml.dump({key:data.pop(key)}, output, default_flow_style=False)
+                yaml.dump({key: data.pop(key)}, output, default_flow_style=False)
                 output.write('\n')
             except KeyError:
                 pass
