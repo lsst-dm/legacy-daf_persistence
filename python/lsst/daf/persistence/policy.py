@@ -69,25 +69,31 @@ class Policy(_PolicyBase):
     - pex policy: read is supported, although this is deprecated and will at some point be removed.
     """
 
-    def __init__(self, other=None, preference=('data', 'policy', 'pexPolicy', 'filePath', 'defaultInitData'),
-                 **kwargs):
-        """Constructor. Accepts an optional vars, one of which will be used to initalize the Policy.
-        If more than initializer var is populated, one will be selected in order specified by 'preference'.
-
-        :param preference: a tuple in order of preference to be used if more than 1 initialzer var is
-                           populated.
-        :param kwargs:
-            data: a dict with initial key-value pairs.
-            policy: an instance of a Policy that should be copied into this Policy.
-            filePath: path to a policy file. May be .yaml or .paf
-            pexPolicy: an instance of a pex policy to copy into this Policy
-            defaultInitData: policy data with a populated instance of a defaultInitData
-                             e.g. Policy.defaultInitData('daf_persistence', 'testPolicy.yaml', 'tests')
-
-        :return:
+    def __init__(self, other=None):
+        """Initialize the Policy. Other can be used to initialize the Policy in a variety of ways:
+        other (string) Treated as a path to a policy file on disk. Must end with '.paf' or '.yaml'.
+        other (Pex Policy) Initializes this Policy with the values in the passed-in Pex Policy.
+        other (Policy) Copies the other Policy's values into this one.
+        other (dict) Copies the values from the dict into this Policy.
         """
         collections.UserDict.__init__(self)
-        self.__init(other, preference, **kwargs)
+
+        if other is None:
+            return
+
+        if isinstance(other, collections.Mapping):
+            self.update(other)
+        elif isinstance(other, Policy):
+            self.data = copy.deepcopy(other.data)
+        elif isinstance(other, basestring):
+            # if other is a string, assume it is a file path.
+            self.__initFromFile(other)
+        elif isinstance(other, pexPolicy.Policy):
+            # if other is an instance of a Pex Policy, load it accordingly.
+            self.__initFromPexPolicy(other)
+        else:
+            # if the policy specified by other could not be loaded raise a runtime error.
+            raise RuntimeError("A Policy could not be loaded from other:%s" % other)
 
     def ppprint(self):
         """helper function for debugging, prints a policy out in a readable way in the debugger.
@@ -101,32 +107,7 @@ class Policy(_PolicyBase):
     def __repr__(self):
         return self.data.__repr__()
 
-    def __init(self, other, preference, **kwargs):
-        for p in preference:
-            if p in kwargs:
-                if p == 'policy':
-                    self.data = {}
-                    self.merge(kwargs['policy'])
-                    return
-                if p == 'filePath':
-                    self.__initFromFile(kwargs['filePath'])
-                    return
-                if p == 'pexPolicy':
-                    self.__initFromPexPolicy(kwargs['pexPolicy'])
-                    return
-                if p == 'defaultInitData':
-                    self.__initFromDefaultPolicy(preference, *kwargs['defaultInitData'])
-                    return
-                if p == 'data':
-                    # don't assign other to self.data directly; need assign via parse in self.update.
-                    self.update(kwargs['data'])
-                    return
-
-        if other is not None:
-            self.data = {}
-            self.update(other)
-
-    def __initFromFile(self, paths):
+    def __initFromFile(self, path):
         """Load a file from path. If path is a list, will pick one to use, according to order specified
         by extensionPreference.
 
@@ -135,41 +116,14 @@ class Policy(_PolicyBase):
         succeeds.
         :return:
         """
-        extensionPreference = ('yaml', 'paf')
-        matchedPath = None
-        if isinstance(paths, basestring):
-            paths = [paths]
-        for ext in extensionPreference:
-            if matchedPath is not None:
-                break
-            for path in paths:
-                if path.endswith(ext):
-                    matchedPath = path
-                    break
         policy = None
-        if matchedPath is None:
-            raise IOError("Could not find policy at %s" % paths)
-        elif matchedPath.endswith('yaml'):
-            self.__initFromYamlFile(matchedPath)
-        elif matchedPath.endswith('paf'):
-            policy = pexPolicy.Policy.createPolicy(matchedPath)
+        if path.endswith('yaml'):
+            self.__initFromYamlFile(path)
+        elif path.endswith('paf'):
+            policy = pexPolicy.Policy.createPolicy(path)
             self.__initFromPexPolicy(policy)
         else:
-            raise RuntimeError("Unhandled policy file type:%s" % matchedPath)
-
-    def __initFromDefaultPolicy(self, preference, productName, filePath, repos):
-        """Open a policy file by package name + location. Usually used for package-default policies.
-
-        :param productName: the name of the product that contains the policy.
-        :param filePath: the relative pathname (including file name) to the policy file.
-        :param repos: optional. The subdirectory within the product where policy files are stored. If empty,
-        the product install dir + filePath will be used.
-        :return:
-        """
-        policyPath = os.path.join(lsst.utils.getPackageDir(productName), repos, filePath)
-        if not os.path.exists(policyPath):
-            raise RuntimeError("No policy at path:%s" % policyPath)
-        self.__init(None, preference=preference, filePath=policyPath)
+            raise RuntimeError("Unhandled policy file type:%s" % path)
 
     def __initFromPexPolicy(self, pexPolicy):
         """Load values from a pex policy.
@@ -221,7 +175,7 @@ class Policy(_PolicyBase):
             else:
                 return None
         if isinstance(data, collections.Mapping):
-            data = Policy(data=data)
+            data = Policy(data)
         return data
 
     def __setitem__(self, name, value):
@@ -249,6 +203,30 @@ class Policy(_PolicyBase):
             else:
                 return False
         return keys[-1] in d
+
+    @staticmethod
+    def defaultPolicyFile(productName, fileName, relativePath=None):
+        """Get the path to a default policy file.
+
+        Determines a directory for the product specified by productName. Then Concatenates
+        productDir/relativePath/fileName (or productDir/fileName if relativePath is None) to find the path
+        to the default Policy file
+
+        @param productName (string) The name of the product that the default policy is installed as part of
+        @param fileName (string) The name of the policy file. Can also include a path to the file relative to
+                                 the directory where the product is installed.
+        @param relativePath (string) The relative path from the directior where the product is installed to
+                                     the location where the file (or the path to the file) is found. If None
+                                     (default), the fileName argument is relative to the installation
+                                     directory.
+        """
+        basePath = lsst.utils.getPackageDir(productName)
+        if not basePath:
+            raise RuntimeError("No product installed for productName: %s" % basePath)
+        if relativePath is not None:
+            basePath = os.path.join(basePath, relativePath)
+        fullFilePath = os.path.join(basePath, fileName)
+        return fullFilePath
 
     def update(self, other):
         """Like dict.update, but will add or modify keys in nested dicts, instead of overwriting the nested
@@ -437,7 +415,7 @@ class Policy(_PolicyBase):
         :return:
         """
         # First a set of known keys is handled and written to the stream in a specific order for readability.
-        # After the expected/ordered keys are weritten to the stream the remainder of the keys are written to 
+        # After the expected/ordered keys are weritten to the stream the remainder of the keys are written to
         # the stream.
         data = copy.copy(self.data)
         keys = ['defects', 'needCalibRegistry', 'levels', 'defaultLevel', 'defaultSubLevels',

@@ -34,8 +34,8 @@ class PolicyTestCase(unittest.TestCase):
 
     def setUp(self):
         self.policy = Policy(
-            data={'body': {'job': {'position': 'Developer', 'company': 'Microsoft'}, 'name': 'John'},
-                  'error': False})
+            {'body': {'job': {'position': 'Developer', 'company': 'Microsoft'}, 'name': 'John'},
+             'error': False})
 
     def testBasic(self):
         p = Policy()
@@ -54,7 +54,7 @@ class PolicyTestCase(unittest.TestCase):
                           'name': {'first': 'John', 'last': 'Smith'}})
 
     def testUpdateWithPolicy(self):
-        p1 = Policy(data={'body': {'job': {'position': 'Manager'}}})
+        p1 = Policy({'body': {'job': {'position': 'Manager'}}})
         self.policy.update(p1)
         self.assertEqual(self.policy['body'],
                          {'job': {'position': 'Manager', 'company': 'Microsoft'}, 'name': 'John'})
@@ -84,7 +84,7 @@ class PolicyTestCase(unittest.TestCase):
         self.assertEqual(names, expectedNames)
 
     def testCopyPolicy(self):
-        pol = Policy(policy=self.policy)
+        pol = Policy(self.policy)
         self.assertEqual(pol, self.policy)
 
     def testGetPolicy(self):
@@ -111,19 +111,28 @@ class PolicyTestCase(unittest.TestCase):
         self.assertEqual(b['a.b.d'], 3)
 
     def testOpenDefaultPolicy(self):
-        policy = Policy(defaultInitData=('daf_persistence', 'testPolicy.yaml', 'tests'))
+        policyFile = Policy.defaultPolicyFile('daf_persistence', 'testPolicy.yaml', 'tests')
+        policy = Policy(policyFile)
         self.assertEqual(policy['exposures.raw.template'], 'foo/bar/baz.fits.gz')
 
     def testDumpLoad(self):
         self.policy.dumpToFile('testDumpFile.yaml')
-        loadedPolicy = Policy(filePath='testDumpFile.yaml')
+        loadedPolicy = Policy('testDumpFile.yaml')
         self.assertEqual(self.policy, loadedPolicy)
         os.remove('testDumpFile.yaml')
 
     def testNonExistantPolicyAtPath(self):
-        self.assertRaises(IOError, Policy, filePath="c:/policy.yaml")
-        self.assertRaises(IOError, Policy, filePath="c:/policy.paf")
-        self.assertRaises(IOError, Policy, filePath="c:/policy")
+        # Test that loading paf & yaml files that do not exist raises an IOError.
+        with self.assertRaises(IOError):
+            Policy("c:/nonExistantPath/policy.yaml")
+        with self.assertRaises(IOError):
+            Policy("c:/nonExistantPath/policy.paf")
+
+    def testInvalidPolicyFileType(self):
+        # We only support files with '.paf' or '.yaml' extension; check that trying to load a file with a
+        # different extension (in this case '.txt') raises a RuntimeError.
+        with self.assertRaises(RuntimeError):
+            Policy("c:/policy.txt")
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
