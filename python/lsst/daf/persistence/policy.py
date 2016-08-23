@@ -436,8 +436,20 @@ class Policy(_PolicyBase):
         :param stream:
         :return:
         """
+        # First a set of known keys is handled and written to the stream in a specific order for readability.
+        # After the expected/ordered keys are weritten to the stream the remainder of the keys are written to 
+        # the stream.
         data = copy.copy(self.data)
-        yaml.dump(data, output)
+        keys = ['defects', 'needCalibRegistry', 'levels', 'defaultLevel', 'defaultSubLevels',
+                'exposures', 'calibrations', 'datasets']
+        for key in keys:
+            try:
+                yaml.dump({key: data.pop(key)}, output, default_flow_style=False)
+                output.write('\n')
+            except KeyError:
+                pass
+        if data:
+            yaml.dump(data, output, default_flow_style=False)
 
     def dumpToFile(self, path):
         """Writes the policy to a file.
