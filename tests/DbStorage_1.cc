@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(DbStorage) {
     //without failing
     dafPersist::DbAuth testAuth;
     testAuth.setPolicy(policy);
-    if(!testAuth.available("lsst10.ncsa.uiuc.edu","3306")){
+    if(!testAuth.available("lsst-db.ncsa.illinois.edu","3306")){
         return;
     }
 
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(DbStorage) {
     dafPersist::DbStorage dbs;
 
     dbs.setPolicy(policy);
-    dafPersist::LogicalLocation loc("mysql://lsst10.ncsa.uiuc.edu:3306/test");
+    dafPersist::LogicalLocation loc("mysql://lsst-db.ncsa.illinois.edu:3306/test");
     dbs.setPersistLocation(loc);
 
     dbs.startTransaction();
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(DbStorageExprs) {
     //without failing
     dafPersist::DbAuth testAuth;
     testAuth.setPolicy(policy);
-    if(!testAuth.available("lsst10.ncsa.uiuc.edu","3306")){
+    if(!testAuth.available("lsst-db.ncsa.illinois.edu","3306")){
         return;
     }
 
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(DbStorageExprs) {
     dafPersist::DbStorage dbs;
 
     dbs.setPolicy(policy);
-    dafPersist::LogicalLocation loc("mysql://lsst10.ncsa.uiuc.edu:3306/test");
+    dafPersist::LogicalLocation loc("mysql://lsst-db.ncsa.illinois.edu:3306/test");
     dbs.setRetrieveLocation(loc);
 
     dbs.startTransaction();

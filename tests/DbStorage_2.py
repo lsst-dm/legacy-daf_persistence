@@ -31,7 +31,7 @@ import lsst.utils.tests
 import lsst.daf.persistence as dafPers
 import lsst.pex.policy
 
-HOST = "lsst10.ncsa.uiuc.edu"
+HOST = "lsst-db.ncsa.illinois.edu"
 PORT = "3306"
 
 
