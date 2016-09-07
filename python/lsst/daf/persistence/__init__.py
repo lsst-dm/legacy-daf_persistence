@@ -38,6 +38,7 @@ from .access import *
 from .storage import *
 from .repositoryCfg import *
 from .posixStorage import *
+from .swiftStorage import *
 from .mapper import *
 from .repositoryMapper import *
 from .repository import *
