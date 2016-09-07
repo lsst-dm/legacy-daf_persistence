@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(Persistence2Test) {
     //without failing
     dafPersist::DbAuth testAuth;
     testAuth.setPolicy(policy);
-    if(!testAuth.available("lsst10.ncsa.uiuc.edu","3306")){
+    if(!testAuth.available("lsst-db.ncsa.illinois.edu","3306")){
         return;
     }
 
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(Persistence2Test) {
     MyPersistable mp(1.73205, 1.61803);
 
     dafPersist::LogicalLocation pathLoc("tests/data/MyPersistable.boost." + testIdString);
-    dafPersist::LogicalLocation dbLoc("mysql://lsst10.ncsa.uiuc.edu:3306/test");
+    dafPersist::LogicalLocation dbLoc("mysql://lsst-db.ncsa.illinois.edu:3306/test");
 
     {
         dafPersist::Persistence::Ptr persist = dafPersist::Persistence::getPersistence(policy);
