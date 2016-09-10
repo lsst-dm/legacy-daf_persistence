@@ -692,11 +692,12 @@ class Butler(object):
 
     def _read(self, location):
         trace = pexLog.BlockTimingLog(self.log, "read", pexLog.BlockTimingLog.INSTRUM + 1)
+        trace.start("read from %s" % location)
         results = location.repository.read(location)
         if len(results) == 1:
             results = results[0]
-        return results
         trace.done()
+        return results
 
     def __reduce__(self):
         ret = (_unreduce, (self._initArgs, self.datasetTypeAliasDict))
