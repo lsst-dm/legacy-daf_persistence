@@ -44,12 +44,15 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "boost/regex.hpp"
 #include "lsst/pex/exceptions.h"
-#include "lsst/pex/logging/Trace.h"
+#include "lsst/log/Log.h"
 
 namespace dafBase = lsst::daf::base;
 namespace dafPersist = lsst::daf::persistence;
 namespace pexExcept = lsst::pex::exceptions;
-namespace pexLog = lsst::pex::logging;
+
+namespace {
+LOG_LOGGER _log = LOG_GET("daf.persistence.LogicalLocation");
+}
 
 dafBase::PropertySet::Ptr dafPersist::LogicalLocation::_map;
 
@@ -61,8 +64,7 @@ dafPersist::LogicalLocation::LogicalLocation(
     boost::regex expr("(%.*?)\\((\\w+?)\\)");
     boost::sregex_iterator i = make_regex_iterator(locString, expr);
     boost::sregex_iterator last;
-    pexLog::TTrace<5>("daf.persistence.LogicalLocation",
-                      "Input string: " + locString);
+    LOGLS_DEBUG(_log, "Input string: " << locString);
     while (i != boost::sregex_iterator()) {
         last = i;
         if ((*i).prefix().matched) {
@@ -70,12 +72,11 @@ dafPersist::LogicalLocation::LogicalLocation(
         }
         std::string fmt = (*i).str(1);
         std::string key = (*i).str(2);
-        pexLog::TTrace<5>("daf.persistence.LogicalLocation", "Key: " + key);
+        LOGLS_DEBUG(_log, "Key: " << key);
         if (_map && _map->exists(key)) {
             if (_map->typeOf(key) == typeid(int)) {
                 int value = _map->getAsInt(key);
-                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
-                                  "Map Val: %d", value);
+                LOGLS_DEBUG(_log, "Map Val: " << value);
                 if (fmt == "%") {
                     _locString += (boost::format("%1%") % value).str();
                 }
@@ -85,16 +86,14 @@ dafPersist::LogicalLocation::LogicalLocation(
             }
             else {
                 std::string value = _map->getAsString(key);
-                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
-                                  "Map Val: " + value);
+                LOGLS_DEBUG(_log, "Map Val: " << value);
                 _locString += value;
             }
         }
         else if (additionalData && additionalData->exists(key)) {
             if (additionalData->typeOf(key) == typeid(int)) {
                 int value = additionalData->getAsInt(key);
-                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
-                                  "Map Val: %d", value);
+                LOGLS_DEBUG(_log, "Map Val: " << value);
                 if (fmt == "%") {
                     _locString += (boost::format("%1%") % value).str();
                 }
@@ -104,8 +103,7 @@ dafPersist::LogicalLocation::LogicalLocation(
             }
             else {
                 std::string value = additionalData->getAsString(key);
-                pexLog::TTrace<5>("daf.persistence.LogicalLocation",
-                                  "Map Val: " + value);
+                LOGLS_DEBUG(_log, "Map Val: " << value);
                 _locString += value;
             }
         }
@@ -117,13 +115,11 @@ dafPersist::LogicalLocation::LogicalLocation(
     }
     if (last == boost::sregex_iterator()) {
         _locString = locString;
-        pexLog::TTrace<5>("daf.persistence.LogicalLocation",
-                          "Copy to: " + _locString);
+        LOGLS_DEBUG(_log, "Copy to: " << _locString);
     }
     else {
         _locString += (*last).suffix().str();
-        pexLog::TTrace<5>("daf.persistence.LogicalLocation",
-                          "Result: " + _locString);
+        LOGLS_DEBUG(_log, "Result: " << _locString);
     }
 }
 

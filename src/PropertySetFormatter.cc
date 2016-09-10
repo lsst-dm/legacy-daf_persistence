@@ -59,13 +59,11 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/XmlStorage.h"
 #include <lsst/pex/exceptions.h>
-#include <lsst/pex/logging/Trace.h>
+#include <lsst/log/Log.h>
 #include <lsst/pex/policy/Policy.h>
 
-
-#define EXEC_TRACE  20
-static void execTrace(std::string s, int level = EXEC_TRACE) {
-    lsst::pex::logging::Trace("daf.persistence.PropertySetFormatter", level, s);
+namespace {
+auto _log = LOG_GET("daf.persistence.PropertySetFormatter");
 }
 
 namespace dafBase = lsst::daf::base;
@@ -99,30 +97,30 @@ void dafPersist::PropertySetFormatter::write(
     dafBase::Persistable const* persistable,
     dafPersist::Storage::Ptr storage,
     dafBase::PropertySet::Ptr additionalData) {
-    execTrace("PropertySetFormatter write start");
+    LOGLS_TRACE(_log, "PropertySetFormatter write start");
     dafBase::PropertySet const* ps =
         dynamic_cast<dafBase::PropertySet const*>(persistable);
     if (ps == 0) {
         throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Persisting non-PropertySet");
     }
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
-        execTrace("PropertySetFormatter write BoostStorage");
+        LOGLS_TRACE(_log, "PropertySetFormatter write BoostStorage");
         dafPersist::BoostStorage* boost =
             dynamic_cast<dafPersist::BoostStorage*>(storage.get());
         boost->getOArchive() & *ps;
-        execTrace("PropertySetFormatter write end");
+        LOGLS_TRACE(_log, "PropertySetFormatter write end");
         return;
     }
     else if (typeid(*storage) == typeid(dafPersist::XmlStorage)) {
-        execTrace("PropertySetFormatter write XmlStorage");
+        LOGLS_TRACE(_log, "PropertySetFormatter write XmlStorage");
         dafPersist::XmlStorage* xml =
             dynamic_cast<dafPersist::XmlStorage*>(storage.get());
         xml->getOArchive() & make_nvp("propertySet", *ps);
-        execTrace("PropertySetFormatter write end");
+        LOGLS_TRACE(_log, "PropertySetFormatter write end");
         return;
     }
     else if (typeid(*storage) == typeid(dafPersist::DbStorage)) {
-        execTrace("PropertySetFormatter write DbStorage");
+        LOGLS_TRACE(_log, "PropertySetFormatter write DbStorage");
         dafPersist::DbStorage* db =
             dynamic_cast<dafPersist::DbStorage*>(storage.get());
 
@@ -208,7 +206,7 @@ void dafPersist::PropertySetFormatter::write(
             }
         }
         db->insertRow();
-        execTrace("PropertySetFormatter write end");
+        LOGLS_TRACE(_log, "PropertySetFormatter write end");
         return;
     }
 
@@ -217,22 +215,22 @@ void dafPersist::PropertySetFormatter::write(
 
 dafBase::Persistable* dafPersist::PropertySetFormatter::read(
     dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
-    execTrace("PropertySetFormatter read start");
+    LOGLS_TRACE(_log, "PropertySetFormatter read start");
     dafBase::PropertySet* ps = new dafBase::PropertySet;
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
-        execTrace("PropertySetFormatter read BoostStorage");
+        LOGLS_TRACE(_log, "PropertySetFormatter read BoostStorage");
         dafPersist::BoostStorage* boost =
             dynamic_cast<dafPersist::BoostStorage*>(storage.get());
         boost->getIArchive() & *ps;
-        execTrace("PropertySetFormatter read end");
+        LOGLS_TRACE(_log, "PropertySetFormatter read end");
         return ps;
     }
     else if (typeid(*storage) == typeid(dafPersist::XmlStorage)) {
-        execTrace("PropertySetFormatter read XmlStorage");
+        LOGLS_TRACE(_log, "PropertySetFormatter read XmlStorage");
         dafPersist::XmlStorage* xml =
             dynamic_cast<dafPersist::XmlStorage*>(storage.get());
         xml->getIArchive() & make_nvp("propertySet", *ps);
-        execTrace("PropertySetFormatter read end");
+        LOGLS_TRACE(_log, "PropertySetFormatter read end");
         return ps;
     }
     throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unrecognized Storage for PropertySet");

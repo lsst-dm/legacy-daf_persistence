@@ -33,7 +33,7 @@ import urllib.parse
 import yaml
 
 from . import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, RepositoryCfg, safeFileIo
-import lsst.pex.logging as pexLog
+from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
 
@@ -45,7 +45,7 @@ class PosixStorage(Storage):
 
         :return:
         """
-        self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
+        self.log = Log.getLogger("daf.persistence.butler")
         self.root = parseRes = urllib.parse.urlparse(uri).path
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
@@ -165,7 +165,7 @@ class PosixStorage(Storage):
         :param obj: the object to be written.
         :return: None
         """
-        self.log.log(pexLog.Log.DEBUG, "Put location=%s obj=%s" % (butlerLocation, obj))
+        self.log.debug("Put location=%s obj=%s", butlerLocation, obj)
 
         additionalData = butlerLocation.getAdditionalData()
         storageName = butlerLocation.getStorageName()

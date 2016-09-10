@@ -43,7 +43,6 @@
 #include <lsst/daf/base/PropertySet.h>
 #include "lsst/daf/base/DateTime.h"
 #include <lsst/pex/exceptions.h>
-#include <lsst/pex/logging/Trace.h>
 
 
 using boost::serialization::make_nvp;

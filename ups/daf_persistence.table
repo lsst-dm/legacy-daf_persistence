@@ -1,5 +1,5 @@
+setupRequired(log)
 setupRequired(mariadbclient)
-setupRequired(pex_logging)
 setupRequired(pex_policy)
 setupRequired(astropy)
 setupRequired(pyyaml)

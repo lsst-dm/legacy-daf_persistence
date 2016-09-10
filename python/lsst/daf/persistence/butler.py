@@ -38,7 +38,7 @@ import os
 
 import yaml
 
-import lsst.pex.logging as pexLog
+from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
@@ -254,7 +254,7 @@ class Butler(object):
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
-        self.log = pexLog.Log(pexLog.Log.getDefaultLog(), "daf.persistence.butler")
+        self.log = Log.getLogger("daf.persistence.butler")
 
         inputs = listify(inputs)
         outputs = listify(outputs)
@@ -563,9 +563,8 @@ class Butler(object):
                 if not os.path.exists(logLoc):
                     return False
             return True
-        self.log.log(pexLog.Log.WARN,
-                     "datasetExists() for non-file storage %s, dataset type=%s, keys=%s" %
-                     (storageName, datasetType, str(dataId)))
+        self.log.warn("datasetExists() for non-file storage %s, dataset type=%s, keys=%s",
+                      storageName, datasetType, str(dataId))
         return True
 
     def get(self, datasetType, dataId=None, immediate=False, **rest):
@@ -590,7 +589,7 @@ class Butler(object):
         if location is None:
             raise NoResults("No locations for get:", datasetType, dataId)
 
-        self.log.log(pexLog.Log.DEBUG, "Get type=%s keys=%s from %s" % (datasetType, dataId, str(location)))
+        self.log.debug("Get type=%s keys=%s from %s", datasetType, dataId, str(location))
 
         if hasattr(location.mapper, "bypass_" + datasetType):
             # this type loader block should get moved into a helper someplace, and duplciations removed.
@@ -691,12 +690,12 @@ class Butler(object):
         return ButlerDataRef(subset, subset.cache[0])
 
     def _read(self, location):
-        trace = pexLog.BlockTimingLog(self.log, "read", pexLog.BlockTimingLog.INSTRUM + 1)
+        self.log.debug("Starting read from %s", location)
         results = location.repository.read(location)
         if len(results) == 1:
             results = results[0]
+        self.log.debug("Ending read from %s", location)
         return results
-        trace.done()
 
     def __reduce__(self):
         ret = (_unreduce, (self._initArgs, self.datasetTypeAliasDict))
