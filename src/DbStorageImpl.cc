@@ -408,7 +408,7 @@ void dafPer::DbStorageImpl::setColumn(std::string const& columnName,
     bv->second._isNull = false;
     bv->second._isUnsigned = BoundVarTraits<dafBase::DateTime>::isUnsigned;
     bv->second._length = size;
-    struct tm v = value.gmtime();
+    struct tm v = value.gmtime(dafBase::DateTime::UTC);
     MYSQL_TIME* t = reinterpret_cast<MYSQL_TIME*>(bv->second._data);
     t->year = v.tm_year + 1900;
     t->month = v.tm_mon + 1;
