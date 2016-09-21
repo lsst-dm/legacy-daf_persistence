@@ -641,9 +641,16 @@ class Butler(object):
         for repoData in self._repos.outputs():
             location = repoData.repo.map(datasetType, dataId, write=True)
             if location:
-                if doBackup:
-                    repoData.repo.backup(datasetType, dataId)
-                repoData.repo.write(location, obj)
+                if isinstance(location, ButlerComposite):
+                    components = {}
+                    location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
+                    for name, item in location.components.items():
+                        self.put(components[name], item.datasetType, location.dataId, 
+                                 doBackup=doBackup, **rest)
+                else:
+                    if doBackup:
+                        repoData.repo.backup(datasetType, dataId)
+                    repoData.repo.write(location, obj)
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
