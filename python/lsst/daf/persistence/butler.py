@@ -596,13 +596,7 @@ class Butler(object):
             pythonType = location.getPythonType()
             if pythonType is not None:
                 if isinstance(pythonType, basestring):
-                    # import this pythonType dynamically
-                    pythonTypeTokenList = location.getPythonType().split('.')
-                    importClassString = pythonTypeTokenList.pop()
-                    importClassString = importClassString.strip()
-                    importPackage = ".".join(pythonTypeTokenList)
-                    importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
-                    pythonType = getattr(importType, importClassString)
+                    pythonType = doImport(pythonType)
             bypassFunc = getattr(location.mapper, "bypass_" + datasetType)
             callback = lambda: bypassFunc(datasetType, pythonType, location, dataId)
         else:
