@@ -607,9 +607,10 @@ class Butler(object):
             callback = lambda: bypassFunc(datasetType, pythonType, location, dataId)
         else:
             if isinstance(location, ButlerComposite):
-                for name, info in location.components.items():
-                    location.components[name] = self.get(info.datasetType, location.dataId, immediate=True)
-                obj = location.assembler(dataId=location.dataId, componentDict=location.components, 
+                componentDict = {}
+                for name, info in location.componentInfo.items():
+                    componentDict[name] = self.get(info.datasetType, location.dataId, immediate=True)
+                obj = location.assembler(dataId=location.dataId, componentDict=componentDict,
                                          cls=location.python)
                 return obj
 
@@ -642,11 +643,11 @@ class Butler(object):
             location = repoData.repo.map(datasetType, dataId, write=True)
             if location:
                 if isinstance(location, ButlerComposite):
-                    components = {}
+                    components = {componentId: None for componentId in location.componentInfo}
                     location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
-                    for name, item in location.components.items():
-                        self.put(components[name], item.datasetType, location.dataId, 
-                                 doBackup=doBackup, **rest)
+                    for name, item in components.items():
+                        self.put(item, location.componentInfo[name].datasetType, location.dataId,
+                                 doBackup=doBackup)
                 else:
                     if doBackup:
                         repoData.repo.backup(datasetType, dataId)

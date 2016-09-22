@@ -33,6 +33,7 @@ import yaml
 
 from . import iterify, doImport
 
+
 class ButlerComposite(object):
     """Initializer
 
@@ -61,7 +62,7 @@ class ButlerComposite(object):
         self.python = doImport(python) if isinstance(python, basestring) else python
         self.dataId = dataId
         self.mapper = mapper
-        self.components = {}
+        self.componentInfo = {}
 
     def add(self, id, datasetType):
         """Add a description of a component needed to fetch the composite dataset.
@@ -73,19 +74,19 @@ class ButlerComposite(object):
         datasetType : string
             The name of the datasetType of the component.
         """
-        self.components[id] = ButlerComposite.componentInfo(datasetType=datasetType)
+        self.componentInfo[id] = ButlerComposite.ComponentInfo(datasetType=datasetType)
 
     def __repr__(self):
         return "ButlerComposite(assembler=%s, disassembler=%s, python=%s, dataId=%s, components=%s)" % (
-            self.assembler, self.disassembler, self.python, self.dataId, self.components)
+            self.assembler, self.disassembler, self.python, self.dataId, self.componentInfo)
 
-    # I don't think this api is needed on a CompositeLookup, but allow it to keep the ButlerLocation API 
+    # I don't think this api is needed on a CompositeLookup, but allow it to keep the ButlerLocation API
     # happy/cohesive (For now...)
     def setRepository(self, repository):
         pass
+
     def getRepository(self):
         pass
-
 
 
 class ButlerLocation(yaml.YAMLObject):
