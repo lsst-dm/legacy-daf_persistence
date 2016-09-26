@@ -567,6 +567,64 @@ class Butler(object):
                       storageName, datasetType, str(dataId))
         return True
 
+    def _locate(self, datasetType, dataId, write):
+        """Get one or more ButlerLocations and/or ButlercComposites.
+
+        Parameters
+        ----------
+        datasetType : string
+            The datasetType that is being searched for. The datasetType may be followed by a dot and
+            a component name (component names are specified in the policy). IE datasetType.componentName
+
+        dataId : dict or DataId class instance
+            The dataId
+
+        write : bool
+            True if this is a search to write an object. False if it is a search to read an object. This
+            affects what type (an object or a container) is returned.
+
+        Returns
+        -------
+        If write is False, will return either a single object or None. If write is True, will return a list
+        (which may be empty)
+        """
+        repos = self._repos.outputs() if write else self._repos.inputs()
+        locations = []
+        for repoData in repos:
+            # enforce dataId & repository tags when reading:
+            if not write and dataId.tag and len(dataId.tag.intersection(repoData.tags)) == 0:
+                continue
+            components = datasetType.split('.')
+            datasetType = components[0]
+            components = components[1:]
+            location = repoData.repo.map(datasetType, dataId, write=write)
+            if location is None:
+                continue
+            location.datasetType = datasetType # todo is there a better way than monkey patching here?
+            if len(components) > 0:
+                if not isinstance(location, ButlerComposite):
+                    raise RuntimeError("todo msg; location for a dotted datasetType must be a composite.")
+                # replace the first component name with the datasetType
+                components[0] = location.componentInfo[components[0]].datasetType
+                # join components back into a dot-delimited string
+                datasetType = '.'.join(components)
+                location = self._locate(datasetType, dataId, write)
+                # if a cmponent location is not found, we can not continue with this repo, move to next repo.
+                if location is None:
+                    break
+            # if reading, only one location is desired.
+            if location:
+                if not write:
+                    return location
+                else:
+                    try:
+                        locations.extend(location)
+                    except TypeError:
+                        locations.append(location)
+        if not write:
+            return None
+        return locations
+
     def get(self, datasetType, dataId=None, immediate=False, **rest):
         """Retrieves a dataset given an input collection data id.
 
@@ -576,29 +634,23 @@ class Butler(object):
         @param **rest              keyword arguments for the data id.
         @returns an object retrieved from the dataset (or a proxy for one).
         """
-
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
-        location = None
-        for repoData in self._repos.inputs():
-            if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
-                location = repoData.repo.map(datasetType, dataId)
-                if location:
-                    break
+
+        location = self._locate(datasetType, dataId, write=False)
         if location is None:
             raise NoResults("No locations for get:", datasetType, dataId)
-
         self.log.debug("Get type=%s keys=%s from %s", datasetType, dataId, str(location))
 
-        if hasattr(location.mapper, "bypass_" + datasetType):
+        if hasattr(location.mapper, "bypass_" + location.datasetType):
             # this type loader block should get moved into a helper someplace, and duplciations removed.
             pythonType = location.getPythonType()
             if pythonType is not None:
                 if isinstance(pythonType, basestring):
                     pythonType = doImport(pythonType)
-            bypassFunc = getattr(location.mapper, "bypass_" + datasetType)
-            callback = lambda: bypassFunc(datasetType, pythonType, location, dataId)
+            bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
+            callback = lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
         else:
             if isinstance(location, ButlerComposite):
                 componentDict = {}
@@ -609,9 +661,9 @@ class Butler(object):
                 return obj
 
             callback = lambda: self._read(location)
-        if location.mapper.canStandardize(datasetType):
+        if location.mapper.canStandardize(location.datasetType):
             innerCallback = callback
-            callback = lambda: location.mapper.standardize(datasetType, innerCallback(), dataId)
+            callback = lambda: location.mapper.standardize(location.datasetType, innerCallback(), dataId)
         if immediate:
             return callback()
         return ReadProxy(callback)
@@ -628,24 +680,21 @@ class Butler(object):
         WARNING: Setting doBackup=True is not safe for parallel processing, as it
         may be subject to race conditions.
         """
-
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
 
-        for repoData in self._repos.outputs():
-            location = repoData.repo.map(datasetType, dataId, write=True)
-            if location:
-                if isinstance(location, ButlerComposite):
-                    components = {componentId: None for componentId in location.componentInfo}
-                    location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
-                    for name, item in components.items():
-                        self.put(item, location.componentInfo[name].datasetType, location.dataId,
-                                 doBackup=doBackup)
-                else:
-                    if doBackup:
-                        repoData.repo.backup(datasetType, dataId)
-                    repoData.repo.write(location, obj)
+        for location in self._locate(datasetType, dataId, write=True):
+            if isinstance(location, ButlerComposite):
+                components = {componentId:None for componentId in location.componentInfo}
+                location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
+                for name, item in components.items():
+                    self.put(item, location.componentInfo[name].datasetType, location.dataId,
+                             doBackup=doBackup)
+            else:
+                if doBackup:
+                    location.getRepository().backup(location.datasetType, dataId)
+                location.getRepository().write(location, obj)
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
