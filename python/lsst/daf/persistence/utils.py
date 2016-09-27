@@ -103,13 +103,22 @@ def setify(x):
 
 def doImport(pythonType):
     """Import a python object given an importable string"""
-    if not isinstance(pythonType, basestring):
-        raise TypeError("Unhandled type of pythonType, val:%s" % pythonType)
-    # import this pythonType dynamically
+    try:
+        if not isinstance(pythonType, basestring):
+            raise TypeError("Unhandled type of pythonType, val:%s" % pythonType)
+        # import this pythonType dynamically
+        pythonTypeTokenList = pythonType.split('.')
+        importClassString = pythonTypeTokenList.pop()
+        importClassString = importClassString.strip()
+        importPackage = ".".join(pythonTypeTokenList)
+        importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
+        pythonType = getattr(importType, importClassString)
+        return pythonType
+    except ImportError:
+        pass
+    # maybe python type is a member function, in the form: path.to.object.Class.funcname
     pythonTypeTokenList = pythonType.split('.')
-    importClassString = pythonTypeTokenList.pop()
-    importClassString = importClassString.strip()
-    importPackage = ".".join(pythonTypeTokenList)
-    importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
-    pythonType = getattr(importType, importClassString)
+    importClassString = '.'.join(pythonTypeTokenList[0:-1])
+    importedClass = doImport(importClassString)
+    pythonType = getattr(importedClass, pythonTypeTokenList[-1])
     return pythonType
