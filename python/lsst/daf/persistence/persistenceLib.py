@@ -6,5 +6,6 @@ from ._logicalLocation import *
 from ._persistence import *
 from ._storage import *
 from ._dbAuth import *
+from ._dbStorage import *
 
 StorageList = list
