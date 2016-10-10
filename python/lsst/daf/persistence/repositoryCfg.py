@@ -121,6 +121,9 @@ class RepositoryCfg(yaml.YAMLObject):
         return cfg
 
     def matchesArgs(self, repositoryArgs):
+        """Checks that a repositoryArgs instance will work with this repositoryCfg. This is useful
+        when loading an already-existing repository that has a persisted cfg, to ensure that the args that are
+        passed into butler do not conflict with the persisted cfg."""
         if repositoryArgs.root is not None and self._root != repositoryArgs.root:
             return False
 
