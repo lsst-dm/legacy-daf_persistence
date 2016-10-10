@@ -102,11 +102,12 @@ class ButlerLocation(yaml.YAMLObject):
     def __repr__(self):
         return \
             'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, locationList=%r,' \
-            ' additionalData=%r, mapper=%r)' % \
+            ' additionalData=%r, mapper=%r, dataId=%r)' % \
             (self.pythonType, self.cppType, self.storageName, self.locationList,
-             self.additionalData, self.mapper)
+             self.additionalData, self.mapper, self.dataId)
 
-    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None):
+    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None,
+                 usedDataId=None, datasetType=None):
         self.pythonType = pythonType
         self.cppType = cppType
         self.storageName = storageName
@@ -117,6 +118,8 @@ class ButlerLocation(yaml.YAMLObject):
         for k, v in dataId.items():
             self.additionalData.set(k, v)
         self.dataId = dataId
+        self.usedDataId = usedDataId
+        self.datasetType = datasetType
 
     def __str__(self):
         s = "%s at %s(%s)" % (self.pythonType, self.storageName,
