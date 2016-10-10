@@ -34,7 +34,9 @@ from builtins import object
 import collections
 import copy
 import inspect
+import json
 import os
+import weakref
 
 import yaml
 
@@ -302,6 +304,9 @@ class Butler(object):
 
         for args in inputs:
             self._addRepo(args, inout='in', butlerIOParents=butlerIOParents)
+
+        self.objectCache = weakref.WeakValueDictionary()
+
 
     def _addRepo(self, args, inout, defaultMapper=None, butlerIOParents=None, tags=None):
         """Create a Repository and related infrastructure and add it to the list of repositories.
@@ -644,9 +649,10 @@ class Butler(object):
             if location is None:
                 continue
             location.datasetType = datasetType # todo is there a better way than monkey patching here?
+                                               # it could go in the Mapper.map func
             if len(components) > 0:
                 if not isinstance(location, ButlerComposite):
-                    raise RuntimeError("todo msg; location for a dotted datasetType must be a composite.")
+                    raise RuntimeError("The location for a dotted datasetType must be a composite.")
                 # replace the first component name with the datasetType
                 components[0] = location.componentInfo[components[0]].datasetType
                 # join components back into a dot-delimited string
@@ -695,7 +701,15 @@ class Butler(object):
             raise NoResults("No locations for get:", datasetType, dataId)
         self.log.debug("Get type=%s keys=%s from %s", datasetType, dataId, str(location))
 
-        if hasattr(location.mapper, "bypass_" + location.datasetType):
+        if isinstance(location, ButlerComposite):
+            componentDict = {}
+            for name, info in location.componentInfo.items():
+                componentDict[name] = self.get(info.datasetType, location.dataId, immediate=True)
+            obj = location.assembler(dataId=location.dataId, componentDict=componentDict,
+                                     cls=location.python)
+            return obj
+
+        if location.datasetType and hasattr(location.mapper, "bypass_" + location.datasetType):
             # this type loader block should get moved into a helper someplace, and duplciations removed.
             pythonType = location.getPythonType()
             if pythonType is not None:
@@ -704,14 +718,6 @@ class Butler(object):
             bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
             callback = lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
         else:
-            if isinstance(location, ButlerComposite):
-                componentDict = {}
-                for name, info in location.componentInfo.items():
-                    componentDict[name] = self.get(info.datasetType, location.dataId, immediate=True)
-                obj = location.assembler(dataId=location.dataId, componentDict=componentDict,
-                                         cls=location.python)
-                return obj
-
             callback = lambda: self._read(location)
         if location.mapper.canStandardize(location.datasetType):
             innerCallback = callback
@@ -822,11 +828,50 @@ class Butler(object):
         return ButlerDataRef(subset, subset.cache[0])
 
     def _read(self, location):
-        self.log.debug("Starting read from %s", location)
-        results = location.repository.read(location)
-        if len(results) == 1:
-            results = results[0]
-        self.log.debug("Ending read from %s", location)
+        """Unpersist an object using data inside a butlerLocation object.
+
+        A weakref to loaded objects is cached here. If the object specified by the butlerLocaiton has been
+        loaded before and still exists then the object will not be re-read. A ref to the already-existing
+        object will be reutrned instead.
+
+        Parameters
+        ----------
+        location - ButlerLocation
+            A butlerLocation instance populated with data needed to read the object.
+
+        Returns
+        -------
+        object - an instance of the object specified by the butlerLoction.
+            The object specified by the butlerLocation will either be loaded from persistent storage or will
+            be fetched from the object cache (if it has already been read before).
+        """
+        def hasher(butlerLocation):
+            """Hash a butler location for use as a key in the object cache."""
+            try: # is the dataId a daf_persistence.Policy?
+                usedDataId = butlerLocation.usedDataId.data # if so, fetch the dict
+            except AttributeError: # if it's not,
+                usedDataId = butlerLocation.usedDataId # assume it's a raw dict.
+            return hash((butlerLocation.pythonType, butlerLocation.cppType, butlerLocation.storageName,
+                         id(butlerLocation.mapper), butlerLocation.storage,
+                         tuple(butlerLocation.locationList), json.dumps(usedDataId),
+                         butlerLocation.datasetType))
+
+        locationHash = hasher(location)
+        if locationHash in self.objectCache:
+            results = self.objectCache[locationHash]
+        else:
+            self.log.debug("Starting read from %s", location)
+            results = location.repository.read(location)
+            if len(results) == 1:
+                results = results[0]
+            self.log.debug("Ending read from %s", location)
+            try:
+                self.objectCache[locationHash] = results
+            except TypeError:
+                # some object types (e.g. builtins, like list) do not support weakref, and will raise a
+                # TypeError when we try to create the weakref. This is ok, we simply will not keep those
+                # types of objects in the cache.
+                pass
         return results
 
     def __reduce__(self):
