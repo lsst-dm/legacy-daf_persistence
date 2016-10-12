@@ -16,7 +16,7 @@ PYBIND11_DECLARE_HOLDER_TYPE(MyType, std::shared_ptr<MyType>);
 PYBIND11_PLUGIN(_persistence) {
     py::module mod("_persistence", "Access to the classes from the daf_persistence persistence library");
 
-    py::class_<Persistence, std::shared_ptr<Persistence>> cls(mod, "Persistence", py::base<lsst::daf::base::Citizen>());
+    py::class_<Persistence, std::shared_ptr<Persistence>, lsst::daf::base::Citizen> cls(mod, "Persistence");
 
     cls.def("getPersistStorage", &Persistence::getPersistStorage);
     cls.def("getRetrieveStorage", &Persistence::getRetrieveStorage);
