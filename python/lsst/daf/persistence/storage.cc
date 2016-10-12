@@ -15,7 +15,7 @@ PYBIND11_DECLARE_HOLDER_TYPE(MyType, std::shared_ptr<MyType>);
 PYBIND11_PLUGIN(_storage) {
     py::module mod("_storage", "Access to the classes from the daf_persistence storage library");
 
-    py::class_<Storage, std::shared_ptr<Storage>> cls(mod, "Storage", py::base<lsst::daf::base::Citizen>());
+    py::class_<Storage, std::shared_ptr<Storage>, lsst::daf::base::Citizen> cls(mod, "Storage");
 
     return mod.ptr();
 }

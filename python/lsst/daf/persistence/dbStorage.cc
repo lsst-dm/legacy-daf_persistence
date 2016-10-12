@@ -22,7 +22,7 @@ PYBIND11_DECLARE_HOLDER_TYPE(MyType, std::shared_ptr<MyType>);
 PYBIND11_PLUGIN(_dbStorage) {
     py::module mod("_dbStorage", "Access to the classes from the daf_persistence dbStorage library");
 
-    py::class_<DbStorage, std::shared_ptr<DbStorage>> cls(mod, "DbStorage", py::base<Storage>());
+    py::class_<DbStorage, std::shared_ptr<DbStorage>, Storage> cls(mod, "DbStorage");
 
 	/* Constructors */
 	cls.def(py::init<>());
