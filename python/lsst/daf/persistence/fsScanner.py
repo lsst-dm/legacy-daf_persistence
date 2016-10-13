@@ -62,7 +62,7 @@ class FsScanner(object):
             pathTemplate = pathTemplate[0:pathTemplate.rfind('[')]
 
         # Change template into a globbable path specification.
-        fmt = re.compile(r'%\((\w+)\).*?([dioueEfFgGcrs])')
+        fmt = re.compile(r'%\((\w+)\)([\d]*)([dioueEfFgGcrs])')
 
         self.globString = fmt.sub('*', pathTemplate)
 
@@ -82,16 +82,31 @@ class FsScanner(object):
             last = m.end(0)
             self.reString += prefix
 
-            if m.group(2) in 'crs':
+            if m.group(3) in 'r':
                 fieldType = str
                 self.reString += r'(?P<' + fieldName + '>.+)'
-            elif m.group(2) in 'eEfFgG':
+            if m.group(3) in 's':
+                fieldType = str
+                self.reString += r'(?P<' + fieldName + '>.'
+                if m.group(2):
+                    self.reString += '{0,' + m.group(2) + '}'
+                else:
+                    self.reString += '+'
+                self.reString += ')'
+            elif m.group(3) in 'c':
+                fieldType = str
+                self.reString += r'(?P<' + fieldName + '>.)'
+            elif m.group(3) in 'eEfFgG':
                 fieldType = float
                 self.reString += r'(?P<' + fieldName + '>[\d.eE+-]+)'
             else:
                 fieldType = int
-                self.reString += r'(?P<' + fieldName + '>[\d+-]+)'
-
+                self.reString += r'(?P<' + fieldName + '>[\d+-]'
+                if m.group(2):
+                    self.reString += '{0,' + m.group(2) + '}'
+                else:
+                    self.reString += '+'
+                self.reString += ')'
             self.fields[fieldName] = dict(pos=pos, fieldType=fieldType)
             pos += 1
 
@@ -132,13 +147,18 @@ class FsScanner(object):
         curdir = os.getcwd()
         os.chdir(location)
         pathList = glob.glob(self.globString)
+        print(self.reString)
+        print(pathList)
         for path in pathList:
             m = re.search(self.reString, path)
             if m:
                 dataId = m.groupdict()
                 for f in self.fields:
                     if self.isInt(f):
-                        dataId[f] = int(dataId[f])
+                        try:
+                            dataId[f] = int(dataId[f])
+                        except:
+                            import pdb; pdb.set_trace()
                     elif self.isFloat(f):
                         dataId[f] = float(dataId[f])
                 ret[path] = dataId
