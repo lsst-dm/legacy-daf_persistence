@@ -28,6 +28,7 @@ import inspect
 import yaml
 
 from lsst.daf.persistence import listify, iterify, doImport
+from past.builtins import basestring
 
 
 class RepositoryCfg(yaml.YAMLObject):
