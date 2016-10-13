@@ -27,7 +27,7 @@ from builtins import object
 import copy
 import inspect
 
-from lsst.daf.persistence import Storage, listify
+from lsst.daf.persistence import Storage, listify, doImport
 
 
 class RepositoryArgs(object):
@@ -102,7 +102,7 @@ class Repository(object):
 
         # if mapper is a string, import it:
         if isinstance(mapper, basestring):
-            mapper = __import__(mapper)
+            mapper = doImport(mapper)
         # now if mapper is a class type (not instance), instantiate it:
         if inspect.isclass(mapper):
             mapperArgs = copy.copy(repositoryCfg.mapperArgs)

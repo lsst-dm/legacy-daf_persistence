@@ -42,7 +42,7 @@ from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
-    RepositoryArgs, listify, setify, sequencify, doImport
+    RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -420,7 +420,7 @@ class Butler(object):
         """posix-only; gets the mapper class at the path specifed by root (if a file _mapper can be found at
         that location or in a parent location.
 
-        As we abstract the storage and support different types of storage locaitons this method will be
+        As we abstract the storage and support different types of storage locations this method will be
         moved entirely into Butler Access, or made more dynamic, and the API will very likely change."""
         return Storage.getMapperClass(root)
 
@@ -606,6 +606,14 @@ class Butler(object):
             bypassFunc = getattr(location.mapper, "bypass_" + datasetType)
             callback = lambda: bypassFunc(datasetType, pythonType, location, dataId)
         else:
+            if isinstance(location, ButlerComposite):
+                componentDict = {}
+                for name, info in location.componentInfo.items():
+                    componentDict[name] = self.get(info.datasetType, location.dataId, immediate=True)
+                obj = location.assembler(dataId=location.dataId, componentDict=componentDict,
+                                         cls=location.python)
+                return obj
+
             callback = lambda: self._read(location)
         if location.mapper.canStandardize(datasetType):
             innerCallback = callback
@@ -634,9 +642,16 @@ class Butler(object):
         for repoData in self._repos.outputs():
             location = repoData.repo.map(datasetType, dataId, write=True)
             if location:
-                if doBackup:
-                    repoData.repo.backup(datasetType, dataId)
-                repoData.repo.write(location, obj)
+                if isinstance(location, ButlerComposite):
+                    components = {componentId: None for componentId in location.componentInfo}
+                    location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
+                    for name, item in components.items():
+                        self.put(item, location.componentInfo[name].datasetType, location.dataId,
+                                 doBackup=doBackup)
+                else:
+                    if doBackup:
+                        repoData.repo.backup(datasetType, dataId)
+                    repoData.repo.write(location, obj)
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.

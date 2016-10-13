@@ -27,9 +27,66 @@
 
 import lsst.daf.base as dafBase
 
+from collections import namedtuple
+from past.builtins import basestring
 import yaml
 
-from . import iterify
+from . import iterify, doImport
+
+
+class ButlerComposite(object):
+    """Initializer
+
+    Parameters
+    ----------
+    assembler : function object
+        Function object or importable string to a function object that can be called with the assembler
+        signature: (dataId, componentDict, cls).
+    disassembler : function object
+        Function object or importable string to a function object that can be called with the disassembler
+        signature: (object, dataId, componentDict).
+    python : class object
+        A python class object or importable string to a class object that can be used by the assembler to
+        instantiate an object to be returned.
+    dataId : dict or DataId
+        The dataId that is used to look up components.
+    mapper : Mapper instance
+        A reference to the mapper that created this ButlerComposite object.
+    """
+    
+    ComponentInfo = namedtuple('ComponentInfo', 'datasetType')
+
+    def __init__(self, assembler, disassembler, python, dataId, mapper):
+        self.assembler = doImport(assembler) if isinstance(assembler, basestring) else assembler
+        self.disassembler = doImport(disassembler) if isinstance(disassembler, basestring) else disassembler
+        self.python = doImport(python) if isinstance(python, basestring) else python
+        self.dataId = dataId
+        self.mapper = mapper
+        self.componentInfo = {}
+
+    def add(self, id, datasetType):
+        """Add a description of a component needed to fetch the composite dataset.
+
+        Parameters
+        ----------
+        id : string
+            The name of the component in the policy definition.
+        datasetType : string
+            The name of the datasetType of the component.
+        """
+        self.componentInfo[id] = ButlerComposite.ComponentInfo(datasetType=datasetType)
+
+    def __repr__(self):
+        return "ButlerComposite(assembler=%s, disassembler=%s, python=%s, dataId=%s, components=%s)" % (
+            self.assembler, self.disassembler, self.python, self.dataId, self.componentInfo)
+
+    # I don't think this api is needed on a CompositeLookup, but allow it to keep the ButlerLocation API
+    # happy/cohesive (For now...)
+    def setRepository(self, repository):
+        pass
+
+    def getRepository(self):
+        pass
 
 
 class ButlerLocation(yaml.YAMLObject):

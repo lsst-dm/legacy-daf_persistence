@@ -27,7 +27,8 @@
 import inspect
 import yaml
 
-from lsst.daf.persistence import listify, iterify
+from lsst.daf.persistence import listify, iterify, doImport
+from past.builtins import basestring
 
 
 class RepositoryCfg(yaml.YAMLObject):
@@ -121,22 +122,26 @@ class RepositoryCfg(yaml.YAMLObject):
         return cfg
 
     def matchesArgs(self, repositoryArgs):
+        """Checks that a repositoryArgs instance will work with this repositoryCfg. This is useful
+        when loading an already-existing repository that has a persisted cfg, to ensure that the args that are
+        passed into butler do not conflict with the persisted cfg."""
         if repositoryArgs.root is not None and self._root != repositoryArgs.root:
             return False
-        if repositoryArgs.mapper is not None:
-            if inspect.isclass(self._mapper):
-                if not inspect.isclass(repositoryArgs.mapper):
-                    return False
-                if self._mapper != repositoryArgs.mapper:
-                    return False
-            else:
-                if type(self._mapper) != type(repositoryArgs.mapper):
-                    return False
+
+        repoArgsMapper = repositoryArgs.mapper
+        cfgMapper = self._mapper
+        if isinstance(repoArgsMapper, basestring):
+            repoArgsMapper = doImport(repoArgsMapper)
+        if isinstance(cfgMapper, basestring):
+            cfgMapper = doImport(cfgMapper)
+        if repoArgsMapper is not None and repoArgsMapper != cfgMapper:
+            return False
         # check mapperArgs for any keys in common and if their value does not match then return false.
         if self._mapperArgs is not None and repositoryArgs.mapperArgs is not None:
             for key in set(self._mapperArgs.keys()) & set(repositoryArgs.mapperArgs):
                 if self._mapperArgs[key] != repositoryArgs.mapperArgs[key]:
                     return False
+
         return True
 
     def __repr__(self):
