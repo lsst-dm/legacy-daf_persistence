@@ -60,16 +60,21 @@ class ButlerCfg(Policy, yaml.YAMLObject):
 
 
 class RepoData(object):
-    """Container object for repository data used by Butler"""
+    """Container object for repository data used by Butler
+
+    Parameters
+    ----------
+    args - RepositoryArgs
+        Arguments used to initialize self.repo
+    cfg - RepositoryCfg
+        Configuration of repository (this is persisted)
+    repo - Repository
+        The repository class instance
+    tags - set
+        The tags that apply to this repository, if any
+    """
 
     def __init__(self, args, cfg, repo, tags):
-        """Initializer for RepoData
-
-        @param args (RepositoryArgs) Arguments used to initialize self.repo
-        @param cfg (RepositoryCfg) Configuration of repository (this is persisted)
-        @param repo (Repository) The repository class instance
-        @param tags (set) The tags that apply to this repository, if any
-        """
         self.args = args
         self.cfg = cfg
         self.repo = repo
@@ -100,7 +105,9 @@ class RepoDataContainer(object):
     def add(self, repoData):
         """Add a RepoData to the container
 
-        @param (RepoData) RepoData instance to add
+        Parameters
+        ----------
+        repoData - RepoData instance to add
         """
         self._inputs = None
         self._outputs = None
@@ -110,9 +117,11 @@ class RepoDataContainer(object):
 
     def inputs(self):
         """Get a list of RepoData that are used to as inputs to the Butler.
-
         The list is created lazily as needed, and cached.
-        @return a list of RepoData with readable repositories. List is in the order to be use when searching.
+
+        Returns
+        -------
+        A list of RepoData with readable repositories, in the order to be used when searching.
         """
         if self._inputs is None:
             self._inputs = [rd for rd in self.byRepoRoot.values() if 'r' in rd.mode]
@@ -120,9 +129,11 @@ class RepoDataContainer(object):
 
     def outputs(self):
         """Get a list of RepoData that are used to as outputs to the Butler.
-
         The list is created lazily as needed, and cached.
-        @return a list of RepoData with writable repositories. List is in the order to be use when searching.
+
+        Returns
+        -------
+        A list of RepoData with writable repositories, in the order to be use when searching.
         """
         if self._outputs is None:
             self._outputs = [rd for rd in self.byRepoRoot.values() if 'w' in rd.mode]
@@ -130,9 +141,11 @@ class RepoDataContainer(object):
 
     def all(self):
         """Get a list of all RepoData that are used to as by the Butler.
-
         The list is created lazily as needed, and cached.
-        @return a list of RepoData with writable repositories. List is in the order to be use when searching.
+
+        Returns
+        -------
+        A list of RepoData with writable repositories, in the order to be use when searching.
         """
         if self._all is None:
             self._all = [rd for rd in self.byRepoRoot.values()]
@@ -151,30 +164,23 @@ class RepoDataContainer(object):
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
 
-    A Butler manages a collection of datasets known as a repository.  Each
-    dataset has a type representing its intended usage and a location.  Note
-    that the dataset type is not the same as the C++ or Python type of the
-    object containing the data.  For example, an ExposureF object might be
-    used to hold the data for a raw image, a post-ISR image, a calibrated
-    science image, or a difference image.  These would all be different
+    A Butler manages a collection of datasets known as a repository. Each dataset has a type representing its
+    intended usage and a location. Note that the dataset type is not the same as the C++ or Python type of the
+    object containing the data. For example, an ExposureF object might be used to hold the data for a raw
+    image, a post-ISR image, a calibrated science image, or a difference image. These would all be different
     dataset types.
 
-    A Butler can produce a collection of possible values for a key (or tuples
-    of values for multiple keys) if given a partial data identifier.  It can
-    check for the existence of a file containing a dataset given its type and
-    data identifier.  The Butler can then retrieve the dataset.  Similarly, it
-    can persist an object to an appropriate location when given its associated
-    data identifier.
+    A Butler can produce a collection of possible values for a key (or tuples of values for multiple keys) if
+    given a partial data identifier. It can check for the existence of a file containing a dataset given its
+    type and data identifier. The Butler can then retrieve the dataset. Similarly, it can persist an object to
+    an appropriate location when given its associated data identifier.
 
-    Note that the Butler has two more advanced features when retrieving a data
-    set.  First, the retrieval is lazy.  Input does not occur until the data
-    set is actually accessed.  This allows datasets to be retrieved and
-    placed on a clipboard prospectively with little cost, even if the
-    algorithm of a stage ends up not using them.  Second, the Butler will call
-    a standardization hook upon retrieval of the dataset.  This function,
-    contained in the input mapper object, must perform any necessary
-    manipulations to force the retrieved object to conform to standards,
-    including translating metadata.
+    Note that the Butler has two more advanced features when retrieving a data set. First, the retrieval is
+    lazy. Input does not occur until the data set is actually accessed. This allows datasets to be retrieved
+    and placed on a clipboard prospectively with little cost, even if the algorithm of a stage ends up not
+    using them. Second, the Butler will call a standardization hook upon retrieval of the dataset. This
+    function, contained in the input mapper object, must perform any necessary manipulations to force the
+    retrieved object to conform to standards, including translating metadata.
 
     Public methods:
 
@@ -195,37 +201,47 @@ class Butler(object):
     subset(self, datasetType, level=None, dataId={}, **rest)
 
     dataRef(self, datasetType, level=None, dataId={}, **rest)
+
+    Initialization:
+
+    The preferred method of initialization is to pass in a RepositoryArgs instance, or a list of
+    RepositoryArgs to inputs and/or outputs.
+
+    For backward compatibility: this initialization method signature can take a posix root path, and
+    optionally a mapper class instance or class type that will be instantiated using the mapperArgs input
+    argument. However, for this to work in a backward compatible way it creates a single repository that is
+    used as both an input and an output repository. This is NOT preferred, and will likely break any
+    provenance system we have in place.
+
+    Parameters
+    ----------
+    root - string
+        .. note:: Deprecated in 12_0
+                  `root` will be removed in TBD, it is replaced by `inputs` and `outputs` for
+                  multiple-repository support.
+        A fileysystem path. Will only work with a PosixRepository.
+    mapper - string or instance
+        .. note:: Deprecated in 12_0
+                  `mapper` will be removed in TBD, it is replaced by `inputs` and `outputs` for
+                  multiple-repository support.
+        Provides a mapper to be used with Butler.
+    mapperArgs - dict
+        .. note:: Deprecated in 12_0
+                  `mapperArgs` will be removed in TBD, it is replaced by `inputs` and `outputs` for
+                  multiple-repository support.
+        Provides arguments to be passed to the mapper if the mapper input arg is a class type to be
+        instantiated by Butler.
+    inputs - RepositoryArgs or string
+        Can be a single item or a list. Provides arguments to load an existing repository (or repositories).
+        String is assumed to be a URI and is used as the cfgRoot (URI to the location of the cfg file). (Local
+        file system URI does not have to start with 'file://' and in this way can be a relative path).
+    outputs - RepositoryArg or string
+        Can be a single item or a list. Provides arguments to load one or more existing repositories or create
+        new ones. String is assumed to be a URI and as used as the repository root.
     """
 
     def __init__(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
-        """Initializer for the Class.
 
-        The prefered initialization argument is to pass a single arg; cfg created by Butler.cfg();
-            butler = Butler(Butler.cfg(repoCfg))
-        For backward compatibility: this initialization method signature can take a posix root path, and
-        optionally a mapper class instance or class type that will be instantiated using the mapperArgs input
-        argument.
-        However, for this to work in a backward compatible way it creates a single repository that is used as
-        both an input and an output repository. This is NOT preferred, and will likely break any provenance
-        system we have in place.
-
-        @param root (str) Best practice is to pass in a cfg created by Butler.cfg(). But for backward
-                          compatibility this can also be a fileysystem path. Will only work with a
-                          PosixRepository.
-        @param mapper Deprecated. Provides a mapper to be used with Butler.
-        @param mapperArgs Deprecated. Provides arguments to be passed to the mapper if the mapper input arg
-                           is a class type to be instantiated by Butler.
-        @param inputs (RepositoryArg or string) Can be a single item or a list. Provides arguments to load an
-                                                existing repository (or repositories). String is assumed to be
-                                                a URI and is used as the cfgRoot (URI to the location of the
-                                                cfg file). (Local file system URI does not have to start with
-                                                'file://' and in this way can be a relative path).
-        @param outputs (RepositoryArg) Can be a single item or a list. Provides arguments to load one or more
-                                       existing repositories or create new ones. String is assumed to be a
-                                       URI and as used as the repository root.
-
-        :return:
-        """
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}
 
@@ -290,24 +306,26 @@ class Butler(object):
     def _addRepo(self, args, inout, defaultMapper=None, butlerIOParents=None, tags=None):
         """Create a Repository and related infrastructure and add it to the list of repositories.
 
-        @param args (RepositoryArgs) settings used to create the repository.
-        @param inout (string) must be 'in' our 'out', indicates how the repository is to be used. Input repos
-                              are only read from, and output repositories may be read from and/or written to
-                              (w/rw of output repos depends on args.mode)
-        @param defaultMapper (mapper class or None ) if a default mapper could be inferred from inputs then
-                                                     this will be a class object that can be used for any
-                                                     outputs that do not explicitly define their mapper. If
-                                                     None then a mapper class could not be inferred and a
-                                                     mapper must be defined by each output.
-        @param butlerIOParents (ordered dict) The keys are cfgRoot of repoArgs, val is the repoArgs.
-                                              This is all the explicit input and output repositories to the
-                                              butler __init__ function, it is used when determining what the
-                                              parents of writable repositories are.
-        @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId
-                                         passed into butler input functions. Applies only to input
-                                         repositories: If tag is specified by the dataId then the repo will
-                                         only be read from used if the tag in the dataId matches a tag used
-                                         for that repository.
+        Parameters
+        ----------
+        args - RepositoryArgs
+            settings used to create the repository.
+        inout - string
+            must be 'in' our 'out', indicates how the repository is to be used. Input repos are only read
+            from, and output repositories may be read from and/or written to (w/rw of output repos depends on
+            args.mode)
+        defaultMapper - mapper class or None
+            if a default mapper could be inferred from inputs then this will be a class object that can be
+            used for any outputs that do not explicitly define their mapper. If None then a mapper class could
+            not be inferred and a mapper must be defined by each output.
+        butlerIOParents - ordered dict
+            The keys are cfgRoot of repoArgs, val is the repoArgs. This is all the explicit input and output
+            repositories to the butler __init__ function, it is used when determining what the parents of
+            writable repositories are.
+        tags - any or list of any
+            Any object that can be tested to be the same as the tag in a dataId passed into butler input
+            functions. Applies only to input repositories: If tag is specified by the dataId then the repo
+            will only be read from used if the tag in the dataId matches a tag used for that repository.
         """
         if butlerIOParents is None:
             butlerIOParents = {}
@@ -427,12 +445,13 @@ class Butler(object):
     def defineAlias(self, alias, datasetType):
         """Register an alias that will be substituted in datasetTypes.
 
-        @param alias (str) the alias keyword. it may start with @ or not. It may not contain @ except as the
-                           first character.
-        @param datasetType (str) the string that will be substituted when @alias is passed into datasetType.
-                                 It may not contain '@'
+        Paramters
+        ---------
+        alias - str
+            The alias keyword. It may start with @ or not. It may not contain @ except as the first character.
+        datasetType - str
+            The string that will be substituted when @alias is passed into datasetType. It may not contain '@'
         """
-
         # verify formatting of alias:
         # it can have '@' as the first character (if not it's okay, we will add it) or not at all.
         atLoc = alias.rfind('@')
@@ -454,19 +473,27 @@ class Butler(object):
         self.datasetTypeAliasDict[alias] = datasetType
 
     def getKeys(self, datasetType=None, level=None, tag=None):
-        """Returns a dict.  The dict keys are the valid data id keys at or above the given level of hierarchy
-        for the dataset type or the entire collection if None.  The dict values are the basic Python types
-        corresponding to the keys (int, float, str).
+        """Get the valid data id keys at or above the given level of hierarchy for the dataset type or the
+        entire collection if None. The dict values are the basic Python types corresponding to the keys (int,
+        float, str).
 
-        @param datasetType (str) the type of dataset to get keys for, entire collection if None.
-        @param level (str) the hierarchy level to descend to. None if it should not be restricted. Use an
-                           empty string if the mapper should lookup the default level.
-        @param tags (any or list of any) Any object that can be tested to be the same as the tag in a dataId
-                                         passed into butler input functions. Applies only to input
-                                         repositories: If tag is specified by the dataId then the repo will
-                                         only be read from used if the tag in the dataId matches a tag used
-                                         for that repository.
-        @returns (dict) valid data id keys; values are corresponding types.
+        Parameters
+        ----------
+        datasetType - str
+            The type of dataset to get keys for, entire collection if None.
+        level - str
+            The hierarchy level to descend to. None if it should not be restricted. Use an empty string if the
+            mapper should lookup the default level.
+        tags - any, or list of any
+            Any object that can be tested to be the same as the tag in a dataId passed into butler input
+            functions. Applies only to input repositories: If tag is specified by the dataId then the repo
+            will only be read from used if the tag in the dataId matches a tag used for that repository.
+
+        Returns
+        -------
+        Returns a dict. The dict keys are the valid data id keys at or above the given level of hierarchy for
+        the dataset type or the entire collection if None. The dict values are the basic Python types
+        corresponding to the keys (int, float, str).
         """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
 
@@ -485,14 +512,23 @@ class Butler(object):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
 
-        @param datasetType (str) the type of dataset to inquire about.
-        @param key (str) a key giving the level of granularity of the inquiry.
-        @param format (str, tuple) an optional key or tuple of keys to be returned.
-        @param dataId (DataId, dict) the partial data id.
-        @param **rest keyword arguments for the partial data id.
-        @returns (list) a list of valid values or tuples of valid values as
-        specified by the format (defaulting to the same as the key) at the
-        key's level of granularity.
+        Parameters
+        ----------
+        datasetType - str
+            The type of dataset to inquire about.
+        key - str
+            A key giving the level of granularity of the inquiry.
+        format - str, tuple
+            An optional key or tuple of keys to be returned.
+        dataId - DataId, dict
+            The partial data id.
+        **rest -
+            Keyword arguments for the partial data id.
+
+        Returns
+        -------
+        A list of valid values or tuples of valid values as specified by the format (defaulting to the same as
+        the key) at the key's level of granularity.
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
@@ -528,12 +564,19 @@ class Butler(object):
     def datasetExists(self, datasetType, dataId={}, **rest):
         """Determines if a dataset file exists.
 
-        @param datasetType (str) the type of dataset to inquire about.
-        @param dataId (DataId, dict) the data id of the dataset.
-        @param **rest keyword arguments for the data id.
-        @returns (bool) True if the dataset exists or is non-file-based.
-        """
+        Parameters
+        ----------
+        datasetType - str
+            The type of dataset to inquire about.
+        dataId - DataId, dict
+            The data id of the dataset.
+        **rest keyword arguments for the data id.
 
+        Returns
+        -------
+        exists - bool
+            True if the dataset exists or is non-file-based.
+        """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
@@ -567,44 +610,99 @@ class Butler(object):
                       storageName, datasetType, str(dataId))
         return True
 
+    def _locate(self, datasetType, dataId, write):
+        """Get one or more ButlerLocations and/or ButlercComposites.
+
+        Parameters
+        ----------
+        datasetType : string
+            The datasetType that is being searched for. The datasetType may be followed by a dot and
+            a component name (component names are specified in the policy). IE datasetType.componentName
+
+        dataId : dict or DataId class instance
+            The dataId
+
+        write : bool
+            True if this is a search to write an object. False if it is a search to read an object. This
+            affects what type (an object or a container) is returned.
+
+        Returns
+        -------
+        If write is False, will return either a single object or None. If write is True, will return a list
+        (which may be empty)
+        """
+        repos = self._repos.outputs() if write else self._repos.inputs()
+        locations = []
+        for repoData in repos:
+            # enforce dataId & repository tags when reading:
+            if not write and dataId.tag and len(dataId.tag.intersection(repoData.tags)) == 0:
+                continue
+            components = datasetType.split('.')
+            datasetType = components[0]
+            components = components[1:]
+            location = repoData.repo.map(datasetType, dataId, write=write)
+            if location is None:
+                continue
+            location.datasetType = datasetType # todo is there a better way than monkey patching here?
+            if len(components) > 0:
+                if not isinstance(location, ButlerComposite):
+                    raise RuntimeError("todo msg; location for a dotted datasetType must be a composite.")
+                # replace the first component name with the datasetType
+                components[0] = location.componentInfo[components[0]].datasetType
+                # join components back into a dot-delimited string
+                datasetType = '.'.join(components)
+                location = self._locate(datasetType, dataId, write)
+                # if a cmponent location is not found, we can not continue with this repo, move to next repo.
+                if location is None:
+                    break
+            # if reading, only one location is desired.
+            if location:
+                if not write:
+                    return location
+                else:
+                    try:
+                        locations.extend(location)
+                    except TypeError:
+                        locations.append(location)
+        if not write:
+            return None
+        return locations
+
     def get(self, datasetType, dataId=None, immediate=False, **rest):
         """Retrieves a dataset given an input collection data id.
 
-        @param datasetType (str)   the type of dataset to retrieve.
-        @param dataId (dict)       the data id.
-        @param immediate (bool)    don't use a proxy for delayed loading.
-        @param **rest              keyword arguments for the data id.
-        @returns an object retrieved from the dataset (or a proxy for one).
-        """
+        Parameters
+        ----------
+        datasetType - str
+            The type of dataset to retrieve.
+        dataId - dict
+            The data id.
+        immediate - bool
+            Don't use a proxy for delayed loading.
+        **rest
+            keyword arguments for the data id.
 
+        Returns
+        -------
+            An object retrieved from the dataset (or a proxy for one).
+        """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
-        location = None
-        for repoData in self._repos.inputs():
-            if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
-                location = repoData.repo.map(datasetType, dataId)
-                if location:
-                    break
+
+        location = self._locate(datasetType, dataId, write=False)
         if location is None:
             raise NoResults("No locations for get:", datasetType, dataId)
-
         self.log.debug("Get type=%s keys=%s from %s", datasetType, dataId, str(location))
 
-        if hasattr(location.mapper, "bypass_" + datasetType):
+        if hasattr(location.mapper, "bypass_" + location.datasetType):
             # this type loader block should get moved into a helper someplace, and duplciations removed.
             pythonType = location.getPythonType()
             if pythonType is not None:
                 if isinstance(pythonType, basestring):
-                    # import this pythonType dynamically
-                    pythonTypeTokenList = location.getPythonType().split('.')
-                    importClassString = pythonTypeTokenList.pop()
-                    importClassString = importClassString.strip()
-                    importPackage = ".".join(pythonTypeTokenList)
-                    importType = __import__(importPackage, globals(), locals(), [importClassString], 0)
-                    pythonType = getattr(importType, importClassString)
-            bypassFunc = getattr(location.mapper, "bypass_" + datasetType)
-            callback = lambda: bypassFunc(datasetType, pythonType, location, dataId)
+                    pythonType = doImport(pythonType)
+            bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
+            callback = lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
         else:
             if isinstance(location, ButlerComposite):
                 componentDict = {}
@@ -615,9 +713,9 @@ class Butler(object):
                 return obj
 
             callback = lambda: self._read(location)
-        if location.mapper.canStandardize(datasetType):
+        if location.mapper.canStandardize(location.datasetType):
             innerCallback = callback
-            callback = lambda: location.mapper.standardize(datasetType, innerCallback(), dataId)
+            callback = lambda: location.mapper.standardize(location.datasetType, innerCallback(), dataId)
         if immediate:
             return callback()
         return ReadProxy(callback)
@@ -625,51 +723,61 @@ class Butler(object):
     def put(self, obj, datasetType, dataId={}, doBackup=False, **rest):
         """Persists a dataset given an output collection data id.
 
-        @param obj                 the object to persist.
-        @param datasetType (str)   the type of dataset to persist.
-        @param dataId (dict)       the data id.
-        @param doBackup            if True, rename existing instead of overwriting
-        @param **rest              keyword arguments for the data id.
-
-        WARNING: Setting doBackup=True is not safe for parallel processing, as it
-        may be subject to race conditions.
+        Parameters
+        ----------
+        obj -
+            The object to persist.
+        datasetType - str
+            The type of dataset to persist.
+        dataId - dict
+            The data id.
+        doBackup - bool
+            If True, rename existing instead of overwriting.
+            WARNING: Setting doBackup=True is not safe for parallel processing, as it may be subject to race
+            conditions.
+        **rest
+            Keyword arguments for the data id.
         """
-
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
 
-        for repoData in self._repos.outputs():
-            location = repoData.repo.map(datasetType, dataId, write=True)
-            if location:
-                if isinstance(location, ButlerComposite):
-                    components = {componentId: None for componentId in location.componentInfo}
-                    location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
-                    for name, item in components.items():
-                        self.put(item, location.componentInfo[name].datasetType, location.dataId,
-                                 doBackup=doBackup)
-                else:
-                    if doBackup:
-                        repoData.repo.backup(datasetType, dataId)
-                    repoData.repo.write(location, obj)
+        for location in self._locate(datasetType, dataId, write=True):
+            if isinstance(location, ButlerComposite):
+                components = {componentId:None for componentId in location.componentInfo}
+                location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
+                for name, item in components.items():
+                    self.put(item, location.componentInfo[name].datasetType, location.dataId,
+                             doBackup=doBackup)
+            else:
+                if doBackup:
+                    location.getRepository().backup(location.datasetType, dataId)
+                location.getRepository().write(location, obj)
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
         """Extracts a subset of a dataset collection.
 
-        Given a partial dataId specified in dataId and **rest, find all
-        datasets at a given level specified by a dataId key (e.g. visit or
-        sensor or amp for a camera) and return a collection of their dataIds
-        as ButlerDataRefs.
+        Given a partial dataId specified in dataId and **rest, find all datasets at a given level specified by
+        a dataId key (e.g. visit or sensor or amp for a camera) and return a collection of their dataIds as
+        ButlerDataRefs.
 
-        @param datasetType (str)  the type of dataset collection to subset
-        @param level (str)        the level of dataId at which to subset. Use an empty string if the mapper
-                                  should look up the default level.
-        @param dataId (dict)      the data id.
-        @param **rest             keyword arguments for the data id.
-        @returns (ButlerSubset) collection of ButlerDataRefs for datasets
-        matching the data id.
+        Parameters
+        ----------
+        datasetType - str
+            The type of dataset collection to subset
+        level - str
+            The level of dataId at which to subset. Use an empty string if the mapper should look up the
+            default level.
+        dataId - dict
+            The data id.
+        **rest
+            Keyword arguments for the data id.
+
+        Returns
+        -------
+        subset - ButlerSubset
+            Collection of ButlerDataRefs for datasets matching the data id.
         """
-
         datasetType = self._resolveDatasetTypeAlias(datasetType)
 
         # Currently expected behavior of subset is that if specified level is None then the mapper's default
@@ -685,15 +793,24 @@ class Butler(object):
     def dataRef(self, datasetType, level=None, dataId={}, **rest):
         """Returns a single ButlerDataRef.
 
-        Given a complete dataId specified in dataId and **rest, find the
-        unique dataset at the given level specified by a dataId key (e.g.
-        visit or sensor or amp for a camera) and return a ButlerDataRef.
+        Given a complete dataId specified in dataId and **rest, find the unique dataset at the given level
+        specified by a dataId key (e.g. visit or sensor or amp for a camera) and return a ButlerDataRef.
 
-        @param datasetType (str)  the type of dataset collection to reference
-        @param level (str)        the level of dataId at which to reference
-        @param dataId (dict)      the data id.
-        @param **rest             keyword arguments for the data id.
-        @returns (ButlerDataRef) ButlerDataRef for dataset matching the data id
+        Parameters
+        ----------
+        datasetType - str
+            The type of dataset collection to reference
+        level - str
+            The level of dataId at which to reference
+        dataId - dict
+            The data id.
+        **rest
+            Keyword arguments for the data id.
+
+        Returns
+        -------
+        dataRef - ButlerDataRef
+            ButlerDataRef for dataset matching the data id
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
@@ -717,11 +834,18 @@ class Butler(object):
         return ret
 
     def _resolveDatasetTypeAlias(self, datasetType):
-        """ Replaces all the known alias keywords in the given string with the alias value.
-        @param (str)datasetType
-        @return (str) the de-aliased string
-        """
+        """Replaces all the known alias keywords in the given string with the alias value.
 
+        Parameters
+        ----------
+        datasetType - str
+            A datasetType string to search & replace on
+
+        Returns
+        -------
+        datasetType - str
+            The de-aliased string
+        """
         for key in self.datasetTypeAliasDict:
             # if all aliases have been replaced, bail out
             if datasetType.find('@') == -1:
