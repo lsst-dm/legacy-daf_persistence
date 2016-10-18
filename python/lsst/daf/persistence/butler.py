@@ -44,7 +44,8 @@ from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
-    RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite
+    RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
+    genericDisassembler
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -701,11 +702,11 @@ class Butler(object):
         self.log.debug("Get type=%s keys=%s from %s", datasetType, dataId, str(location))
 
         if isinstance(location, ButlerComposite):
-            componentDict = {}
-            for name, info in location.componentInfo.items():
-                componentDict[name] = self.get(info.datasetType, location.dataId, immediate=True)
-            obj = location.assembler(dataId=location.dataId, componentDict=componentDict,
-                                     cls=location.python)
+            for name, componentInfo in location.componentInfo.items():
+                obj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
+                componentInfo.obj = obj
+            assembler = location.assembler or genericAssembler
+            obj = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
             return obj
 
         if location.datasetType and hasattr(location.mapper, "bypass_" + location.datasetType):
@@ -749,11 +750,10 @@ class Butler(object):
 
         for location in self._locate(datasetType, dataId, write=True):
             if isinstance(location, ButlerComposite):
-                components = {componentId: None for componentId in location.componentInfo}
-                location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
-                for name, item in components.items():
-                    self.put(item, location.componentInfo[name].datasetType, location.dataId,
-                             doBackup=doBackup)
+                disassembler = location.disassembler if location.disassembler else genericDisassembler
+                disassembler(obj=obj, dataId=location.dataId, componentInfo=location.componentInfo)
+                for name, info in location.componentInfo.items():
+                    self.put(info.obj, info.datasetType, location.dataId, doBackup=doBackup)
             else:
                 if doBackup:
                     location.getRepository().backup(location.datasetType, dataId)
