@@ -75,14 +75,16 @@ class ButlerComposite(object):
             Optional - may be None
         subset : bool
             If true, indicates that the obj should be a list of objects found via butlerSubset.
+        inputOnly : bool
+            If true, indicates that the obj should not be serialized when performing a butler.put.
         """
-        def __init__(self, datasetType, obj, setter, getter, subset):
+        def __init__(self, datasetType, obj, setter, getter, subset, inputOnly):
             self.datasetType = datasetType
             self.obj = obj
             self.setter = setter
             self.getter = getter
             self.subset = subset
-            self.dataId = None
+            self.inputOnly = inputOnly
 
         def __repr__(self):
             return 'ComponentInfo(datasetType:%s, obj:%s, setter:%s, getter:%s, subset:%s)' % \
@@ -113,7 +115,7 @@ class ButlerComposite(object):
         self.componentInfo = {}
         self.repository = None
 
-    def add(self, id, datasetType, setter, getter, subset):
+    def add(self, id, datasetType, setter, getter, subset, inputOnly):
         """Add a description of a component needed to fetch the composite dataset.
 
         Parameters
@@ -130,12 +132,15 @@ class ButlerComposite(object):
             Specifying a setter is optional, use None if the setter won't be specified or used.
         subset : bool
             If true, indicates that the obj should be a list of objects found via butlerSubset.
+        inputOnly : bool
+            If true, indicates that the obj should not be serialized when performing a butler.put.
         """
         self.componentInfo[id] = ButlerComposite.ComponentInfo(datasetType=datasetType,
                                                                obj = None,
                                                                setter=setter,
                                                                getter=getter,
-                                                               subset=subset)
+                                                               subset=subset,
+                                                               inputOnly=inputOnly)
 
     def __repr__(self):
         return "ButlerComposite(assembler=%s, disassembler=%s, python=%s, dataId=%s, components=%s)" % (
