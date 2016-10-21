@@ -141,23 +141,29 @@ class PosixRegistry(Registry):
 
             :return: 'match' if the key+value pairs in dataId have been satisifed and keys in
             lookupProperties have found and their key+value added to resolvedId
-            'incomplete' if the found data matches but there are still incomplete data matching in dataId or
-            lookupProperties
+            'incomplete' if the found data matches but not all keys in lookupProperties have been matched
             'not match' if data in foundId does not match data in dataId
             """
+            class NotFound:
+                """Placeholder class for item not found.
+
+                (None might be a valid value so we don't want to use that)
+                """
+                pass
+
             if self.cachedStatus is not None:
                 return self.cachedStatus
             self.cachedStatus = 'match'
-            for key in self.dataId:
-                if key not in self.foundItems:
+            for key in self.lookupProperties:
+                val = self.foundItems.get(key, NotFound)
+                if val is NotFound:
                     self.cachedStatus = 'incomplete'
-                elif self.dataId[key] != self.foundItems[key]:
-                    self.cachedStatus = 'incomplete'
-            if self.cachedStatus == 'match':
-                for key in self.lookupProperties:
-                    if key not in self.foundItems:
-                        self.cachedStatus = 'incomplete'
-                        break
+                    break
+            for dataIdKey, dataIdValue in self.dataId.items():
+                foundValue = self.foundItems.get(dataIdKey, NotFound)
+                if foundValue is not NotFound and foundValue != dataIdValue:
+                    self.cachedStatus = 'notMatch'
+                    break
             return self.cachedStatus
 
         def setFoundItems(self, items):

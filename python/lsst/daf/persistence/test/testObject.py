@@ -36,6 +36,21 @@ class TestObject(object):
     def __ne__(self, other):
         return self.data != other.data
 
+    def __lt__(self, other):
+        return self.data < other.data
+
+    def __le__(self, other):
+        return self.data <= other.data
+
+    def __eq__(self, other):
+        return self.data == other.data
+
+    def __gt__(self, other):
+        return self.data > other.data
+
+    def __ge__(self, other):
+        return self.data >= other.data
+
     def __repr__(self):
         return "TestObject(data=%r)" % self.data
 
@@ -61,7 +76,7 @@ class TestObjectPair(object):
         componentInfo['b'].obj = obj.objB
 
     def __repr__(self):
-        return "TestObjectPair(objA=%r, objB=%r" % (self.objA, self.objB)
+        return "TestObjectPair(objA=%r, objB=%r)" % (self.objA, self.objB)
 
     def set_a(self, obj):
         self.objA = obj
