@@ -89,7 +89,8 @@ class PosixStorage(Storage):
                                               root=parseRes.path,
                                               mapperArgs=None,
                                               parents=None,
-                                              isLegacyRepository=True)
+                                              isLegacyRepository=True,
+                                              policy=None)
         return repositoryCfg
 
     @staticmethod

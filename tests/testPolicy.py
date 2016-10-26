@@ -25,7 +25,7 @@
 import os
 import unittest
 
-from lsst.daf.persistence import Policy
+import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
 
 
@@ -33,12 +33,12 @@ class PolicyTestCase(unittest.TestCase):
     """A test case for the butler policy"""
 
     def setUp(self):
-        self.policy = Policy(
+        self.policy = dafPersist.Policy(
             {'body': {'job': {'position': 'Developer', 'company': 'Microsoft'}, 'name': 'John'},
              'error': False})
 
     def testBasic(self):
-        p = Policy()
+        p = dafPersist.Policy()
         p['a'] = {1: 2}
         self.assertEqual(p, {'a': {1: 2}})
         p.update({'a': {3: 4}})
@@ -54,7 +54,7 @@ class PolicyTestCase(unittest.TestCase):
                           'name': {'first': 'John', 'last': 'Smith'}})
 
     def testUpdateWithPolicy(self):
-        p1 = Policy({'body': {'job': {'position': 'Manager'}}})
+        p1 = dafPersist.Policy({'body': {'job': {'position': 'Manager'}}})
         self.policy.update(p1)
         self.assertEqual(self.policy['body'],
                          {'job': {'position': 'Manager', 'company': 'Microsoft'}, 'name': 'John'})
@@ -84,21 +84,21 @@ class PolicyTestCase(unittest.TestCase):
         self.assertEqual(names, expectedNames)
 
     def testCopyPolicy(self):
-        pol = Policy(self.policy)
+        pol = dafPersist.Policy(self.policy)
         self.assertEqual(pol, self.policy)
 
     def testGetPolicy(self):
         policy = self.policy['body']
         self.assertEqual(policy, {'job': {'position': 'Developer', 'company': 'Microsoft'}, 'name': 'John'})
         self.assertEqual(policy['job.position'], 'Developer')  # note: verifies dot naming
-        self.assertIsInstance(policy, Policy)
+        self.assertIsInstance(policy, dafPersist.Policy)
 
     def testDotsInBraces(self):
         self.assertEqual(self.policy['body.job.company'], 'Microsoft')
 
     def testMerge(self):
-        a = Policy()
-        b = Policy()
+        a = dafPersist.Policy()
+        b = dafPersist.Policy()
         a['a.b.c'] = 1
         b['a.b.c'] = 2
         b['a.b.d'] = 3
@@ -111,28 +111,28 @@ class PolicyTestCase(unittest.TestCase):
         self.assertEqual(b['a.b.d'], 3)
 
     def testOpenDefaultPolicy(self):
-        policyFile = Policy.defaultPolicyFile('daf_persistence', 'testPolicy.yaml', 'tests')
-        policy = Policy(policyFile)
+        policyFile = dafPersist.Policy.defaultPolicyFile('daf_persistence', 'testPolicy.yaml', 'tests')
+        policy = dafPersist.Policy(policyFile)
         self.assertEqual(policy['exposures.raw.template'], 'foo/bar/baz.fits.gz')
 
     def testDumpLoad(self):
         self.policy.dumpToFile('testDumpFile.yaml')
-        loadedPolicy = Policy('testDumpFile.yaml')
+        loadedPolicy = dafPersist.Policy('testDumpFile.yaml')
         self.assertEqual(self.policy, loadedPolicy)
         os.remove('testDumpFile.yaml')
 
     def testNonExistantPolicyAtPath(self):
         # Test that loading paf & yaml files that do not exist raises an IOError.
         with self.assertRaises(IOError):
-            Policy("c:/nonExistantPath/policy.yaml")
+            dafPersist.Policy("c:/nonExistantPath/policy.yaml")
         with self.assertRaises(IOError):
-            Policy("c:/nonExistantPath/policy.paf")
+            dafPersist.Policy("c:/nonExistantPath/policy.paf")
 
     def testInvalidPolicyFileType(self):
         # We only support files with '.paf' or '.yaml' extension; check that trying to load a file with a
         # different extension (in this case '.txt') raises a RuntimeError.
         with self.assertRaises(RuntimeError):
-            Policy("c:/policy.txt")
+            dafPersist.Policy("c:/policy.txt")
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

@@ -579,7 +579,8 @@ class TestMapperInference(unittest.TestCase):
         repoACfg = dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMapperInference/repoA'),
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
-                                    parents=None)
+                                    parents=None,
+                                    policy=None)
         dp.Storage.putRepositoryCfg(repoACfg, os.path.join(ROOT, 'TestMapperInference/repoA'))
 
         repoBArgs = dp.RepositoryArgs(mode='rw',
@@ -598,11 +599,13 @@ class TestMapperInference(unittest.TestCase):
         repoACfg = dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMapperInference/repoA'),
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
-                                    parents=None)
+                                    parents=None,
+                                    policy=None,)
         repoBCfg = dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMapperInference/repoB'),
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
-                                    parents=None)
+                                    parents=None,
+                                    policy=None)
         dp.Storage.putRepositoryCfg(repoACfg, os.path.join(ROOT, 'TestMapperInference/repoA'))
         dp.Storage.putRepositoryCfg(repoBCfg, os.path.join(ROOT, 'TestMapperInference/repoB'))
 
@@ -624,11 +627,13 @@ class TestMapperInference(unittest.TestCase):
         repoACfg = dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMapperInference/repoA'),
                                     mapper=MapperForTestWriting,
                                     mapperArgs=None,
-                                    parents=None)
+                                    parents=None,
+                                    policy=None)
         repoBCfg = dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMapperInference/repoB'),
                                     mapper=AlternateMapper,
                                     mapperArgs=None,
-                                    parents=None)
+                                    parents=None,
+                                    policy=None)
         dp.Storage.putRepositoryCfg(repoACfg, os.path.join(ROOT, 'TestMapperInference/repoA'))
         dp.Storage.putRepositoryCfg(repoBCfg, os.path.join(ROOT, 'TestMapperInference/repoB'))
 
@@ -665,7 +670,8 @@ class TestMovedRepositoryCfg(unittest.TestCase):
                          dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMovedRepositoryCfg/b'),
                                           mapper=MapperForTestWriting,
                                           mapperArgs=None,
-                                          parents=None))
+                                          parents=None,
+                                          policy=None))
 
 
 class TestOutputAlreadyHasParent(unittest.TestCase):
@@ -712,7 +718,8 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                    mapper=MapperForTestWriting,
                                                    mapperArgs=None,
                                                    parents=[os.path.join(ROOT,
-                                                                         'TestOutputAlreadyHasParent/a')]))
+                                                                         'TestOutputAlreadyHasParent/a'),],
+                                                   policy=None))
 
         # load the repo a few times and don't explicitly list 'a' as an input
         for i in range(4):
@@ -732,7 +739,8 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                    mapper=MapperForTestWriting,
                                                    mapperArgs=None,
                                                    parents=[os.path.join(ROOT,
-                                                                         'TestOutputAlreadyHasParent/a')]))
+                                                                         'TestOutputAlreadyHasParent/a')],
+                                                   policy=None))
 
         # load 'b' as 'read only' and make sure 'a' does not get used as an input.
         butler = dp.Butler(outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
