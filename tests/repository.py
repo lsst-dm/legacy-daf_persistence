@@ -32,7 +32,8 @@ import shutil
 import unittest
 
 import lsst.daf.persistence as dp
-from lsst.daf.persistence.test import TestObject
+# can't use name TestObject, becuase it messes Pytest up. Alias it to tstObj
+from lsst.daf.persistence.test import TestObject as tstObj
 import lsst.utils.tests
 
 # Define the root of the tests relative to this file
@@ -246,7 +247,7 @@ class MapperForTestWriting(dp.Mapper):
         self.root = root
 
     def map_foo(self, dataId, write):
-        python = TestObject
+        python = tstObj
         persistable = None
         storage = 'PickleStorage'
         fileName = 'filename'
@@ -296,9 +297,9 @@ class TestWriting(unittest.TestCase):
                                       mapper=MapperForTestWriting)
         butlerAB = dp.Butler(outputs=[repoAArgs, repoBArgs])
 
-        objA = TestObject('abc')
+        objA = tstObj('abc')
         butlerAB.put(objA, 'foo', {'val': 1})
-        objB = TestObject('def')
+        objB = tstObj('def')
         butlerAB.put(objB, 'foo', {'val': 2})
 
         # create butlers where the output repos are now input repos
@@ -331,7 +332,7 @@ class TestMasking(unittest.TestCase):
                                       root=os.path.join(ROOT, 'TestMasking/repoA'),
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repoAArgs)
-        obj0 = TestObject('abc')
+        obj0 = tstObj('abc')
         butler.put(obj0, 'foo', {'bar': 1})
         del butler
         del repoAArgs
@@ -368,7 +369,7 @@ class TestMultipleOutputsPut(unittest.TestCase):
                                       mapper=MapperForTestWriting)
 
         butler = dp.Butler(outputs=(repoAArgs, repoBArgs))
-        obj0 = TestObject('abc')
+        obj0 = tstObj('abc')
         butler.put(obj0, 'foo', {'bar': 1})
 
         for root in (os.path.join(ROOT, 'TestMultipleOutputsPut/repoA'),
@@ -394,10 +395,10 @@ class TestMultipleInputs(unittest.TestCase):
             shutil.rmtree(os.path.join(ROOT, 'TestMultipleInputs'))
 
     def test(self):
-        objAbc = TestObject('abc')
-        objDef = TestObject('def')
-        objGhi = TestObject('ghi')
-        objJkl = TestObject('jkl')
+        objAbc = tstObj('abc')
+        objDef = tstObj('def')
+        objGhi = tstObj('ghi')
+        objJkl = tstObj('jkl')
 
         repoAArgs = dp.RepositoryArgs(mode='w',
                                       root=os.path.join(ROOT, 'TestMultipleInputs/repoA'),
@@ -450,8 +451,8 @@ class TestTagging(unittest.TestCase):
         6. create a new butler with a new overlapping repo, and verify that objects can be gotten from the
            other's parent repos via tagging.
         """
-        objA = TestObject('a')
-        objB = TestObject('b')
+        objA = tstObj('a')
+        objB = tstObj('b')
 
         # put objA in repo1:
         repo1Args = dp.RepositoryArgs(mode='rw',
@@ -497,7 +498,7 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(butler.get('foo', {'bar': 1}), objA)
         # add an object to the output repo. note since the output repo mode is 'rw' that object is gettable
         # and it has first priority in search order. Other repos should be searchable by tagging.
-        objC = TestObject('c')
+        objC = tstObj('c')
         butler.put(objC, 'foo', {'bar': 1})
         self.assertEqual(butler.get('foo', {'bar': 1}), objC)
         self.assertEqual(butler.get('foo', dp.DataId({'bar': 1}, tag='one')), objA)
@@ -512,14 +513,14 @@ class TestTagging(unittest.TestCase):
         # ┌────────────────────────┐ ┌────────────────────────┐
         # │repo1                   │ │repo2                   │
         # │ tag:"one"              │ │ tag:"two"              │
-        # │ TestObject('a')        │ │ TestObject('b')        │
+        # │ tstObj('a')            │ │ tstObj('b')            │
         # │   at ('foo', {'bar:1'})│ │   at ('foo', {'bar:1'})│
         # └───────────┬────────────┘ └───────────┬────────────┘
         #             └─────────────┬────────────┘
         #              ┌────────────┴───────────┐ ┌────────────────────────┐
         #              │repo4                   │ │repo5                   │
         #              │ tag:"four"             │ │ tag:"five"             │
-        #              │ TestObject('d')        │ │ TestObject('e')        │
+        #              │ tstObj('d')            │ │ tstObj('e')            │
         #              │   at ('foo', {'bar:2'})│ │   at ('foo', {'bar:1'})│
         #              └───────────┬────────────┘ └───────────┬────────────┘
         #                          └─────────────┬────────────┘
@@ -532,7 +533,7 @@ class TestTagging(unittest.TestCase):
                                       mapper=MapperForTestWriting)
         butler = dp.Butler(inputs=(os.path.join(ROOT, 'TestTagging/repo1'),
                                    os.path.join(ROOT, 'TestTagging/repo2')), outputs=repo4Args)
-        objD = TestObject('d')
+        objD = tstObj('d')
         butler.put(objD, 'foo', {'bar': 2})
         del butler
 
@@ -540,7 +541,7 @@ class TestTagging(unittest.TestCase):
                                      root=os.path.join(ROOT, 'TestTagging/repo5'),
                                      mapper=MapperForTestWriting)
         butler = dp.Butler(outputs=repo5Cfg)
-        objE = TestObject('e')
+        objE = tstObj('e')
         butler.put(objE, 'foo', {'bar': 1})
         del butler
 
