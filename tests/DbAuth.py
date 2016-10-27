@@ -38,12 +38,11 @@ class DbAuthTestCase(unittest.TestCase):
     """A test case for DbAuth."""
 
     def setUp(self):
-        self.pol = Policy(os.path.join(ROOT, "testDbAuth.paf"))
-        DbAuth.setPolicy(self.pol)
+        pol = Policy(os.path.join(ROOT, "testDbAuth.paf"))
+        DbAuth.setPolicy(pol)
 
     def tearDown(self):
-        DbAuth.setPolicy(Policy())
-        del self.pol
+        DbAuth.resetPolicy()
 
     def testSetPolicy(self):
         self.assertTrue(DbAuth.available("lsst-db.ncsa.illinois.edu", "3306"))
