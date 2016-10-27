@@ -121,6 +121,13 @@ void dafPersist::DbAuth::setPolicy(pexPolicy::Policy::Ptr policy) {
     authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(*policy, true));
 }
 
+/** Set the authenticator Policy back to null.
+ */
+void dafPersist::DbAuth::resetPolicy() {
+    dafBase::PersistentCitizenScope scopeGuard;
+    authPolicy = nullptr;
+}
+
 /** Determine whether an authenticator string is available for database
  * access.
  * \param[in] host Name of the host to connect to.

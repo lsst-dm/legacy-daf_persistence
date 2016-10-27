@@ -58,6 +58,7 @@ namespace persistence {
 class DbAuth {
 public:
     static void setPolicy(lsst::pex::policy::Policy::Ptr policy);
+    static void resetPolicy();
     static bool available(std::string const& host, std::string const& port);
     static std::string authString(std::string const& host,
                                   std::string const& port);
