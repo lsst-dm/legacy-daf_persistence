@@ -643,7 +643,7 @@ class Butler(object):
             location = repoData.repo.map(datasetType, dataId, write=write)
             if location is None:
                 continue
-            location.datasetType = datasetType # todo is there a better way than monkey patching here?
+            location.datasetType = datasetType  # todo is there a better way than monkey patching here?
             if len(components) > 0:
                 if not isinstance(location, ButlerComposite):
                     raise RuntimeError("todo msg; location for a dotted datasetType must be a composite.")
@@ -744,7 +744,7 @@ class Butler(object):
 
         for location in self._locate(datasetType, dataId, write=True):
             if isinstance(location, ButlerComposite):
-                components = {componentId:None for componentId in location.componentInfo}
+                components = {componentId: None for componentId in location.componentInfo}
                 location.disassembler(obj=obj, dataId=location.dataId, componentDict=components)
                 for name, item in components.items():
                     self.put(item, location.componentInfo[name].datasetType, location.dataId,

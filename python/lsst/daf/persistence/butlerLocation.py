@@ -53,7 +53,7 @@ class ButlerComposite(object):
     mapper : Mapper instance
         A reference to the mapper that created this ButlerComposite object.
     """
-    
+
     ComponentInfo = namedtuple('ComponentInfo', 'datasetType')
 
     def __init__(self, assembler, disassembler, python, dataId, mapper):
