@@ -53,7 +53,7 @@ class ButlerComposite(object):
     mapper : Mapper instance
         A reference to the mapper that created this ButlerComposite object.
     """
-    
+
     ComponentInfo = namedtuple('ComponentInfo', 'datasetType')
 
     def __init__(self, assembler, disassembler, python, dataId, mapper):
@@ -63,6 +63,7 @@ class ButlerComposite(object):
         self.dataId = dataId
         self.mapper = mapper
         self.componentInfo = {}
+        self.repository = None
 
     def add(self, id, datasetType):
         """Add a description of a component needed to fetch the composite dataset.
@@ -80,13 +81,11 @@ class ButlerComposite(object):
         return "ButlerComposite(assembler=%s, disassembler=%s, python=%s, dataId=%s, components=%s)" % (
             self.assembler, self.disassembler, self.python, self.dataId, self.componentInfo)
 
-    # I don't think this api is needed on a CompositeLookup, but allow it to keep the ButlerLocation API
-    # happy/cohesive (For now...)
     def setRepository(self, repository):
-        pass
+        self.repository = repository
 
     def getRepository(self):
-        pass
+        return self.repository
 
 
 class ButlerLocation(yaml.YAMLObject):
