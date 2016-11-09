@@ -24,9 +24,9 @@
 from past.builtins import basestring
 
 try:
-    from collections.abc import Sequence, Set
+    from collections.abc import Sequence, Set, Mapping
 except ImportError:
-    from collections import Sequence, Set
+    from collections import Sequence, Set, Mapping
 
 
 # -*- python -*-
@@ -69,9 +69,12 @@ def iterify(x):
 
 def sequencify(x):
     """Takes an object, if it is a sequence return it,
-    else put it in a tuple. Strings are not sequences."""
+    else put it in a tuple. Strings are not sequences.
+    If x is a dict, returns a sorted tuple of keys."""
     if isinstance(x, (Sequence, Set)) and not isinstance(x, basestring):
         pass
+    elif isinstance(x, Mapping):
+        x = tuple(sorted(x.keys()))
     else:
         x = (x, )
     return x
