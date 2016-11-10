@@ -93,7 +93,42 @@ class ButlerLocation(yaml.YAMLObject):
     persist and retrieve an object using the LSST Persistence Framework.
 
     Mappers should create and return ButlerLocations from their
-    map_{datasetType} methods."""
+    map_{datasetType} methods.
+
+    Parameters
+    ----------
+    pythonType - string or class instance
+        This is the type of python object that should be created when reading the location.
+
+    cppType - string or None
+        The type of cpp object represented by the location (optional, may be None)
+
+    storageName - string
+        The type of storage the object is in or should be place into.
+
+    locationList - list of string
+        A list of URI to place the object or where the object might be found. (Typically when reading the
+        length is expected to be exactly 1).
+
+    dataId - dict
+        The dataId that was passed in when mapping the location. This may include keys that were not used for
+        mapping this location.
+
+    mapper - mapper class instance
+        The mapper object that mapped this location.
+
+    storage - storage class instance
+        The storage interface that can be used to read or write this location.
+
+    usedDataId - dict
+        The dataId components that were used to map this location. If the mapper had to look up keys those
+        will be in this dict (even though they may not appear in the dataId parameter). If the dataId
+        parameter contained keys that were not required to map this item then those keys will NOT be in this
+        parameter.
+
+    datasetType - string
+        The datasetType that this location represents.
+    """
 
     yaml_tag = u"!ButlerLocation"
     yaml_loader = yaml.Loader
@@ -102,11 +137,12 @@ class ButlerLocation(yaml.YAMLObject):
     def __repr__(self):
         return \
             'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, locationList=%r,' \
-            ' additionalData=%r, mapper=%r)' % \
+            ' additionalData=%r, mapper=%r, dataId=%r)' % \
             (self.pythonType, self.cppType, self.storageName, self.locationList,
-             self.additionalData, self.mapper)
+             self.additionalData, self.mapper, self.dataId)
 
-    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None):
+    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None,
+                 usedDataId=None, datasetType=None):
         self.pythonType = pythonType
         self.cppType = cppType
         self.storageName = storageName
@@ -117,6 +153,8 @@ class ButlerLocation(yaml.YAMLObject):
         for k, v in dataId.items():
             self.additionalData.set(k, v)
         self.dataId = dataId
+        self.usedDataId = usedDataId
+        self.datasetType = datasetType
 
     def __str__(self):
         s = "%s at %s(%s)" % (self.pythonType, self.storageName,
