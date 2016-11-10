@@ -24,6 +24,7 @@
 from future import standard_library
 standard_library.install_aliases()
 from past.builtins import basestring
+import sys
 import copy
 import pickle
 import importlib
@@ -262,7 +263,13 @@ class PosixStorage(Storage):
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError("No such pickle file: " + logLoc.locString())
                 with open(logLoc.locString(), "rb") as infile:
-                    finalItem = pickle.load(infile)
+                    # py3: We have to specify encoding since some files were written
+                    # by python2, and 'latin1' manages that conversion safely. See:
+                    # http://stackoverflow.com/questions/28218466/unpickling-a-python-2-object-with-python-3/28218598#28218598
+                    if sys.version_info.major >= 3:
+                        finalItem = pickle.load(infile, encoding="latin1")
+                    else:
+                        finalItem = pickle.load(infile)
             elif storageName == "FitsCatalogStorage":
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
