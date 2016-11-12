@@ -23,6 +23,7 @@
 """Python interface to lsst::daf::persistence classes
 """
 from .utils import *
+from .genericAssembler import *
 from .registries import *
 from .fsScanner import *
 from .persistenceLib import *

@@ -64,11 +64,6 @@ class PosixRegistryTestCase(unittest.TestCase):
                      ('ccd',),
                      {'filter': 'i'},
                      [(3,), ]),
-            testData(os.path.join(ROOT, 'posixRegistry/lookupMetadata'),
-                     'raw_v%(visit)d_f%(filter)1s.fits.gz',
-                     ('visit',),
-                     {'MJD-OBS': 51195.2240820278},
-                     [(2,)]),
         )
 
         policyTables = None

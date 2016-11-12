@@ -54,7 +54,37 @@ class ButlerComposite(object):
         A reference to the mapper that created this ButlerComposite object.
     """
 
-    ComponentInfo = namedtuple('ComponentInfo', 'datasetType')
+
+    class ComponentInfo():
+        """Information about a butler composite object. Some details come from the policy and some are filled
+        in by the butler. Component info is used while assembling and disassembling a composite object in
+        butler. It is used as an input to assemblers and disassemblers (which are part of the butler public
+        API).
+
+        Parameters
+        ----------
+        datasetType : string
+            The datasetType of the component.
+        obj : object instance
+            The python object instance that is this component.
+        setter : string
+            The name of the function in the parent object to set this component.
+            Optional - may be None
+        getter : string
+            The name of the function in the parent object to get this component.
+            Optional - may be None
+        """
+
+        def __init__(self, datasetType, obj, setter, getter):
+            self.datasetType = datasetType
+            self.obj = obj
+            self.setter = setter
+            self.getter = getter
+
+        def __repr__(self):
+            return "ComponentInfo(datasetType=%s, obj=%s, setter=%s, getter=%s)" % (
+                self.datasetType, self.obj, self.setter, self.getter)
+
 
     def __init__(self, assembler, disassembler, python, dataId, mapper):
         self.assembler = doImport(assembler) if isinstance(assembler, basestring) else assembler
@@ -65,7 +95,7 @@ class ButlerComposite(object):
         self.componentInfo = {}
         self.repository = None
 
-    def add(self, id, datasetType):
+    def add(self, id, datasetType, setter, getter):
         """Add a description of a component needed to fetch the composite dataset.
 
         Parameters
@@ -74,8 +104,17 @@ class ButlerComposite(object):
             The name of the component in the policy definition.
         datasetType : string
             The name of the datasetType of the component.
+        setter : string or None
+            The name of the function used to set this component into the python type that contains it.
+            Specifying a setter is optional, use None if the setter won't be specified or used.
+        getter : string or None
+            The name of the function used to get this component from the python type that contains it.
+            Specifying a setter is optional, use None if the setter won't be specified or used.
         """
-        self.componentInfo[id] = ButlerComposite.ComponentInfo(datasetType=datasetType)
+        self.componentInfo[id] = ButlerComposite.ComponentInfo(datasetType=datasetType,
+                                                               obj = None,
+                                                               setter=setter,
+                                                               getter=getter)
 
     def __repr__(self):
         return "ButlerComposite(assembler=%s, disassembler=%s, python=%s, dataId=%s, components=%s)" % (

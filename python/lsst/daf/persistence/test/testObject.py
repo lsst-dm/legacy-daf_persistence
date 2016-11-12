@@ -44,18 +44,60 @@ class TestObjectPair(object):
     """An object for testing that contains 2 objects.
     """
 
-    def __init__(self, objA, objB):
+    def __init__(self, objA=None, objB=None):
         self.objA = objA
         self.objB = objB
+        self.usedInitSetter = True if objA and objB else False
+        self.usedASetter = False
+        self.usedBSetter = False
 
     @staticmethod
-    def assembler(dataId, componentDict, cls):
-        return cls(componentDict['a'], componentDict['b'])
+    def assembler(dataId, componentInfo, cls):
+        return cls(componentInfo['a'].obj, componentInfo['b'].obj)
 
     @staticmethod
-    def disassembler(obj, dataId, componentDict):
-        componentDict['a'] = obj.objA
-        componentDict['b'] = obj.objB
+    def disassembler(obj, dataId, componentInfo):
+        componentInfo['a'].obj = obj.objA
+        componentInfo['b'].obj = obj.objB
 
     def __repr__(self):
         return "TestObjectPair(objA=%r, objB=%r" % (self.objA, self.objB)
+
+    def set_a(self, obj):
+        self.objA = obj
+        self.usedASetter = True
+
+    def set_b(self, obj):
+        self.objB = obj
+        self.usedBSetter = True
+
+    def get_a(self):
+        return self.objA
+
+    def get_b(self):
+        return self.objB
+
+
+class TestObjectCamelCaseSetter(object):
+    """A test object with camel case setter and getter e.g. `def setFoo...`"""
+    def __init__(self):
+        self._foo = None
+
+    def setFoo(self, val):
+        self._foo = val
+
+    def getFoo(self):
+        return self._foo
+
+
+class TestObjectUnderscoreSetter(object):
+    """A test object with lower case camel case setter and getter e.g. `def setFoo...`"""
+    def __init__(self):
+        self._foo = None
+
+    def set_foo(self, val):
+        self._foo = val
+
+    def get_foo(self):
+        return self._foo
+
