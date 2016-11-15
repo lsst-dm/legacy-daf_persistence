@@ -73,13 +73,31 @@ class ButlerComposite(object):
         getter : string
             The name of the function in the parent object to get this component.
             Optional - may be None
+        subset : bool
+            If true, indicates that the obj should be a list of objects found via butlerSubset.
         """
-
-        def __init__(self, datasetType, obj, setter, getter):
+        def __init__(self, datasetType, obj, setter, getter, subset):
             self.datasetType = datasetType
             self.obj = obj
             self.setter = setter
             self.getter = getter
+            self.subset = subset
+            self.dataId = None
+
+        def __repr__(self):
+            return 'ComponentInfo(datasetType:%s, obj:%s, setter:%s, getter:%s, subset:%s)' % \
+                    (self.datasetType, self.obj, self.setter, self.getter, self.subset)
+
+
+    def __repr__(self):
+        return 'ButlerComposite(assembler:%s, disassembler:%s, python:%s, dataId:%s, mapper:%s, componentInfo:%s, repository:%s)' % \
+                (self.assembler,
+                self.disassembler,
+                self.python,
+                self.dataId,
+                self.mapper,
+                self.componentInfo,
+                self.repository)
 
         def __repr__(self):
             return "ComponentInfo(datasetType=%s, obj=%s, setter=%s, getter=%s)" % (
@@ -95,7 +113,7 @@ class ButlerComposite(object):
         self.componentInfo = {}
         self.repository = None
 
-    def add(self, id, datasetType, setter, getter):
+    def add(self, id, datasetType, setter, getter, subset):
         """Add a description of a component needed to fetch the composite dataset.
 
         Parameters
@@ -110,11 +128,14 @@ class ButlerComposite(object):
         getter : string or None
             The name of the function used to get this component from the python type that contains it.
             Specifying a setter is optional, use None if the setter won't be specified or used.
+        subset : bool
+            If true, indicates that the obj should be a list of objects found via butlerSubset.
         """
         self.componentInfo[id] = ButlerComposite.ComponentInfo(datasetType=datasetType,
                                                                obj = None,
                                                                setter=setter,
-                                                               getter=getter)
+                                                               getter=getter,
+                                                               subset=subset)
 
     def __repr__(self):
         return "ButlerComposite(assembler=%s, disassembler=%s, python=%s, dataId=%s, components=%s)" % (
