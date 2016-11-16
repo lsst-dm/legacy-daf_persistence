@@ -776,7 +776,8 @@ class Butler(object):
                 disassembler = location.disassembler if location.disassembler else genericDisassembler
                 disassembler(obj=obj, dataId=location.dataId, componentInfo=location.componentInfo)
                 for name, info in location.componentInfo.items():
-                    self.put(info.obj, info.datasetType, location.dataId, doBackup=doBackup)
+                    if not info.inputOnly:
+                        self.put(info.obj, info.datasetType, location.dataId, doBackup=doBackup)
             else:
                 if doBackup:
                     location.getRepository().backup(location.datasetType, dataId)
