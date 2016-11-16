@@ -111,7 +111,7 @@ class RepositoryCfg(yaml.YAMLObject):
     @staticmethod
     def v0Constructor(loader, node):
         d = loader.construct_mapping(node)
-        return dp.RepositoryCfg(root=d['_root'], mapper=None, mapperArgs=None, parents=None)
+        return dp.RepositoryCfg(root=d['_root'], mapper=None, mapperArgs=None, parents=None, policy=None)
 
 yaml.add_constructor(u"!RepositoryCfg_v0", RepositoryCfg.v0Constructor)
 

@@ -34,11 +34,12 @@ from past.builtins import basestring
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, isLegacyRepository=False):
+    def __init__(self, root, mapper, mapperArgs, parents, policy, isLegacyRepository=False):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
         self._parents = iterify(parents)
+        self._policy = policy
         self._isLegacyRepository = isLegacyRepository
 
     @staticmethod
@@ -61,7 +62,8 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=d['_parents'], isLegacyRepository=d['_isLegacyRepository'])
+                            parents=d['_parents'], isLegacyRepository=d['_isLegacyRepository'],
+                            policy=d.get('_policy', None))
         return cfg
 
     def __eq__(self, other):
@@ -112,13 +114,18 @@ class RepositoryCfg(yaml.YAMLObject):
     def isLegacyRepository(self):
         return self._isLegacyRepository
 
+    @property
+    def policy(self):
+        return self._policy
+
     @staticmethod
     def makeFromArgs(repositoryArgs, parents):
         cfg = RepositoryCfg(root=repositoryArgs.root,
                             mapper=repositoryArgs.mapper,
                             mapperArgs=repositoryArgs.mapperArgs,
                             parents=parents,
-                            isLegacyRepository=repositoryArgs.isLegacyRepository)
+                            isLegacyRepository=repositoryArgs.isLegacyRepository,
+                            policy=repositoryArgs.policy)
         return cfg
 
     def matchesArgs(self, repositoryArgs):
@@ -141,16 +148,19 @@ class RepositoryCfg(yaml.YAMLObject):
             for key in set(self._mapperArgs.keys()) & set(repositoryArgs.mapperArgs):
                 if self._mapperArgs[key] != repositoryArgs.mapperArgs[key]:
                     return False
+        if repositoryArgs.policy and repositoryArgs.policy != self._policy:
+            return False
 
         return True
 
     def __repr__(self):
-        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, isLegacyRepository=%s)" % (
+        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, policy=%s, isLegacyRepository=%s)" % (
             self.__class__.__name__,
             self._root,
             self._mapper,
             self._mapperArgs,
             self._parents,
+            self._policy,
             self._isLegacyRepository)
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)

@@ -27,25 +27,26 @@ from builtins import object
 import copy
 import inspect
 
-from lsst.daf.persistence import Storage, listify, doImport
+from lsst.daf.persistence import Storage, listify, doImport, Policy
 
 
 class RepositoryArgs(object):
 
     def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None,
-                 mode=None):
+                 mode=None, policy=None):
         self.root = root
         self._cfgRoot = cfgRoot
         self.mapper = mapper
         self.mapperArgs = mapperArgs
         self.tags = set(listify(tags))
         self.mode = mode
+        self.policy = Policy(policy) if policy is not None else None
         self.isLegacyRepository = False
 
     def __repr__(self):
-        return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r)" % (
+        return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
             self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags,
-            self.mode)
+            self.mode, self.policy)
 
     @property
     def cfgRoot(self):
@@ -108,6 +109,8 @@ class Repository(object):
             mapperArgs = copy.copy(repositoryCfg.mapperArgs)
             if mapperArgs is None:
                 mapperArgs = {}
+            if repositoryCfg.policy and 'policy' not in mapperArgs:
+                mapperArgs['policy'] = repositoryCfg.policy
             # so that root doesn't have to be redundantly passed in cfgs, if root is specified in the
             # storage and if it is an argument to the mapper, make sure that it's present in mapperArgs.
             for arg in ('root', 'storage'):
