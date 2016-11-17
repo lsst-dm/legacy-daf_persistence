@@ -193,7 +193,7 @@ class Butler(object):
 
     getKeys(self, datasetType=None, level=None)
 
-    queryMetadata(self, datasetType, keys, format=None, dataId={}, **rest)
+    queryMetadata(self, datasetType, format=None, dataId={}, **rest)
 
     datasetExists(self, datasetType, dataId={}, **rest)
 
