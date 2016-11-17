@@ -418,7 +418,7 @@ class Policy(_PolicyBase):
         # After the expected/ordered keys are weritten to the stream the remainder of the keys are written to
         # the stream.
         data = copy.copy(self.data)
-        keys = ['defects', 'needCalibRegistry', 'levels', 'defaultLevel', 'defaultSubLevels',
+        keys = ['defects', 'needCalibRegistry', 'levels', 'defaultLevel', 'defaultSubLevels', 'camera',
                 'exposures', 'calibrations', 'datasets']
         for key in keys:
             try:
