@@ -36,35 +36,56 @@ class MapperTest(dp.Mapper):
 
 
 class DefaultMapper(unittest.TestCase):
+    """Tests for finding the default mapper for a repository given different inputs.
 
-    def testClassObjAndString(self):
+    Butler should allow class objects, class instances , and importable strings to be passed in, and treat
+    them as equivalent.
+
+    Butler will find a default mapper only if all the inputs to the butler use the same mapper. If there are
+    inputs with different mappers then the butler will not assume a default mapper and _getDefaultMapper
+    will return None."""
+
+    def testClassObjAndMatchingString(self):
+        """Pass a class object and a string that evaluates to the same object, and verify a default mapper
+        can be found."""
         args1 = dp.RepositoryArgs(mapper=dp.Mapper)
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
+    def testClassObjAndNotMatchingString(self):
+        """Pass a class object and a non-matching string, and verify a default mapper can not be found."""
         args1 = dp.RepositoryArgs(mapper=MapperTest)
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertIsNone(mapper)
 
-    def testInstanceAndString(self):
+    def testInstanceAndMatchingString(self):
+        """Pass a class instance and a string that evaluates to the same object, and verify a default mapper
+        can be found."""
         args1 = dp.RepositoryArgs(mapper=dp.Mapper())
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
+    def testInstanceAndNotMatchingString(self):
+        """Pass a class instance and a non-matching string, and verify a default mapper can not be found."""
         args1 = dp.RepositoryArgs(mapper=MapperTest())
         args2 = dp.RepositoryArgs(mapper='lsst.daf.persistence.Mapper')
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertIsNone(mapper)
 
-    def testClassObjAndInstance(self):
+    def testClassObjAndMatchingInstance(self):
+        """Pass a class object and a class instance of the same type, and verify a default mapper can be
+        found."""
         args1 = dp.RepositoryArgs(mapper=dp.Mapper)
         args2 = dp.RepositoryArgs(mapper=dp.Mapper())
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertEqual(mapper, lsst.daf.persistence.Mapper)
 
+    def testClassObjAndNotMatchingInstance(self):
+        """Pass a class object and a class instance of a different type, and verify a default mapper can not
+        be found."""
         args1 = dp.RepositoryArgs(mapper=MapperTest)
         args2 = dp.RepositoryArgs(mapper=dp.Mapper())
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
