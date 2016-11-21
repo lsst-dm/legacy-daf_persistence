@@ -115,15 +115,25 @@ class ParseRootURI(unittest.TestCase):
         butler = dp.Butler(outputs=args)
         self.assertTrue(os.path.exists(os.path.join(self.testDir, 'repositoryCfg.yaml')))
 
+        try:
+            butler2 = dp.Butler(inputs=uri)
+        except RuntimeError:
+            self.fail("Butler init raised a runtime error loading input %s" % uri)
+
     def testAbsoluteFilePathWithoutSchema(self):
-        """Test an absolute path that begins with '/' (not 'file://')"""
+        """Test writing and reading an absolute path that begins with '/' (not 'file://')"""
         uri = self.testDir
         args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
         butler = dp.Butler(outputs=args)
         self.assertTrue(os.path.exists(os.path.join(uri, 'repositoryCfg.yaml')))
 
+        try:
+            butler2 = dp.Butler(inputs=uri)
+        except RuntimeError:
+            self.fail("Butler init raised a runtime error loading input %s" % uri)
+
     def testRelativeFilePath(self):
-        """Test a relative filepath.
+        """Test writing & reading a relative filepath.
 
         Relative filepaths can not start with 'file://' so there will be no relative file path test starting
         with the 'file' schema."""
@@ -132,6 +142,10 @@ class ParseRootURI(unittest.TestCase):
         butler = dp.Butler(outputs=args)
         self.assertTrue(self.testDir, 'repositoryCfg.yaml')
 
+        try:
+            butler2 = dp.Butler(inputs=uri)
+        except RuntimeError:
+            self.fail("Butler init raised a runtime error loading input %s" % uri)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
