@@ -105,6 +105,10 @@ class PosixStorage(Storage):
             cfg = copy.copy(cfg)
             loc = cfg.root
             cfg.root = None
+        # This class supports schema 'file' and also treats no schema as 'file'.
+        # Split the URI and take only the path; remove the schema fom loc if it's there.
+        parseRes = urllib.parse.urlparse(loc)
+        loc = parseRes.path
         if not os.path.exists(loc):
             os.makedirs(loc)
         loc = os.path.join(loc, 'repositoryCfg.yaml')
