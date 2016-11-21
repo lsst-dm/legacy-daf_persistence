@@ -22,9 +22,14 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from future import standard_library
+standard_library.install_aliases()
 import lsst.daf.persistence as dp
 import lsst.utils.tests
+import os
+import shutil
 import unittest
+import urllib.parse
 
 
 def setup_module(module):
@@ -90,6 +95,43 @@ class DefaultMapper(unittest.TestCase):
         args2 = dp.RepositoryArgs(mapper=dp.Mapper())
         mapper = dp.Butler._getDefaultMapper(inputs=(args1, args2))
         self.assertIsNone(mapper)
+
+
+class ParseRootURI(unittest.TestCase):
+    """Verify that supported root URI schemas are identified and build the correct Storage.
+    """
+    def setUp(self):
+        self.testDir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'ParseRootURI')
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def testAbsoluteFilePathWithSchema(self):
+        """Test writing & reading an absolute path that begins with 'file://"""
+        uri = urllib.parse.urljoin('file://', self.testDir)
+        args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
+        butler = dp.Butler(outputs=args)
+        self.assertTrue(os.path.exists(os.path.join(self.testDir, 'repositoryCfg.yaml')))
+
+    def testAbsoluteFilePathWithoutSchema(self):
+        """Test an absolute path that begins with '/' (not 'file://')"""
+        uri = self.testDir
+        args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
+        butler = dp.Butler(outputs=args)
+        self.assertTrue(os.path.exists(os.path.join(uri, 'repositoryCfg.yaml')))
+
+    def testRelativeFilePath(self):
+        """Test a relative filepath.
+
+        Relative filepaths can not start with 'file://' so there will be no relative file path test starting
+        with the 'file' schema."""
+        uri = os.path.relpath(self.testDir)
+        args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
+        butler = dp.Butler(outputs=args)
+        self.assertTrue(self.testDir, 'repositoryCfg.yaml')
+
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
