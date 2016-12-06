@@ -30,6 +30,7 @@ import pickle
 import importlib
 import os
 import urllib.parse
+import glob
 
 import yaml
 
@@ -346,6 +347,82 @@ class PosixStorage(Storage):
         """
         return os.path.exists(root) and bool(os.listdir(root))
 
+
+    ####################################
+    # PosixStorage-only API (for now...)
+
+    @staticmethod
+    def parentSearch(root, path):
+        """Look for the given path in the current root or any of its parents
+        by following "_parent" symlinks; return None if it can't be found.  A
+        little tricky because the path may be in an alias of the root (e.g.
+        ".") and because the "_parent" links go between the root and the rest
+        of the path.
+        If the path contains an HDU indicator (a number in brackets before the
+        dot, e.g. 'foo.fits[1]', this will be stripped when searching and so
+        will match filenames without the HDU indicator, e.g. 'foo.fits'. The
+        path returned WILL contain the indicator though, e.g. ['foo.fits[1]'].
+        """
+        # Separate path into a root-equivalent prefix (in dir) and the rest
+        # (left in path)
+
+        rootDir = root
+        # First remove trailing slashes (#2527)
+        while len(rootDir) > 1 and rootDir[-1] == '/':
+            rootDir = rootDir[:-1]
+
+        if path.startswith(rootDir + "/"):
+            # Common case; we have the same root prefix string
+            path = path[len(rootDir)+1:]
+            dir = rootDir
+        elif rootDir == "/" and path.startswith("/"):
+            path = path[1:]
+            dir = rootDir
+        else:
+            # Search for prefix that is the same as root
+            pathPrefix = os.path.dirname(path)
+            while pathPrefix != "" and pathPrefix != "/":
+                if os.path.realpath(pathPrefix) == os.path.realpath(root):
+                    break
+                pathPrefix = os.path.dirname(pathPrefix)
+            if os.path.realpath(pathPrefix) != os.path.realpath(root):
+                # No prefix matching root, don't search for parents
+                paths = glob.glob(path)
+
+                # The contract states that `None` will be returned
+                #   if no matches are found.
+                # Thus we explicitly set up this if/else to return `None`
+                #   if `not paths` instead of `[]`.
+                # An argument could be made that the contract should be changed
+                if paths:
+                    return paths
+                else:
+                    return None
+            if pathPrefix == "/":
+                path = path[1:]
+            elif pathPrefix != "":
+                path = path[len(pathPrefix)+1:]
+            # If pathPrefix == "", then the current directory is the root
+            dir = pathPrefix
+
+        # Now search for the path in the root or its parents
+        # Strip off any cfitsio bracketed extension if present
+        strippedPath = path
+        pathStripped = None
+        firstBracket = path.find("[")
+        if firstBracket != -1:
+            strippedPath = path[:firstBracket]
+            pathStripped = path[firstBracket:]
+
+        while True:
+            paths = glob.glob(os.path.join(dir, strippedPath))
+            if len(paths) > 0:
+                if pathStripped is not None:
+                    paths = [p + pathStripped for p in paths]
+                return paths
+            dir = os.path.join(dir, "_parent")
+            if not os.path.exists(dir):
+                return None
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
