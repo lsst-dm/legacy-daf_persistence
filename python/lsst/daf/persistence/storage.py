@@ -121,14 +121,20 @@ class Storage(object):
             storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
-        :param uri: the uri to a locaiton that contains a repositoryCfg.
-        :return: a Storage subclass instance.
+        Parameters
+        ----------
+        uri - string
+            The uri to the root location of a repository.
+
+        Returns
+        -------
+        A Storage subclass instance.
         '''
         ret = None
         parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             theClass = Storage.storages[parseRes.scheme]
-            ret = theClass(uri)
+            ret = theClass(uri=uri)
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
