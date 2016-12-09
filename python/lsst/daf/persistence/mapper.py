@@ -122,7 +122,6 @@ class Mapper(object):
         :param dataId: see documentation about the use of dataId
         :return:
         """
-
         func = getattr(self, 'query_' + datasetType)
 
         val = func(format, self.validate(dataId))

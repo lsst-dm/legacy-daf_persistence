@@ -265,3 +265,6 @@ class ButlerLocation(yaml.YAMLObject):
 
     def getAdditionalData(self):
         return self.additionalData
+
+    def getStorage(self):
+        return self.storage
