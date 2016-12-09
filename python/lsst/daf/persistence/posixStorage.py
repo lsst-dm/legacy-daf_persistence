@@ -35,7 +35,8 @@ import shutil
 
 import yaml
 
-from . import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, RepositoryCfg, safeFileIo
+from . import (LogicalLocation, Persistence, Policy, StorageList, Registry,
+               Storage, RepositoryCfg, safeFileIo, ButlerLocation)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
@@ -312,13 +313,43 @@ class PosixStorage(Storage):
 
         return results
 
-    def exists(self, location):
-        """Check if 'location' exists relative to root.
+    def butlerLocationExists(self, location):
+        """Implementaion of PosixStorage.exists for ButlerLocation objects."""
+        storageName = location.getStorageName()
+        if not storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
+                               'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
+            # self.log.warn("datasetExists() for non-file storage %s, dataset type=%s, keys=%s",
+            #               storageName, datasetType, str(dataId))
+            raise RuntimeError("Unhandled storageName:" % storageName)
+        for locationString in location.getLocations():
+            logLoc = LogicalLocation(locationString, location.getAdditionalData()).locString()
+            if storageName == 'FitsStorage':
+                # Strip off directives for cfitsio (in square brackets, e.g., extension name)
+                bracket = logLoc.find('[')
+                if bracket > 0:
+                    logLoc = logLoc[:bracket]
+            if os.path.exists(os.path.join(self.root, logLoc)):
+                return True
+        return False
 
-        :param location:
-        :return:
+    def exists(self, location):
+        """Check if location exists.
+
+        Parameters
+        ----------
+        location : ButlerLocation or string
+            A a string or a ButlerLocation that describes the location of an object in this storage.
+
+        Returns
+        -------
+        bool
+            True if exists, else False.
         """
+        if isinstance(location, ButlerLocation):
+            return self.butlerLocationExists(location)
+
         return os.path.exists(os.path.join(self.root, location))
+
 
     def locationWithRoot(self, location):
         """Get the full path to the location.
