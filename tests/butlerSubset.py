@@ -126,7 +126,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                      "calexp_v654321_R1,3_S1,1.pickle",
                      "calexp_v654321_R1,3_S1,2.pickle"]
         for fileName in inputList:
-            with open(fileName, "wb") as f:
+            with open(os.path.join(ROOT, 'butlerSubset', fileName), "wb") as f:
                 pickle.dump(inputList, f)
 
         subset = butler.subset(self.calexpTypeName, skyTile=6)
@@ -150,7 +150,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
             self.assertEqual(image, inputList)
 
         for fileName in inputList:
-            os.unlink(fileName)
+            os.unlink(os.path.join(ROOT, 'butlerSubset', fileName))
 
     def testNonexistentValue(self):
         bf = dafPersist.ButlerFactory(mapper=ImgMapper())
