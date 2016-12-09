@@ -743,24 +743,7 @@ class Butler(object):
         if location is None:
             return False
 
-        additionalData = location.getAdditionalData()
-        storageName = location.getStorageName()
-        if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                           'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
-            locations = location.getLocations()
-            for locationString in locations:
-                logLoc = LogicalLocation(locationString, additionalData).locString()
-                if storageName == 'FitsStorage':
-                    # Strip off directives for cfitsio (in square brackets, e.g., extension name)
-                    bracket = logLoc.find('[')
-                    if bracket > 0:
-                        logLoc = logLoc[:bracket]
-                if not os.path.exists(logLoc):
-                    return False
-            return True
-        self.log.warn("datasetExists() for non-file storage %s, dataset type=%s, keys=%s",
-                      storageName, datasetType, str(dataId))
-        return True
+        return location.repository.exists(location)
 
     def _locate(self, datasetType, dataId, write):
         """Get one or more ButlerLocations and/or ButlercComposites.
