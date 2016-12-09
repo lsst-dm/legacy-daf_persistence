@@ -322,12 +322,8 @@ class PosixStorage(Storage):
             raise RuntimeError("Unhandled storageName:" % storageName)
         for locationString in location.getLocations():
             logLoc = LogicalLocation(locationString, location.getAdditionalData()).locString()
-            if storageName == 'FitsStorage':
-                # Strip off directives for cfitsio (in square brackets, e.g., extension name)
-                bracket = logLoc.find('[')
-                if bracket > 0:
-                    logLoc = logLoc[:bracket]
-            if os.path.exists(os.path.join(self.root, logLoc)):
+            obj = self.instanceParentSearch(path=logLoc, searchParents=False)
+            if obj:
                 return True
         return False
 
@@ -347,8 +343,8 @@ class PosixStorage(Storage):
         if isinstance(location, ButlerLocation):
             return self.butlerLocationExists(location)
 
-        return os.path.exists(os.path.join(self.root, location))
-
+        obj = self.instanceParentSearch(path=location, searchParents=False)
+        return bool(obj)
 
     def locationWithRoot(self, location):
         """Get the full path to the location.
@@ -407,12 +403,12 @@ class PosixStorage(Storage):
         else:
             return None
 
-    def instanceParentSearch(self, path):
+    def instanceParentSearch(self, path, searchParents=True):
         """like parentSearch, but operate on self.root"""
-        return  PosixStorage.parentSearch(self.root, path)
+        return  PosixStorage.parentSearch(self.root, path, searchParents)
 
     @staticmethod
-    def parentSearch(root, path):
+    def parentSearch(root, path, searchParents=True):
         """Look for the given path in the current root or any of its parents
         by following "_parent" symlinks; return None if it can't be found.  A
         little tricky because the path may be in an alias of the root (e.g.
@@ -467,8 +463,11 @@ class PosixStorage(Storage):
                 if pathStripped is not None:
                     paths = [p + pathStripped for p in paths]
                 return paths
-            dir = os.path.join(dir, "_parent")
-            if not os.path.exists(dir):
+            if searchParents:
+                dir = os.path.join(dir, "_parent")
+                if not os.path.exists(dir):
+                    return None
+            else:
                 return None
 
     @staticmethod

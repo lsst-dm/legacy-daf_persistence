@@ -118,6 +118,19 @@ class PosixParentSearch(unittest.TestCase):
             self.assertEqual(storage.getRoot(), childDir)
             self.assertEqual(foundName, [os.path.join(childDir, '_parent/_parent/', name)])
 
+    def testDoSearchParentFlag(self):
+        """Test that parent search can be told to follow _parent symlink (or not) when searching."""
+        parentDir = os.path.join(PosixParentSearch.testDir, 'a')
+        childDir = os.path.join(PosixParentSearch.testDir, 'b')
+        for d in (parentDir, childDir):
+            os.makedirs(d)
+        with open(os.path.join(parentDir, 'foo.txt'), 'w') as f:
+            f.write('abc')
+        os.symlink('../a', os.path.join(childDir, '_parent'))
+        storage = dafPersist.PosixStorage(uri=childDir)
+        self.assertEquals(storage.instanceParentSearch('foo.txt'), ['_parent/foo.txt'])
+        self.assertEquals(storage.instanceParentSearch('foo.txt', searchParents=False), None)
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
