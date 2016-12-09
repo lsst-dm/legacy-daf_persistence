@@ -251,3 +251,22 @@ class Repository(object):
         if self._mapper is None:
             return None
         return self._mapper.getDefaultLevel()
+
+    def exists(self, location):
+        """Check if location exists in storage.
+
+        Parameters
+        ----------
+        location : ButlerLocation
+            Desrcibes a location in storage to look for.
+
+        Returns
+        -------
+        bool
+            True if location exists, False if not.
+        """
+        butlerLocationStorage = location.getStorage()
+        if butlerLocationStorage:
+            return butlerLocationStorage.exists(location)
+        else:
+            return self._storage.exists(location)
