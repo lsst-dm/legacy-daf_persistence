@@ -156,7 +156,11 @@ class Repository(object):
         :param dataset: The dataset to be written.
         :return:
         """
-        return self._storage.write(butlerLocation, obj)
+        butlerLocationStorage = butlerLocation.getStorage()
+        if butlerLocationStorage:
+            return butlerLocationStorage.write(butlerLocation, obj)
+        else:
+            return self._storage.write(butlerLocation, obj)
 
     def read(self, butlerLocation):
         """Read a dataset from Storage.
@@ -164,7 +168,11 @@ class Repository(object):
         :param butlerLocation: Contains the details needed to find the desired dataset.
         :return: An instance of the dataset requested by butlerLocation.
         """
-        return self._storage.read(butlerLocation)
+        butlerLocationStorage = butlerLocation.getStorage()
+        if butlerLocationStorage:
+            return butlerLocationStorage.read(butlerLocation)
+        else:
+            return self._storage.read(butlerLocation)
 
     #################
     # Mapper Access #
