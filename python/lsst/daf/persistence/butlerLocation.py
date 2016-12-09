@@ -201,9 +201,9 @@ class ButlerLocation(yaml.YAMLObject):
 
     def __repr__(self):
         return \
-            'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, locationList=%r,' \
+            'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, storage=%r, locationList=%r,' \
             ' additionalData=%r, mapper=%r, dataId=%r)' % \
-            (self.pythonType, self.cppType, self.storageName, self.locationList,
+            (self.pythonType, self.cppType, self.storageName, self.storage, self.locationList,
              self.additionalData, self.mapper, self.dataId)
 
     def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None,
