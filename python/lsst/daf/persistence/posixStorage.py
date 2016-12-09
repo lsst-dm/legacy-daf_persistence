@@ -31,6 +31,7 @@ import importlib
 import os
 import urllib.parse
 import glob
+import shutil
 
 import yaml
 
@@ -207,7 +208,7 @@ class PosixStorage(Storage):
             pythonType.butlerWrite(obj, butlerLocation=butlerLocation)
             return
 
-        with SafeFilename(locations[0]) as locationString:
+        with SafeFilename(os.path.join(self.root, locations[0])) as locationString:
             logLoc = LogicalLocation(locationString, additionalData)
 
             if storageName == "PickleStorage":
@@ -270,6 +271,8 @@ class PosixStorage(Storage):
             return results
 
         for locationString in locations:
+            locationString = os.path.join(self.root, locationString)
+
             logLoc = LogicalLocation(locationString, additionalData)
 
             if storageName == "PafStorage":
@@ -352,6 +355,32 @@ class PosixStorage(Storage):
     ####################################
     # PosixStorage-only API (for now...)
 
+    def copyFile(self, fromLocation, toLocation):
+        shutil.copy(os.path.join(self.root, fromLocation), os.path.join(self.root, toLocation))
+
+    def getRoot(self):
+        return self.root
+
+    def getLocalFile(self, path):
+        """Get the path to a local copy of the file, downloading it to a temporary if needed.
+
+        Parameters
+        ----------
+        A path the the file in storage, relative to root.
+
+        Returns
+        -------
+        A path to a local copy of the file. May be the original file (if storage is local)."""
+        p = os.path.join(self.root, path)
+        if os.path.exists(p):
+            return p
+        else:
+            return None
+
+    def instanceParentSearch(self, path):
+        """like parentSearch, but operate on self.root"""
+        return  PosixStorage.parentSearch(self.root, path)
+
     @staticmethod
     def parentSearch(root, path):
         """Look for the given path in the current root or any of its parents
@@ -366,7 +395,6 @@ class PosixStorage(Storage):
         """
         # Separate path into a root-equivalent prefix (in dir) and the rest
         # (left in path)
-
         rootDir = root
         # First remove trailing slashes (#2527)
         while len(rootDir) > 1 and rootDir[-1] == '/':
@@ -374,11 +402,11 @@ class PosixStorage(Storage):
 
         if path.startswith(rootDir + "/"):
             # Common case; we have the same root prefix string
-            path = path[len(rootDir)+1:]
-            dir = rootDir
+            path = path[len(rootDir + '/'):]
+            pathPrefix = rootDir
         elif rootDir == "/" and path.startswith("/"):
             path = path[1:]
-            dir = rootDir
+            pathPrefix = None
         else:
             # Search for prefix that is the same as root
             pathPrefix = os.path.dirname(path)
@@ -386,25 +414,10 @@ class PosixStorage(Storage):
                 if os.path.realpath(pathPrefix) == os.path.realpath(root):
                     break
                 pathPrefix = os.path.dirname(pathPrefix)
-            if os.path.realpath(pathPrefix) != os.path.realpath(root):
-                # No prefix matching root, don't search for parents
-                paths = glob.glob(path)
-
-                # The contract states that `None` will be returned
-                #   if no matches are found.
-                # Thus we explicitly set up this if/else to return `None`
-                #   if `not paths` instead of `[]`.
-                # An argument could be made that the contract should be changed
-                if paths:
-                    return paths
-                else:
-                    return None
             if pathPrefix == "/":
                 path = path[1:]
             elif pathPrefix != "":
                 path = path[len(pathPrefix)+1:]
-            # If pathPrefix == "", then the current directory is the root
-            dir = pathPrefix
 
         # Now search for the path in the root or its parents
         # Strip off any cfitsio bracketed extension if present
@@ -415,9 +428,12 @@ class PosixStorage(Storage):
             strippedPath = path[:firstBracket]
             pathStripped = path[firstBracket:]
 
+        dir = rootDir
         while True:
             paths = glob.glob(os.path.join(dir, strippedPath))
             if len(paths) > 0:
+                if pathPrefix != rootDir:
+                    paths = [p[len(rootDir+'/'):] for p in paths]
                 if pathStripped is not None:
                     paths = [p + pathStripped for p in paths]
                 return paths
