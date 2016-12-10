@@ -28,6 +28,7 @@
 import lsst.daf.base as dafBase
 
 from collections import namedtuple
+import os
 from past.builtins import basestring
 import yaml
 
@@ -261,6 +262,9 @@ class ButlerLocation(yaml.YAMLObject):
 
     def getLocations(self):
         return self.locationList
+
+    def getLocationsWithRoot(self):
+        return [os.path.join(self.storage.root, l) for l in self.getLocations()]
 
     def getAdditionalData(self):
         return self.additionalData
