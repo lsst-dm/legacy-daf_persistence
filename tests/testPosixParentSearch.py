@@ -131,6 +131,9 @@ class PosixParentSearch(unittest.TestCase):
         self.assertEquals(storage.instanceParentSearch('foo.txt'), ['_parent/foo.txt'])
         self.assertEquals(storage.instanceParentSearch('foo.txt', searchParents=False), None)
 
+    def testNoResults(self):
+        storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir)
+        self.assertIsNone(storage.instanceParentSearch('fileThatDoesNotExist.txt'))
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
