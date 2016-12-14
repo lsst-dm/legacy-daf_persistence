@@ -784,11 +784,12 @@ class Butler(object):
                 location.getRepository().write(location, obj)
 
     def subset(self, datasetType, level=None, dataId={}, **rest):
-        """Extracts a subset of a dataset collection.
+        """Return complete dataIds for a dataset type that match a partial (or empty) dataId.
 
-        Given a partial dataId specified in dataId and **rest, find all datasets at a given level specified by
-        a dataId key (e.g. visit or sensor or amp for a camera) and return a collection of their dataIds as
-        ButlerDataRefs.
+        Given a partial (or empty) dataId specified in dataId and **rest, find all datasets that match the
+        dataId.  Optionally restrict the results to a given level specified by a dataId key (e.g. visit or
+        sensor or amp for a camera).  Return an iterable collection of complete dataIds as ButlerDataRefs.
+        Datasets with the resulting dataIds may not exist; that needs to be tested with datasetExists().
 
         Parameters
         ----------
