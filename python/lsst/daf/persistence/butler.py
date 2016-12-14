@@ -807,6 +807,14 @@ class Butler(object):
         -------
         subset - ButlerSubset
             Collection of ButlerDataRefs for datasets matching the data id.
+
+        Examples
+        -----------
+        To print the full dataIds for all r-band measurements in a source catalog
+        (note that the subset call is equivalent to: `butler.subset('src', dataId={'filter':'r'})`):
+
+        >>> subset = butler.subset('src', filter='r')
+        >>> for data_ref in subset: print(data_ref.dataId)
         """
         datasetType = self._resolveDatasetTypeAlias(datasetType)
 
