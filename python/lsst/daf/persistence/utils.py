@@ -110,7 +110,8 @@ def doImport(pythonType):
         if not isinstance(pythonType, basestring):
             raise TypeError("Unhandled type of pythonType, val:%s" % pythonType)
         # import this pythonType dynamically
-        pythonTypeTokenList = pythonType.split('.')
+        # pythonType is sometimes unicode with Python 2 and pybind11; this breaks the interpreter
+        pythonTypeTokenList = str(pythonType).split('.')
         importClassString = pythonTypeTokenList.pop()
         importClassString = importClassString.strip()
         importPackage = ".".join(pythonTypeTokenList)
