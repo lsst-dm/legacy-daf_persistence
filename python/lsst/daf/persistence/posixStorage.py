@@ -290,9 +290,8 @@ class PosixStorage(Storage):
                 storageList = StorageList()
                 storage = self.persistence.getRetrieveStorage(storageName, logLoc)
                 storageList.append(storage)
-                itemData = self.persistence.unsafeRetrieve(
+                finalItem = self.persistence.unsafeRetrieve(
                     butlerLocation.getCppType(), storageList, additionalData)
-                finalItem = pythonType.swigConvert(itemData)
             results.append(finalItem)
 
         return results
