@@ -208,7 +208,8 @@ class ButlerLocation(yaml.YAMLObject):
 
     def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None,
                  usedDataId=None, datasetType=None):
-        self.pythonType = pythonType
+        # pythonType is sometimes unicode with Python 2 and pybind11; this breaks the interpreter
+        self.pythonType = str(pythonType) if isinstance(pythonType, basestring) else pythonType
         self.cppType = cppType
         self.storageName = storageName
         self.mapper = mapper
