@@ -96,12 +96,30 @@ class RepoData(object):
 
 
 class RepoDataContainer(object):
-    """Container object for RepoData instances owned by a Butler instance."""
+    """Container object for RepoData instances owned by a Butler instance.
+
+    Attributes
+    ----------
+    byRepoRoot : OrderedDict
+        Indexes the RepoData objects that are added by repository root, as well as preserving the order in
+        which RepoData objects were added and so can be used to iterate over the RepoDatas in that orde;
+        RepoData objects are added in lookup order.
+
+    byCfgRoot : dict
+        Indexes the RepoData by RepositoryCfg root.
+
+    _inputs : list
+        Caches a list of readable RepoData objects in lookup order.
+
+    _outputs : list
+        Caches a list of writable RepoData objects in lookup order.
+
+    _all : list
+        Caches a list of all the RepoData objects in lookup order.
+    """
 
     def __init__(self):
-        # {repo root, RepoData}, iterates in lookup order (order added)
         self.byRepoRoot = collections.OrderedDict()
-        # {repo cfgRoot, RepoData}
         self.byCfgRoot = {}
         self._inputs = None
         self._outputs = None
