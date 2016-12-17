@@ -77,10 +77,10 @@ class RepoData(object):
         The tags that apply to this repository, if any
     """
 
-    def __init__(self, args, cfg, repo, tags):
+    def __init__(self, args, cfg, tags):
         self.args = args
         self.cfg = cfg
-        self.repo = repo
+        self.repo = None
         self.mode = args.mode
         # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
         # the cfg (e.g. parents inherit their childrens' tags)
@@ -99,8 +99,10 @@ class RepoDataContainer(object):
     """Container object for RepoData instances owned by a Butler instance."""
 
     def __init__(self):
-        self.byRepoRoot = collections.OrderedDict()  # {repo root, RepoData}
-        self.byCfgRoot = {}                          # {repo cfgRoot, RepoData}
+        # {repo root, RepoData}, iterates in lookup order (order added)
+        self.byRepoRoot = collections.OrderedDict()
+        # {repo cfgRoot, RepoData}
+        self.byCfgRoot = {}
         self._inputs = None
         self._outputs = None
         self._all = None
@@ -306,6 +308,9 @@ class Butler(object):
         for args in inputs:
             self._addRepo(args, inout='in', butlerIOParents=butlerIOParents)
 
+        for repoData in self._repos.all():
+            repoData.repo = Repository(repoData.cfg)
+
         self.objectCache = weakref.WeakValueDictionary()
 
 
@@ -402,8 +407,7 @@ class Butler(object):
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
                 Storage.putRepositoryCfg(cfg, args.cfgRoot)
 
-            repo = Repository(cfg)
-            self._repos.add(RepoData(args, cfg, repo, tags))
+            self._repos.add(RepoData(args, cfg, tags))
             for parent in parentsToAdd:
                 if parent in butlerIOParents:
                     args = butlerIOParents[parent]
