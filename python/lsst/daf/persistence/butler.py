@@ -700,25 +700,6 @@ class Butler(object):
             obj = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
             return obj
 
-# <<<<<<< HEAD
-#                 obj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
-#                 componentInfo.obj = obj
-#             assembler = location.assembler or genericAssembler
-#             obj = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
-#             return obj
-# =======
-#                 if componentInfo.subset:
-#                     subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
-#                     componentInfo.obj = [obj.get() for obj in subset]
-#                 else:
-#                     componentObj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
-#                     componentInfo.obj = componentObj
-#             assembler = location.assembler if location.assembler else genericAssembler
-#             compositeObj = assembler(dataId=location.dataId, componentInfo=location.componentInfo,
-#                                      cls=location.python)
-#             return compositeObj
-# >>>>>>> f5a2611... support for getting  composite subset
-
         if location.datasetType and hasattr(location.mapper, "bypass_" + location.datasetType):
             # this type loader block should get moved into a helper someplace, and duplciations removed.
             pythonType = location.getPythonType()
