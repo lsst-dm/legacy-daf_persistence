@@ -78,7 +78,7 @@ class Repository(object):
     """Represents a repository of persisted data and has methods to access that data.
     """
 
-    def __init__(self, repositoryCfg):
+    def __init__(self, repositoryCfg, parentRegistryList):
         '''Initialize a Repository with parameters input via config.
 
         :param args: an instance of RepositoryArgs
@@ -86,9 +86,9 @@ class Repository(object):
         '''
         self._storage = Storage.makeFromURI(repositoryCfg.root)
         self._mapperArgs = repositoryCfg.mapperArgs  # keep for reference in matchesArgs
-        self._initMapper(repositoryCfg)
+        self._initMapper(repositoryCfg, parentRegistryList)
 
-    def _initMapper(self, repositoryCfg):
+    def _initMapper(self, repositoryCfg, parentRegistryList):
         '''Initialize and keep the mapper in a member var.
 
         :param repositoryCfg:
@@ -125,7 +125,12 @@ class Repository(object):
                                 break
                         except TypeError:
                             pass
+            if 'parentRegistryList' in mapperArgs:
+                raise RuntimeError("'parentRegistryList' is a reserved mapper arg name")
+            mapperArgs['parentRegistryList'] = parentRegistryList
             mapper = mapper(**mapperArgs)
+        else: # mapper was instantiated when it was passed into Butler
+            mapper.setParentRegistryList(parentRegistryList)
 
         self._mapper = mapper
 
@@ -255,3 +260,15 @@ class Repository(object):
             return butlerLocationStorage.exists(location)
         else:
             return self._storage.exists(location)
+
+    def getRegistries(self):
+        """Get the sqlite registries that are used in this repository for lookups.
+
+        Returns
+        -------
+        dict
+            A dict that contains the regisrties. Keys name the different registries and are defined by the
+            mapper that owns the registry.
+        """
+        return self._mapper.getRegistries()
+

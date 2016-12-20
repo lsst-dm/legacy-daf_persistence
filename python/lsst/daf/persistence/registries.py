@@ -367,3 +367,13 @@ class SqliteRegistry(Registry):
         for row in c:
             result.append(row)
         return result
+
+    def tablesExist(self, tables):
+        for table in tables:
+            cmd = "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'" % table
+            c = self.conn.execute(cmd)
+            if c is None:
+                return False
+        return True
+
+

@@ -124,6 +124,7 @@ class RepoDataContainer(object):
         self._inputs = None
         self._outputs = None
         self._all = None
+        self._allRoots = None
 
     def add(self, repoData):
         """Add a RepoData to the container
@@ -163,16 +164,43 @@ class RepoDataContainer(object):
         return self._outputs
 
     def all(self):
-        """Get a list of all RepoData that are used to as by the Butler.
+        """Get a list of all RepoData that are used by the Butler.
         The list is created lazily as needed, and cached.
 
         Returns
         -------
-        A list of RepoData with writable repositories, in the order to be use when searching.
+        A list of RepoData, in the order to be used when searching.
         """
         if self._all is None:
             self._all = [rd for rd in self.byRepoRoot.values()]
         return self._all
+
+    def allRoots(self):
+        """Get a list that contains the roots of all RepoData that are used by the Butler.
+        The list is created lazily as needed, and cached.
+
+        Returns
+        -------
+        A list of the roots RepoData, in the order to be used when searching.
+        """
+        if self._allRoots is None:
+            self._allRoots = [key for key in self.byRepoRoot.keys()]
+        return self._allRoots
+
+    def get(self, root):
+        """Get the RepoData for the repository at root.
+
+        Parameters
+        ----------
+        root : string
+            The value of root in the RepositoryCfg
+
+        Returns
+        -------
+        RepoData or None
+            The RepoData whose root matches the root iarg, or None if not found.
+        """
+        return self.byRepoRoot.get(root, None)
 
     def __repr__(self):
         return "%s(\nbyRepoRoot=%r, \nbyCfgRoot=%r, \n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
@@ -326,8 +354,28 @@ class Butler(object):
         for args in inputs:
             self._addRepo(args, inout='in', butlerIOParents=butlerIOParents)
 
-        for repoData in self._repos.all():
-            repoData.repo = Repository(repoData.cfg)
+        def initRepo(repoRoot):
+            """Initialize the repo in self._repos at repoRoot. Initilize its parents too, as needed for
+            required arguments (such as each parent's registreis)"""
+            repoData = self._repos.get(repoRoot)
+            # if the repo in the RepoData at the root key exists, there's nothing left to do.
+            if repoData.repo:
+                return
+            parentRegistryList = []
+            # Get the registries from each parent,
+            # init the parent repo as needed so its registries can be gotten.
+            for parentRepoRoot in repoData.cfg.parents:
+                parentRepoData = self._repos.get(parentRepoRoot)
+                if not parentRepoData.repo:
+                    initRepo(parentRepoRoot)
+                    parentRepoData = self._repos.get(parentRepoRoot)
+                parentRegistries = parentRepoData.repo.getRegistries()
+                if parentRegistries:
+                    parentRegistryList.append(parentRegistries)
+            repoData.repo = Repository(repoData.cfg, parentRegistryList)
+
+        for repoRoot in self._repos.allRoots():
+            initRepo(repoRoot)
 
         self.objectCache = weakref.WeakValueDictionary()
 
