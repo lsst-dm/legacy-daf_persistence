@@ -22,7 +22,9 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 from past.builtins import basestring
+oldobject = object
 from builtins import object
+import future
 
 import copy
 import inspect
@@ -44,9 +46,9 @@ class RepositoryArgs(object):
         self.isLegacyRepository = False
 
     def __repr__(self):
-        return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
-            self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags,
-            self.mode, self.policy)
+        return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s, isLegacyRepository=%s" % \
+        (self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags,
+         self.mode, self.policy, self.isLegacyRepository)
 
     @property
     def cfgRoot(self):
@@ -111,26 +113,38 @@ class Repository(object):
                 mapperArgs = {}
             if repositoryCfg.policy and 'policy' not in mapperArgs:
                 mapperArgs['policy'] = repositoryCfg.policy
+            if 'parentRegistryList' in mapperArgs:
+                raise RuntimeError("'parentRegistryList' is a reserved mapper arg name")
             # so that root doesn't have to be redundantly passed in cfgs, if root is specified in the
             # storage and if it is an argument to the mapper, make sure that it's present in mapperArgs.
-            for arg in ('root', 'storage'):
+            # also, add the parentRegistryList to the mapper if it takes it.
+            addArgs = {'root': self._storage.root, 'storage': self._storage.root}
+            if parentRegistryList:
+                addArgs['parentRegistryList'] = parentRegistryList
+            for arg, val in addArgs.items():
                 if arg not in mapperArgs:
                     mro = inspect.getmro(mapper)
-                    if mro[-1] is object:
-                        mro = mro[:-1]
                     for c in mro:
+                        if c is object or c is oldobject:
+                            continue
                         try:
-                            if arg in inspect.getargspec(c.__init__).args:
-                                mapperArgs[arg] = self._storage.root
+                            argspec = inspect.getargspec(c.__init__)
+                            # if the init function takes the arg, add it to the list of args.
+                            if arg in argspec.args:
+                                mapperArgs[arg] = val
+                            # if the init function does not have a **kwargs input argument, we can't pass
+                            # arguments to base class init functions, so break.
+                            if argspec.keywords is None:
                                 break
                         except TypeError:
                             pass
-            if 'parentRegistryList' in mapperArgs:
-                raise RuntimeError("'parentRegistryList' is a reserved mapper arg name")
-            mapperArgs['parentRegistryList'] = parentRegistryList
             mapper = mapper(**mapperArgs)
         else: # mapper was instantiated when it was passed into Butler
-            mapper.setParentRegistryList(parentRegistryList)
+            try:
+                mapper.setParentRegistryList(parentRegistryList)
+            except AttributeError:
+                # Mapper does not take parent registries. This is ok, ignore it.
+                pass
 
         self._mapper = mapper
 
@@ -270,5 +284,12 @@ class Repository(object):
             A dict that contains the regisrties. Keys name the different registries and are defined by the
             mapper that owns the registry.
         """
-        return self._mapper.getRegistries()
+        registries = None
+        try:
+            registries = self._mapper.getRegistries()
+        except AttributeError:
+            # mappers that do not inherit from CameraMapper may not support getRegistries. Silently allow
+            # this.
+            pass
+        return registries
 

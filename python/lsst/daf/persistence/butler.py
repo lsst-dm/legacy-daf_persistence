@@ -108,6 +108,16 @@ class RepoDataContainer(object):
     byCfgRoot : dict
         Indexes the RepoData by RepositoryCfg root.
 
+    unreadable : dict
+        Used to store RepoData for repositories that should not be read or written.
+        Currently this is used to provide access to registries that are parents of write-only repositories so
+        that write-only repositories can access thier in-parent registry.
+        TODO the name unreadable is not descriptive enough. They are also unwritable. I was hoping to find a
+        name that was more generic than 'registryOnly'. Also, the mode 'x' (used in RepositoryArgs elsewhere
+        in this file is totally opaque to the intention that 'x' is to mean 'unwritable'. A single char would
+        be nice tho, so that the "if 'w' in mode" tests can continue to work. Or a word that does not contain
+        'r' or 'w'.
+
     _inputs : list
         Caches a list of readable RepoData objects in lookup order.
 
@@ -121,6 +131,7 @@ class RepoDataContainer(object):
     def __init__(self):
         self.byRepoRoot = collections.OrderedDict()
         self.byCfgRoot = {}
+        self.unreadable = {}
         self._inputs = None
         self._outputs = None
         self._all = None
@@ -133,11 +144,14 @@ class RepoDataContainer(object):
         ----------
         repoData - RepoData instance to add
         """
-        self._inputs = None
-        self._outputs = None
-        self._all = None
-        self.byRepoRoot[repoData.cfg.root] = repoData
-        self.byCfgRoot[repoData.args.cfgRoot] = repoData
+        if repoData.mode == 'x':
+            self.unreadable[repoData.cfg.root] = repoData
+        else:
+            self._inputs = None
+            self._outputs = None
+            self._all = None
+            self.byRepoRoot[repoData.cfg.root] = repoData
+            self.byCfgRoot[repoData.args.cfgRoot] = repoData
 
     def inputs(self):
         """Get a list of RepoData that are used to as inputs to the Butler.
@@ -200,7 +214,9 @@ class RepoDataContainer(object):
         RepoData or None
             The RepoData whose root matches the root iarg, or None if not found.
         """
-        return self.byRepoRoot.get(root, None)
+        for repoData in [self.byRepoRoot.get(root, None), self.unreadable.get(root, None)]:
+            if repoData:
+                return repoData
 
     def __repr__(self):
         return "%s(\nbyRepoRoot=%r, \nbyCfgRoot=%r, \n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
@@ -366,6 +382,8 @@ class Butler(object):
             # init the parent repo as needed so its registries can be gotten.
             for parentRepoRoot in repoData.cfg.parents:
                 parentRepoData = self._repos.get(parentRepoRoot)
+                if not parentRepoData:
+                    parentRepoData = self._repos.unreadable[parentRepoRoot]
                 if not parentRepoData.repo:
                     initRepo(parentRepoRoot)
                     parentRepoData = self._repos.get(parentRepoRoot)
@@ -429,8 +447,8 @@ class Butler(object):
                 if 'w' not in args.mode:
                     raise RuntimeError('Output repositories must be writable.')
             elif inout == 'in':
-                if 'r' not in args.mode:
-                    raise RuntimeError('Input repositories must be readable.')
+                if 'r' not in args.mode and 'x' not in args.mode:
+                    raise RuntimeError('Input repositories must be readable("r") or registry-only("x").')
             else:
                 raise RuntimeError('Unrecognized value for inout:' % inout)
 
@@ -438,7 +456,6 @@ class Butler(object):
             # If it exists, verify no mismatch with args.
             # If it does not exist, make the cfg and save the cfg at cfgRoot.
             cfg = Storage.getRepositoryCfg(args.cfgRoot)
-
             parentsToAdd = []
             if cfg is not None:
                 if inout == 'out':
@@ -462,24 +479,31 @@ class Butler(object):
                     else:
                         cfg.mapperArgs.update(args.mapperArgs)
                 if 'r' in args.mode:
-                    parentsToAdd = copy.copy(cfg.parents)
+                    parentsToAdd = [RepositoryArgs(cfgRoot=p, mode='r') for p in cfg.parents]
+                else:
+                    parentsToAdd = [RepositoryArgs(cfgRoot=p, mode='x') for p in cfg.parents]
             else:
                 if args.mapper is None:
                     if defaultMapper is None:
                         raise RuntimeError(
                             "Could not infer mapper and one not specified in repositoryArgs:%s" % args)
                     args.mapper = defaultMapper
-                parents = [cfgRoot for cfgRoot in list(butlerIOParents.keys()) if cfgRoot != args.cfgRoot]
+                # Add readable repos as parents to all new repositories, except  if it's a read-only
+                # repository and the cfg does not exist, it must be a legacy repo, and read-only repos do not
+                # have all readable repos added as parents.
+                if args.mode == 'r':
+                    args.isLegacyRepository = True
+                    parents = []
+                else:
+                    parents = [cfgRoot for cfgRoot in list(butlerIOParents.keys()) if cfgRoot != args.cfgRoot]
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
                 Storage.putRepositoryCfg(cfg, args.cfgRoot)
 
             self._repos.add(RepoData(args, cfg, tags))
-            for parent in parentsToAdd:
-                if parent in butlerIOParents:
-                    args = butlerIOParents[parent]
-                else:
-                    args = RepositoryArgs(cfgRoot=parent, mode='r')
-                self._addRepo(args=args, inout='in', tags=tags)
+            for parentArgs in parentsToAdd:
+                if parentArgs.cfgRoot in butlerIOParents:
+                    parentArgs = butlerIOParents[parentArgs.cfgRoot]
+                self._addRepo(args=parentArgs, inout='in', tags=tags)
 
     def __repr__(self):
         return 'Butler(datasetTypeAliasDict=%s, repos=%s, persistence=%s)' % (
