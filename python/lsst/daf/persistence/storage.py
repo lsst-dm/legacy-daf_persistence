@@ -27,7 +27,6 @@ from builtins import object
 
 import urllib.parse
 
-
 class Storage(object):
     """Base class for storages"""
 
@@ -138,3 +137,11 @@ class Storage(object):
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
+
+    @staticmethod
+    def isPosixStorage(uri):
+        from . import PosixStorage
+        parseRes = urllib.parse.urlparse(uri)
+        if parseRes.scheme in Storage.storages:
+            theClass = Storage.storages[parseRes.scheme]
+        return theClass == PosixStorage

@@ -472,6 +472,25 @@ class PosixStorage(Storage):
         # We now use the outputRoot as the main root with access to the
         # input via "_parent".
 
+    @staticmethod
+    def getParentPath(root):
+        """Get the path indicated by _parent
+
+        Parameters
+        ----------
+        root : string
+            The root of the repository
+
+        Returns
+        -------
+        string
+            The path of the _parent symlink if present, else None.
+        """
+        dir = os.path.join(root, "_parent")
+        if not os.path.exists(dir):
+            return None
+        return os.readlink(dir)
+
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)

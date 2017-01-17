@@ -44,6 +44,7 @@ class RepositoryArgs(object):
         self.mode = mode
         self.policy = Policy(policy) if policy is not None else None
         self.isLegacyRepository = False
+        self._parent = None # Butler internal use only, should be used only when isLegacyRepository is true, for _parent symlinks.
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s, isLegacyRepository=%s" % \

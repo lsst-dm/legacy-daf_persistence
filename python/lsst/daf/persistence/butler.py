@@ -45,7 +45,7 @@ import lsst.pex.policy as pexPolicy
 from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
-    genericDisassembler
+    genericDisassembler, PosixStorage
 
 
 class ButlerCfg(Policy, yaml.YAMLObject):
@@ -312,25 +312,60 @@ class Butler(object):
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}
 
-        isLegacyRepository = inputs is None and outputs is None
+        isButlerV1InputArgs = inputs is None and outputs is None
 
-        if root is not None and not isLegacyRepository:
+        if root is not None and not isButlerV1InputArgs:
             raise RuntimeError(
                 'root is a deprecated parameter and may not be used with the parameters input and output')
 
-        if isLegacyRepository:
+        # if version-one Butler arguments are used (root, mapper, mapperArgs), transform these into an output
+        # repository with mode=read-write.
+        if isButlerV1InputArgs:
             if root is None:
                 if hasattr(mapper, 'root'):
-                    # in legacy repos, the mapper may be given the root directly.
                     root = mapper.root
                 else:
-                    # in the past root="None" could be used to mean root='.'
                     root = '.'
             outputs = RepositoryArgs(mode='rw',
                                      root=root,
                                      mapper=mapper,
                                      mapperArgs=mapperArgs)
             outputs.isLegacyRepository = True
+
+        # sanitize the inputs & outputs:
+        # 1. put them in a list (if needed)
+        # 2. put URI strings into RepositoryArgs instances: if only a string is passed for inputs or outputs,
+        # assumption is that it's a URI; place it in a RepositoryArgs instance; cfgRoot for inputs, root for
+        # outputs.
+        # 3. set the default read-write mode on the RepositoryArgs instances (where needed)
+        # 4. check the outputs for the 'outputRoot' special case
+        # ---
+        # 1. listify
+        inputs = listify(inputs)
+        outputs = listify(outputs)
+        # 2. URI-to-RepositoryArgs
+        inputs = [RepositoryArgs(cfgRoot=i) if isinstance(i, basestring) else i for i in inputs]
+        outputs = [RepositoryArgs(root=o) if isinstance(o, basestring) else o for o in outputs]
+        # 3. set default rw modes
+        for i in inputs:
+            if i.mode is None:
+                i.mode = 'r'
+        for o in outputs:
+            if o.mode is None:
+                o.mode = 'w'
+        # 4. handle outputRoot
+        for output in outputs:
+            outputRoot = output.mapperArgs.pop('outputRoot', None) if output.mapperArgs else None
+            if outputRoot:
+                outputs = RepositoryArgs(mode='rw',
+                                         root=outputRoot,
+                                         mapper=mapper,
+                                         mapperArgs=mapperArgs)
+                outputs.isOutputRoot = True # this indicates that the root & output root were created as a
+                                            # single butler instance in Butler version 1 api, and that the
+                                            # parent's mapper should be made the same as the child's mapper,
+                                            # which is an unusual circumstance.
+                outputs.isLegacyRepository = True
 
         self.datasetTypeAliasDict = {}
 
@@ -339,21 +374,6 @@ class Butler(object):
         self.persistence = Persistence.getPersistence(persistencePolicy)
         self.log = Log.getLogger("daf.persistence.butler")
 
-        inputs = listify(inputs)
-        outputs = listify(outputs)
-
-        # if only a string is passed for inputs or outputs, assumption is that it's a URI;
-        # place it in a RepositoryArgs instance; cfgRoot for inputs, root for outputs.
-        inputs = [RepositoryArgs(cfgRoot=i) if isinstance(i, basestring) else i for i in inputs]
-        outputs = [RepositoryArgs(root=o) if isinstance(o, basestring) else o for o in outputs]
-
-        # set default rw modes on input and output args as needed
-        for i in inputs:
-            if i.mode is None:
-                i.mode = 'r'
-        for o in outputs:
-            if o.mode is None:
-                o.mode = 'w'
 
         self._repos = RepoDataContainer()
 
@@ -374,6 +394,7 @@ class Butler(object):
             """Initialize the repo in self._repos at repoRoot. Initilize its parents too, as needed for
             required arguments (such as each parent's registreis)"""
             repoData = self._repos.get(repoRoot)
+            import pdb; pdb.set_trace()
             # if the repo in the RepoData at the root key exists, there's nothing left to do.
             if repoData.repo:
                 return
@@ -396,7 +417,6 @@ class Butler(object):
             initRepo(repoRoot)
 
         self.objectCache = weakref.WeakValueDictionary()
-
 
     def _addRepo(self, args, inout, defaultMapper=None, butlerIOParents=None, tags=None):
         """Create a Repository and related infrastructure and add it to the list of repositories.
@@ -482,20 +502,32 @@ class Butler(object):
                     parentsToAdd = [RepositoryArgs(cfgRoot=p, mode='r') for p in cfg.parents]
                 else:
                     parentsToAdd = [RepositoryArgs(cfgRoot=p, mode='x') for p in cfg.parents]
+            elif Storage.isPosixStorage(args.cfgRoot) and PosixStorage.getParentPath(args.cfgRoot):
+                # if there is a _parent symlink, and so treat it as a Butler version 1 repository, and add
+                # the _parent repository as a parent input.
+                parentSymlinkPath = PosixStorage.getParentPath(args.cfgRoot)
+                args.isLegacyRepository = True
+                if (hasattr(args, 'isOutputRoot') and args.isOutputRoot) or \
+                    hasattr(args.mapper, 'outputRoot') and args.mapper.outputRoot:
+                    parentArgs = RepositoryArgs(root=parentSymlinkPath, mode='r', mapper=args.mapper,
+                                                mapperArgs=args.mapperArgs)
+                else:
+                    parentArgs = RepositoryArgs(root=parentSymlinkPath, mode='r')
+                parentArgs.isLegacyRepository = True
+                cfg = RepositoryCfg.makeFromArgs(args, [parentArgs.cfgRoot])
+                parentsToAdd = [parentArgs]
             else:
                 if args.mapper is None:
                     if defaultMapper is None:
                         raise RuntimeError(
                             "Could not infer mapper and one not specified in repositoryArgs:%s" % args)
                     args.mapper = defaultMapper
-                # Add readable repos as parents to all new repositories, except  if it's a read-only
-                # repository and the cfg does not exist, it must be a legacy repo, and read-only repos do not
-                # have all readable repos added as parents.
-                if args.mode == 'r':
-                    args.isLegacyRepository = True
-                    parents = []
-                else:
+                # if it's not a Butler version 1 repository then the repoCfg will be serialized & persisted,
+                # and all inputs to the Butler become parents of the repository.
+                if not args.isLegacyRepository:
                     parents = [cfgRoot for cfgRoot in list(butlerIOParents.keys()) if cfgRoot != args.cfgRoot]
+                else:
+                    parents = []
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
                 Storage.putRepositoryCfg(cfg, args.cfgRoot)
 
