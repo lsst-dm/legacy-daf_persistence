@@ -245,35 +245,23 @@ class Butler(object):
 
     def __init__(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
 
+        self.log = Log.getLogger("daf.persistence.butler")
+
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}
 
-        isLegacyRepository = inputs is None and outputs is None
-
-        if root is not None and not isLegacyRepository:
+        isV1Args = inputs is None and outputs is None
+        if isV1Args:
+            inputs, outputs = self._convertV1Args(root=root, mapper=mapper, mapperArgs=mapperArgs)
+        elif root:
             raise RuntimeError(
                 'root is a deprecated parameter and may not be used with the parameters input and output')
-
-        if isLegacyRepository:
-            if root is None:
-                if hasattr(mapper, 'root'):
-                    # in legacy repos, the mapper may be given the root directly.
-                    root = mapper.root
-                else:
-                    # in the past root="None" could be used to mean root='.'
-                    root = '.'
-            outputs = RepositoryArgs(mode='rw',
-                                     root=root,
-                                     mapper=mapper,
-                                     mapperArgs=mapperArgs)
-            outputs.isLegacyRepository = True
 
         self.datasetTypeAliasDict = {}
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
-        self.log = Log.getLogger("daf.persistence.butler")
 
         inputs = listify(inputs)
         outputs = listify(outputs)
@@ -307,6 +295,45 @@ class Butler(object):
             self._addRepo(args, inout='in', butlerIOParents=butlerIOParents)
 
         self.objectCache = weakref.WeakValueDictionary()
+
+
+    def _convertV1Args(self, root, mapper, mapperArgs):
+        """Convert Butler V1 args (root, mapper, mapperArgs) to V2 args (inputs, outputs)
+
+        Parameters
+        ----------
+        root : string
+            Posix path to repository root
+        mapper : class, class instance, or string
+            Instantiated class, a class object to be instantiated, or a string that refers to a class that
+            can be imported & used as the mapper.
+        mapperArgs : dict
+            Args & their values used when instnatiating the mapper.
+
+        Returns
+        -------
+        tuple
+            (inputs, outputs) - values to be used for inputs and outputs in Butler.__init__
+        """
+        # mapper ought to be an importable string or a class object (not a mapper class instance)
+        if not isinstance(mapper, basestring) and not inspect.isclass(mapper):
+            err = "mapper ought to be an importable string or a class object (not a mapper class instance)"
+            # TBD we might have to handle this. It'll be complicated because of e.g. outputRoot & calibRoot
+            self.log.warn(err)
+        inputs = None
+        if root is None:
+            if hasattr(mapper, 'root'):
+                # in legacy repos, the mapper may be given the root directly.
+                root = mapper.root
+            else:
+                # in the past root="None" could be used to mean root='.'
+                root = '.'
+        outputs = RepositoryArgs(mode='rw',
+                                 root=root,
+                                 mapper=mapper,
+                                 mapperArgs=mapperArgs)
+        outputs.isLegacyRepository = True
+        return inputs, outputs
 
 
     def _addRepo(self, args, inout, defaultMapper=None, butlerIOParents=None, tags=None):
