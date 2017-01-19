@@ -160,6 +160,27 @@ class PosixStorage(Storage):
 
         return None
 
+    @staticmethod
+    def getParentSymlinkPath(root):
+        """For Butler V1 Repositories only, if a _parent symlink exists, get the location pointed to by the
+        symlink.
+
+        Parameters
+        ----------
+        root : string
+            A path to the folder on the local filesystem.
+
+        Returns
+        -------
+        string or None
+            A path to the parent folder indicated by the _parent symlink, or None if there is no _parent
+            symlink at root.
+        """
+        linkpath = os.path.join(root, '_parent')
+        if os.path.exists(linkpath):
+            return os.readlink(os.path.join(root, '_parent'))
+        return None
+
     def mapperClass(self):
         """Get the class object for the mapper specified in the stored repository"""
         return PosixStorage.getMapperClass(self.root)
@@ -317,6 +338,26 @@ class PosixStorage(Storage):
         """Perform a lookup in the registry"""
         return self.registry.lookup(*args, **kwargs)
 
+    @staticmethod
+    def v1RepoExists(root):
+        """Test if a Version 1 Repository exists.
+
+        Version 1 Repositories only exist in posix storages and do not have a RepositoryCfg file.
+        To "exist" the folder at root must exist and contain files or folders.
+
+        Parameters
+        ----------
+        root : string
+            A path to a folder on the local filesystem.
+
+        Returns
+        -------
+        bool
+            True if the repository at root exists, else False.
+        """
+        if not os.path.exists(root):
+            return False
+        return os.listdir(root)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
