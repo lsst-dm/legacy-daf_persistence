@@ -34,13 +34,13 @@ from past.builtins import basestring
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, policy, isLegacyRepository=False):
+    def __init__(self, root, mapper, mapperArgs, parents, policy, isV1Repo=False):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
         self._parents = iterify(parents)
         self._policy = policy
-        self._isLegacyRepository = isLegacyRepository
+        self._isV1Repo = isV1Repo
 
     @staticmethod
     def v1Constructor(loader, node):
@@ -62,7 +62,7 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=d['_parents'], isLegacyRepository=d['_isLegacyRepository'],
+                            parents=d['_parents'], isV1Repo=d['_isV1Repo'],
                             policy=d.get('_policy', None))
         return cfg
 
@@ -92,6 +92,12 @@ class RepositoryCfg(yaml.YAMLObject):
     def mapper(self):
         return self._mapper
 
+    @mapper.setter
+    def mapper(self, mapper):
+        if not self._isV1Repo:
+            raise RuntimeError("should only set mapper outside init on v1 repos")
+        self._mapper = mapper
+
     @property
     def mapperArgs(self):
         return self._mapperArgs
@@ -118,13 +124,17 @@ class RepositoryCfg(yaml.YAMLObject):
     def policy(self):
         return self._policy
 
+    @property
+    def isV1Repo(self):
+        return self._isV1Repo
+
     @staticmethod
-    def makeFromArgs(repositoryArgs, parents):
+    def makeFromArgs(repositoryArgs, parents, isV1Repo=False):
         cfg = RepositoryCfg(root=repositoryArgs.root,
                             mapper=repositoryArgs.mapper,
                             mapperArgs=repositoryArgs.mapperArgs,
                             parents=parents,
-                            isLegacyRepository=repositoryArgs.isLegacyRepository,
+                            isV1Repo=isV1Repo,
                             policy=repositoryArgs.policy)
         return cfg
 
@@ -154,13 +164,13 @@ class RepositoryCfg(yaml.YAMLObject):
         return True
 
     def __repr__(self):
-        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, policy=%s, isLegacyRepository=%s)" % (
+        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, policy=%s, isV1Repo=%s)" % (
             self.__class__.__name__,
             self._root,
             self._mapper,
             self._mapperArgs,
             self._parents,
             self._policy,
-            self._isLegacyRepository)
+            self._isV1Repo)
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)
