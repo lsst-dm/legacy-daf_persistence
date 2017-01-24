@@ -179,6 +179,7 @@ class Repository(object):
         :return: The type of item is dependent on the mapper being used but is typically a ButlerLocation.
         """
         if self._mapper is None:
+            raise RuntimeError("no mapper for repo") # remind me why we allow this
             return None
         loc = self._mapper.map(*args, **kwargs)
         if loc is None:
