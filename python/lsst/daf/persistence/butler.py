@@ -328,10 +328,12 @@ class Butler(object):
 
         self._repos._buildLookupList(inputs, outputs)
 
-        defaultMapper = self._getDefaultMapper(inputs)
+        defaultMapper = self._getDefaultMapper()
+        if defaultMapper:
+            self._assignDefaultMapper(defaultMapper)
 
-        for repoData in self._repos.all():
-            repoData.repo = Repository(cfg)
+        for repoData in self._repos.all().values():
+            repoData.repo = Repository(repoData.cfg)
 
 
     def _createRepoData(self, args, inout, instanceParents):
@@ -383,11 +385,16 @@ class Butler(object):
                           "%s. (A Butler V1 Repository 'exists' if the root " \
                           " folder exists AND contains items.)" % args.cfgRoot
                     raise RuntimeError(msg)
-                cfg = RepositoryCfg.makeFromArgs()
+                if inout == 'out' and not v1RepoExists:
+                    p = instanceParents
+                else:
+                    p = None
+                cfg = RepositoryCfg.makeFromArgs(args, p, isV1Repo=v1RepoExists)
+                if not v1RepoExists:
+                    cfg.isNewRepo = True
                 repoData = RepoData(args=args, cfg=cfg)
                 self._repos.add(repoData)
                 if v1RepoExists:
-                    cfg.isLegacyRepository = True
                     cfg.mapper = PosixStorage.getMapperClass(args.cfgRoot)
                     parent = PosixStorage.getParentSymlinkPath(args.cfgRoot)
                     if parent:
@@ -404,6 +411,7 @@ class Butler(object):
                           "%s." % args.cfgRoot
                     raise RuntimeError(msg)
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
+                cfg.isNewRepo = True
                 repoData = RepoData(args=args, cfg=cfg)
                 Storage.putRepositoryCfg(cfg, args.cfgRoot)
                 self._repos.add(repoData)
@@ -413,7 +421,7 @@ class Butler(object):
         parents = []
         for args in outputs + inputs:
             if 'r' in args.mode:
-                parents.append = args.cfgRoot
+                parents.append(args.cfgRoot)
         return parents
 
     def _createRepoDatas(self, inputs, outputs):
@@ -471,6 +479,7 @@ class Butler(object):
             # TBD we might have to handle this. It'll be complicated because of e.g. outputRoot & calibRoot
             self.log.warn(err)
         inputs = None
+
         if root is None:
             if hasattr(mapper, 'root'):
                 # in legacy repos, the mapper may be given the root directly.
@@ -489,7 +498,6 @@ class Butler(object):
         return 'Butler(datasetTypeAliasDict=%s, repos=%s, persistence=%s)' % (
             self.datasetTypeAliasDict, self._repos, self.persistence)
 
-    @staticmethod
     def _getDefaultMapper(self):
         """Get the default mapper. Currently this means if all the repos use
         exactly the same mapper, that mapper may be considered the default.
@@ -500,19 +508,23 @@ class Butler(object):
         only a depth-first search on each of the input & output repos, and
         use the first-found mapper for each of those. TBD.
 
+        Parameters
+        ----------
+        inputs : TYPE
+            Description
+
         Returns
         -------
         Mapper class or None
             Returns the class type of the default mapper, or None if a default
             mapper can not be determined.
         """
-        allRepoDatas = self._repos.all
         defaultMapper = None
 
-
-        for rd in self._repos.all:
-            if rd.cfg.mapper is not None:
-                mapper = cfg.mapper
+        for inputRepoData in self._repos.inputs():
+            mapper = None
+            if inputRepoData.cfg.mapper is not None:
+                mapper = inputRepoData.cfg.mapper
                 # if the mapper is:
                 # * a string, import it.
                 # * a class instance, get its class type
@@ -521,14 +533,23 @@ class Butler(object):
                     mapper = doImport(mapper)
                 elif not inspect.isclass(mapper):
                     mapper = mapper.__class__
-            if mapper == defaultMapper:
+            # If no mapper has been found, note the first found mapper.
+            # Then, if a mapper has been found and each next mapper matches it,
+            # continue looking for mappers.
+            # If a mapper has been found and another non-matching mapper is
+            # found then we have no default, return None.
+            if defaultMapper is None:
+                defaultMapper = mapper
+            elif mapper == defaultMapper:
                 continue
-            else:
-                return
-        if len(mappers) == 1:
-            return mappers.pop()
-        else:
-            return None
+            elif mapper is not None:
+                return None
+        return defaultMapper
+
+    def _assignDefaultMapper(self, defaultMapper):
+        for repoData in self._repos.all().values():
+            if repoData.cfg.mapper is None and (hasattr(repoData.cfg, 'isNewRepo') or repoData.cfg.isV1Repo):
+                repoData.cfg.mapper = defaultMapper
 
     @staticmethod
     def getMapperClass(root):
