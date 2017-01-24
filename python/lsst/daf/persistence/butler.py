@@ -303,11 +303,20 @@ class Butler(object):
             raise RuntimeError(
                 'root is a deprecated parameter and may not be used with the parameters input and output')
 
-        # these are cached, their order is used when building the lookup list.
-        self.inputs = inputs
-        self.outputs = outputs
-
         self.datasetTypeAliasDict = {}
+
+        # make sure inputs and outputs are lists, and if list items are a string convert it RepositoryArgs.
+        inputs = listify(inputs)
+        outputs = listify(outputs)
+        inputs = [RepositoryArgs(cfgRoot=args) if isinstance(args, basestring) else args for args in inputs]
+        outputs = [RepositoryArgs(cfgRoot=args) if isinstance(args, basestring) else args for args in outputs]
+        # Set default rw modes on input and output args as needed
+        for args in inputs:
+            if args.mode is None:
+                args.mode = 'r'
+        for args in outputs:
+            if args.mode is None:
+                args.mode = 'w'
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
@@ -315,38 +324,28 @@ class Butler(object):
 
         self._createRepoDatas(inputs, outputs)
 
-        self._setRepoDataTags(inputs, outputs)
+        # self._setRepoDataTags(inputs, outputs)
 
         self._repos._buildLookupList(inputs, outputs)
 
         defaultMapper = self._getDefaultMapper(inputs)
 
-        butlerIOParents = collections.OrderedDict()
-        for args in outputs + inputs:
-            if 'r' in args.mode:
-                butlerIOParents[args.cfgRoot] = args
-
-        self._initRepos(defaultMapper=defaultMapper, parents=butlerIOParents)
-
-        for args in outputs:
-            self._addRepo(args, inout='out', defaultMapper=defaultMapper, butlerIOParents=butlerIOParents)
-
-        for args in inputs:
-            self._addRepo(args, inout='in', butlerIOParents=butlerIOParents)
-
-        self.objectCache = weakref.WeakValueDictionary()
+        for repoData in self._repos.all():
+            repoData.repo = Repository(cfg)
 
 
-    def _createRepoData(self, args, inout):
+    def _createRepoData(self, args, inout, instanceParents):
         """Make a RepoData object for args, adding it to the RepoDataContainer.
 
         Parameters
         ----------
-        args : string or RepoArgs
-            String that is a URI to the root of a repo that contains a RepositoryCfg, or a RepositoryArgs that
-            describes a new or existing Repository.
+        args : RepoArgs
+            A RepositoryArgs that describes a new or existing Repository.
         inout : 'in' or 'out'
             Indicates if this Repository should be used by the Butler as an input or an output.
+        instanceParents : list of string
+            URI/path to the RepositoryCfg of parents in this instance of Butler; inputs and readable outputs
+            (but not their parents, grand-parents are looked up when the parents are loaded)
 
         Returns
         -------
@@ -356,12 +355,6 @@ class Butler(object):
         # place it in a RepositoryArgs instance; cfgRoot for inputs, root for outputs.
         if inout not in ('in', 'out'):
             raise RuntimeError("inout must be either 'in' or 'out'")
-        # if args is a string, convert ot RepositoryArgs:
-        if isinstance(args, basestring):
-            if inout == 'in':
-                args = RepositoryArgs(cfgRoot=args)
-            else:
-                args = RepositoryArgs(root=args)
         # if we already have RepoData for these repoArgs, we're done with that repo and it's parents.
         if args.cfgRoot in self._repos.byCfgRoot:
             return
@@ -370,6 +363,8 @@ class Butler(object):
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
         if cfg:
             if not cfg.matchesArgs(args):
+                if cfg.parents != instanceParents:
+                    raise RuntimeError("Parents do not match.") # maybe this is ok to capture in an intermediate cfg?
                 storedCfg = cfg
                 cfg = RepositoryCfg.makeFromArgs(args)
             else:
@@ -377,7 +372,7 @@ class Butler(object):
             repoData = RepoData(args=args, cfg=cfg, storedCfg=storedCfg)
             self._repos.add(repoData)
             for parentArgs in cfg.parents:
-                self._createRepoData(RepositoryArgs(parentArgs, mode='r'), 'in')
+                self._createRepoData(RepositoryArgs(parentArgs, mode='r'), 'in', instanceParents)
         # Handle the case where a RepositoryCfg file does not exist:
         else:
             # Posix repos might be Butler V1 Repos, requires special handling:
@@ -408,9 +403,18 @@ class Butler(object):
                     msg = "Input repositories must exist; no repo found at " \
                           "%s." % args.cfgRoot
                     raise RuntimeError(msg)
-                cfg = RepositoryCfg.makeFromArgs(args)
+                cfg = RepositoryCfg.makeFromArgs(args, parents)
                 repoData = RepoData(args=args, cfg=cfg)
+                Storage.putRepositoryCfg(cfg, args.cfgRoot)
                 self._repos.add(repoData)
+
+    @staticmethod
+    def _getParentsList(inputs, outputs):
+        parents = []
+        for args in outputs + inputs:
+            if 'r' in args.mode:
+                parents.append = args.cfgRoot
+        return parents
 
     def _createRepoDatas(self, inputs, outputs):
         """Create the RepoDataContainer and put a RepoData object in it for each repository listed in inputs
@@ -421,29 +425,27 @@ class Butler(object):
 
         Parameters
         ----------
-        inputs : list of string and/or RepoArgs
+        inputs : list of RepoArgs
             Repositories to be used by the Butler as as input repositories.
-        outputs : list of string and/or RepoArgs
+        outputs : list of RepoArgs
             Repositories to be used by the Butler as as output repositories.
 
         Returns
         -------
         None
         """
-        inputs = listify(inputs)
-        outputs = listify(outputs)
-
         try:
             if self._repos:
                 raise RuntimeError("Must not call _createRepoDatas twice.")
         except AttributeError:
             pass
         self._repos = RepoDataContainer()
+        parents = self._getParentsList(inputs, outputs)
 
         for outputArgs in outputs:
-            self._createRepoData(outputArgs, 'out')
+            self._createRepoData(outputArgs, 'out', parents)
         for inputArgs in inputs:
-            self._createRepoData(inputArgs, 'in')
+            self._createRepoData(inputArgs, 'in', parents)
 
     def _convertV1Args(self, root, mapper, mapperArgs):
         """Convert Butler V1 args (root, mapper, mapperArgs) to V2 args (inputs, outputs)
@@ -482,93 +484,6 @@ class Butler(object):
                                  mapperArgs=mapperArgs)
         outputs.isLegacyRepository = True
         return inputs, outputs
-
-
-    def _addRepo(self, args, inout, defaultMapper=None, butlerIOParents=None, tags=None):
-        """Create a Repository and related infrastructure and add it to the list of repositories.
-
-        Parameters
-        ----------
-        args - RepositoryArgs
-            settings used to create the repository.
-        inout - string
-            must be 'in' our 'out', indicates how the repository is to be used. Input repos are only read
-            from, and output repositories may be read from and/or written to (w/rw of output repos depends on
-            args.mode)
-        defaultMapper - mapper class or None
-            if a default mapper could be inferred from inputs then this will be a class object that can be
-            used for any outputs that do not explicitly define their mapper. If None then a mapper class could
-            not be inferred and a mapper must be defined by each output.
-        butlerIOParents - ordered dict
-            The keys are cfgRoot of repoArgs, val is the repoArgs. This is all the explicit input and output
-            repositories to the butler __init__ function, it is used when determining what the parents of
-            writable repositories are.
-        tags - any or list of any
-            Any object that can be tested to be the same as the tag in a dataId passed into butler input
-            functions. Applies only to input repositories: If tag is specified by the dataId then the repo
-            will only be read from used if the tag in the dataId matches a tag used for that repository.
-        """
-        if butlerIOParents is None:
-            butlerIOParents = {}
-
-        tags = copy.copy(setify(tags))
-        tags.update(args.tags)
-
-        # If this repository has already been loaded/created, compare the input args to the exsisting repo;
-        # if they don't match raise an exception - the caller has to sort this out.
-        if args.cfgRoot in self._repos.byCfgRoot:
-            # need to implement the function that sets tags into each repo data.
-            pass
-        else:
-            # If we are here, the repository is not yet loaded by butler. Do the loading:
-
-            # Try to get the cfg.
-            # If it exists, verify no mismatch with args.
-            # If it does not exist, make the cfg and save the cfg at cfgRoot.
-            cfg = Storage.getRepositoryCfg(args.cfgRoot)
-
-            parentsToAdd = []
-            if cfg is not None:
-                if inout == 'out':
-                    # Parents used by this butler instance must match the parents of any existing output
-                    # repositories used by this butler. (If there is a configuration change a new output
-                    # repository should be created).
-                    # IE cfg.parents can have parents that are not passed in as butler inputs or readable
-                    # outputs, but the butler may not have readable i/o that is not a parent of an already
-                    # existing output.
-                    for cfgRoot in butlerIOParents:
-                        if cfgRoot not in cfg.parents and cfgRoot != args.cfgRoot:
-                            raise RuntimeError(
-                                "Existing output repository parents do not match butler's inputs.")
-                if not cfg.matchesArgs(args):
-                    raise RuntimeError(
-                        "Persisted RepositoryCfg and passed-in RepositoryArgs have"
-                        " conflicting parameters:\n" + "\t%s\n\t%s", (cfg, args))
-                if args.mapperArgs is not None:
-                    if cfg.mapperArgs is None:
-                        cfg.mapperArgs = args.mapperArgs
-                    else:
-                        cfg.mapperArgs.update(args.mapperArgs)
-                if 'r' in args.mode:
-                    parentsToAdd = copy.copy(cfg.parents)
-            else:
-                if args.mapper is None:
-                    if defaultMapper is None:
-                        raise RuntimeError(
-                            "Could not infer mapper and one not specified in repositoryArgs:%s" % args)
-                    args.mapper = defaultMapper
-                parents = [cfgRoot for cfgRoot in list(butlerIOParents.keys()) if cfgRoot != args.cfgRoot]
-                cfg = RepositoryCfg.makeFromArgs(args, parents)
-                Storage.putRepositoryCfg(cfg, args.cfgRoot)
-
-            repo = Repository(cfg)
-            self._repos.add(RepoData(args, cfg, repo, tags))
-            for parent in parentsToAdd:
-                if parent in butlerIOParents:
-                    args = butlerIOParents[parent]
-                else:
-                    args = RepositoryArgs(cfgRoot=parent, mode='r')
-                self._addRepo(args=args, inout='in', tags=tags)
 
     def __repr__(self):
         return 'Butler(datasetTypeAliasDict=%s, repos=%s, persistence=%s)' % (
