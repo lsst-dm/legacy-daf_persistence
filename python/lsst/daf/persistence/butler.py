@@ -103,11 +103,11 @@ class RepoDataContainer(object):
     """Container object for RepoData instances owned by a Butler instance."""
 
     def __init__(self):
-        self.byRepoRoot = collections.OrderedDict()  # {repo root, RepoData}
-        self.byCfgRoot = {}                          # {repo cfgRoot, RepoData}
+        self.byRepoRoot = {} # {args.root, RepoData}
+        self.byCfgRoot = {}  # {args.cfgRoot, RepoData}
         self._inputs = None
         self._outputs = None
-        self._all = None
+        self._all = None # {cfg.root, RepoData}
 
     def add(self, repoData):
         """Add a RepoData to the container
@@ -116,9 +116,6 @@ class RepoDataContainer(object):
         ----------
         repoData - RepoData instance to add
         """
-        self._inputs = None
-        self._outputs = None
-        self._all = None
         self.byRepoRoot[repoData.cfg.root] = repoData
         self.byCfgRoot[repoData.args.cfgRoot] = repoData
 
@@ -131,7 +128,7 @@ class RepoDataContainer(object):
         A list of RepoData with readable repositories, in the order to be used when searching.
         """
         if self._inputs is None:
-            self._inputs = [rd for rd in self.byRepoRoot.values() if 'r' in rd.mode]
+            raise RuntimeError("Inputs not yet initialized.")
         return self._inputs
 
     def outputs(self):
@@ -143,7 +140,7 @@ class RepoDataContainer(object):
         A list of RepoData with writable repositories, in the order to be use when searching.
         """
         if self._outputs is None:
-            self._outputs = [rd for rd in self.byRepoRoot.values() if 'w' in rd.mode]
+            raise RuntimeError("Outputs not yet initialized.")
         return self._outputs
 
     def all(self):
@@ -155,7 +152,7 @@ class RepoDataContainer(object):
         A list of RepoData with writable repositories, in the order to be use when searching.
         """
         if self._all is None:
-            self._all = [rd for rd in self.byRepoRoot.values()]
+            raise RuntimeError("The all list is not yet initialized.")
         return self._all
 
     def __repr__(self):
@@ -166,6 +163,51 @@ class RepoDataContainer(object):
             self._inputs,
             self._outputs,
             self._all)
+
+    def _buildLookupList(self, inputs, outputs):
+        """Buld the lists of inputs, outputs, and all repo datas in lookup
+        order.
+
+        Parameters
+        ----------
+        inputs : list of RepositoryArgs
+            The input RepositoryArgs, in order.
+        outputs : list of RepositoryArgs
+            The output RepositoryArgs, in order.
+
+        Returns
+        -------
+        None
+        """
+        def addRepoDataToLists(repoData, inout):
+            """"Adds the cfg represented by repoData to the _all dict/list, as
+            well as the _inputs or _outputs list, as indicated by inout. Then,
+            adds all the parents of the cfg to the lists."""
+            if repoData.cfg.root in self._all:
+                return
+            self._all[repoData.cfg.root] = repoData
+            if inout == 'in':
+                self._inputs.append(repoData)
+            elif inout == 'out':
+                self._outputs.append(repoData)
+                if 'r' in repoData.args.mode:
+                    self._inputs.append(repoData)
+            else:
+                raise RuntimeError("'inout' must be 'in' or 'out', not %s" % inout)
+            for parent in repoData.cfg.parents:
+                if 'r' in repoData.args.mode:
+                    addRepoDataToLists(self.byRepoRoot[parent], 'in')
+
+        self._all = collections.OrderedDict()
+        self._inputs = []
+        self._outputs = []
+
+        for repoArgs in outputs:
+            repoData = self.byCfgRoot[repoArgs.cfgRoot]
+            addRepoDataToLists(repoData, 'out')
+        for repoArgs in inputs:
+            repoData = self.byCfgRoot[repoArgs.cfgRoot]
+            addRepoDataToLists(repoData, 'in')
 
 
 class Butler(object):
@@ -261,6 +303,10 @@ class Butler(object):
             raise RuntimeError(
                 'root is a deprecated parameter and may not be used with the parameters input and output')
 
+        # these are cached, their order is used when building the lookup list.
+        self.inputs = inputs
+        self.outputs = outputs
+
         self.datasetTypeAliasDict = {}
 
         # Always use an empty Persistence policy until we can get rid of it
@@ -269,12 +315,18 @@ class Butler(object):
 
         self._createRepoDatas(inputs, outputs)
 
+        self._setRepoDataTags(inputs, outputs)
+
+        self._repos._buildLookupList(inputs, outputs)
+
         defaultMapper = self._getDefaultMapper(inputs)
 
         butlerIOParents = collections.OrderedDict()
         for args in outputs + inputs:
             if 'r' in args.mode:
                 butlerIOParents[args.cfgRoot] = args
+
+        self._initRepos(defaultMapper=defaultMapper, parents=butlerIOParents)
 
         for args in outputs:
             self._addRepo(args, inout='out', defaultMapper=defaultMapper, butlerIOParents=butlerIOParents)
@@ -283,6 +335,7 @@ class Butler(object):
             self._addRepo(args, inout='in', butlerIOParents=butlerIOParents)
 
         self.objectCache = weakref.WeakValueDictionary()
+
 
     def _createRepoData(self, args, inout):
         """Make a RepoData object for args, adding it to the RepoDataContainer.
@@ -464,26 +517,10 @@ class Butler(object):
         # If this repository has already been loaded/created, compare the input args to the exsisting repo;
         # if they don't match raise an exception - the caller has to sort this out.
         if args.cfgRoot in self._repos.byCfgRoot:
-            repoData = self._repos.byCfgRoot[args.cfgRoot]
-            if not repoData.cfg.matchesArgs(args):
-                raise RuntimeError("Mismatched repository configurations passed in or loaded:" +
-                                   "\n\tnew args:%s" +
-                                   "\n\texisting repoData:%s" %
-                                   (args, repoData))
-            repoData.tags.update(setify(tags))
+            # need to implement the function that sets tags into each repo data.
+            pass
         else:
             # If we are here, the repository is not yet loaded by butler. Do the loading:
-
-            # Verify mode is legal (must be writeable for outputs, readable for inputs).
-            # And set according to the default value if needed.
-            if inout == 'out':
-                if 'w' not in args.mode:
-                    raise RuntimeError('Output repositories must be writable.')
-            elif inout == 'in':
-                if 'r' not in args.mode:
-                    raise RuntimeError('Input repositories must be readable.')
-            else:
-                raise RuntimeError('Unrecognized value for inout:' % inout)
 
             # Try to get the cfg.
             # If it exists, verify no mismatch with args.
@@ -538,24 +575,41 @@ class Butler(object):
             self.datasetTypeAliasDict, self._repos, self.persistence)
 
     @staticmethod
-    def _getDefaultMapper(inputs):
-        mappers = set()
-        for args in inputs:
-            if args.mapper is not None:
-                mapper = args.mapper
+    def _getDefaultMapper(self):
+        """Get the default mapper. Currently this means if all the repos use
+        exactly the same mapper, that mapper may be considered the default.
+
+        This definition may be changing; mappers may be able to exclude
+        themselves as candidates for default, and they may nominate a different
+        mapper instead. Also, we may not want to look at *all* the repos, but
+        only a depth-first search on each of the input & output repos, and
+        use the first-found mapper for each of those. TBD.
+
+        Returns
+        -------
+        Mapper class or None
+            Returns the class type of the default mapper, or None if a default
+            mapper can not be determined.
+        """
+        allRepoDatas = self._repos.all
+        defaultMapper = None
+
+
+        for rd in self._repos.all:
+            if rd.cfg.mapper is not None:
+                mapper = cfg.mapper
                 # if the mapper is:
                 # * a string, import it.
                 # * a class instance, get its class type
                 # * a class, do nothing; use it
                 if isinstance(mapper, basestring):
-                    mapper = doImport(args.mapper)
+                    mapper = doImport(mapper)
                 elif not inspect.isclass(mapper):
                     mapper = mapper.__class__
+            if mapper == defaultMapper:
+                continue
             else:
-                cfgRoot = args.cfgRoot
-                mapper = Butler.getMapperClass(cfgRoot)
-            mappers.add(mapper)
-
+                return
         if len(mappers) == 1:
             return mappers.pop()
         else:
