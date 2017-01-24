@@ -88,9 +88,7 @@ class RepoData(object):
         self.mode = args.mode
         # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
         # the cfg (e.g. parents inherit their childrens' tags)
-        if not isinstance(tags, set):
-            raise RuntimeError("tags passed into RepoData must be in a set.")
-        self.tags = None
+        self.tags = set()
 
     def __reduce__(self):
         return (RepoData, (self.args, self.cfg, self.repo, self.mode, self.tags))
@@ -98,6 +96,8 @@ class RepoData(object):
     def __repr__(self):
         return "RepoData(args=%s cfg=%s repo=%s tags=%s" % (self.args, self.cfg, self.repo, self.tags)
 
+    def addTags(self, tags):
+        self.tags = self.tags.union(tags)
 
 class RepoDataContainer(object):
     """Container object for RepoData instances owned by a Butler instance."""
@@ -324,15 +324,33 @@ class Butler(object):
 
         self._createRepoDatas(inputs, outputs)
 
-        # self._setRepoDataTags(inputs, outputs)
-
         self._repos._buildLookupList(inputs, outputs)
+
+        self._setRepoDataTags()
 
         defaultMapper = self._getDefaultMapper()
         self._assignDefaultMapper(defaultMapper)
 
         for repoData in self._repos.all().values():
             repoData.repo = Repository(repoData.cfg)
+
+
+    def _setRepoDataTags(self):
+        """Set the tags from each repoArgs into all its parent repoArgs so that they can be included in tagged
+        searches.
+
+        Returns
+        -------
+        None
+        """
+        def setTags(butler, repoData, tags):
+            tags.update(repoData.args.tags)
+            repoData.addTags(tags)
+            for parent in repoData.cfg.parents:
+                setTags(butler, butler._repos.byRepoRoot[parent], copy.copy(tags))
+
+        for repoData in self._repos.all().values():
+            setTags(self, repoData, set())
 
 
     def _createRepoData(self, args, inout, instanceParents):
@@ -386,6 +404,8 @@ class Butler(object):
                     raise RuntimeError(msg)
                 if inout == 'out' and not v1RepoExists:
                     p = instanceParents
+                    if args.cfgRoot in p:
+                        p.remove(args.cfgRoot)
                 else:
                     p = None
                 cfg = RepositoryCfg.makeFromArgs(args, p, isV1Repo=v1RepoExists)
