@@ -408,7 +408,7 @@ class Butler(object):
                         p.remove(args.cfgRoot)
                 else:
                     p = None
-                cfg = RepositoryCfg.makeFromArgs(args, p, isV1Repo=v1RepoExists)
+                cfg = RepositoryCfg.makeFromArgs(args, p, isV1Repository=v1RepoExists)
                 if not v1RepoExists:
                     cfg.isNewRepo = True
                 repoData = RepoData(args=args, cfg=cfg)
@@ -510,7 +510,7 @@ class Butler(object):
                                  root=root,
                                  mapper=mapper,
                                  mapperArgs=mapperArgs)
-        outputs.isLegacyRepository = True
+        outputs.isV1Repository = True
         return inputs, outputs
 
     def __repr__(self):
@@ -567,7 +567,7 @@ class Butler(object):
 
     def _assignDefaultMapper(self, defaultMapper):
         for repoData in self._repos.all().values():
-            if repoData.cfg.mapper is None and (hasattr(repoData.cfg, 'isNewRepo') or repoData.cfg.isV1Repo):
+            if repoData.cfg.mapper is None and (hasattr(repoData.cfg, 'isNewRepo') or repoData.cfg.isV1Repository):
                 if defaultMapper is None:
                     raise RuntimeError(
                         "No mapper specified for %s and no default mapper could be determined." %

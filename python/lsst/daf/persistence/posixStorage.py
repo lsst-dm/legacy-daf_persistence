@@ -89,13 +89,13 @@ class PosixStorage(Storage):
                                               root=parseRes.path,
                                               mapperArgs=None,
                                               parents=None,
-                                              isLegacyRepository=True,
+                                              isV1Repository=True,
                                               policy=None)
         return repositoryCfg
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
-        if cfg.isLegacyRepository:
+        if cfg.isV1Repository:
             # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by
             # the _parent symlink)
             return
