@@ -408,9 +408,8 @@ class Butler(object):
                         p.remove(args.cfgRoot)
                 else:
                     p = None
-                cfg = RepositoryCfg.makeFromArgs(args, p, isV1Repository=v1RepoExists)
-                if not v1RepoExists:
-                    cfg.isNewRepo = True
+                cfg = RepositoryCfg.makeFromArgs(args, p, isV1Repository=v1RepoExists,
+                                                 isNewRepository=(not v1RepoExists))
                 repoData = RepoData(args=args, cfg=cfg)
                 self._repos.add(repoData)
                 if v1RepoExists:
@@ -429,8 +428,7 @@ class Butler(object):
                     msg = "Input repositories must exist; no repo found at " \
                           "%s." % args.cfgRoot
                     raise RuntimeError(msg)
-                cfg = RepositoryCfg.makeFromArgs(args, parents)
-                cfg.isNewRepo = True
+                cfg = RepositoryCfg.makeFromArgs(args, parents, isNewRepository=True)
                 repoData = RepoData(args=args, cfg=cfg)
                 Storage.putRepositoryCfg(cfg, args.cfgRoot)
                 self._repos.add(repoData)
@@ -567,7 +565,7 @@ class Butler(object):
 
     def _assignDefaultMapper(self, defaultMapper):
         for repoData in self._repos.all().values():
-            if repoData.cfg.mapper is None and (hasattr(repoData.cfg, 'isNewRepo') or repoData.cfg.isV1Repository):
+            if repoData.cfg.mapper is None and (repoData.cfg.isNewRepository or repoData.cfg.isV1Repository):
                 if defaultMapper is None:
                     raise RuntimeError(
                         "No mapper specified for %s and no default mapper could be determined." %
