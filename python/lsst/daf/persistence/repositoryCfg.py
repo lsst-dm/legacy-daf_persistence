@@ -34,13 +34,15 @@ from past.builtins import basestring
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, policy, isV1Repository=False):
+    def __init__(self, root, mapper, mapperArgs, parents, policy, isV1Repository=False,
+                 isNewRepository=False):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
         self._parents = iterify(parents)
         self._policy = policy
         self._isV1Repo = isV1Repository
+        self._isNewRepository = isNewRepository
 
     @staticmethod
     def v1Constructor(loader, node):
@@ -94,7 +96,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @mapper.setter
     def mapper(self, mapper):
-        if not self.isV1Repository:
+        if not self.isV1Repository and not self.isNewRepository:
             raise RuntimeError("should only set mapper outside init on v1 repos")
         self._mapper = mapper
 
@@ -121,17 +123,22 @@ class RepositoryCfg(yaml.YAMLObject):
         return self._isV1Repo
 
     @property
+    def isNewRepository(self):
+        return self._isNewRepository
+
+    @property
     def policy(self):
         return self._policy
 
     @staticmethod
-    def makeFromArgs(repositoryArgs, parents, isV1Repository=False):
+    def makeFromArgs(repositoryArgs, parents, isV1Repository=False, isNewRepository=False):
         cfg = RepositoryCfg(root=repositoryArgs.root,
                             mapper=repositoryArgs.mapper,
                             mapperArgs=repositoryArgs.mapperArgs,
                             parents=parents,
                             isV1Repository=isV1Repository,
-                            policy=repositoryArgs.policy)
+                            policy=repositoryArgs.policy,
+                            isNewRepository=isNewRepository)
         return cfg
 
     def matchesArgs(self, repositoryArgs):
