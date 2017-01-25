@@ -34,13 +34,13 @@ from past.builtins import basestring
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, policy, isV1Repo=False):
+    def __init__(self, root, mapper, mapperArgs, parents, policy, isV1Repository=False):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
         self._parents = iterify(parents)
         self._policy = policy
-        self._isV1Repo = isV1Repo
+        self._isV1Repo = isV1Repository
 
     @staticmethod
     def v1Constructor(loader, node):
@@ -62,7 +62,7 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=d['_parents'], isV1Repo=d['_isV1Repo'],
+                            parents=d['_parents'], isV1Repository=d['_isV1Repo'],
                             policy=d.get('_policy', None))
         return cfg
 
@@ -73,7 +73,7 @@ class RepositoryCfg(yaml.YAMLObject):
             self.mapper == other._mapper and \
             self.mapperArgs == other._mapperArgs and \
             self.parents == other._parents and \
-            self._isLegacyRepository == other._isLegacyRepository
+            self._isV1Repo == other._isV1Repo
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -94,7 +94,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @mapper.setter
     def mapper(self, mapper):
-        if not self._isV1Repo:
+        if not self.isV1Repository:
             raise RuntimeError("should only set mapper outside init on v1 repos")
         self._mapper = mapper
 
@@ -117,24 +117,20 @@ class RepositoryCfg(yaml.YAMLObject):
                 self._parents.append(newParent)
 
     @property
-    def isLegacyRepository(self):
-        return self._isLegacyRepository
+    def isV1Repository(self):
+        return self._isV1Repo
 
     @property
     def policy(self):
         return self._policy
 
-    @property
-    def isV1Repo(self):
-        return self._isV1Repo
-
     @staticmethod
-    def makeFromArgs(repositoryArgs, parents, isV1Repo=False):
+    def makeFromArgs(repositoryArgs, parents, isV1Repository=False):
         cfg = RepositoryCfg(root=repositoryArgs.root,
                             mapper=repositoryArgs.mapper,
                             mapperArgs=repositoryArgs.mapperArgs,
                             parents=parents,
-                            isV1Repo=isV1Repo,
+                            isV1Repository=isV1Repository,
                             policy=repositoryArgs.policy)
         return cfg
 
@@ -171,6 +167,6 @@ class RepositoryCfg(yaml.YAMLObject):
             self._mapperArgs,
             self._parents,
             self._policy,
-            self._isV1Repo)
+            self.isV1Repository)
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)
