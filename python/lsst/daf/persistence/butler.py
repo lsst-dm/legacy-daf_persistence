@@ -334,6 +334,8 @@ class Butler(object):
         for repoData in self._repos.all().values():
             repoData.repo = Repository(repoData.cfg)
 
+        self.objectCache = weakref.WeakValueDictionary()
+
 
     def _setRepoDataTags(self):
         """Set the tags from each repoArgs into all its parent repoArgs so that they can be included in tagged
