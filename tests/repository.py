@@ -742,7 +742,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                                          'TestOutputAlreadyHasParent/a')],
                                                    policy=None))
 
-        # load 'b' as 'read only' and make sure 'a' does not get used as an input.
+        # load 'b' as 'write only' and make sure 'a' does not get used as an input.
         butler = dp.Butler(outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
         self.assertEqual(len(butler._repos.inputs()), 0)
         self.assertEqual(len(butler._repos.outputs()), 1)
