@@ -41,7 +41,7 @@ class RepositoryArgs(object):
         self.tags = set(listify(tags))
         self.mode = mode
         self.policy = Policy(policy) if policy is not None else None
-        self.isLegacyRepository = False
+
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
@@ -78,17 +78,19 @@ class Repository(object):
     """Represents a repository of persisted data and has methods to access that data.
     """
 
-    def __init__(self, repositoryCfg):
-        '''Initialize a Repository with parameters input via config.
+    def __init__(self, repoData):
+        """Initialize a Repository with parameters input via RepoData.
 
-        :param args: an instance of RepositoryArgs
-        :return:
-        '''
-        self._storage = Storage.makeFromURI(repositoryCfg.root)
-        if repositoryCfg.isNewRepository and not repositoryCfg.isV1Repository:
-            self._storage.putRepositoryCfg(repositoryCfg)
-        self._mapperArgs = repositoryCfg.mapperArgs  # keep for reference in matchesArgs
-        self._initMapper(repositoryCfg)
+        Parameters
+        ----------
+        repoData : RepoData
+            Object that contains the parameters with which to init the Repository.
+        """
+        self._storage = Storage.makeFromURI(repoData.cfg.root)
+        if repoData.isNewRepository and not repoData.isV1Repository:
+            self._storage.putRepositoryCfg(repoData.cfg)
+        self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
+        self._initMapper(repoData.cfg)
 
     def _initMapper(self, repositoryCfg):
         '''Initialize and keep the mapper in a member var.

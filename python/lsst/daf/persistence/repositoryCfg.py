@@ -34,15 +34,12 @@ from past.builtins import basestring
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, policy, isV1Repository=False,
-                 isNewRepository=False):
+    def __init__(self, root, mapper, mapperArgs, parents, policy):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
         self._parents = iterify(parents)
         self._policy = policy
-        self._isV1Repo = isV1Repository
-        self._isNewRepository = isNewRepository
 
     @staticmethod
     def v1Constructor(loader, node):
@@ -64,8 +61,7 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=d['_parents'], isV1Repository=d['_isV1Repo'],
-                            policy=d.get('_policy', None))
+                            parents=d['_parents'], policy=d.get('_policy', None))
         return cfg
 
     def __eq__(self, other):
@@ -74,8 +70,7 @@ class RepositoryCfg(yaml.YAMLObject):
         return self._root == other._root and \
             self.mapper == other._mapper and \
             self.mapperArgs == other._mapperArgs and \
-            self.parents == other._parents and \
-            self._isV1Repo == other._isV1Repo
+            self.parents == other._parents
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -93,12 +88,6 @@ class RepositoryCfg(yaml.YAMLObject):
     @property
     def mapper(self):
         return self._mapper
-
-    @mapper.setter
-    def mapper(self, mapper):
-        if not self.isV1Repository and not self.isNewRepository:
-            raise RuntimeError("should only set mapper outside init on v1 repos")
-        self._mapper = mapper
 
     @property
     def mapperArgs(self):
@@ -119,26 +108,16 @@ class RepositoryCfg(yaml.YAMLObject):
                 self._parents.append(newParent)
 
     @property
-    def isV1Repository(self):
-        return self._isV1Repo
-
-    @property
-    def isNewRepository(self):
-        return self._isNewRepository
-
-    @property
     def policy(self):
         return self._policy
 
     @staticmethod
-    def makeFromArgs(repositoryArgs, parents, isV1Repository=False, isNewRepository=False):
+    def makeFromArgs(repositoryArgs, parents):
         cfg = RepositoryCfg(root=repositoryArgs.root,
                             mapper=repositoryArgs.mapper,
                             mapperArgs=repositoryArgs.mapperArgs,
                             parents=parents,
-                            isV1Repository=isV1Repository,
-                            policy=repositoryArgs.policy,
-                            isNewRepository=isNewRepository)
+                            policy=repositoryArgs.policy)
         return cfg
 
     def matchesArgs(self, repositoryArgs):
@@ -167,13 +146,12 @@ class RepositoryCfg(yaml.YAMLObject):
         return True
 
     def __repr__(self):
-        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, policy=%s, isV1Repo=%s)" % (
+        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, policy=%s)" % (
             self.__class__.__name__,
             self._root,
             self._mapper,
             self._mapperArgs,
             self._parents,
-            self._policy,
-            self.isV1Repository)
+            self._policy)
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)
