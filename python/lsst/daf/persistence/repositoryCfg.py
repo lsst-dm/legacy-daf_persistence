@@ -89,6 +89,12 @@ class RepositoryCfg(yaml.YAMLObject):
     def mapper(self):
         return self._mapper
 
+    @mapper.setter
+    def mapper(self, mapper):
+        if self._mapper != None:
+            raise RuntimeError("Should not set mapper over previous not-None value.")
+        self._mapper = mapper
+
     @property
     def mapperArgs(self):
         return self._mapperArgs

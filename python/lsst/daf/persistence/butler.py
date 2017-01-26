@@ -412,12 +412,14 @@ class Butler(object):
                         p.remove(args.cfgRoot)
                 else:
                     p = None
+                if v1RepoExists:
+                    if not args.mapper:
+                        args.mapper = PosixStorage.getMapperClass(args.cfgRoot)
                 cfg = RepositoryCfg.makeFromArgs(args, p)
                 repoData = RepoData(args=args, cfg=cfg, isNewRepository=not v1RepoExists,
                                     isV1Repository=v1RepoExists)
                 self._repos.add(repoData)
                 if v1RepoExists:
-                    cfg.mapper = PosixStorage.getMapperClass(args.cfgRoot)
                     parent = PosixStorage.getParentSymlinkPath(args.cfgRoot)
                     if parent:
                         parent = os.path.relpath(os.path.join(cfg.root, parent), '.')
