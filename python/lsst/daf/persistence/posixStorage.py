@@ -95,10 +95,6 @@ class PosixStorage(Storage):
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
-        if cfg.isV1Repository:
-            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by
-            # the _parent symlink)
-            return
         if loc is None or cfg.root == loc:
             # the cfg is at the root location of the repository so don't write root, let it be implicit in the
             # location of the cfg.

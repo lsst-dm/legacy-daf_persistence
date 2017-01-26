@@ -432,7 +432,6 @@ class Butler(object):
                     raise RuntimeError(msg)
                 cfg = RepositoryCfg.makeFromArgs(args, parents, isNewRepository=True)
                 repoData = RepoData(args=args, cfg=cfg)
-                Storage.putRepositoryCfg(cfg, args.cfgRoot)
                 self._repos.add(repoData)
 
     @staticmethod
