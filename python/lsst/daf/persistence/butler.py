@@ -80,7 +80,7 @@ class RepoData(object):
         The tags that apply to this repository, if any
     """
 
-    def __init__(self, args, cfg, storedCfg=None):
+    def __init__(self, args, cfg, storedCfg=None, isNewRepository=False, isV1Repository=True):
         self.args = args
         self.cfg = cfg
         self.storedCfg = storedCfg
@@ -89,6 +89,8 @@ class RepoData(object):
         # self.tags is used to keep track of *all* the applicable tags to the Repo, not just the tags in
         # the cfg (e.g. parents inherit their childrens' tags)
         self.tags = set()
+        self.isNewRepository = isNewRepository
+        self.isV1Repository = isV1Repository
 
     def __reduce__(self):
         return (RepoData, (self.args, self.cfg, self.repo, self.mode, self.tags))
@@ -332,7 +334,7 @@ class Butler(object):
         self._assignDefaultMapper(defaultMapper)
 
         for repoData in self._repos.all().values():
-            repoData.repo = Repository(repoData.cfg)
+            repoData.repo = Repository(repoData)
 
         self.objectCache = weakref.WeakValueDictionary()
 
@@ -410,9 +412,9 @@ class Butler(object):
                         p.remove(args.cfgRoot)
                 else:
                     p = None
-                cfg = RepositoryCfg.makeFromArgs(args, p, isV1Repository=v1RepoExists,
-                                                 isNewRepository=(not v1RepoExists))
-                repoData = RepoData(args=args, cfg=cfg)
+                cfg = RepositoryCfg.makeFromArgs(args, p)
+                repoData = RepoData(args=args, cfg=cfg, isNewRepository=not v1RepoExists,
+                                    isV1Repository=v1RepoExists)
                 self._repos.add(repoData)
                 if v1RepoExists:
                     cfg.mapper = PosixStorage.getMapperClass(args.cfgRoot)
@@ -430,8 +432,8 @@ class Butler(object):
                     msg = "Input repositories must exist; no repo found at " \
                           "%s." % args.cfgRoot
                     raise RuntimeError(msg)
-                cfg = RepositoryCfg.makeFromArgs(args, parents, isNewRepository=True)
-                repoData = RepoData(args=args, cfg=cfg)
+                cfg = RepositoryCfg.makeFromArgs(args, parents)
+                repoData = RepoData(args=args, cfg=cfg, isNewRepository=True)
                 self._repos.add(repoData)
 
     @staticmethod
@@ -509,7 +511,6 @@ class Butler(object):
                                  root=root,
                                  mapper=mapper,
                                  mapperArgs=mapperArgs)
-        outputs.isV1Repository = True
         return inputs, outputs
 
     def __repr__(self):
@@ -566,7 +567,7 @@ class Butler(object):
 
     def _assignDefaultMapper(self, defaultMapper):
         for repoData in self._repos.all().values():
-            if repoData.cfg.mapper is None and (repoData.cfg.isNewRepository or repoData.cfg.isV1Repository):
+            if repoData.cfg.mapper is None and (repoData.isNewRepository or repoData.isV1Repository):
                 if defaultMapper is None:
                     raise RuntimeError(
                         "No mapper specified for %s and no default mapper could be determined." %
