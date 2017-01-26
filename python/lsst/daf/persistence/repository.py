@@ -85,6 +85,8 @@ class Repository(object):
         :return:
         '''
         self._storage = Storage.makeFromURI(repositoryCfg.root)
+        if repositoryCfg.isNewRepository and not repositoryCfg.isV1Repository:
+            self._storage.putRepositoryCfg(repositoryCfg)
         self._mapperArgs = repositoryCfg.mapperArgs  # keep for reference in matchesArgs
         self._initMapper(repositoryCfg)
 
