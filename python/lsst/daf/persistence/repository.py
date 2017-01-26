@@ -34,7 +34,7 @@ class RepositoryArgs(object):
 
     def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None,
                  mode=None, policy=None):
-        self.root = root
+        self._root = root
         self._cfgRoot = cfgRoot
         self.mapper = mapper
         self.mapperArgs = mapperArgs
@@ -54,6 +54,13 @@ class RepositoryArgs(object):
             return self._cfgRoot
         else:
             return self.root
+
+    @property
+    def root(self):
+        if self._root is not None:
+            return self._root
+        else:
+            return self._cfgRoot
 
     @staticmethod
     def inputRepo(storage, tags=None):
@@ -88,7 +95,7 @@ class Repository(object):
         """
         self._storage = Storage.makeFromURI(repoData.cfg.root)
         if repoData.isNewRepository and not repoData.isV1Repository:
-            self._storage.putRepositoryCfg(repoData.cfg)
+            self._storage.putRepositoryCfg(repoData.cfg, repoData.args.cfgRoot)
         self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
         self._initMapper(repoData.cfg)
 
