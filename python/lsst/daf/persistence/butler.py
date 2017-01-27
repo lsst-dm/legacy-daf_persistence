@@ -450,7 +450,7 @@ class Butler(object):
     def _getParentsList(inputs, outputs):
         parents = []
         for args in outputs + inputs:
-            if 'r' in args.mode:
+            if 'r' in args.mode and args.cfgRoot not in parents:
                 parents.append(args.cfgRoot)
         return parents
 
