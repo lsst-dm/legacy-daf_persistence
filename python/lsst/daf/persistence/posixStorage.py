@@ -80,17 +80,6 @@ class PosixStorage(Storage):
         if repositoryCfg is not None:
             return repositoryCfg
 
-        # if no repository cfg, is it a legacy repository?
-        parseRes = urllib.parse.urlparse(uri)
-        if repositoryCfg is None:
-            mapper = PosixStorage.getMapperClass(parseRes.path)
-            if mapper is not None:
-                repositoryCfg = RepositoryCfg(mapper=mapper,
-                                              root=parseRes.path,
-                                              mapperArgs=None,
-                                              parents=None,
-                                              isV1Repository=True,
-                                              policy=None)
         return repositoryCfg
 
     @staticmethod
