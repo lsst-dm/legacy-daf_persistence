@@ -329,8 +329,7 @@ class Butler(object):
         self._repos._buildLookupList(inputs, outputs)
 
         defaultMapper = self._getDefaultMapper()
-        if defaultMapper:
-            self._assignDefaultMapper(defaultMapper)
+        self._assignDefaultMapper(defaultMapper)
 
         for repoData in self._repos.all().values():
             repoData.repo = Repository(repoData.cfg)
@@ -549,6 +548,10 @@ class Butler(object):
     def _assignDefaultMapper(self, defaultMapper):
         for repoData in self._repos.all().values():
             if repoData.cfg.mapper is None and (hasattr(repoData.cfg, 'isNewRepo') or repoData.cfg.isV1Repo):
+                if defaultMapper is None:
+                    raise RuntimeError(
+                        "No mapper specified for %s and no default mapper could be determined." %
+                        repoData.args)
                 repoData.cfg.mapper = defaultMapper
 
     @staticmethod
