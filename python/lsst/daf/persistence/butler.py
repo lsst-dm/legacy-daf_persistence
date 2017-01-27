@@ -298,6 +298,10 @@ class Butler(object):
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}
 
+        # inputs and outputs may be modified, do not change the external value.
+        inputs = copy.deepcopy(inputs)
+        outputs = copy.deepcopy(outputs)
+
         isV1Args = inputs is None and outputs is None
         if isV1Args:
             inputs, outputs = self._convertV1Args(root=root, mapper=mapper, mapperArgs=mapperArgs)
@@ -316,9 +320,13 @@ class Butler(object):
         for args in inputs:
             if args.mode is None:
                 args.mode = 'r'
+            elif 'r' not in args.mode:
+                raise RuntimeError("The mode of an input should be readable.")
         for args in outputs:
             if args.mode is None:
                 args.mode = 'w'
+            elif 'w' not in args.mode:
+                raise RuntimeError("The mode of an output should be writable.")
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
