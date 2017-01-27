@@ -36,7 +36,7 @@ class RepositoryArgs(object):
                  mode=None, policy=None):
         self._root = root
         self._cfgRoot = cfgRoot
-        self.mapper = mapper
+        self._mapper = mapper
         self.mapperArgs = mapperArgs
         self.tags = set(listify(tags))
         self.mode = mode
@@ -45,8 +45,18 @@ class RepositoryArgs(object):
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
-            self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags,
+            self.__class__.__name__, self.root, self._cfgRoot, self._mapper, self.mapperArgs, self.tags,
             self.mode, self.policy)
+
+    @property
+    def mapper(self):
+        return self._mapper
+
+    @mapper.setter
+    def mapper(self, mapper):
+        if mapper is not None and self._mapper:
+            raise RuntimeError("Explicity clear mapper (set to None) before changing its value.")
+        self._mapper = mapper
 
     @property
     def cfgRoot(self):
@@ -142,7 +152,7 @@ class Repository(object):
 
         def __repr__(self):
             return 'config(id=%s, storage=%s, parent=%s, mapper=%s, mapperArgs=%s, cls=%s)' % \
-                   (self.id, self._storage, self.parent, self.mapper, self.mapperArgs, self.cls)
+                   (self.id, self._storage, self.parent, self._mapper, self.mapperArgs, self.cls)
 
     # todo want a way to make a repository read-only
     def write(self, butlerLocation, obj):
