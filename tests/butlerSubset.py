@@ -115,9 +115,9 @@ class ButlerSubsetTestCase(unittest.TestCase):
         return butler
 
     def testSingleIteration(self):
-        args = dafPersist.RepositoryArgs(mode='r', root=os.path.join(ROOT, 'butlerSubset'),
+        args = dafPersist.RepositoryArgs(mode='rw', root=os.path.join(ROOT, 'butlerSubset'),
                                          mapper=ImgMapper())
-        butler = dafPersist.Butler(inputs=args)
+        butler = dafPersist.Butler(outputs=args)
 
         ButlerSubsetTestCase.registerAliases(butler)
 
