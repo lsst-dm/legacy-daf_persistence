@@ -125,6 +125,8 @@ class ParseRootURI(unittest.TestCase):
         butler = dp.Butler(outputs=args)
         self.assertTrue(os.path.exists(os.path.join(self.testDir, 'repositoryCfg.yaml')))
 
+        butler2 = dp.Butler(inputs=uri)
+
         try:
             butler2 = dp.Butler(inputs=uri)
         except RuntimeError:
