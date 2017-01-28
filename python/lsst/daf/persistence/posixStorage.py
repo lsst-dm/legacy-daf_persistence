@@ -71,7 +71,7 @@ class PosixStorage(Storage):
             with open(loc, 'r') as f:
                 repositoryCfg = yaml.load(f)
             if repositoryCfg.root is None:
-                repositoryCfg.root = parseRes.path
+                repositoryCfg.root = uri
         return repositoryCfg
 
     @staticmethod
