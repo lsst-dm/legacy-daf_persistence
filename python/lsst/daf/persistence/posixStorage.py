@@ -163,7 +163,12 @@ class PosixStorage(Storage):
         """
         linkpath = os.path.join(root, '_parent')
         if os.path.exists(linkpath):
-            return os.readlink(os.path.join(root, '_parent'))
+            try:
+                return os.readlink(os.path.join(root, '_parent'))
+            except OSError:
+                # some of the unit tests rely on a folder called _parent instead of a symlink to aother
+                # location. Allow that; return the path of that folder.
+                return os.path.join(root, '_parent')
         return None
 
     def mapperClass(self):
