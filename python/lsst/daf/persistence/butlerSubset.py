@@ -247,15 +247,12 @@ class ButlerDataRef(object):
 
         if level is None:
             mappers = []
+            levelSet = set()
             for repoData in self.butlerSubset.butler._repos.all().values():
-                if repoData.repo._mapper not in mappers:
-                    mappers.append(repoData.repo._mapper)
-            if len(mappers) != 1:
-                raise RuntimeError("Support for multiple repositories not yet implemented!")
-            mapper = mappers[0]
-
-            # todo: getDefaultSubLevel is not in the mapper API!
-            level = mapper.getDefaultSubLevel(self.butlerSubset.level)
+                levelSet.add(repoData.repo._mapper.getDefaultSubLevel(self.butlerSubset.level))
+            if len(levelSet) > 1:
+                raise RuntimeError("Support for multiple levels not implemented.")
+            level = levelSet.pop()
             if level is None:
                 return ()
         return self.butlerSubset.butler.subset(self.butlerSubset.datasetType,
