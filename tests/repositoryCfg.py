@@ -51,6 +51,8 @@ class TestCfgRelationship(unittest.TestCase):
             shutil.rmtree(os.path.join(ROOT, 'repositoryCfg'))
 
     def testRWModes(self):
+        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        butler = dp.Butler(outputs=args)
         # inputs must be read-only or read-write and not write-only
         args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(inputs=args)
