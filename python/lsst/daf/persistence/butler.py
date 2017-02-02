@@ -342,10 +342,65 @@ class Butler(object):
         defaultMapper = self._getDefaultMapper()
         self._assignDefaultMapper(defaultMapper)
 
-        for repoData in self._repos.all().values():
+        repoDatas = self._repos.outputs() + self._repos.inputs()
+        repoDatas.reverse()
+        for repoData in repoDatas:
+            parentRegistry = self._getParentRegistry(repoData)
             repoData.repo = Repository(repoData)
 
         self.objectCache = weakref.WeakValueDictionary()
+
+    def _getParentRegistry(self, repoData):
+        """Get the first found registry that matches the the passed-in repo.
+
+        "Matches" means the mapper in the passed-in repo is the same type as
+        the mapper in the parent.
+
+        Parameters
+        ----------
+        repoData : RepoData
+            The RepoData for the repository for which we are searching for a
+            parent registry.
+
+        Returns
+        -------
+        Registry or None
+            A registry from a parent if one can be found, or None.
+
+        Raises
+        ------
+        RuntimeError
+            Indicates a butler init order problem, all parents should be initialized before child
+            repositories, so this function should be able to get any parent of any child repo.
+        """
+        registry = None
+        for parentRepoData in self._getParentRepodDatas(repoData):
+            if parentRepoData.cfg.mapper == repoData.cfg.mapper:
+                if not parentRepoData.repo:
+                    raise RuntimeError("Parent repo should be initialized before child repos.")
+                registry = parentRepoData.repo.getRegistry()
+        return registry
+
+
+    def _getParentRepodDatas(self, repoData):
+        """Get the parents & grandparents etc of a given repo data, in depth-first search order.
+
+        Parameters
+        ----------
+        repoData : RepoData instance
+            The RepoData whose parents should be retreived.
+
+        Returns
+        -------
+        list of RepoData
+            A list of the parents & grandparents etc of a given repo data, in depth-first search order.
+        """
+        parents = []
+        for parentCfgRoot in repoData.cfg.parents:
+            parentRepoData = self._repos.byCfgRoot[parentCfgRoot]
+            parents.append(parentRepoData)
+            parents.extend(self._getParentRepodDatas(parentRepoData))
+        return parents
 
 
     def _setRepoDataTags(self):

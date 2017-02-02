@@ -180,6 +180,18 @@ class Repository(object):
     def mappers(self):
         return (self._mapper, )
 
+    def getRegistry(self):
+        """Get the registry from the mapper
+
+        Returns
+        -------
+        Registry or None
+            The registry from the mapper or None if the mapper does not have one.
+        """
+        if self._mapper is None:
+            return None
+        return self._mapper.getRegistry()
+
     def getKeys(self, *args, **kwargs):
         """
         Get the keys available in the repository/repositories.
