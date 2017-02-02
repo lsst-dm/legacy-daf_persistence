@@ -172,3 +172,7 @@ class Mapper(object):
         Not implemented in the base mapper.
         """
         raise NotImplementedError("Base-class Mapper does not implement backups")
+
+    def getRegistry(self):
+        """Get the registry"""
+        return None
