@@ -166,7 +166,7 @@ class RepoDataContainer(object):
             self._outputs,
             self._all)
 
-    def _buildLookupList(self, inputs, outputs):
+    def _buildLookupLists(self, inputs, outputs):
         """Buld the lists of inputs, outputs, and all repo datas in lookup
         order.
 
@@ -185,20 +185,19 @@ class RepoDataContainer(object):
             """"Adds the cfg represented by repoData to the _all dict/list, as
             well as the _inputs or _outputs list, as indicated by inout. Then,
             adds all the parents of the cfg to the lists."""
-            if repoData.cfg.root in self._all:
-                return
-            self._all[repoData.cfg.root] = repoData
-            if inout == 'in':
+            if inout not in ('in', 'out', 'ref'):
+                raise RuntimeError("'inout' must be 'in', 'out', or 'ref', not '%s'" % inout)
+            if repoData.cfg.root not in self._all:
+                self._all[repoData.cfg.root] = repoData
+            if inout == 'in' and repoData not in self._inputs:
                 self._inputs.append(repoData)
-            elif inout == 'out':
+            elif inout == 'out' and repoData not in self._outputs:
                 self._outputs.append(repoData)
                 if 'r' in repoData.args.mode:
                     self._inputs.append(repoData)
-            else:
-                raise RuntimeError("'inout' must be 'in' or 'out', not %s" % inout)
             for parent in repoData.cfg.parents:
-                if 'r' in repoData.args.mode:
-                    addRepoDataToLists(self.byRepoRoot[parent], 'in')
+                addParentAs = 'in' if 'r' in repoData.args.mode and inout != 'ref' else 'ref'
+                addRepoDataToLists(self.byRepoRoot[parent], addParentAs)
 
         self._all = collections.OrderedDict()
         self._inputs = []
@@ -335,16 +334,14 @@ class Butler(object):
 
         self._createRepoDatas(inputs, outputs)
 
-        self._repos._buildLookupList(inputs, outputs)
+        self._repos._buildLookupLists(inputs, outputs)
 
         self._setRepoDataTags()
 
         defaultMapper = self._getDefaultMapper()
         self._assignDefaultMapper(defaultMapper)
 
-        repoDatas = self._repos.outputs() + self._repos.inputs()
-        repoDatas.reverse()
-        for repoData in repoDatas:
+        for repoData in reversed(self._repos.all().values()):
             parentRegistry = self._getParentRegistry(repoData)
             repoData.repo = Repository(repoData)
 
@@ -471,7 +468,7 @@ class Butler(object):
                           " folder exists AND contains items.)" % args.cfgRoot
                     raise RuntimeError(msg)
                 if inout == 'out' and not v1RepoExists:
-                    p = instanceParents
+                    p = copy.copy(instanceParents)
                     if args.cfgRoot in p:
                         p.remove(args.cfgRoot)
                 else:
