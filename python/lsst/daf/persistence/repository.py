@@ -101,31 +101,33 @@ class Repository(object):
         if repoData.isNewRepository and not repoData.isV1Repository:
             self._storage.putRepositoryCfg(repoData.cfg, repoData.args.cfgRoot)
         self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
-        self._initMapper(repoData.cfg)
+        self._initMapper(repoData)
 
-    def _initMapper(self, repositoryCfg):
+    def _initMapper(self, repoData):
         '''Initialize and keep the mapper in a member var.
 
-        :param repositoryCfg:
-        :return:
+        Parameters
+        ----------
+        repoData : RepoData
+            The RepoData with the properties of this Repository.
         '''
 
         # rule: If mapper is:
         # - an object: use it as the mapper.
         # - a string: import it and instantiate it with mapperArgs
         # - a class object: instantiate it with mapperArgs
-        mapper = repositoryCfg.mapper
+        mapper = repoData.cfg.mapper
 
         # if mapper is a string, import it:
         if isinstance(mapper, basestring):
             mapper = doImport(mapper)
         # now if mapper is a class type (not instance), instantiate it:
         if inspect.isclass(mapper):
-            mapperArgs = copy.copy(repositoryCfg.mapperArgs)
+            mapperArgs = copy.copy(repoData.cfg.mapperArgs)
             if mapperArgs is None:
                 mapperArgs = {}
-            if repositoryCfg.policy and 'policy' not in mapperArgs:
-                mapperArgs['policy'] = repositoryCfg.policy
+            if repoData.cfg.policy and 'policy' not in mapperArgs:
+                mapperArgs['policy'] = repoData.cfg.policy
             # so that root doesn't have to be redundantly passed in cfgs, if root is specified in the
             # storage and if it is an argument to the mapper, make sure that it's present in mapperArgs.
             for arg in ('root', 'storage'):
@@ -140,7 +142,7 @@ class Repository(object):
                                 break
                         except TypeError:
                             pass
-            mapper = mapper(**mapperArgs)
+            mapper = mapper(parentRegistry=repoData.parentRegistry, **mapperArgs)
 
         self._mapper = mapper
 
