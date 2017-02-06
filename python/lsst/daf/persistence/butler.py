@@ -91,12 +91,15 @@ class RepoData(object):
         self.tags = set()
         self.isNewRepository = isNewRepository
         self.isV1Repository = isV1Repository
+        self.parentRegistry = None
 
     def __reduce__(self):
         return (RepoData, (self.args, self.cfg, self.repo, self.mode, self.tags))
 
     def __repr__(self):
-        return "RepoData(args=%s cfg=%s repo=%s tags=%s" % (self.args, self.cfg, self.repo, self.tags)
+        s = "RepoData(args=%s cfg=%s repo=%s tags=%s isNewRepository=%s isV1Repository:%s parentRegistry:%s)"
+        return s % (self.args, self.cfg, self.repo, self.tags, self.isNewRepository, self.isV1Repository,
+                    self.parentRegistry)
 
     def addTags(self, tags):
         self.tags = self.tags.union(tags)
@@ -343,6 +346,7 @@ class Butler(object):
 
         for repoData in reversed(self._repos.all().values()):
             parentRegistry = self._getParentRegistry(repoData)
+            repoData.parentRegistry = parentRegistry
             repoData.repo = Repository(repoData)
 
         self.objectCache = weakref.WeakValueDictionary()
