@@ -99,7 +99,7 @@ class Mapper(object):
         self._arguments = (args, kwargs)
         return self
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         pass
 
     def __getstate__(self):

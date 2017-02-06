@@ -29,7 +29,7 @@ import lsst.daf.persistence as dafPersist
 
 class PickleMapper(dafPersist.Mapper):
 
-    def __init__(self, root=None, outPath=''):
+    def __init__(self, root=None, outPath='', **kwargs):
         self.root = root
         self.outPath = outPath
 

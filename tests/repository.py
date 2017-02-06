@@ -46,7 +46,7 @@ def setup_module(module):
 
 class ParentMapper(dp.Mapper):
 
-    def __init__(self, root):
+    def __init__(self, root, **kwargs):
         self.root = root
 
     def __repr__(self):
@@ -100,7 +100,7 @@ class ParentMapper(dp.Mapper):
 
 class ChildrenMapper(dp.Mapper):
 
-    def __init__(self, root):
+    def __init__(self, root, **kwargs):
         self.root = root
 
     def map_raw(self, dataId, write):
@@ -243,7 +243,7 @@ class TestBasics(unittest.TestCase):
 
 class MapperForTestWriting(dp.Mapper):
 
-    def __init__(self, root):
+    def __init__(self, root, **kwargs):
         self.root = root
 
     def map_foo(self, dataId, write):

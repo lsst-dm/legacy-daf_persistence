@@ -37,7 +37,7 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 class NullMapper(object):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         pass
 
 
