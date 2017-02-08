@@ -104,15 +104,16 @@ class RepoData(object):
     def addTags(self, tags):
         self.tags = self.tags.union(tags)
 
+
 class RepoDataContainer(object):
     """Container object for RepoData instances owned by a Butler instance."""
 
     def __init__(self):
-        self.byRepoRoot = {} # {args.root, RepoData}
+        self.byRepoRoot = {}  # {args.root, RepoData}
         self.byCfgRoot = {}  # {args.cfgRoot, RepoData}
         self._inputs = None
         self._outputs = None
-        self._all = None # {cfg.root, RepoData}
+        self._all = None  # {cfg.root, RepoData}
 
     def add(self, repoData):
         """Add a RepoData to the container
@@ -384,7 +385,6 @@ class Butler(object):
                 registry = parentRepoData.repo.getRegistry()
         return registry
 
-
     def _getParentRepodDatas(self, repoData):
         """Get the parents & grandparents etc of a given repo data, in depth-first search order.
 
@@ -405,7 +405,6 @@ class Butler(object):
             parents.extend(self._getParentRepodDatas(parentRepoData))
         return parents
 
-
     def _setRepoDataTags(self):
         """Set the tags from each repoArgs into all its parent repoArgs so that they can be included in tagged
         searches.
@@ -422,7 +421,6 @@ class Butler(object):
 
         for repoData in self._repos.all().values():
             setTags(self, repoData, set())
-
 
     def _createRepoData(self, args, inout, instanceParents):
         """Make a RepoData object for args, adding it to the RepoDataContainer.
