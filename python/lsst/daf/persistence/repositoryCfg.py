@@ -24,21 +24,47 @@
 
 # -*- python -*-
 
-import inspect
+import os
 import yaml
 
-from lsst.daf.persistence import listify, iterify, doImport
+from lsst.daf.persistence import listify, iterify, doImport, Storage
 from past.builtins import basestring
 
 
 class RepositoryCfg(yaml.YAMLObject):
+    """RepositoryCfg stores the configuration of a repository. Its contents are persisted to the repository
+    when the repository is created in persistent storage. Thereafter the the RepositoryCfg should not change.
+
+    Attributes
+    ----------
+    mapper : string
+        The mapper associated with the repository. The string should be importable to a class object.
+    mapperArgs : dict
+        Arguments & values to pass to the mapper when initializing it.
+    parents : list of URI
+        URIs to the locaiton of the parent RepositoryCfgs of this repository.
+    policy : dict
+        Policy associated with this repository, overrides all other policy (which may be stored in derived
+        packages).
+    deserializing : bool
+        Butler internal use only. This flag is used to indicate to the init funciton that the repository class
+        is being deserialized and should not perform certain operations that normally happen in other uses of
+        init.
+    """
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, policy):
+    def __init__(self, root, mapper, mapperArgs, parents, policy, deserialzing=False):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
-        self._parents = iterify(parents)
+        #  Where possible we mangle the parents so that they are relative to root, for example if the root and
+        #  the parents are both in the same PosixStorage. The parents are stored in mangled form; when
+        #  deserializing the parents we do not re-mangle them.
+        if deserialzing:
+            self._parents = parents
+        else:
+            self._parents = []
+            self.addParents(iterify(parents))
         self._policy = policy
 
     @staticmethod
@@ -61,16 +87,16 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=d['_parents'], policy=d.get('_policy', None))
+                            parents=d['_parents'], policy=d.get('_policy', None), deserialzing=True)
         return cfg
 
     def __eq__(self, other):
         if not other:
             return False
-        return self._root == other._root and \
-            self.mapper == other._mapper and \
-            self.mapperArgs == other._mapperArgs and \
-            self.parents == other._parents
+        return self.root == other.root and \
+            self.mapper == other.mapper and \
+            self.mapperArgs == other.mapperArgs and \
+            self.parents == other.parents
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -91,7 +117,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @mapper.setter
     def mapper(self, mapper):
-        if self._mapper != None:
+        if self._mapper is not None:
             raise RuntimeError("Should not set mapper over previous not-None value.")
         self._mapper = mapper
 
@@ -105,11 +131,12 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @property
     def parents(self):
-        return self._parents
+        return [os.path.normpath(os.path.join(self.root, p)) for p in self._parents]
 
     def addParents(self, newParents):
         newParents = listify(newParents)
         for newParent in newParents:
+            newParent = Storage.relativePath(self.root, newParent)
             if newParent not in self._parents:
                 self._parents.append(newParent)
 

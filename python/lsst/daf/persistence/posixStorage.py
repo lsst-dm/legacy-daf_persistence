@@ -64,6 +64,24 @@ class PosixStorage(Storage):
         return 'PosixStorage(root=%s)' % self.root
 
     @staticmethod
+    def relativePath(fromUri, toUri):
+        """Get a relative path from a location to a location.
+
+        Parameters
+        ----------
+        fromPath : string
+            A URI that describes a location at which to start.
+        toPath : string
+            A URI that describes a target location.
+
+        Returns
+        -------
+        string
+            A relative path that describes the path from fromUri to toUri.
+        """
+        return os.path.relpath(toUri, fromUri)
+
+    @staticmethod
     def _getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
         """
