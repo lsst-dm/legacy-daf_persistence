@@ -143,7 +143,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 self.assertEqual(iterator.dataId["visit"], 654321)
             else:
                 self.assertIn(iterator.dataId["raft"], ["1,2", "1,3"])
-            image = iterator.get(self.calexpTypeName)  # succeeds since deferred
+            image = iterator.get(self.calexpTypeName, immediate=False)  # succeeds since deferred
             self.assertEqual(type(image), dafPersist.readProxy.ReadProxy)
             image = iterator.get(self.calexpTypeName, immediate=True)  # real test
             self.assertEqual(type(image), list)
