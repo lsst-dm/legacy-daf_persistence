@@ -42,6 +42,8 @@ def listify(x):
         x = []
     elif isinstance(x, basestring):
         x = [x]
+    elif isinstance(x, dict):
+        x = [x]
     elif hasattr(x, '__iter__'):
         x = list(x)
     else:

@@ -317,8 +317,10 @@ class Butler(object):
         # make sure inputs and outputs are lists, and if list items are a string convert it RepositoryArgs.
         inputs = listify(inputs)
         outputs = listify(outputs)
-        inputs = [RepositoryArgs(cfgRoot=args) if isinstance(args, basestring) else args for args in inputs]
-        outputs = [RepositoryArgs(cfgRoot=args) if isinstance(args, basestring) else args for args in outputs]
+        inputs = [RepositoryArgs(cfgRoot=args)
+                  if not isinstance(args, RepositoryArgs) else args for args in inputs]
+        outputs = [RepositoryArgs(cfgRoot=args)
+                   if not isinstance(args, RepositoryArgs) else args for args in outputs]
         # Set default rw modes on input and output args as needed
         for args in inputs:
             if args.mode is None:
