@@ -165,3 +165,28 @@ class Storage(object):
             return True
         return False
 
+    @staticmethod
+    def relativePath(fromUri, toUri):
+        """Get a relative path from a location to a location, if a relative path for these 2 locations exists.
+
+        Parameters
+        ----------
+        fromPath : string
+            A URI that describes a location at which to start.
+        toPath : string
+            A URI that describes a target location.
+
+        Returns
+        -------
+        string
+            A relative path that describes the path from fromUri to toUri, provided one exists. If a relative
+            path between the two URIs does not exist then the entire toUri path is returned.
+        """
+        fromUriParseRes = urllib.parse.urlparse(fromUri)
+        toUriParseRes = urllib.parse.urlparse(toUri)
+        if fromUriParseRes.scheme != toUriParseRes.scheme:
+            return toUri
+        storage = Storage.storages.get(fromUriParseRes.scheme, None)
+        if not storage:
+            return toUri
+        return storage.relativePath(fromUri, toUri)

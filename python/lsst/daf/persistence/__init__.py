@@ -35,8 +35,8 @@ from .butlerLocation import *
 from .readProxy import *
 from .butlerSubset import *
 from .access import *
-from .repositoryCfg import *
 from .storage import *
+from .repositoryCfg import *
 from .posixStorage import *
 from .mapper import *
 from .repositoryMapper import *
