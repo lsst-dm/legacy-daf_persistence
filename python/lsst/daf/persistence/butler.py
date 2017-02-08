@@ -441,6 +441,16 @@ class Butler(object):
         -------
         None
         """
+        def parentListWithoutThis(root, instanceParents):
+            """instanceParents is typically all the inputs to butler. If 'this' root is in that list (because
+            this repo is writable) then remove it, as a repo is never its own parent."""
+            parents = copy.copy(instanceParents)
+            try:
+                parents.remove(args.cfgRoot)
+            except ValueError:
+                pass
+            return parents
+
         # if only a string is passed for inputs or outputs, assumption is that it's a URI;
         # place it in a RepositoryArgs instance; cfgRoot for inputs, root for outputs.
         if inout not in ('in', 'out'):
@@ -453,10 +463,16 @@ class Butler(object):
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
         if cfg:
             if not cfg.matchesArgs(args):
-                if cfg.parents != instanceParents:
-                    raise RuntimeError("Parents do not match.") # maybe this is ok to capture in an intermediate cfg?
-                storedCfg = cfg
-                cfg = RepositoryCfg.makeFromArgs(args)
+                raise RuntimeError("Persisted repo cfg does not match input args. cfg:%s, args:%s"
+                                   % (cfg, args))
+                # need to fix intermediate cfgs
+                # storedCfg = cfg
+                # cfg = RepositoryCfg.makeFromArgs(args)
+            parents = parentListWithoutThis(args.cfgRoot, instanceParents)
+            if inout == 'out' and cfg.parents != parents:
+                raise RuntimeError(
+                    "Persisted repo cfg parents do not match butler parents: cfg:%s, parents:%s"
+                    % (cfg, instanceParents))
             else:
                 storedCfg = None
             repoData = RepoData(args=args, cfg=cfg, storedCfg=storedCfg)
@@ -474,15 +490,13 @@ class Butler(object):
                           " folder exists AND contains items.)" % args.cfgRoot
                     raise RuntimeError(msg)
                 if inout == 'out' and not v1RepoExists:
-                    p = copy.copy(instanceParents)
-                    if args.cfgRoot in p:
-                        p.remove(args.cfgRoot)
+                    parents = parentListWithoutThis(args.cfgRoot, instanceParents)
                 else:
-                    p = None
+                    parents = None
                 if v1RepoExists:
                     if not args.mapper:
                         args.mapper = PosixStorage.getMapperClass(args.cfgRoot)
-                cfg = RepositoryCfg.makeFromArgs(args, p)
+                cfg = RepositoryCfg.makeFromArgs(args, parents)
                 repoData = RepoData(args=args, cfg=cfg, isNewRepository=not v1RepoExists,
                                     isV1Repository=v1RepoExists)
                 self._repos.add(repoData)
@@ -490,7 +504,10 @@ class Butler(object):
                     parent = PosixStorage.getParentSymlinkPath(args.cfgRoot)
                     if parent:
                         parent = os.path.relpath(os.path.join(cfg.root, parent), '.')
-                        cfg.addParents(parent)
+                        parent = cfg.addParents(parent)
+                        # cfg may transform the completeness of the path, and the value from cfg is how the
+                        # repo will be referred to in the future so let the wookie win.
+                        parent = cfg.parents[-1:].pop()
                         # TODO the parent path can be (is always) relative;
                         # resolving path-to-parent-from-here should be handled
                         # by Storage and/or the cfg.
