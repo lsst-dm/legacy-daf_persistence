@@ -674,7 +674,7 @@ class Butler(object):
             return None
         return locations
 
-    def get(self, datasetType, dataId=None, immediate=False, **rest):
+    def get(self, datasetType, dataId=None, immediate=True, **rest):
         """Retrieves a dataset given an input collection data id.
 
         Parameters
@@ -684,7 +684,7 @@ class Butler(object):
         dataId - dict
             The data id.
         immediate - bool
-            Don't use a proxy for delayed loading.
+            If False use a proxy for delayed loading.
         **rest
             keyword arguments for the data id.
 
