@@ -698,8 +698,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                          os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
         del butler
 
-        # load that repo a few times, redundantly include 'a' as an input (redundant because it's implicitly
-        # an input by being a parent of 'b')
+        # load that repo a few times, include 'a' as an input.
         for i in range(4):
             butler = dp.Butler(inputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/a'),
                                outputs=dp.RepositoryArgs(root=os.path.join(ROOT,
@@ -718,37 +717,20 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                    mapper=MapperForTestWriting,
                                                    mapperArgs=None,
                                                    parents=[os.path.join(ROOT,
-                                                                         'TestOutputAlreadyHasParent/a'),],
+                                                                         'TestOutputAlreadyHasParent/a'), ],
                                                    policy=None))
 
-        # load the repo a few times and don't explicitly list 'a' as an input
-        for i in range(4):
+        # Load the repo and don't explicitly list 'a' as an input. This should raise, because inputs must
+        # match readable outputs parents.
+        with self.assertRaises(RuntimeError):
             butler = dp.Butler(outputs=dp.RepositoryArgs(root=os.path.join(ROOT,
                                                                            'TestOutputAlreadyHasParent/b'),
                                                          mode='rw'))
-            self.assertEqual(len(butler._repos.inputs()), 2)
-            self.assertEqual(butler._repos.inputs()[0].cfg.root,
-                             os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-            self.assertEqual(butler._repos.inputs()[1].cfg.root,
-                             os.path.join(ROOT, 'TestOutputAlreadyHasParent/a'))
-            self.assertEqual(len(butler._repos.outputs()), 1)
-            self.assertEqual(butler._repos.outputs()[0].cfg.root,
-                             os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-            cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-            self.assertEqual(cfg, dp.RepositoryCfg(root=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'),
-                                                   mapper=MapperForTestWriting,
-                                                   mapperArgs=None,
-                                                   parents=[os.path.join(ROOT,
-                                                                         'TestOutputAlreadyHasParent/a')],
-                                                   policy=None))
 
-        # load 'b' as 'write only' and make sure 'a' does not get used as an input.
-        butler = dp.Butler(outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-        self.assertEqual(len(butler._repos.inputs()), 0)
-        self.assertEqual(len(butler._repos.outputs()), 1)
-        self.assertEqual(butler._repos.outputs()[0].cfg.root,
-                         os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-        cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+        # load 'b' as 'write only' and don't list 'a' as an input. This should raise, because inputs must
+        # match readable outputs parents.
+        with self.assertRaises(RuntimeError):
+            butler = dp.Butler(outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

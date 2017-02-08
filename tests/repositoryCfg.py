@@ -85,8 +85,12 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(butler._repos.inputs()[1].cfg.root, os.path.join(ROOT, 'repositoryCfg/a'))
         self.assertEqual(len(butler._repos.outputs()), 0)
 
-        # parents of readable outputs should be added to the inputs list
-        butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'),
+        # parents of readable outputs must be be listed with the inputs
+        with self.assertRaises(RuntimeError):
+            butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'),
+                                                         mode='rw'))
+        butler = dp.Butler(inputs=os.path.join(ROOT, 'repositoryCfg/a'),
+                           outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'),
                                                      mode='rw'))
         self.assertEqual(len(butler._repos.inputs()), 2)
         # verify serach order:
@@ -95,9 +99,12 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(len(butler._repos.outputs()), 1)
         self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
 
-        # if an output repository is write-only its parents should not be added to the inputs.
-        butler = dp.Butler(outputs=os.path.join(ROOT, 'repositoryCfg/b'))
-        self.assertEqual(len(butler._repos.inputs()), 0)
+        # parents of write-only outputs must be be listed with the inputs
+        with self.assertRaises(RuntimeError):
+            butler = dp.Butler(outputs=os.path.join(ROOT, 'repositoryCfg/b'))
+        butler = dp.Butler(inputs=os.path.join(ROOT, 'repositoryCfg/a'),
+                           outputs=os.path.join(ROOT, 'repositoryCfg/b'))
+        self.assertEqual(len(butler._repos.inputs()), 1)
         self.assertEqual(len(butler._repos.outputs()), 1)
         self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
 
