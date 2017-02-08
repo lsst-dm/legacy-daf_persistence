@@ -26,22 +26,56 @@ from builtins import object
 
 import copy
 import inspect
+import os
 
 from lsst.daf.persistence import Storage, listify, doImport, Policy
 
 
 class RepositoryArgs(object):
 
-    def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None,
-                 mode=None, policy=None):
-        self._root = root
-        self._cfgRoot = cfgRoot
-        self._mapper = mapper
-        self.mapperArgs = mapperArgs
-        self.tags = set(listify(tags))
-        self.mode = mode
-        self.policy = Policy(policy) if policy is not None else None
+    """Arguments passed into a Butler that are used to instantiate a repository. This includes arguments that
+    can be used to create a new repository (cfgRoot, root, mapper, mapperArgs, policy) and are persisted along
+    with the new repository's configuration file. These areguments can also describe how a new or existing
+    repository are to be used (cfgRoot or root, tags, mode). When indicating an existing repository it is
+    better to not specify unnecessary arguments, as if they conflict with the persisted repository
+    configuration then a RuntimeError will be raised during Butler init.
 
+    A RepositoryArgs class can be initialized from a dict, if the first argument to the initializer is a dict.
+
+    Attributes
+    ----------
+    cfgRoot : URI or dict
+        If dict, the initalizer is re-called with the expanded dict.
+        If URI, this is the location where the RepositoryCfg should be found (existing repo) or put (new repo)
+    root : URI
+        If different than cfgRoot then this is the location where the repository should exist. A RepositoryCfg
+        will be put at cfgRoot and its root will be a path to root.
+    mapper : string or class object.
+        The mapper to use with this repository. If string, should refer an importable object. If class object,
+        should be a mapper to be instantiated by the Butler during Butler init.
+    tags : list or object
+        A list of unique identifiers to uniquely identify this repository and its parents when performing
+        Butler.get.
+    mode : string
+        should be one of 'r', 'w', or 'rw', for 'read', 'write', or 'read-write'. Can be omitted; input
+        repositories will default to 'r', output repositories will default to 'r'. 'w' on an input repository
+        will raise a RuntimeError during Butler init, tho 'rw' works and is equivalent to 'r'. Output
+        repositories may be 'r' or 'rw', 'r' for an output repository will raise a RuntimeError during Butler
+        init.
+    """
+    def __init__(self, cfgRoot=None, root=None, mapper=None, mapperArgs=None, tags=None,
+                 mode=None, policy=None):
+        try:
+            #  is cfgRoot a dict? try dict init:
+            self.__init__(**cfgRoot)
+        except TypeError:
+            self._root = root.rstrip(os.sep) if root else root
+            self._cfgRoot = cfgRoot.rstrip(os.sep) if cfgRoot else cfgRoot
+            self._mapper = mapper
+            self.mapperArgs = mapperArgs
+            self.tags = set(listify(tags))
+            self.mode = mode
+            self.policy = Policy(policy) if policy is not None else None
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
