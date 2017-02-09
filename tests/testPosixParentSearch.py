@@ -30,9 +30,9 @@ import lsst.utils.tests
 import shutil
 
 
-
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 class PosixParentSearch(unittest.TestCase):
     """A test case for parentSearch in PosixStorage."""
@@ -53,11 +53,11 @@ class PosixParentSearch(unittest.TestCase):
         with open(os.path.join(PosixParentSearch.testDir, 'foo.txt'), 'w') as f:
             f.write('abc')
         storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir)
-        foundName = storage.instanceParentSearch('foo.txt')
+        foundName = storage.search(storage.root, 'foo.txt', searchParents=True)
         self.assertEqual(foundName, ['foo.txt'])
 
         searchFor = os.path.join(PosixParentSearch.testDir, 'foo.txt')
-        foundName = storage.instanceParentSearch(searchFor)
+        foundName = storage.search(storage.root, searchFor, searchParents=True)
         self.assertEqual(foundName, [searchFor])
 
     def testFilePathWithHeaderExt(self):
@@ -65,13 +65,12 @@ class PosixParentSearch(unittest.TestCase):
         with open(os.path.join(PosixParentSearch.testDir, 'foo.txt'), 'w') as f:
             f.write('abc')
         storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir)
-        foundName = storage.instanceParentSearch('foo.txt[0]')
+        foundName = storage.search(storage.root, 'foo.txt[0]', searchParents=True)
         self.assertEqual(foundName, ['foo.txt[0]'])
 
         searchFor = os.path.join(PosixParentSearch.testDir, 'foo.txt[0]')
-        foundName = storage.instanceParentSearch(searchFor)
+        foundName = storage.search(storage.root, searchFor, searchParents=True)
         self.assertEqual(foundName, [searchFor])
-
 
     def testFilePathInParent(self):
         """Find a file in a repo that is a grandchild of the repo that has the file"""
@@ -84,12 +83,12 @@ class PosixParentSearch(unittest.TestCase):
         os.symlink('../a', os.path.join(childDir, '_parent'))
         storage = dafPersist.PosixStorage(uri=childDir)
 
-        foundName = storage.instanceParentSearch('foo.txt')
+        foundName = storage.search(storage.root, 'foo.txt', searchParents=True)
         self.assertEqual(storage.getRoot(), childDir)
         self.assertEqual(foundName, ['_parent/foo.txt'])
 
         searchFor = os.path.join(childDir, 'foo.txt')
-        foundName = storage.instanceParentSearch(searchFor)
+        foundName = storage.search(storage.root, searchFor, searchParents=True)
         self.assertEqual(storage.getRoot(), childDir)
         self.assertEqual(foundName, [os.path.join(childDir, '_parent/foo.txt')])
 
@@ -108,13 +107,13 @@ class PosixParentSearch(unittest.TestCase):
         storage = dafPersist.PosixStorage(uri=childDir)
 
         for name in ('foo.txt', 'bar.txt[0]'):
-            foundName = storage.instanceParentSearch(name)
+            foundName = storage.search(storage.root, name, searchParents=True)
             self.assertEqual(storage.getRoot(), childDir)
             self.assertEqual(foundName, [os.path.join('_parent/_parent/', name)])
 
         for name in ('foo.txt', 'bar.txt[0]'):
             searchFor = os.path.join(childDir, name)
-            foundName = storage.instanceParentSearch(searchFor)
+            foundName = storage.search(storage.root, searchFor, searchParents=True)
             self.assertEqual(storage.getRoot(), childDir)
             self.assertEqual(foundName, [os.path.join(childDir, '_parent/_parent/', name)])
 
@@ -128,12 +127,13 @@ class PosixParentSearch(unittest.TestCase):
             f.write('abc')
         os.symlink('../a', os.path.join(childDir, '_parent'))
         storage = dafPersist.PosixStorage(uri=childDir)
-        self.assertEquals(storage.instanceParentSearch('foo.txt'), ['_parent/foo.txt'])
-        self.assertEquals(storage.instanceParentSearch('foo.txt', searchParents=False), None)
+        self.assertEquals(storage.search(storage.root, 'foo.txt', searchParents=True), ['_parent/foo.txt'])
+        self.assertEquals(storage.search(storage.root, 'foo.txt', searchParents=False), None)
 
     def testNoResults(self):
         storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir)
-        self.assertIsNone(storage.instanceParentSearch('fileThatDoesNotExist.txt'))
+        self.assertIsNone(storage.search(storage.root, 'fileThatDoesNotExist.txt', searchParents=True))
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass

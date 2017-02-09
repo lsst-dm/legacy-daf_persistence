@@ -340,7 +340,7 @@ class PosixStorage(Storage):
             raise RuntimeError("Unhandled storageName:" % storageName)
         for locationString in location.getLocations():
             logLoc = LogicalLocation(locationString, location.getAdditionalData()).locString()
-            obj = self.instanceParentSearch(path=logLoc, searchParents=False)
+            obj = self.instanceSearch(path=logLoc)
             if obj:
                 return True
         return False
@@ -361,7 +361,7 @@ class PosixStorage(Storage):
         if isinstance(location, ButlerLocation):
             return self.butlerLocationExists(location)
 
-        obj = self.instanceParentSearch(path=location, searchParents=False)
+        obj = self.instanceSearch(path=location)
         return bool(obj)
 
     def locationWithRoot(self, location):
@@ -421,21 +421,50 @@ class PosixStorage(Storage):
         else:
             return None
 
-    def instanceParentSearch(self, path, searchParents=True):
-        """like parentSearch, but operate on self.root"""
-        return  PosixStorage.parentSearch(self.root, path, searchParents)
+    def instanceSearch(self, path):
+        """Search for the given path in this storage instance.
 
-    @staticmethod
-    def parentSearch(root, path, searchParents=True):
-        """Look for the given path in the current root or any of its parents
-        by following "_parent" symlinks; return None if it can't be found.  A
-        little tricky because the path may be in an alias of the root (e.g.
-        ".") and because the "_parent" links go between the root and the rest
-        of the path.
         If the path contains an HDU indicator (a number in brackets before the
         dot, e.g. 'foo.fits[1]', this will be stripped when searching and so
         will match filenames without the HDU indicator, e.g. 'foo.fits'. The
         path returned WILL contain the indicator though, e.g. ['foo.fits[1]'].
+
+        Parameters
+        ----------
+        path : string
+            A filename (and optionally prefix path) to search for within root.
+
+        Returns
+        -------
+        string or None
+            The location that was found, or None if no location was found.
+        """
+        return self.search(self.root, path)
+
+    @staticmethod
+    def search(root, path, searchParents=False):
+        """Look for the given path in the current root.
+
+        Also supports searching for the path in Butler v1 repositories by
+        following the Butler v1 _parent symlink
+
+        If the path contains an HDU indicator (a number in brackets, e.g.
+        'foo.fits[1]', this will be stripped when searching and so
+        will match filenames without the HDU indicator, e.g. 'foo.fits'. The
+        path returned WILL contain the indicator though, e.g. ['foo.fits[1]'].
+
+        Parameters
+        ----------
+        root : string
+            The path to the root directory.
+        path : string
+            The path to the file within the root directory.
+        searchParents : bool, optional
+            For Butler v1 repositories only, if true and a _parent symlink
+            exists, then the directory at _parent will be searched if the file
+            is not found in the root repository. Will continue searching the
+            parent of the parent until the file is found or no additional
+            parent exists.
         """
         # Separate path into a root-equivalent prefix (in dir) and the rest
         # (left in path)
