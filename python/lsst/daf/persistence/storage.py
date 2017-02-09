@@ -190,3 +190,31 @@ class Storage(object):
         if not storage:
             return toUri
         return storage.relativePath(fromUri, toUri)
+
+    @staticmethod
+    def search(uri, path):
+        """Look for the given path in a storage root at URI; return None if it can't be found.
+
+        If the path contains an HDU indicator (a number in brackets before the
+        dot, e.g. 'foo.fits[1]', this will be stripped when searching and so
+        will match filenames without the HDU indicator, e.g. 'foo.fits'. The
+        path returned WILL contain the indicator though, e.g. ['foo.fits[1]'].
+
+
+        Parameters
+        ----------
+        root : string
+            URI to the the root location to search
+        path : string
+            A filename (and optionally prefix path) to search for within root.
+
+        Returns
+        -------
+        string or None
+            The location that was found, or None if no location was found.
+        """
+        parseRes = urllib.parse.urlparse(uri)
+        storage = Storage.storages.get(parseRes.scheme, None)
+        if storage:
+            return storage.search(uri, path)
+        return None
