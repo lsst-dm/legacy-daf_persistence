@@ -160,24 +160,11 @@ class Repository(object):
             mapperArgs = copy.copy(repoData.cfg.mapperArgs)
             if mapperArgs is None:
                 mapperArgs = {}
-            if repoData.cfg.policy and 'policy' not in mapperArgs:
-                mapperArgs['policy'] = repoData.cfg.policy
-            # so that root doesn't have to be redundantly passed in cfgs, if root is specified in the
-            # storage and if it is an argument to the mapper, make sure that it's present in mapperArgs.
-            for arg in ('root', 'storage'):
-                if arg not in mapperArgs:
-                    mro = inspect.getmro(mapper)
-                    if mro[-1] is object:
-                        mro = mro[:-1]
-                    for c in mro:
-                        try:
-                            if arg in inspect.getargspec(c.__init__).args:
-                                mapperArgs[arg] = self._storage.root
-                                break
-                        except TypeError:
-                            pass
-            mapper = mapper(parentRegistry=repoData.parentRegistry, **mapperArgs)
-
+            if 'root' not in mapperArgs:
+                mapperArgs['root'] = repoData.cfg.root
+            mapper = mapper(parentRegistry=repoData.parentRegistry,
+                            repositoryCfg=repoData.cfg,
+                            **mapperArgs)
         self._mapper = mapper
 
         def __repr__(self):
