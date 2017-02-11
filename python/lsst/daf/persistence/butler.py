@@ -810,13 +810,13 @@ class Butler(object):
         for repoData in self._repos.inputs():
             if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 location = repoData.repo.map(datasetType, dataId)
-                if location:
+                if location and location.repository.exists(location):
                     break
+                else:
+                    location = None
 
-        if location is None:
-            return False
+        return bool(location)
 
-        return location.repository.exists(location)
 
     def _locate(self, datasetType, dataId, write):
         """Get one or more ButlerLocations and/or ButlercComposites.
