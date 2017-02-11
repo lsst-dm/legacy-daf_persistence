@@ -866,6 +866,20 @@ class Butler(object):
             # if reading, only one location is desired.
             if location:
                 if not write:
+                    # If there is a bypass function for this dataset type, we can't test to see if the object
+                    # exists in storage. Just return the location.
+                    if hasattr(location.mapper, "bypass_" + location.datasetType):
+                        try:
+                            # The dataset for the location may or may not exist
+                            # and may or may not be needed. Right now the only
+                            # way to know is to call the bypass function.
+                            location.bypass = self._getBypassFunc(location, dataId)()
+                            return location
+                        except:
+                            continue
+                    # If a location was found but the location does not exist, keep looking in input
+                    # repositories (the registry may have had enough data for a lookup even thought the object
+                    # exists in a different repository.)
                     if isinstance(location, ButlerComposite) or location.repository.exists(location):
                         return location
                 else:
@@ -876,6 +890,16 @@ class Butler(object):
         if not write:
             return None
         return locations
+
+    @staticmethod
+    def _getBypassFunc(location, dataId):
+        pythonType = location.getPythonType()
+        if pythonType is not None:
+            if isinstance(pythonType, basestring):
+                pythonType = doImport(pythonType)
+        bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
+        return lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
+
 
     def get(self, datasetType, dataId=None, immediate=True, **rest):
         """Retrieves a dataset given an input collection data id.
@@ -916,14 +940,9 @@ class Butler(object):
             obj = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
             return obj
 
-        if location.datasetType and hasattr(location.mapper, "bypass_" + location.datasetType):
+        if hasattr(location, 'bypass'):
             # this type loader block should get moved into a helper someplace, and duplciations removed.
-            pythonType = location.getPythonType()
-            if pythonType is not None:
-                if isinstance(pythonType, basestring):
-                    pythonType = doImport(pythonType)
-            bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
-            callback = lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
+            callback = lambda : location.bypass
         else:
             callback = lambda: self._read(location)
         if location.mapper.canStandardize(location.datasetType):
