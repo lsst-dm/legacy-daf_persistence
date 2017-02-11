@@ -866,7 +866,8 @@ class Butler(object):
             # if reading, only one location is desired.
             if location:
                 if not write:
-                    return location
+                    if isinstance(location, ButlerComposite) or location.repository.exists(location):
+                        return location
                 else:
                     try:
                         locations.extend(location)
