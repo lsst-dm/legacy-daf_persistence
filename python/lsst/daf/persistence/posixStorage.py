@@ -334,11 +334,10 @@ class PosixStorage(Storage):
     def butlerLocationExists(self, location):
         """Implementaion of PosixStorage.exists for ButlerLocation objects."""
         storageName = location.getStorageName()
-        if not storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
+        if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
                                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
-            # self.log.warn("datasetExists() for non-file storage %s, dataset type=%s, keys=%s",
-            #               storageName, datasetType, str(dataId))
-            raise RuntimeError("Unhandled storageName:" % storageName)
+            self.log.warn("butlerLocationExists for non-supported storage %s" % location)
+            return False
         for locationString in location.getLocations():
             logLoc = LogicalLocation(locationString, location.getAdditionalData()).locString()
             obj = self.instanceSearch(path=logLoc)
