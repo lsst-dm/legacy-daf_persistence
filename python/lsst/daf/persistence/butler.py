@@ -523,8 +523,20 @@ class Butler(object):
     @staticmethod
     def _getParentsList(inputs, outputs):
         parents = []
-        for args in outputs + inputs:
+        # The parents of readable output repositories are handled as though they were passed to butler as
+        # inputs.
+        # When we add remote storage types, getting the repositoryCfg here and again later in _createRepoData
+        # may be slow. We could fetch & cache if needed.
+        for args in outputs:
             if 'r' in args.mode and args.cfgRoot not in parents:
+                parents.append(args.cfgRoot)
+                cfg = Storage.getRepositoryCfg(args.cfgRoot)
+                if cfg:
+                    for parent in cfg.parents:
+                        if parent not in parents:
+                            parents.append(parent)
+        for args in inputs:
+            if args.cfgRoot not in parents:
                 parents.append(args.cfgRoot)
         return parents
 
