@@ -85,10 +85,14 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(butler._repos.inputs()[1].cfg.root, os.path.join(ROOT, 'repositoryCfg/a'))
         self.assertEqual(len(butler._repos.outputs()), 0)
 
-        # parents of readable outputs must be be listed with the inputs
-        with self.assertRaises(RuntimeError):
-            butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'),
-                                                         mode='rw'))
+        butler = dp.Butler(outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'),
+                                                     mode='rw'))
+        # verify serach order:
+        self.assertEqual(butler._repos.inputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
+        self.assertEqual(butler._repos.inputs()[1].cfg.root, os.path.join(ROOT, 'repositoryCfg/a'))
+        self.assertEqual(len(butler._repos.outputs()), 1)
+        self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
+
         butler = dp.Butler(inputs=os.path.join(ROOT, 'repositoryCfg/a'),
                            outputs=dp.RepositoryArgs(cfgRoot=os.path.join(ROOT, 'repositoryCfg/b'),
                                                      mode='rw'))
