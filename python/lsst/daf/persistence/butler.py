@@ -501,14 +501,8 @@ class Butler(object):
                 if v1RepoExists:
                     parent = PosixStorage.getParentSymlinkPath(args.cfgRoot)
                     if parent:
-                        parent = os.path.relpath(os.path.join(cfg.root, parent), '.')
-                        parent = cfg.addParents(parent)
-                        # cfg may transform the completeness of the path, and the value from cfg is how the
-                        # repo will be referred to in the future so let the wookie win.
-                        parent = cfg.parents[-1:].pop()
-                        # TODO the parent path can be (is always) relative;
-                        # resolving path-to-parent-from-here should be handled
-                        # by Storage and/or the cfg.
+                        parent = PosixStorage.absolutePath(args.cfgRoot, parent)
+                        cfg.addParents(parent)
                         self._createRepoData(RepositoryArgs(parent, mode='r'), 'in', instanceParents)
             # Do not need to check for Butler V1 Repos in non-posix Storages:
             else:

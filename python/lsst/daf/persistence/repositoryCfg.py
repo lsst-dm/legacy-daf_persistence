@@ -131,7 +131,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @property
     def parents(self):
-        return [os.path.normpath(os.path.join(self.root, p)) for p in self._parents]
+        return [Storage.absolutePath(self.root, p) for p in self._parents]
 
     def addParents(self, newParents):
         newParents = listify(newParents)

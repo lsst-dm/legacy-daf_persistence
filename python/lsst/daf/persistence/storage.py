@@ -192,6 +192,33 @@ class Storage(object):
         return storage.relativePath(fromUri, toUri)
 
     @staticmethod
+    def absolutePath(fromUri, toUri):
+        """Get an absolute path for the path from fromUri to toUri
+
+        Parameters
+        ----------
+        fromUri : the starting location
+            Description
+        toUri : the location relative to fromUri
+            Description
+
+        Returns
+        -------
+        string
+            URI that is absolutepath fromUri + toUri, if one exists. If toUri is absolute or if fromUri is not
+            related to toUri (e.g. are of different storage types) then toUri will be returned.
+        """
+        fromUriParseRes = urllib.parse.urlparse(fromUri)
+        toUriParseRes = urllib.parse.urlparse(toUri)
+        if fromUriParseRes.scheme != toUriParseRes.scheme:
+            return toUri
+        storage = Storage.storages.get(fromUriParseRes.scheme, None)
+        if not storage:
+            return toUri
+        return storage.absolutePath(fromUri, toUri)
+
+
+    @staticmethod
     def search(uri, path):
         """Look for the given path in a storage root at URI; return None if it can't be found.
 
