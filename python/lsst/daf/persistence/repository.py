@@ -69,8 +69,8 @@ class RepositoryArgs(object):
             #  is cfgRoot a dict? try dict init:
             self.__init__(**cfgRoot)
         except TypeError:
-            self._root = root.rstrip(os.sep) if root else root
-            self._cfgRoot = cfgRoot.rstrip(os.sep) if cfgRoot else cfgRoot
+            self._root = Storage.absolutePath(os.getcwd(), root.rstrip(os.sep)) if root else root
+            self._cfgRoot = Storage.absolutePath(os.getcwd(), cfgRoot.rstrip(os.sep)) if cfgRoot else cfgRoot
             self._mapper = mapper
             self.mapperArgs = mapperArgs
             self.tags = set(listify(tags))
@@ -94,7 +94,7 @@ class RepositoryArgs(object):
 
     @property
     def cfgRoot(self):
-        return self._cfgRoot if self._cfgRoot is not None else self.root
+        return self._cfgRoot if self._cfgRoot is not None else self._root
 
     @property
     def root(self):

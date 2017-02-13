@@ -82,6 +82,27 @@ class PosixStorage(Storage):
         return os.path.relpath(toUri, fromUri)
 
     @staticmethod
+    def absolutePath(fromUri, toUri):
+        """Get an absolute path for the path from fromUri to toUri
+
+        Parameters
+        ----------
+        fromUri : the starting location
+            Description
+        toUri : the location relative to fromUri
+            Description
+
+        Returns
+        -------
+        string
+            URI that is absolutepath fromUri + toUri, if one exists. If toUri is absolute or if fromUri is not
+            related to toUri then toUri will be returned.
+        """
+        if os.path.isabs(toUri):
+            return toUri
+        return os.path.normpath(os.path.join(fromUri, toUri))
+
+    @staticmethod
     def _getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
         """
