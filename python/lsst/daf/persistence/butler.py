@@ -300,7 +300,6 @@ class Butler(object):
 
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}
-
         # inputs and outputs may be modified, do not change the external value.
         inputs = copy.deepcopy(inputs)
         outputs = copy.deepcopy(outputs)
@@ -854,7 +853,10 @@ class Butler(object):
             components = datasetType.split('.')
             datasetType = components[0]
             components = components[1:]
-            location = repoData.repo.map(datasetType, dataId, write=write)
+            try:
+                location = repoData.repo.map(datasetType, dataId, write=write)
+            except NoResults:
+                continue
             if location is None:
                 continue
             location.datasetType = datasetType  # todo is there a better way than monkey patching here?
