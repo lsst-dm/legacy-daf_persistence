@@ -60,17 +60,11 @@ class RepositoryArgs(object):
 
     @property
     def cfgRoot(self):
-        if self._cfgRoot is not None:
-            return self._cfgRoot
-        else:
-            return self.root
+        return self._cfgRoot if self._cfgRoot is not None else self.root
 
     @property
     def root(self):
-        if self._root is not None:
-            return self._root
-        else:
-            return self._cfgRoot
+        return self._root if self._root is not None else self._cfgRoot
 
     @staticmethod
     def inputRepo(storage, tags=None):
