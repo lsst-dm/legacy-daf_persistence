@@ -141,6 +141,9 @@ class Storage(object):
         filesystem. They may exist but not have a RepositoryCfg class. This enables conditional checking for a
         V1 Repository.
 
+        This function treats 'file' and '' (no scheme) as posix storages, see
+        the class docstring for more details.
+
         Parameters
         ----------
         uri : string
