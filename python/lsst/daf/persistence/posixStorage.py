@@ -345,9 +345,8 @@ class PosixStorage(Storage):
         bool
             True if the repository at root exists, else False.
         """
-        if not os.path.exists(root):
-            return False
-        return os.listdir(root)
+        return os.path.exists(root) and bool(os.listdir(root))
+
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
