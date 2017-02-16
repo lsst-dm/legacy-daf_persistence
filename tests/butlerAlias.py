@@ -40,12 +40,13 @@ class MinMapper(dafPersist.Mapper):
         python = 'astropy.io.fits.HDUList'
         persistable = None
         storage = 'FitsStorage'
-        path = os.path.join(ROOT, 'butlerAlias/data/input/raw/raw_v') + \
+        path = 'butlerAlias/data/input/raw/raw_v' + \
             str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz'
-        return dafPersist.ButlerLocation(python, persistable, storage, path, dataId, self)
+        return dafPersist.ButlerLocation(python, persistable, storage, path,
+                                         dataId, self, dafPersist.Storage.makeFromURI(ROOT))
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
-        return astropy.io.fits.open(location.getLocations()[0])
+        return astropy.io.fits.open(location.getLocationsWithRoot()[0])
 
     def query_raw(self, format, dataId):
         values = [{'visit': 1, 'filter': 'g'}, {'visit': 2, 'filter': 'g'}, {'visit': 3, 'filter': 'r'}]

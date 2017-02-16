@@ -65,9 +65,9 @@ class Registry(object):
 
 class ImgMapper(CameraMapper):
 
-    def __init__(self):
-        CameraMapper.__init__(self)
-        self.root = os.path.join(ROOT, 'butlerSubset')
+    def __init__(self, root, **kwargs):
+        CameraMapper.__init__(self, root, **kwargs)
+        self.root = os.path.join(ROOT, root)
         self.registry = Registry([
             dict(visit=123456, raft="1,1", sensor="2,2", amp="0,0",
                  snap=0, skyTile=5),
@@ -115,9 +115,10 @@ class ButlerSubsetTestCase(unittest.TestCase):
         return butler
 
     def testSingleIteration(self):
-        args = dafPersist.RepositoryArgs(mode='rw', root=os.path.join(ROOT, 'butlerSubset'),
-                                         mapper=ImgMapper())
-        butler = dafPersist.Butler(outputs=args)
+        butler = dafPersist.Butler(
+            outputs={'mode': 'rw',
+                     'root': os.path.join(ROOT, 'butlerSubset'),
+                     'mapper': ImgMapper})
 
         ButlerSubsetTestCase.registerAliases(butler)
 
@@ -153,15 +154,19 @@ class ButlerSubsetTestCase(unittest.TestCase):
             os.unlink(os.path.join(ROOT, 'butlerSubset', fileName))
 
     def testNonexistentValue(self):
-        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
-        butler = bf.create()
+        butler = dafPersist.Butler(
+            outputs={'mode': 'rw',
+                     'root': os.path.join(ROOT, 'butlerSubset'),
+                     'mapper': ImgMapper})
         ButlerSubsetTestCase.registerAliases(butler)
         subset = butler.subset(self.calexpTypeName, skyTile=2349023905239)
         self.assertEqual(len(subset), 0)
 
     def testInvalidValue(self):
-        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
-        butler = bf.create()
+        butler = dafPersist.Butler(
+            outputs={'mode': 'rw',
+                     'root': os.path.join(ROOT, 'butlerSubset'),
+                     'mapper': ImgMapper})
         ButlerSubsetTestCase.registerAliases(butler)
         subset = butler.subset(self.calexpTypeName, skyTile="foo")
         self.assertEqual(len(subset), 0)
@@ -181,7 +186,10 @@ class ButlerSubsetTestCase(unittest.TestCase):
             with open(fileName, "wb") as f:
                 pickle.dump(inputList, f)
 
-        butler = dafPersist.Butler(outputs=dafPersist.RepositoryArgs(root='.', mode='rw', mapper=ImgMapper()))
+        butler = dafPersist.Butler(
+            outputs={'mode': 'rw',
+                     'root': '.',
+                     'mapper': ImgMapper})
 
         ButlerSubsetTestCase.registerAliases(butler)
 
@@ -229,8 +237,10 @@ class ButlerSubsetTestCase(unittest.TestCase):
             os.unlink(fileName)
 
     def testCompleteDataRef(self):
-        bf = dafPersist.ButlerFactory(mapper=ImgMapper())
-        butler = bf.create()
+        butler = dafPersist.Butler(
+            outputs={'mode': 'rw',
+                     'root': os.path.join(ROOT, 'butlerSubset'),
+                     'mapper': ImgMapper})
         ButlerSubsetTestCase.registerAliases(butler)
 
         # Test by using junk data

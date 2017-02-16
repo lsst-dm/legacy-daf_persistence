@@ -36,4 +36,6 @@ class PickleMapper(dafPersist.Mapper):
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
         path = os.path.join(self.root, self.outPath, path)
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {}, self,
+            dafPersist.Storage.makeFromURI(os.getcwd()))

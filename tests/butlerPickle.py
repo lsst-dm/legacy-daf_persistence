@@ -26,6 +26,7 @@
 import pickle
 import unittest
 import lsst.utils.tests
+import os
 
 import lsst.daf.persistence as dafPersist
 
@@ -37,7 +38,9 @@ class MinMapper(dafPersist.Mapper):
 
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {},
+            self, dafPersist.Storage.makeFromURI(os.getcwd()))
 
 
 class ButlerPickleTestCase(unittest.TestCase):
