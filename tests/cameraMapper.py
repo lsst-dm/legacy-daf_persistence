@@ -25,11 +25,12 @@
 
 import re
 import lsst.daf.persistence as dafPersist
+import os
 
 
 class CameraMapper(dafPersist.Mapper):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.templates = dict(
             raw="raw_v%(visit)d_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
             flat="flat_R%(raft)s_S%(sensor)s_C%(amp)s_E%(snap)03d.pickle",
@@ -96,7 +97,10 @@ class CameraMapper(dafPersist.Mapper):
 
     def map(self, datasetType, dataId, write=False):
         path = self.templates[datasetType] % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {}, self,
+            dafPersist.Storage.makeFromURI(self.root))
+
 
 for datasetType in ["raw", "flat", "calexp"]:
     setattr(CameraMapper, "map_" + datasetType,

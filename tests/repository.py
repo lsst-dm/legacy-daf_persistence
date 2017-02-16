@@ -48,6 +48,7 @@ class ParentMapper(dp.Mapper):
 
     def __init__(self, root, **kwargs):
         self.root = root
+        self.storage = dp.Storage.makeFromURI(self.root)
 
     def __repr__(self):
         return 'ParentMapper(root=%s)' % self.root
@@ -59,7 +60,8 @@ class ParentMapper(dp.Mapper):
         path = os.path.join(self.root, 'data/input/raw')
         path = os.path.join(path, 'raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz')
         if os.path.exists(path):
-            return dp.ButlerLocation(python, persistable, storage, path, dataId, self)
+            return dp.ButlerLocation(python, persistable, storage, path,
+                                     dataId, self, self.storage)
         return None
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
@@ -94,7 +96,8 @@ class ParentMapper(dp.Mapper):
         path = os.path.join(self.root, 'data/input/raw')
         path = os.path.join(path, 'raw_v' + str(dataId['str']) + '_f' + dataId['filter'] + '.fits.gz')
         if os.path.exists(path):
-            return dp.ButlerLocation(str, None, 'PickleStorage', path, dataId, self)
+            return dp.ButlerLocation(str, None, 'PickleStorage', path, dataId,
+                                     self, self.storage)
         return None
 
 
@@ -102,6 +105,7 @@ class ChildrenMapper(dp.Mapper):
 
     def __init__(self, root, **kwargs):
         self.root = root
+        self.storage = dp.Storage.makeFromURI(self.root)
 
     def map_raw(self, dataId, write):
         python = 'astropy.io.fits.HDUList'
@@ -110,7 +114,8 @@ class ChildrenMapper(dp.Mapper):
         path = os.path.join(self.root, 'data/input/raw')
         path = os.path.join(path, 'raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz')
         if write or os.path.exists(path):
-            return dp.ButlerLocation(python, persistable, storage, path, dataId, self)
+            return dp.ButlerLocation(python, persistable, storage, path,
+                                     dataId, self, self.storage)
         return None
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
@@ -245,6 +250,7 @@ class MapperForTestWriting(dp.Mapper):
 
     def __init__(self, root, **kwargs):
         self.root = root
+        self.storage = dp.Storage.makeFromURI(self.root)
 
     def map_foo(self, dataId, write):
         python = tstObj
@@ -257,7 +263,8 @@ class MapperForTestWriting(dp.Mapper):
         path = os.path.join(self.root, fileName)
         if not write and not os.path.exists(path):
             return None
-        return dp.ButlerLocation(python, persistable, storage, path, dataId, self)
+        return dp.ButlerLocation(python, persistable, storage, path, dataId,
+                                 self, self.storage)
 
 
 class AlternateMapper(object):

@@ -25,6 +25,7 @@
 
 import unittest
 import lsst.utils.tests
+import os
 
 import lsst.daf.persistence as dafPersist
 
@@ -38,13 +39,15 @@ class MinMapper(dafPersist.Mapper):
         path = "foo%(ccd)d.pickle" % dataId
         if not write:
             path = "parent/" + path
-        return dafPersist.ButlerLocation("lsst.afw.image.BBox",
-                                         "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            "lsst.afw.image.BBox", "lsst::afw::image::BBox", "PickleStorage",
+            path, {}, self, dafPersist.Storage.makeFromURI(os.getcwd()))
 
     def map_badSourceHist(self, dataId, write):
         path = "badSourceHist%(ccd)d.pickle" % dataId
-        return dafPersist.ButlerLocation("lsst.afw.image.BBox",
-                                         "lsst::afw::image::BBox", "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            "lsst.afw.image.BBox", "lsst::afw::image::BBox", "PickleStorage",
+            path, {}, self, dafPersist.Storage.makeFromURI(os.getcwd()))
 
     def query_x(self, format, dataId):
         return [1, 2, 3]
