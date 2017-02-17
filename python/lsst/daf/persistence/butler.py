@@ -305,9 +305,10 @@ class Butler(object):
         isV1Args = inputs is None and outputs is None
         if isV1Args:
             inputs, outputs = self._convertV1Args(root=root, mapper=mapper, mapperArgs=mapperArgs)
-        elif root:
+        elif root or mapper or mapperArgs:
             raise RuntimeError(
-                'root is a deprecated parameter and may not be used with the parameters input and output')
+                'Butler version 1 API (root, mapper, **mapperArgs) may ' +
+                'not be used with version 2 API (inputs, outputs)')
 
         self.datasetTypeAliasDict = {}
 
