@@ -26,23 +26,24 @@
 
 """This module defines the ReadProxy class."""
 
+from __future__ import absolute_import
 
-class ReadProxy(object):
+from ._persistence import ReadProxyBase
+
+
+class ReadProxy(ReadProxyBase):
     """ReadProxy provides a lazy-loading object that is initialized by a
     callback function set in ReadProxy's constructor.  Adapted from
     peak.util.proxies.LazyProxy, which was written by Phillip J. Eby
     (peak@eby-sarna.com)."""
 
-    __slots__ = ('__cache__', '__callback__', '__subject__')
+    __slots__ = ('__cache__', '__callback__')
 
     def __init__(self, func):
         set_callback(self, func)
 
-    def __getattribute__(self, attr, oga=object.__getattribute__):
-        subject = oga(self, '__subject__')
-        if attr == '__subject__':
-            return subject
-        return getattr(subject, attr)
+    def __getattr__(self, attr):
+        getattr(self.__subject__, attr)
 
     def __setattr__(self, attr, val):
         setattr(self.__subject__, attr, val)
