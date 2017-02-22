@@ -71,7 +71,7 @@ class PosixStorage(Storage):
             with open(loc, 'r') as f:
                 repositoryCfg = yaml.load(f)
             if repositoryCfg.root is None:
-                repositoryCfg.root = parseRes.path
+                repositoryCfg.root = uri
         return repositoryCfg
 
     @staticmethod
@@ -80,25 +80,10 @@ class PosixStorage(Storage):
         if repositoryCfg is not None:
             return repositoryCfg
 
-        # if no repository cfg, is it a legacy repository?
-        parseRes = urllib.parse.urlparse(uri)
-        if repositoryCfg is None:
-            mapper = PosixStorage.getMapperClass(parseRes.path)
-            if mapper is not None:
-                repositoryCfg = RepositoryCfg(mapper=mapper,
-                                              root=parseRes.path,
-                                              mapperArgs=None,
-                                              parents=None,
-                                              isLegacyRepository=True,
-                                              policy=None)
         return repositoryCfg
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
-        if cfg.isLegacyRepository:
-            # don't write cfgs to legacy repositories; they take care of themselves in other ways (e.g. by
-            # the _parent symlink)
-            return
         if loc is None or cfg.root == loc:
             # the cfg is at the root location of the repository so don't write root, let it be implicit in the
             # location of the cfg.
@@ -158,6 +143,32 @@ class PosixStorage(Storage):
             pkg = importlib.import_module(".".join(components[:-1]))
             return getattr(pkg, components[-1])
 
+        return None
+
+    @staticmethod
+    def getParentSymlinkPath(root):
+        """For Butler V1 Repositories only, if a _parent symlink exists, get the location pointed to by the
+        symlink.
+
+        Parameters
+        ----------
+        root : string
+            A path to the folder on the local filesystem.
+
+        Returns
+        -------
+        string or None
+            A path to the parent folder indicated by the _parent symlink, or None if there is no _parent
+            symlink at root.
+        """
+        linkpath = os.path.join(root, '_parent')
+        if os.path.exists(linkpath):
+            try:
+                return os.readlink(os.path.join(root, '_parent'))
+            except OSError:
+                # some of the unit tests rely on a folder called _parent instead of a symlink to aother
+                # location. Allow that; return the path of that folder.
+                return os.path.join(root, '_parent')
         return None
 
     def mapperClass(self):
@@ -316,6 +327,25 @@ class PosixStorage(Storage):
     def lookup(self, *args, **kwargs):
         """Perform a lookup in the registry"""
         return self.registry.lookup(*args, **kwargs)
+
+    @staticmethod
+    def v1RepoExists(root):
+        """Test if a Version 1 Repository exists.
+
+        Version 1 Repositories only exist in posix storages and do not have a RepositoryCfg file.
+        To "exist" the folder at root must exist and contain files or folders.
+
+        Parameters
+        ----------
+        root : string
+            A path to a folder on the local filesystem.
+
+        Returns
+        -------
+        bool
+            True if the repository at root exists, else False.
+        """
+        return os.path.exists(root) and bool(os.listdir(root))
 
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)

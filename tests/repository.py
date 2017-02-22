@@ -666,7 +666,7 @@ class TestMovedRepositoryCfg(unittest.TestCase):
         os.rename(os.path.join(ROOT, 'TestMovedRepositoryCfg/a/repositoryCfg.yaml'),
                   os.path.join(ROOT, 'TestMovedRepositoryCfg/b/repositoryCfg.yaml'))
         butler = dp.Butler(inputs=os.path.join(ROOT, 'TestMovedRepositoryCfg/b'))
-        self.assertEqual(butler._repos.all()[0].cfg,
+        self.assertEqual(list(butler._repos.all().values())[0].cfg,
                          dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMovedRepositoryCfg/b'),
                                           mapper=MapperForTestWriting,
                                           mapperArgs=None,
@@ -742,7 +742,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                                          'TestOutputAlreadyHasParent/a')],
                                                    policy=None))
 
-        # load 'b' as 'read only' and make sure 'a' does not get used as an input.
+        # load 'b' as 'write only' and make sure 'a' does not get used as an input.
         butler = dp.Butler(outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
         self.assertEqual(len(butler._repos.inputs()), 0)
         self.assertEqual(len(butler._repos.outputs()), 1)

@@ -132,3 +132,30 @@ class Storage(object):
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
+
+    @staticmethod
+    def isPosix(uri):
+        """Test if a URI is for a local filesystem storage.
+
+        This is mostly for backward compatibility; Butler V1 repositories were only ever on the local
+        filesystem. They may exist but not have a RepositoryCfg class. This enables conditional checking for a
+        V1 Repository.
+
+        This function treats 'file' and '' (no scheme) as posix storages, see
+        the class docstring for more details.
+
+        Parameters
+        ----------
+        uri : string
+            URI to the root of a Repository.
+
+        Returns
+        -------
+        Bool
+            True if the URI is associated with a posix storage, else false.
+        """
+        parseRes = urllib.parse.urlparse(uri)
+        if parseRes.scheme in ('file', ''):
+            return True
+        return False
+

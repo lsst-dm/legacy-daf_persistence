@@ -34,26 +34,37 @@ class RepositoryArgs(object):
 
     def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None,
                  mode=None, policy=None):
-        self.root = root
+        self._root = root
         self._cfgRoot = cfgRoot
-        self.mapper = mapper
+        self._mapper = mapper
         self.mapperArgs = mapperArgs
         self.tags = set(listify(tags))
         self.mode = mode
         self.policy = Policy(policy) if policy is not None else None
-        self.isLegacyRepository = False
+
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
-            self.__class__.__name__, self.root, self._cfgRoot, self.mapper, self.mapperArgs, self.tags,
+            self.__class__.__name__, self.root, self._cfgRoot, self._mapper, self.mapperArgs, self.tags,
             self.mode, self.policy)
 
     @property
+    def mapper(self):
+        return self._mapper
+
+    @mapper.setter
+    def mapper(self, mapper):
+        if mapper is not None and self._mapper:
+            raise RuntimeError("Explicity clear mapper (set to None) before changing its value.")
+        self._mapper = mapper
+
+    @property
     def cfgRoot(self):
-        if self._cfgRoot is not None:
-            return self._cfgRoot
-        else:
-            return self.root
+        return self._cfgRoot if self._cfgRoot is not None else self.root
+
+    @property
+    def root(self):
+        return self._root if self._root is not None else self._cfgRoot
 
     @staticmethod
     def inputRepo(storage, tags=None):
@@ -78,15 +89,19 @@ class Repository(object):
     """Represents a repository of persisted data and has methods to access that data.
     """
 
-    def __init__(self, repositoryCfg):
-        '''Initialize a Repository with parameters input via config.
+    def __init__(self, repoData):
+        """Initialize a Repository with parameters input via RepoData.
 
-        :param args: an instance of RepositoryArgs
-        :return:
-        '''
-        self._storage = Storage.makeFromURI(repositoryCfg.root)
-        self._mapperArgs = repositoryCfg.mapperArgs  # keep for reference in matchesArgs
-        self._initMapper(repositoryCfg)
+        Parameters
+        ----------
+        repoData : RepoData
+            Object that contains the parameters with which to init the Repository.
+        """
+        self._storage = Storage.makeFromURI(repoData.cfg.root)
+        if repoData.isNewRepository and not repoData.isV1Repository:
+            self._storage.putRepositoryCfg(repoData.cfg, repoData.args.cfgRoot)
+        self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
+        self._initMapper(repoData.cfg)
 
     def _initMapper(self, repositoryCfg):
         '''Initialize and keep the mapper in a member var.
@@ -131,7 +146,7 @@ class Repository(object):
 
         def __repr__(self):
             return 'config(id=%s, storage=%s, parent=%s, mapper=%s, mapperArgs=%s, cls=%s)' % \
-                   (self.id, self._storage, self.parent, self.mapper, self.mapperArgs, self.cls)
+                   (self.id, self._storage, self.parent, self._mapper, self.mapperArgs, self.cls)
 
     # todo want a way to make a repository read-only
     def write(self, butlerLocation, obj):
@@ -179,7 +194,7 @@ class Repository(object):
         :return: The type of item is dependent on the mapper being used but is typically a ButlerLocation.
         """
         if self._mapper is None:
-            return None
+            raise RuntimeError("No mapper assigned to Repository")
         loc = self._mapper.map(*args, **kwargs)
         if loc is None:
             return None

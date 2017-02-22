@@ -34,13 +34,12 @@ from past.builtins import basestring
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, policy, isLegacyRepository=False):
+    def __init__(self, root, mapper, mapperArgs, parents, policy):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
         self._parents = iterify(parents)
         self._policy = policy
-        self._isLegacyRepository = isLegacyRepository
 
     @staticmethod
     def v1Constructor(loader, node):
@@ -62,8 +61,7 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=d['_parents'], isLegacyRepository=d['_isLegacyRepository'],
-                            policy=d.get('_policy', None))
+                            parents=d['_parents'], policy=d.get('_policy', None))
         return cfg
 
     def __eq__(self, other):
@@ -72,8 +70,7 @@ class RepositoryCfg(yaml.YAMLObject):
         return self._root == other._root and \
             self.mapper == other._mapper and \
             self.mapperArgs == other._mapperArgs and \
-            self.parents == other._parents and \
-            self._isLegacyRepository == other._isLegacyRepository
+            self.parents == other._parents
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -91,6 +88,12 @@ class RepositoryCfg(yaml.YAMLObject):
     @property
     def mapper(self):
         return self._mapper
+
+    @mapper.setter
+    def mapper(self, mapper):
+        if self._mapper != None:
+            raise RuntimeError("Should not set mapper over previous not-None value.")
+        self._mapper = mapper
 
     @property
     def mapperArgs(self):
@@ -111,10 +114,6 @@ class RepositoryCfg(yaml.YAMLObject):
                 self._parents.append(newParent)
 
     @property
-    def isLegacyRepository(self):
-        return self._isLegacyRepository
-
-    @property
     def policy(self):
         return self._policy
 
@@ -124,7 +123,6 @@ class RepositoryCfg(yaml.YAMLObject):
                             mapper=repositoryArgs.mapper,
                             mapperArgs=repositoryArgs.mapperArgs,
                             parents=parents,
-                            isLegacyRepository=repositoryArgs.isLegacyRepository,
                             policy=repositoryArgs.policy)
         return cfg
 
@@ -154,13 +152,12 @@ class RepositoryCfg(yaml.YAMLObject):
         return True
 
     def __repr__(self):
-        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, policy=%s, isLegacyRepository=%s)" % (
+        return "%s(root=%r, mapper=%r, mapperArgs=%r, parents=%s, policy=%s)" % (
             self.__class__.__name__,
             self._root,
             self._mapper,
             self._mapperArgs,
             self._parents,
-            self._policy,
-            self._isLegacyRepository)
+            self._policy)
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)
