@@ -382,6 +382,8 @@ class Butler(object):
                 if not parentRepoData.repo:
                     raise RuntimeError("Parent repo should be initialized before child repos.")
                 registry = parentRepoData.repo.getRegistry()
+                if registry:
+                    break
         return registry
 
     def _getParentRepodDatas(self, repoData):
