@@ -29,6 +29,7 @@ from builtins import object
 import os
 import astropy.io.fits
 import shutil
+import sqlite3
 import unittest
 
 import lsst.daf.persistence as dp
@@ -763,6 +764,73 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
         self.assertEqual(butler._repos.outputs()[0].cfg.root,
                          os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
         cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+
+
+class ParentRepoTestMapper(dp.Mapper):
+    def __init__(self, parentRegistry, repositoryCfg, **kwargs):
+        self.parentRegistry = parentRegistry
+        root = repositoryCfg.root
+        if os.path.exists(os.path.join(root, 'registry.sqlite3')):
+            self.registry = dp.Registry.create(os.path.join(root, 'registry.sqlite3'))
+        else:
+            self.registry = None
+
+    def getRegistry(self):
+        return self.registry
+
+
+class TestParentRepository(unittest.TestCase):
+    """A test to verify that when a parent repository is used the correct one is found."""
+
+    def setUp(self):
+        self.testDir = os.path.join(ROOT, 'TestParentRepository')
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def test(self):
+
+        """Tests 1. That an sqlite registry in a parent repo is used as the
+        registry in a child repo that does not have its own sqlite registry.
+        2. That when a repo has a parent and grandparent and only the
+        grandparent has an sqlite registry that the grandparent's registry is
+        used.
+        3. That when the parent and grandparent both have sqlite registries
+        that the parent's sqlite registry is used."""
+        # setup; create the parent repo
+        def makeRegistry(location, name):
+            conn = sqlite3.connect(location)
+            conn.execute("CREATE TABLE {name} (real)".format(name=name))
+            conn.close()
+
+        repoADir = os.path.join(self.testDir, 'repoA')
+        repoBDir = os.path.join(self.testDir, 'repoB')
+        repoCDir = os.path.join(self.testDir, 'repoC')
+        butler = dp.Butler(outputs={'root': repoADir, 'mapper': ParentRepoTestMapper})
+        del butler
+        makeRegistry(os.path.join(repoADir, 'registry.sqlite3'), 'repoA')
+        # test 1:
+        butler = dp.Butler(inputs=repoADir, outputs=repoBDir)
+        registry = butler._repos.outputs()[0].repo._mapper.parentRegistry
+        self.assertIsInstance(registry, dp.SqliteRegistry)
+        tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        self.assertEqual(tables, [('repoA', )])
+        del butler
+        # test 2:
+        butler = dp.Butler(inputs=repoBDir, outputs=repoCDir)
+        registry = butler._repos.outputs()[0].repo._mapper.parentRegistry
+        self.assertIsInstance(registry, dp.SqliteRegistry)
+        tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        self.assertEqual(tables, [('repoA', )])
+        del butler
+        # test 3:
+        makeRegistry(os.path.join(repoBDir, 'registry.sqlite3'), 'repoB')
+        butler = dp.Butler(inputs=repoBDir, outputs=repoCDir)
+        registry = butler._repos.outputs()[0].repo._mapper.parentRegistry
+        self.assertIsInstance(registry, dp.SqliteRegistry)
+        tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        self.assertEqual(tables, [('repoB', )])
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
