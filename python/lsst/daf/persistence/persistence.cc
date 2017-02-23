@@ -7,24 +7,32 @@
 #include "lsst/daf/persistence/Storage.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 
-using namespace lsst::daf::persistence;
+#include "lsst/daf/persistence/python/readProxy.h"
 
 namespace py = pybind11;
 
-PYBIND11_DECLARE_HOLDER_TYPE(MyType, std::shared_ptr<MyType>);
+namespace lsst {
+namespace daf {
+namespace persistence {
 
 PYBIND11_PLUGIN(_persistence) {
     py::module mod("_persistence", "Access to the classes from the daf_persistence persistence library");
 
-    py::class_<Persistence, std::shared_ptr<Persistence>, lsst::daf::base::Citizen> cls(mod, "Persistence");
+    py::class_<python::ReadProxyBase, std::shared_ptr<python::ReadProxyBase>>(mod, "ReadProxyBase")
+        .def(py::init<>())
+        .def_readwrite("subject", &python::ReadProxyBase::subject);
 
-    cls.def("getPersistStorage", &Persistence::getPersistStorage);
-    cls.def("getRetrieveStorage", &Persistence::getRetrieveStorage);
-    cls.def("persist", &Persistence::persist);
-    cls.def("retrieve", &Persistence::retrieve);
-    cls.def("unsafeRetrieve", &Persistence::unsafeRetrieve);
-    cls.def_static("getPersistence", &Persistence::getPersistence);
+    py::class_<Persistence, std::shared_ptr<Persistence>, lsst::daf::base::Citizen> clsPersistence(mod, "Persistence");
+
+    clsPersistence.def("getPersistStorage", &Persistence::getPersistStorage);
+    clsPersistence.def("getRetrieveStorage", &Persistence::getRetrieveStorage);
+    clsPersistence.def("persist", &Persistence::persist);
+    clsPersistence.def("retrieve", &Persistence::retrieve);
+    clsPersistence.def("unsafeRetrieve", &Persistence::unsafeRetrieve);
+    clsPersistence.def_static("getPersistence", &Persistence::getPersistence);
 
     return mod.ptr();
 }
+
+}}}
 
