@@ -16,6 +16,7 @@ doc/*.inc
 doc/doxygen.conf
 doc/xml
 tests/.tests
+.cache
 tests/.cache
 version.py
 foo1.pickle
