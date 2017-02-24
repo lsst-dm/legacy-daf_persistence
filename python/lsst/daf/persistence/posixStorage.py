@@ -69,10 +69,13 @@ class PosixStorage(Storage):
 
         Parameters
         ----------
-        fromPath : string
-            A URI that describes a location at which to start.
-        toPath : string
-            A URI that describes a target location.
+        fromUri : string
+            A location at which to start. It can be a relative path or an
+            absolute path that optionally may include file:/// at the
+            beginning.
+        toUri : string
+            A target location. It can be a relative path or an absolute path
+            that optionally may include file:/// at the beginning.
 
         Returns
         -------
@@ -82,25 +85,30 @@ class PosixStorage(Storage):
         return os.path.relpath(toUri, fromUri)
 
     @staticmethod
-    def absolutePath(fromUri, toUri):
+    def absolutePath(fromPath, relativePath):
         """Get an absolute path for the path from fromUri to toUri
 
         Parameters
         ----------
-        fromUri : the starting location
-            Description
-        toUri : the location relative to fromUri
-            Description
+        fromPath : the starting location
+            A location at which to start. It can be a relative path or an
+            absolute path. It should not include file:/// at the beginning.
+        relativePath : the location relative to fromPath
+            A relative path
 
         Returns
         -------
         string
-            URI that is absolutepath fromUri + toUri, if one exists. If toUri is absolute or if fromUri is not
-            related to toUri then toUri will be returned.
+            Path that is an absolute path representation of fromPath +
+            relativePath, if one exists. If relativePath is absolute or if
+            fromPath is not related to relativePath then relativePath will be
+            returned.
         """
-        if os.path.isabs(toUri):
-            return toUri
-        return os.path.normpath(os.path.join(fromUri, toUri))
+        if os.path.isabs(relativePath):
+            return relativePath
+        if not os.path.isabs(fromPath):
+            fromPath = os.path.abspath(fromPath)
+        return os.path.normpath(os.path.join(fromPath, relativePath))
 
     @staticmethod
     def _getRepositoryCfg(uri):
