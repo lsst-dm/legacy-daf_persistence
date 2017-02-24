@@ -437,7 +437,8 @@ class PosixStorage(Storage):
 
         Returns
         -------
-        A path to a local copy of the file. May be the original file (if storage is local)."""
+        A path to a local copy of the file. May be the original file (if storage is local).
+        """
         p = os.path.join(self.root, path)
         if os.path.exists(p):
             return p
