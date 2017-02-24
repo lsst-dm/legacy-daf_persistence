@@ -377,7 +377,7 @@ class Butler(object):
             repositories, so this function should be able to get any parent of any child repo.
         """
         registry = None
-        for parentRepoData in self._getParentRepodDatas(repoData):
+        for parentRepoData in self._getParentRepoDatas(repoData):
             if parentRepoData.cfg.mapper == repoData.cfg.mapper:
                 if not parentRepoData.repo:
                     raise RuntimeError("Parent repo should be initialized before child repos.")
@@ -386,7 +386,7 @@ class Butler(object):
                     break
         return registry
 
-    def _getParentRepodDatas(self, repoData):
+    def _getParentRepoDatas(self, repoData):
         """Get the parents & grandparents etc of a given repo data, in depth-first search order.
 
         Parameters
@@ -399,12 +399,11 @@ class Butler(object):
         list of RepoData
             A list of the parents & grandparents etc of a given repo data, in depth-first search order.
         """
-        parents = []
         for parentCfgRoot in repoData.cfg.parents:
             parentRepoData = self._repos.byCfgRoot[parentCfgRoot]
-            parents.append(parentRepoData)
-            parents.extend(self._getParentRepodDatas(parentRepoData))
-        return parents
+            yield parentRepoData
+            for parentRepoData in self._getParentRepoDatas(parentRepoData):
+                yield parentRepoData
 
     def _setRepoDataTags(self):
         """Set the tags from each repoArgs into all its parent repoArgs so that they can be included in tagged
