@@ -35,7 +35,7 @@ class RepositoryArgs(object):
 
     """Arguments passed into a Butler that are used to instantiate a repository. This includes arguments that
     can be used to create a new repository (cfgRoot, root, mapper, mapperArgs, policy) and are persisted along
-    with the new repository's configuration file. These areguments can also describe how a new or existing
+    with the new repository's configuration file. These arguments can also describe how a new or existing
     repository are to be used (cfgRoot or root, tags, mode). When indicating an existing repository it is
     better to not specify unnecessary arguments, as if they conflict with the persisted repository
     configuration then a RuntimeError will be raised during Butler init.
