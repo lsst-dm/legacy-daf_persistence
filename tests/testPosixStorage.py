@@ -24,7 +24,7 @@
 
 import os
 import unittest
-import lsst.daf.persistence as dafPersist
+import lsst.daf.persistence as dp
 from lsst.utils import getPackageDir
 import lsst.utils.tests
 import shutil
@@ -54,12 +54,74 @@ class GetParentFromSymlink(unittest.TestCase):
             shutil.rmtree(GetParentFromSymlink.testDir)
 
     def testV1RepoWithParen(self):
-        parentPath = dafPersist.PosixStorage.getParentSymlinkPath(self.childFolderPath)
+        parentPath = dp.PosixStorage.getParentSymlinkPath(self.childFolderPath)
         self.assertEqual(parentPath, os.path.relpath(self.parentFolderPath, self.childFolderPath))
 
     def testV1RepoWithoutParent(self):
-        parentPath = dafPersist.PosixStorage.getParentSymlinkPath(self.parentlessFolderPath)
+        parentPath = dp.PosixStorage.getParentSymlinkPath(self.parentlessFolderPath)
         self.assertEqual(parentPath, None)
+
+
+class TestRelativePath(unittest.TestCase):
+    """A test case for the PosixStorage.relativePath function."""
+
+    testDir = os.path.join(packageDir, 'tests', 'TestRelativePath')
+
+    def setUp(self):
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def testRelativePath(self):
+        """Test that a relative path returns the correct relative path for
+        1. relative inputs, 2. absolute inputs, 3. URI inputs (starts with
+        file:///...)"""
+        abspathA = os.path.join(self.testDir, 'a')
+        abspathB = os.path.join(self.testDir, 'b')
+        os.makedirs(abspathA)
+        os.makedirs(abspathB)
+        # 1.
+        relpathA = os.path.relpath(abspathA)
+        relpathB = os.path.relpath(abspathB)
+        relpathAtoB = dp.PosixStorage.relativePath(relpathA, relpathB)
+        self.assertEqual('../b', relpathAtoB)
+        # 2.
+        relpathAtoB = dp.PosixStorage.relativePath(abspathA, abspathB)
+        self.assertEqual('../b', relpathAtoB)
+        # 3.
+        for prefix in ("file://", "file:///"):
+            uriA = prefix + abspathA
+            uriB = prefix + abspathB
+            relpathAtoB = dp.PosixStorage.relativePath(uriA, uriB)
+            self.assertEqual('../b', relpathAtoB)
+
+
+class TestAbsolutePath(unittest.TestCase):
+    """A test case for the PosixStorage.absolutePath function."""
+
+    testDir = os.path.join(packageDir, 'tests', 'TestAbsolutePath')
+
+    def setUp(self):
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def testAbsolutePath(self):
+        """Tests that given a path and a relative path, the correct aboslute
+        path to the relative path is returned."""
+        abspathA = os.path.join(self.testDir, 'a')
+        abspathB = os.path.join(self.testDir, 'b')
+        os.makedirs(abspathA)
+        os.makedirs(abspathB)
+        relpathA = os.path.relpath(abspathA)
+        self.assertEqual(abspathB,
+                         dp.PosixStorage.absolutePath(abspathA, '../b'))
+        self.assertEqual(abspathB,
+                         dp.PosixStorage.absolutePath(relpathA, '../b'))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
