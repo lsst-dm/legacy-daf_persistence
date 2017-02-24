@@ -490,6 +490,11 @@ class PosixStorage(Storage):
             is not found in the root repository. Will continue searching the
             parent of the parent until the file is found or no additional
             parent exists.
+
+        Returns
+        -------
+        string or None
+            The location that was found, or None if no location was found.
         """
         # Separate path into a root-equivalent prefix (in dir) and the rest
         # (left in path)
