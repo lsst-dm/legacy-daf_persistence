@@ -547,38 +547,6 @@ class PosixStorage(Storage):
             else:
                 return None
 
-    @staticmethod
-    def prepOutputRootRepos(outputRoot, root):
-        # Path manipulations are subject to race condition
-        if not os.path.exists(outputRoot):
-            try:
-                os.makedirs(outputRoot)
-            except OSError as e:
-                if not e.errno == errno.EEXIST:
-                    raise
-            if not os.path.exists(outputRoot):
-                raise RuntimeError("Unable to create output repository '%s'" % (outputRoot,))
-        if os.path.exists(root):
-            # Symlink existing input root to "_parent" in outputRoot.
-            src = os.path.abspath(root)
-            dst = os.path.join(outputRoot, "_parent")
-            if not os.path.exists(dst):
-                try:
-                    os.symlink(src, dst)
-                except OSError:
-                    pass
-            if os.path.exists(dst):
-                if os.path.realpath(dst) != os.path.realpath(src):
-                    raise RuntimeError("Output repository path "
-                                       "'%s' already exists and differs from "
-                                       "input repository path '%s'" % (dst, src))
-            else:
-                raise RuntimeError("Unable to symlink from input "
-                                   "repository path '%s' to output repository "
-                                   "path '%s'" % (src, dst))
-        # We now use the outputRoot as the main root with access to the
-        # input via "_parent".
-
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
