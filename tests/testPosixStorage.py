@@ -76,8 +76,7 @@ class TestRelativePath(unittest.TestCase):
 
     def testRelativePath(self):
         """Test that a relative path returns the correct relative path for
-        1. relative inputs, 2. absolute inputs, 3. URI inputs (starts with
-        file:///...)"""
+        1. relative inputs, 2. absolute inputs."""
         abspathA = os.path.join(self.testDir, 'a')
         abspathB = os.path.join(self.testDir, 'b')
         os.makedirs(abspathA)
@@ -90,13 +89,6 @@ class TestRelativePath(unittest.TestCase):
         # 2.
         relpathAtoB = dp.PosixStorage.relativePath(abspathA, abspathB)
         self.assertEqual('../b', relpathAtoB)
-        # 3.
-        for prefix in ("file://", "file:///"):
-            uriA = prefix + abspathA
-            uriB = prefix + abspathB
-            relpathAtoB = dp.PosixStorage.relativePath(uriA, uriB)
-            self.assertEqual('../b', relpathAtoB)
-
 
 class TestAbsolutePath(unittest.TestCase):
     """A test case for the PosixStorage.absolutePath function."""
