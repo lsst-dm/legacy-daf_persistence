@@ -64,25 +64,23 @@ class PosixStorage(Storage):
         return 'PosixStorage(root=%s)' % self.root
 
     @staticmethod
-    def relativePath(fromUri, toUri):
+    def relativePath(fromPath, toPath):
         """Get a relative path from a location to a location.
 
         Parameters
         ----------
-        fromUri : string
-            A location at which to start. It can be a relative path or an
-            absolute path that optionally may include file:/// at the
-            beginning.
-        toUri : string
-            A target location. It can be a relative path or an absolute path
-            that optionally may include file:/// at the beginning.
+        fromPath : string
+            A path at which to start. It can be a relative path or an
+            absolute path.
+        toPath : string
+            A target location. It can be a relative path or an absolute path.
 
         Returns
         -------
         string
-            A relative path that describes the path from fromUri to toUri.
+            A relative path that describes the path from fromPath to toPath.
         """
-        return os.path.relpath(toUri, fromUri)
+        return os.path.relpath(toPath, fromPath)
 
     @staticmethod
     def absolutePath(fromPath, relativePath):
@@ -92,9 +90,9 @@ class PosixStorage(Storage):
         ----------
         fromPath : the starting location
             A location at which to start. It can be a relative path or an
-            absolute path. It should not include file:/// at the beginning.
+            absolute path.
         relativePath : the location relative to fromPath
-            A relative path
+            A relative path.
 
         Returns
         -------
