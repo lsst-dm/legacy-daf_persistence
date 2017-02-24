@@ -84,12 +84,12 @@ class PosixParentSearch(unittest.TestCase):
         storage = dafPersist.PosixStorage(uri=childDir)
 
         foundName = storage.search(storage.root, 'foo.txt', searchParents=True)
-        self.assertEqual(storage.getRoot(), childDir)
+        self.assertEqual(storage.root, childDir)
         self.assertEqual(foundName, ['_parent/foo.txt'])
 
         searchFor = os.path.join(childDir, 'foo.txt')
         foundName = storage.search(storage.root, searchFor, searchParents=True)
-        self.assertEqual(storage.getRoot(), childDir)
+        self.assertEqual(storage.root, childDir)
         self.assertEqual(foundName, [os.path.join(childDir, '_parent/foo.txt')])
 
     def testFilePathIn2ndParentParent(self):
@@ -108,13 +108,13 @@ class PosixParentSearch(unittest.TestCase):
 
         for name in ('foo.txt', 'bar.txt[0]'):
             foundName = storage.search(storage.root, name, searchParents=True)
-            self.assertEqual(storage.getRoot(), childDir)
+            self.assertEqual(storage.root, childDir)
             self.assertEqual(foundName, [os.path.join('_parent/_parent/', name)])
 
         for name in ('foo.txt', 'bar.txt[0]'):
             searchFor = os.path.join(childDir, name)
             foundName = storage.search(storage.root, searchFor, searchParents=True)
-            self.assertEqual(storage.getRoot(), childDir)
+            self.assertEqual(storage.root, childDir)
             self.assertEqual(foundName, [os.path.join(childDir, '_parent/_parent/', name)])
 
     def testDoSearchParentFlag(self):
