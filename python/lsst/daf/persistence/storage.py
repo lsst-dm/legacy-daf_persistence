@@ -123,7 +123,7 @@ class Storage(object):
 
         Parameters
         ----------
-        uri - string
+        uri : string
             The uri to the root location of a repository.
 
         Returns
