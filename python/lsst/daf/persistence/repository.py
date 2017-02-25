@@ -44,19 +44,19 @@ class RepositoryArgs(object):
 
     Parameters
     ----------
-    cfgRoot : URI or dict
+    cfgRoot : URI or dict, optional
         If dict, the initalizer is re-called with the expanded dict.
         If URI, this is the location where the RepositoryCfg should be found (existing repo) or put (new repo)
-    root : URI
+    root : URI, optional
         If different than cfgRoot then this is the location where the repository should exist. A RepositoryCfg
         will be put at cfgRoot and its root will be a path to root.
-    mapper : string or class object.
+    mapper : string or class object, optional
         The mapper to use with this repository. If string, should refer an importable object. If class object,
         should be a mapper to be instantiated by the Butler during Butler init.
-    tags : list or object
+    tags : list or object, optional
         One or more unique identifiers to uniquely identify this repository and its parents when performing
         Butler.get.
-    mode : string
+    mode : string, optional
         should be one of 'r', 'w', or 'rw', for 'read', 'write', or 'read-write'. Can be omitted; input
         repositories will default to 'r', output repositories will default to 'w'. 'w' on an input repository
         will raise a RuntimeError during Butler init, although 'rw' works and is equivalent to 'r'. Output
