@@ -42,7 +42,7 @@ class RepositoryArgs(object):
 
     A RepositoryArgs class can be initialized from a dict, if the first argument to the initializer is a dict.
 
-    Attributes
+    Parameters
     ----------
     cfgRoot : URI or dict
         If dict, the initalizer is re-called with the expanded dict.
