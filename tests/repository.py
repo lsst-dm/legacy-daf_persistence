@@ -725,7 +725,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                    mapper=MapperForTestWriting,
                                                    mapperArgs=None,
                                                    parents=[os.path.join(ROOT,
-                                                                         'TestOutputAlreadyHasParent/a'), ],
+                                                                         'TestOutputAlreadyHasParent/a')],
                                                    policy=None))
 
         # load the repo a few times and don't explicitly list 'a' as an input
