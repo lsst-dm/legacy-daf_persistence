@@ -58,8 +58,8 @@ class RepositoryArgs(object):
         Butler.get.
     mode : string
         should be one of 'r', 'w', or 'rw', for 'read', 'write', or 'read-write'. Can be omitted; input
-        repositories will default to 'r', output repositories will default to 'r'. 'w' on an input repository
-        will raise a RuntimeError during Butler init, tho 'rw' works and is equivalent to 'r'. Output
+        repositories will default to 'r', output repositories will default to 'w'. 'w' on an input repository
+        will raise a RuntimeError during Butler init, although 'rw' works and is equivalent to 'r'. Output
         repositories may be 'r' or 'rw', 'r' for an output repository will raise a RuntimeError during Butler
         init.
     """
