@@ -54,7 +54,7 @@ class RepositoryArgs(object):
         The mapper to use with this repository. If string, should refer an importable object. If class object,
         should be a mapper to be instantiated by the Butler during Butler init.
     tags : list or object
-        A list of unique identifiers to uniquely identify this repository and its parents when performing
+        One or more unique identifiers to uniquely identify this repository and its parents when performing
         Butler.get.
     mode : string
         should be one of 'r', 'w', or 'rw', for 'read', 'write', or 'read-write'. Can be omitted; input
