@@ -42,10 +42,10 @@ class ButlerProxyTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
     def setUp(self):
-        if os.path.exists(os.path.join(ROOT, 'root/out')):
-            shutil.rmtree(os.path.join(ROOT, 'root/out'))
+        if os.path.exists(os.path.join(ROOT, 'root/proxyOut')):
+            shutil.rmtree(os.path.join(ROOT, 'root/proxyOut'))
 
-        self.butler = dafPersist.Butler(os.path.join(ROOT, "root"), outPath="out")
+        self.butler = dafPersist.Butler(os.path.join(ROOT, "root"), outPath="proxyOut")
 
     def tearDown(self):
         del self.butler
