@@ -44,8 +44,8 @@ class RepositoryCfg(yaml.YAMLObject):
     parents : list of URI
         URIs to the locaiton of the parent RepositoryCfgs of this repository.
     policy : dict
-        Policy associated with this repository, overrides all other policy (which may be stored in derived
-        packages).
+        Policy associated with this repository, overrides all other policy data (which may be loaded from
+        policies in derived packages).
     deserializing : bool
         Butler internal use only. This flag is used to indicate to the init funciton that the repository class
         is being deserialized and should not perform certain operations that normally happen in other uses of
