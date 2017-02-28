@@ -50,15 +50,13 @@ class PosixStorage(Storage):
         :return:
         """
         self.log = Log.getLogger("daf.persistence.butler")
-        self.root = parseRes = urllib.parse.urlparse(uri).path
+        self.root = urllib.parse.urlparse(uri).path
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
-
-        self.registry = Registry.create(location=self.root)
 
     def __repr__(self):
         return 'PosixStorage(root=%s)' % self.root
@@ -397,10 +395,6 @@ class PosixStorage(Storage):
         :return:
         """
         return os.path.join(self.root, location)
-
-    def lookup(self, *args, **kwargs):
-        """Perform a lookup in the registry"""
-        return self.registry.lookup(*args, **kwargs)
 
     @staticmethod
     def v1RepoExists(root):
