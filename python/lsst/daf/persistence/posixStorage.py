@@ -217,10 +217,6 @@ class PosixStorage(Storage):
                 return os.path.join(root, '_parent')
         return None
 
-    def mapperClass(self):
-        """Get the class object for the mapper specified in the stored repository"""
-        return PosixStorage.getMapperClass(self.root)
-
     def write(self, butlerLocation, obj):
         """Writes an object to a location and persistence format specified by ButlerLocation
 
