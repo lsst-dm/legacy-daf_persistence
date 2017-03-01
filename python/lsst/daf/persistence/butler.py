@@ -505,7 +505,7 @@ class Butler(object):
             (inputs, outputs) - values to be used for inputs and outputs in Butler.__init__
         """
         # mapper ought to be an importable string or a class object (not a mapper class instance)
-        if not isinstance(mapper, basestring) and not inspect.isclass(mapper):
+        if mapper and not isinstance(mapper, basestring) and not inspect.isclass(mapper):
             err = "mapper ought to be an importable string or a class object (not a mapper class instance)"
             # TBD we might have to handle this. It'll be complicated because of e.g. outputRoot & calibRoot
             self.log.warn(err)

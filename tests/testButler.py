@@ -25,14 +25,28 @@
 import unittest
 import lsst.daf.persistence as dp
 import lsst.utils.tests
+import os
+import shutil
+
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
     lsst.utils.tests.init()
 
 
+class TestMapper(dp.Mapper):
+    pass
+
+
 class ButlerTest(unittest.TestCase):
     """Test case for basic Butler operations."""
+
+    testDir = os.path.join(ROOT, 'ButlerTest')
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testV1withV2InitApiRaises(self):
         """Test that a RuntimeError is raised when Butler v1 init api (root,
@@ -50,6 +64,13 @@ class ButlerTest(unittest.TestCase):
             dp.Butler(mapper='lsst.obs.base.CameraMapper', outputs='foo/bar')
         with self.assertRaises(RuntimeError):
             dp.Butler(inputs='foo/bar', outputs='foo/baz')
+
+    def testV1RepoWithRootOnly(self):
+        repoDir = os.path.join(self.testDir, 'repo')
+        os.makedirs(repoDir)
+        with open(os.path.join(repoDir, '_mapper'), 'w') as f:
+            f.write('__main__.TestMapper')
+        butler = dp.Butler(repoDir)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
