@@ -109,6 +109,15 @@ class PosixStorage(Storage):
     @staticmethod
     def _getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
+
+        Parameters
+        ----------
+        uri : URI or path to a RepositoryCfg
+            Description
+
+        Returns
+        -------
+        A RepositoryCfg instance or None
         """
         repositoryCfg = None
         parseRes = urllib.parse.urlparse(uri)
@@ -122,6 +131,17 @@ class PosixStorage(Storage):
 
     @staticmethod
     def getRepositoryCfg(uri):
+        """Get a persisted RepositoryCfg
+
+        Parameters
+        ----------
+        uri : URI or path to a RepositoryCfg
+            Description
+
+        Returns
+        -------
+        A RepositoryCfg instance or None
+        """
         repositoryCfg = PosixStorage._getRepositoryCfg(uri)
         if repositoryCfg is not None:
             return repositoryCfg
@@ -130,9 +150,26 @@ class PosixStorage(Storage):
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
+        """Serialize a RepositoryCfg to a location.
+
+        When loc == cfg.root, the RepositoryCfg is to be writtenat the root
+        location of the repository. In that case, root is not written, it is
+        implicit in the location of the cfg. This allows the cfg to move from
+        machine to machine without modification.
+
+        Parameters
+        ----------
+        cfg : RepositoryCfg instance
+            The RepositoryCfg to be serailized.
+        loc : None, optional
+            The location to write the RepositoryCfg. If loc is None, the
+            location will be read from the root parameter of loc.
+
+        Returns
+        -------
+        None
+        """
         if loc is None or cfg.root == loc:
-            # the cfg is at the root location of the repository so don't write root, let it be implicit in the
-            # location of the cfg.
             cfg = copy.copy(cfg)
             loc = cfg.root
             cfg.root = None
@@ -153,10 +190,16 @@ class PosixStorage(Storage):
         Supports the legacy _parent symlink search (which was only ever posix-only. This should not be used by
         new code and repositories; they should use the Repository parentCfg mechanism.
 
-        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a
-                     _mapper file is (old style repos).
-        :return: a class object or a class instance, depending on the state of the mapper when the repository
-                 was created.
+        Parameters
+        ----------
+        root : string
+            The location of a persisted ReositoryCfg is (new style repos), or
+            the location where a _mapper file is (old style repos).
+
+        Returns
+        -------
+        A class object or a class instance, depending on the state of the
+        mapper when the repository was created.
         """
         if not (root):
             return None
@@ -218,11 +261,15 @@ class PosixStorage(Storage):
         return None
 
     def write(self, butlerLocation, obj):
-        """Writes an object to a location and persistence format specified by ButlerLocation
+        """Writes an object to a location and persistence format specified by
+        ButlerLocation
 
-        :param butlerLocation: the location & formatting for the object to be written.
-        :param obj: the object to be written.
-        :return: None
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object to be written.
+        obj : object instance
+            The object to be written.
         """
         self.log.debug("Put location=%s obj=%s", butlerLocation, obj)
 
@@ -284,9 +331,15 @@ class PosixStorage(Storage):
     def read(self, butlerLocation):
         """Read from a butlerLocation.
 
-        :param butlerLocation:
-        :return: a list of objects as described by the butler location. One item for each location in
-                 butlerLocation.getLocations()
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object(s) to be read.
+
+        Returns
+        -------
+        A list of objects as described by the butler location. One item for
+        each location in butlerLocation.getLocations()
         """
         additionalData = butlerLocation.getAdditionalData()
         # Create a list of Storages for the item.
@@ -371,7 +424,8 @@ class PosixStorage(Storage):
         Parameters
         ----------
         location : ButlerLocation or string
-            A a string or a ButlerLocation that describes the location of an object in this storage.
+            A a string or a ButlerLocation that describes the location of an
+            object in this storage.
 
         Returns
         -------
@@ -411,15 +465,25 @@ class PosixStorage(Storage):
         """
         return os.path.exists(root) and bool(os.listdir(root))
 
-
-    ####################################
-    # PosixStorage-only API (for now...)
-
     def copyFile(self, fromLocation, toLocation):
+        """Copy a file from one location to another on the local filesystem.
+
+        Parameters
+        ----------
+        fromLocation : path
+            Path and name of existing file.
+         toLocation : path
+            Path and name of new file.
+
+        Returns
+        -------
+        None
+        """
         shutil.copy(os.path.join(self.root, fromLocation), os.path.join(self.root, toLocation))
 
     def getLocalFile(self, path):
-        """Get the path to a local copy of the file, downloading it to a temporary if needed.
+        """Get the path to a local copy of the file, downloading it to a
+        temporary if needed.
 
         Parameters
         ----------
@@ -427,7 +491,8 @@ class PosixStorage(Storage):
 
         Returns
         -------
-        A path to a local copy of the file. May be the original file (if storage is local).
+        A path to a local copy of the file. May be the original file (if
+        storage is local).
         """
         p = os.path.join(self.root, path)
         if os.path.exists(p):
