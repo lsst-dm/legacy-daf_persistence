@@ -1,13 +1,17 @@
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "lsst/daf/persistence/Storage.h"
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 
-using namespace lsst::daf::persistence;
-
 namespace py = pybind11;
+using namespace pybind11::literals;
+
+namespace lsst {
+namespace daf {
+namespace persistence {
+namespace {
 
 template <typename T, typename C>
 void declareParams(C & cls, const std::string & suffix) {
@@ -17,10 +21,10 @@ void declareParams(C & cls, const std::string & suffix) {
 	cls.def(("getColumnByPos" + suffix).c_str(), &DbStorage::getColumnByPos<T>);
 }
 
-PYBIND11_DECLARE_HOLDER_TYPE(MyType, std::shared_ptr<MyType>);
+}  // <anonymous>
 
-PYBIND11_PLUGIN(_dbStorage) {
-    py::module mod("_dbStorage", "Access to the classes from the daf_persistence dbStorage library");
+PYBIND11_PLUGIN(dbStorage) {
+    py::module mod("dbStorage");
 
     py::class_<DbStorage, std::shared_ptr<DbStorage>, Storage> cls(mod, "DbStorage");
 
@@ -34,7 +38,7 @@ PYBIND11_PLUGIN(_dbStorage) {
 	cls.def("startTransaction", &DbStorage::startTransaction);
 	cls.def("endTransaction", &DbStorage::endTransaction);
 	cls.def("createTableFromTemplate", &DbStorage::createTableFromTemplate,
-		py::arg("tableName"), py::arg("templateName"), py::arg("mayAlreadyExist")=false);
+		"tableName"_a, "templateName"_a, "mayAlreadyExist"_a=false);
 	cls.def("dropTable", &DbStorage::dropTable);
 	cls.def("truncateTable", &DbStorage::truncateTable);
 	cls.def("executeSql", &DbStorage::executeSql);
@@ -42,10 +46,10 @@ PYBIND11_PLUGIN(_dbStorage) {
 	cls.def("setColumnToNull", &DbStorage::setColumnToNull);
 	cls.def("insertRow", &DbStorage::insertRow);
 	cls.def("setTableForQuery", &DbStorage::setTableForQuery,
-		py::arg("tableName"), py::arg("isExpr")=false);
+		"tableName"_a, "isExpr"_a=false);
 	cls.def("setTableListForQuery", &DbStorage::setTableListForQuery);
 	cls.def("outColumn", &DbStorage::outColumn,
-		py::arg("columnName"), py::arg("isExpr")=false);
+		"columnName"_a, "isExpr"_a=false);
 	cls.def("orderBy", &DbStorage::orderBy);
 	cls.def("groupBy", &DbStorage::groupBy);
 	cls.def("setQueryWhere", &DbStorage::setQueryWhere);
@@ -68,4 +72,8 @@ PYBIND11_PLUGIN(_dbStorage) {
 
     return mod.ptr();
 }
+
+}  // persistence
+}  // daf
+}  // lsst
 

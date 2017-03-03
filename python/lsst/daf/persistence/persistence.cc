@@ -1,5 +1,5 @@
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/PropertySet.h"
@@ -15,14 +15,16 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
-PYBIND11_PLUGIN(_persistence) {
-    py::module mod("_persistence", "Access to the classes from the daf_persistence persistence library");
+PYBIND11_PLUGIN(persistence) {
+    py::module::import("lsst.daf.base");
+
+    py::module mod("persistence");
 
     py::class_<python::ReadProxyBase, std::shared_ptr<python::ReadProxyBase>>(mod, "ReadProxyBase")
         .def(py::init<>())
         .def_readwrite("subject", &python::ReadProxyBase::subject);
 
-    py::class_<Persistence, std::shared_ptr<Persistence>, lsst::daf::base::Citizen> clsPersistence(mod, "Persistence");
+    py::class_<Persistence, std::shared_ptr<Persistence>, base::Citizen> clsPersistence(mod, "Persistence");
 
     clsPersistence.def("getPersistStorage", &Persistence::getPersistStorage);
     clsPersistence.def("getRetrieveStorage", &Persistence::getRetrieveStorage);
@@ -34,5 +36,7 @@ PYBIND11_PLUGIN(_persistence) {
     return mod.ptr();
 }
 
-}}}
+}  // persistence
+}  // daf
+}  // lsst
 

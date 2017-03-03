@@ -28,7 +28,7 @@
 
 from __future__ import absolute_import
 
-from ._persistence import ReadProxyBase
+from .persistence import ReadProxyBase
 
 
 class ReadProxy(ReadProxyBase):

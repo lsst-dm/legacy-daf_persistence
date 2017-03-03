@@ -21,14 +21,21 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from __future__ import absolute_import
+
+__all__ = []
+
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
 
 import urllib.parse
+from .storage import Storage
 
+from lsst.utils import continueClass
 
-class Storage(object):
+@continueClass
+class Storage:
     """Base class for storages"""
 
     storages = {}

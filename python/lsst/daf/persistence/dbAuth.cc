@@ -1,15 +1,15 @@
-#include <pybind11/pybind11.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/daf/persistence/DbAuth.h"
 
-using namespace lsst::daf::persistence;
-
 namespace py = pybind11;
 
-PYBIND11_DECLARE_HOLDER_TYPE(MyType, std::shared_ptr<MyType>);
+namespace lsst {
+namespace daf {
+namespace persistence {
 
-PYBIND11_PLUGIN(_dbAuth) {
-    py::module mod("_dbAuth", "Access to the classes from the daf_persistence dbAuth library");
+PYBIND11_PLUGIN(dbAuth) {
+    py::module mod("dbAuth");
 
     py::class_<DbAuth> cls(mod, "DbAuth");
 
@@ -22,4 +22,8 @@ PYBIND11_PLUGIN(_dbAuth) {
 
     return mod.ptr();
 }
+
+}  // persistence
+}  // daf
+}  // lsst
 
