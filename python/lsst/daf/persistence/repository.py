@@ -160,6 +160,8 @@ class Repository(object):
             mapperArgs = copy.copy(repoData.cfg.mapperArgs)
             if mapperArgs is None:
                 mapperArgs = {}
+            if repoData.cfg.mapperArgs:
+                mapperArgs.update(repoData.cfg.mapperArgs)
             if 'root' not in mapperArgs:
                 mapperArgs['root'] = repoData.cfg.root
             mapper = mapper(parentRegistry=repoData.parentRegistry,
