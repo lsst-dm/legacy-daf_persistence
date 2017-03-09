@@ -21,8 +21,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from future import standard_library
-standard_library.install_aliases()
 from past.builtins import basestring
 import sys
 import copy
@@ -35,11 +33,13 @@ import shutil
 
 import yaml
 
-from . import (LogicalLocation, Persistence, Policy, StorageList, Registry,
-               Storage, RepositoryCfg, safeFileIo, ButlerLocation)
+from . import (LogicalLocation, Persistence, Policy, StorageList,
+               Storage, safeFileIo, ButlerLocation)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
+from future import standard_library
+standard_library.install_aliases()
 
 
 class PosixStorage(Storage):
