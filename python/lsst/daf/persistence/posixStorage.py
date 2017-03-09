@@ -34,7 +34,7 @@ import shutil
 import yaml
 
 from . import (LogicalLocation, Persistence, Policy, StorageList,
-               Storage, safeFileIo, ButlerLocation)
+               StorageInterface, Storage, safeFileIo, ButlerLocation)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
@@ -42,7 +42,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 
-class PosixStorage(Storage):
+class PosixStorage(StorageInterface):
 
     def __init__(self, uri):
         """Initializer
