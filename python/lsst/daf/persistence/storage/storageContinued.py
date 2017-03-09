@@ -34,6 +34,7 @@ from .storage import Storage
 
 from lsst.utils import continueClass
 
+
 @continueClass
 class Storage:
     """Base class for storages"""
