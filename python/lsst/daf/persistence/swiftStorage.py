@@ -266,7 +266,8 @@ class SwiftStorage(StorageInterface):
         -------
         A handle to a local copy of the file. If storage is remote it will be
         a temporary file. If storage is local it may be the original file or
-        a temporary file.
+        a temporary file. The file name can be gotten via the 'name' property
+        of the returned object.
 
         Raises
         ------

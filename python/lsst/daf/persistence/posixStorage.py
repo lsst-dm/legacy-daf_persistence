@@ -491,12 +491,14 @@ class PosixStorage(Storage):
 
         Returns
         -------
-        A path to a local copy of the file. May be the original file (if
-        storage is local).
+        A handle to a local copy of the file. If storage is remote it will be
+        a temporary file. If storage is local it may be the original file or
+        a temporary file. The file name can be gotten via the 'name' property
+        of the returned object.
         """
         p = os.path.join(self.root, path)
         if os.path.exists(p):
-            return p
+            return open(p)
         else:
             return None
 
