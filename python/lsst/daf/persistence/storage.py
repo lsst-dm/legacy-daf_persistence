@@ -30,11 +30,8 @@ standard_library.install_aliases()
 from builtins import object
 
 import urllib.parse
-from .storage import Storage
 
-from lsst.utils import continueClass
 
-@continueClass
 class Storage:
     """Base class for storages"""
 
