@@ -80,7 +80,7 @@ class ButlerTestCase(unittest.TestCase):
     datasetType = '@foo'
 
     def setUp(self):
-        self.butler = dafPersist.Butler(os.path.join(ROOT, 'butlerAlias/data/input'), MinMapper())
+        self.butler = dafPersist.Butler(os.path.join(ROOT, 'butlerAlias/data/input'), MinMapper)
         self.butler.defineAlias(self.datasetType, 'raw')
 
     def tearDown(self):
@@ -148,6 +148,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

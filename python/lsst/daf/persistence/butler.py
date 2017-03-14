@@ -47,6 +47,13 @@ from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persisten
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
     genericDisassembler, PosixStorage
 
+preinitedMapperWarning = ("Passing an instantiated mapper into " +
+                          "Butler.__init__ will prevent Butler from passing " +
+                          "parentRegistry or repositoryCfg information to " +
+                          "the mapper, which is done only at init time. " +
+                          "It is better to pass a importable string or " +
+                          "class object.")
+
 
 class ButlerCfg(Policy, yaml.YAMLObject):
     """Represents a Butler configuration.
@@ -311,7 +318,6 @@ class Butler(object):
             raise RuntimeError(
                 'Butler version 1 API (root, mapper, **mapperArgs) may ' +
                 'not be used with version 2 API (inputs, outputs)')
-
         self.datasetTypeAliasDict = {}
 
         # make sure inputs and outputs are lists, and if list items are a string convert it RepositoryArgs.
@@ -332,6 +338,11 @@ class Butler(object):
                 args.mode = 'w'
             elif 'w' not in args.mode:
                 raise RuntimeError("The mode of an output should be writable.")
+        # check for class instances in args.mapper (not allowed)
+        for args in inputs + outputs:
+            if (args.mapper and not isinstance(args.mapper, basestring) and
+               not inspect.isclass(args.mapper)):
+                self.log.warn(preinitedMapperWarning)
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
@@ -583,13 +594,10 @@ class Butler(object):
         tuple
             (inputs, outputs) - values to be used for inputs and outputs in Butler.__init__
         """
-        # mapper ought to be an importable string or a class object (not a mapper class instance)
-        if mapper and not isinstance(mapper, basestring) and not inspect.isclass(mapper):
-            err = "mapper ought to be an importable string or a class object (not a mapper class instance)"
-            # TBD we might have to handle this. It'll be complicated because of e.g. outputRoot & calibRoot
-            self.log.warn(err)
+        if (mapper and not isinstance(mapper, basestring) and
+           not inspect.isclass(mapper)):
+            self.log.warn(preinitedMapperWarning)
         inputs = None
-
         if root is None:
             if hasattr(mapper, 'root'):
                 # in legacy repos, the mapper may be given the root directly.

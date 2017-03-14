@@ -29,16 +29,11 @@ import unittest
 import yaml
 
 import lsst.daf.persistence as dp
+import lsst.daf.persistence.test as dpTest
 import lsst.utils.tests
 
 # Define the root of the tests relative to this file
 ROOT = os.path.abspath(os.path.dirname(__file__))
-
-
-class NullMapper(object):
-
-    def __init__(self, **kwargs):
-        pass
 
 
 class TestCfgRelationship(unittest.TestCase):
@@ -51,28 +46,35 @@ class TestCfgRelationship(unittest.TestCase):
             shutil.rmtree(os.path.join(ROOT, 'repositoryCfg'))
 
     def testRWModes(self):
-        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        args = dp.RepositoryArgs(mode='w', mapper=dpTest.EmptyTestMapper,
+                                 root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(outputs=args)
         # inputs must be read-only or read-write and not write-only
-        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        args = dp.RepositoryArgs(mode='r', mapper=dpTest.EmptyTestMapper,
+                                 root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(inputs=args)
-        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        args = dp.RepositoryArgs(mode='rw', mapper=dpTest.EmptyTestMapper,
+                                 root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(inputs=args)
-        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        args = dp.RepositoryArgs(mode='w', mapper=dpTest.EmptyTestMapper,
+                                 root=os.path.join(ROOT, 'repositoryCfg'))
         self.assertRaises(RuntimeError, dp.Butler, inputs=args)
 
         # outputs must be write-only or read-write and not read-only
-        args = dp.RepositoryArgs(mode='w', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        args = dp.RepositoryArgs(mode='w', mapper=dpTest.EmptyTestMapper,
+                                 root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(outputs=args)
-        args = dp.RepositoryArgs(mode='rw', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        args = dp.RepositoryArgs(mode='rw', mapper=dpTest.EmptyTestMapper,
+                                 root=os.path.join(ROOT, 'repositoryCfg'))
         butler = dp.Butler(outputs=args)
-        args = dp.RepositoryArgs(mode='r', mapper=NullMapper, root=os.path.join(ROOT, 'repositoryCfg'))
+        args = dp.RepositoryArgs(mode='r', mapper=dpTest.EmptyTestMapper,
+                                 root=os.path.join(ROOT, 'repositoryCfg'))
         self.assertRaises(RuntimeError, dp.Butler, outputs=args)
 
     def testExistingParents(self):
         # parents of inputs should be added to the inputs list
         butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
-                                                     mapper=NullMapper(),
+                                                     mapper=dpTest.EmptyTestMapper,
                                                      root=os.path.join(ROOT, 'repositoryCfg/a')))
         del butler
         butler = dp.Butler(inputs=os.path.join(ROOT, 'repositoryCfg/a'),

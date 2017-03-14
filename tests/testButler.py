@@ -24,6 +24,7 @@
 
 import unittest
 import lsst.daf.persistence as dp
+import lsst.daf.persistence.test as dpTest
 import lsst.utils.tests
 import os
 import shutil
@@ -33,10 +34,6 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 def setup_module(module):
     lsst.utils.tests.init()
-
-
-class TestMapper(dp.Mapper):
-    pass
 
 
 class ButlerTest(unittest.TestCase):
@@ -69,8 +66,35 @@ class ButlerTest(unittest.TestCase):
         repoDir = os.path.join(self.testDir, 'repo')
         os.makedirs(repoDir)
         with open(os.path.join(repoDir, '_mapper'), 'w') as f:
-            f.write('__main__.TestMapper')
+            f.write('lsst.daf.persistence.test.EmptyTestMapper')
         butler = dp.Butler(repoDir)
+
+    def testMapperCanBeString(self):
+        # should not raise
+        butler = dp.Butler(outputs={'root': self.testDir,
+                                    'mapper': 'lsst.daf.persistence.test.EmptyTestMapper'})
+
+    def testMapperCanBeStringV1Api(self):
+        # should not raise
+        butler = dp.Butler(root=self.testDir, mapper='lsst.daf.persistence.test.EmptyTestMapper')
+
+    def testMapperCanBeClassObject(self):
+        # should not raise
+        butler = dp.Butler(outputs={'root': self.testDir,
+                                    'mapper': dpTest.EmptyTestMapper})
+
+    def testMapperCanBeClassObjectV1Api(self):
+        # should not raise
+        butler = dp.Butler(root=self.testDir, mapper=dpTest.EmptyTestMapper)
+
+    def testMapperCanBeClassInstance(self):
+        # should warn but not raise
+        butler = dp.Butler(outputs={'root': self.testDir,
+                                    'mapper': dpTest.EmptyTestMapper()})
+
+    def testMapperCanBeClassInstanceV1Api(self):
+        # should warn but not raise
+        butler = dp.Butler(root=self.testDir, mapper=dpTest.EmptyTestMapper())
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
