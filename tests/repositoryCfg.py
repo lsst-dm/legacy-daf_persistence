@@ -114,6 +114,15 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(len(butler._repos.outputs()), 1)
         self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
 
+        # can't add a new parent to an existing output
+        butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
+                                                     mapper=dpTest.EmptyTestMapper,
+                                                     root=os.path.join(ROOT, 'repositoryCfg/c')))
+        with self.assertRaises(RuntimeError):
+            butler = dp.Butler(inputs=(os.path.join(ROOT, 'repositoryCfg/a'),
+                                       os.path.join(ROOT, 'repositoryCfg/c')),
+                               outputs=os.path.join(ROOT, 'repositoryCfg/b'))
+
 
 # "fake" repository version 0
 class RepositoryCfg(yaml.YAMLObject):
