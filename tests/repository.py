@@ -29,6 +29,7 @@ from builtins import object
 import os
 import astropy.io.fits
 import shutil
+import sqlite3
 import unittest
 
 import lsst.daf.persistence as dp
@@ -46,8 +47,9 @@ def setup_module(module):
 
 class ParentMapper(dp.Mapper):
 
-    def __init__(self, root):
+    def __init__(self, root, **kwargs):
         self.root = root
+        self.storage = dp.Storage.makeFromURI(self.root)
 
     def __repr__(self):
         return 'ParentMapper(root=%s)' % self.root
@@ -59,7 +61,8 @@ class ParentMapper(dp.Mapper):
         path = os.path.join(self.root, 'data/input/raw')
         path = os.path.join(path, 'raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz')
         if os.path.exists(path):
-            return dp.ButlerLocation(python, persistable, storage, path, dataId, self)
+            return dp.ButlerLocation(python, persistable, storage, path,
+                                     dataId, self, self.storage)
         return None
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
@@ -94,14 +97,16 @@ class ParentMapper(dp.Mapper):
         path = os.path.join(self.root, 'data/input/raw')
         path = os.path.join(path, 'raw_v' + str(dataId['str']) + '_f' + dataId['filter'] + '.fits.gz')
         if os.path.exists(path):
-            return dp.ButlerLocation(str, None, 'PickleStorage', path, dataId, self)
+            return dp.ButlerLocation(str, None, 'PickleStorage', path, dataId,
+                                     self, self.storage)
         return None
 
 
 class ChildrenMapper(dp.Mapper):
 
-    def __init__(self, root):
+    def __init__(self, root, **kwargs):
         self.root = root
+        self.storage = dp.Storage.makeFromURI(self.root)
 
     def map_raw(self, dataId, write):
         python = 'astropy.io.fits.HDUList'
@@ -110,7 +115,8 @@ class ChildrenMapper(dp.Mapper):
         path = os.path.join(self.root, 'data/input/raw')
         path = os.path.join(path, 'raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz')
         if write or os.path.exists(path):
-            return dp.ButlerLocation(python, persistable, storage, path, dataId, self)
+            return dp.ButlerLocation(python, persistable, storage, path,
+                                     dataId, self, self.storage)
         return None
 
     def bypass_raw(self, datasetType, pythonType, location, dataId):
@@ -243,8 +249,9 @@ class TestBasics(unittest.TestCase):
 
 class MapperForTestWriting(dp.Mapper):
 
-    def __init__(self, root):
+    def __init__(self, root, **kwargs):
         self.root = root
+        self.storage = dp.Storage.makeFromURI(self.root)
 
     def map_foo(self, dataId, write):
         python = tstObj
@@ -257,7 +264,8 @@ class MapperForTestWriting(dp.Mapper):
         path = os.path.join(self.root, fileName)
         if not write and not os.path.exists(path):
             return None
-        return dp.ButlerLocation(python, persistable, storage, path, dataId, self)
+        return dp.ButlerLocation(python, persistable, storage, path, dataId,
+                                 self, self.storage)
 
 
 class AlternateMapper(object):
@@ -698,8 +706,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                          os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
         del butler
 
-        # load that repo a few times, redundantly include 'a' as an input (redundant because it's implicitly
-        # an input by being a parent of 'b')
+        # load that repo a few times, include 'a' as an input.
         for i in range(4):
             butler = dp.Butler(inputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/a'),
                                outputs=dp.RepositoryArgs(root=os.path.join(ROOT,
@@ -718,7 +725,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                    mapper=MapperForTestWriting,
                                                    mapperArgs=None,
                                                    parents=[os.path.join(ROOT,
-                                                                         'TestOutputAlreadyHasParent/a'),],
+                                                                         'TestOutputAlreadyHasParent/a')],
                                                    policy=None))
 
         # load the repo a few times and don't explicitly list 'a' as an input
@@ -742,13 +749,88 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                                                                          'TestOutputAlreadyHasParent/a')],
                                                    policy=None))
 
-        # load 'b' as 'write only' and make sure 'a' does not get used as an input.
-        butler = dp.Butler(outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-        self.assertEqual(len(butler._repos.inputs()), 0)
+        # load 'b' as 'write only' and don't list 'a' as an input. This should raise, because inputs must
+        # match readable outputs parents.
+        with self.assertRaises(RuntimeError):
+            butler = dp.Butler(outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+
+        # load 'b' as 'write only' and explicitly list 'a' as an input.
+        butler = dp.Butler(inputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/a'),
+                           outputs=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+        self.assertEqual(len(butler._repos.inputs()), 1)
         self.assertEqual(len(butler._repos.outputs()), 1)
+        self.assertEqual(butler._repos.inputs()[0].cfg.root,
+                         os.path.join(ROOT, 'TestOutputAlreadyHasParent/a'))
         self.assertEqual(butler._repos.outputs()[0].cfg.root,
                          os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
         cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+
+
+class ParentRepoTestMapper(dp.Mapper):
+    def __init__(self, parentRegistry, repositoryCfg, **kwargs):
+        self.parentRegistry = parentRegistry
+        root = repositoryCfg.root
+        if os.path.exists(os.path.join(root, 'registry.sqlite3')):
+            self.registry = dp.Registry.create(os.path.join(root, 'registry.sqlite3'))
+        else:
+            self.registry = None
+
+    def getRegistry(self):
+        return self.registry
+
+
+class TestParentRepository(unittest.TestCase):
+    """A test to verify that when a parent repository is used the correct one is found."""
+
+    def setUp(self):
+        self.testDir = os.path.join(ROOT, 'TestParentRepository')
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def test(self):
+
+        """Tests 1. That an sqlite registry in a parent repo is used as the
+        registry in a child repo that does not have its own sqlite registry.
+        2. That when a repo has a parent and grandparent and only the
+        grandparent has an sqlite registry that the grandparent's registry is
+        used.
+        3. That when the parent and grandparent both have sqlite registries
+        that the parent's sqlite registry is used."""
+        # setup; create the parent repo
+        def makeRegistry(location, name):
+            conn = sqlite3.connect(location)
+            conn.execute("CREATE TABLE {name} (real)".format(name=name))
+            conn.close()
+
+        repoADir = os.path.join(self.testDir, 'repoA')
+        repoBDir = os.path.join(self.testDir, 'repoB')
+        repoCDir = os.path.join(self.testDir, 'repoC')
+        butler = dp.Butler(outputs={'root': repoADir, 'mapper': ParentRepoTestMapper})
+        del butler
+        makeRegistry(os.path.join(repoADir, 'registry.sqlite3'), 'repoA')
+        # test 1:
+        butler = dp.Butler(inputs=repoADir, outputs=repoBDir)
+        registry = butler._repos.outputs()[0].repo._mapper.parentRegistry
+        self.assertIsInstance(registry, dp.SqliteRegistry)
+        tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        self.assertEqual(tables, [('repoA', )])
+        del butler
+        # test 2:
+        butler = dp.Butler(inputs=repoBDir, outputs=repoCDir)
+        registry = butler._repos.outputs()[0].repo._mapper.parentRegistry
+        self.assertIsInstance(registry, dp.SqliteRegistry)
+        tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        self.assertEqual(tables, [('repoA', )])
+        del butler
+        # test 3:
+        makeRegistry(os.path.join(repoBDir, 'registry.sqlite3'), 'repoB')
+        butler = dp.Butler(inputs=repoBDir, outputs=repoCDir)
+        registry = butler._repos.outputs()[0].repo._mapper.parentRegistry
+        self.assertIsInstance(registry, dp.SqliteRegistry)
+        tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+        self.assertEqual(tables, [('repoB', )])
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

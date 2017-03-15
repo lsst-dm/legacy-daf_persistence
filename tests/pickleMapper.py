@@ -30,26 +30,34 @@ from testLib import TypeWithProxy, TypeWithoutProxy
 
 class PickleMapper(dafPersist.Mapper):
 
-    def __init__(self, root=None, outPath=''):
+    def __init__(self, root=None, outPath='', **kwargs):
         self.root = root
         self.outPath = outPath
 
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
         path = os.path.join(self.root, self.outPath, path)
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {}, self,
+            dafPersist.Storage.makeFromURI(os.getcwd()))
 
     def map_dt(self, dataId, write):
         path = "dt%(ccd)d.pickle" % dataId
         path = os.path.join(self.root, self.outPath, path)
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {}, self,
+            dafPersist.Storage.makeFromURI(os.getcwd()))
 
     def map_p1(self, dataId, write):
         path = "p1%(ccd)d.pickle" % dataId
         path = os.path.join(self.root, self.outPath, path)
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {}, self,
+            dafPersist.Storage.makeFromURI(os.getcwd()))
 
     def map_p2(self, dataId, write):
         path = "p2%(ccd)d.pickle" % dataId
         path = os.path.join(self.root, self.outPath, path)
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {}, self,
+            dafPersist.Storage.makeFromURI(os.getcwd()))

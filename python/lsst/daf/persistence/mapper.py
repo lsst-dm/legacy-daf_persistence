@@ -99,7 +99,7 @@ class Mapper(object):
         self._arguments = (args, kwargs)
         return self
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         pass
 
     def __getstate__(self):
@@ -122,7 +122,6 @@ class Mapper(object):
         :param dataId: see documentation about the use of dataId
         :return:
         """
-
         func = getattr(self, 'query_' + datasetType)
 
         val = func(format, self.validate(dataId))
@@ -138,10 +137,35 @@ class Mapper(object):
         return list
 
     def map(self, datasetType, dataId, write=False):
-        """Map a data id using the mapping method for its dataset type."""
+        """Map a data id using the mapping method for its dataset type.
 
+        Parameters
+        ----------
+        datasetType : string
+            The datasetType to map
+        dataId : DataId instance
+            The dataId to use when mapping
+        write : bool, optional
+            Indicates if the map is being performed for a read operation
+            (False) or a write operation (True)
+
+        Returns
+        -------
+        ButlerLocation or a list of ButlerLocation
+            The location(s) found for the map operation. If write is True, a
+            list is returned. If write is False a single ButlerLocation is
+            returned.
+
+        Raises
+        ------
+        NoResults
+            If no locaiton was found for this map operation, the derived mapper
+            class may raise a lsst.daf.persistence.NoResults exception. Butler
+            catches this and will look in the next Repository if there is one.
+        """
         func = getattr(self, 'map_' + datasetType)
         return func(self.validate(dataId), write)
+
 
     def canStandardize(self, datasetType):
         """Return true if this mapper can standardize an object of the given
@@ -173,3 +197,7 @@ class Mapper(object):
         Not implemented in the base mapper.
         """
         raise NotImplementedError("Base-class Mapper does not implement backups")
+
+    def getRegistry(self):
+        """Get the registry"""
+        return None

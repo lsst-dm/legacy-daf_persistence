@@ -26,22 +26,56 @@ from builtins import object
 
 import copy
 import inspect
+import os
 
 from lsst.daf.persistence import Storage, listify, doImport, Policy
 
 
 class RepositoryArgs(object):
 
-    def __init__(self, root=None, cfgRoot=None, mapper=None, mapperArgs=None, tags=None,
-                 mode=None, policy=None):
-        self._root = root
-        self._cfgRoot = cfgRoot
-        self._mapper = mapper
-        self.mapperArgs = mapperArgs
-        self.tags = set(listify(tags))
-        self.mode = mode
-        self.policy = Policy(policy) if policy is not None else None
+    """Arguments passed into a Butler that are used to instantiate a repository. This includes arguments that
+    can be used to create a new repository (cfgRoot, root, mapper, mapperArgs, policy) and are persisted along
+    with the new repository's configuration file. These arguments can also describe how a new or existing
+    repository are to be used (cfgRoot or root, tags, mode). When indicating an existing repository it is
+    better to not specify unnecessary arguments, as if they conflict with the persisted repository
+    configuration then a RuntimeError will be raised during Butler init.
 
+    A RepositoryArgs class can be initialized from a dict, if the first argument to the initializer is a dict.
+
+    Parameters
+    ----------
+    cfgRoot : URI or dict, optional
+        If dict, the initalizer is re-called with the expanded dict.
+        If URI, this is the location where the RepositoryCfg should be found (existing repo) or put (new repo)
+    root : URI, optional
+        If different than cfgRoot then this is the location where the repository should exist. A RepositoryCfg
+        will be put at cfgRoot and its root will be a path to root.
+    mapper : string or class object, optional
+        The mapper to use with this repository. If string, should refer an importable object. If class object,
+        should be a mapper to be instantiated by the Butler during Butler init.
+    tags : list or object, optional
+        One or more unique identifiers to uniquely identify this repository and its parents when performing
+        Butler.get.
+    mode : string, optional
+        should be one of 'r', 'w', or 'rw', for 'read', 'write', or 'read-write'. Can be omitted; input
+        repositories will default to 'r', output repositories will default to 'w'. 'w' on an input repository
+        will raise a RuntimeError during Butler init, although 'rw' works and is equivalent to 'r'. Output
+        repositories may be 'r' or 'rw', 'r' for an output repository will raise a RuntimeError during Butler
+        init.
+    """
+    def __init__(self, cfgRoot=None, root=None, mapper=None, mapperArgs=None, tags=None,
+                 mode=None, policy=None):
+        try:
+            #  is cfgRoot a dict? try dict init:
+            self.__init__(**cfgRoot)
+        except TypeError:
+            self._root = Storage.absolutePath(os.getcwd(), root.rstrip(os.sep)) if root else root
+            self._cfgRoot = Storage.absolutePath(os.getcwd(), cfgRoot.rstrip(os.sep)) if cfgRoot else cfgRoot
+            self._mapper = mapper
+            self.mapperArgs = mapperArgs
+            self.tags = set(listify(tags))
+            self.mode = mode
+            self.policy = Policy(policy) if policy is not None else None
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
@@ -60,7 +94,7 @@ class RepositoryArgs(object):
 
     @property
     def cfgRoot(self):
-        return self._cfgRoot if self._cfgRoot is not None else self.root
+        return self._cfgRoot if self._cfgRoot is not None else self._root
 
     @property
     def root(self):
@@ -101,47 +135,36 @@ class Repository(object):
         if repoData.isNewRepository and not repoData.isV1Repository:
             self._storage.putRepositoryCfg(repoData.cfg, repoData.args.cfgRoot)
         self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
-        self._initMapper(repoData.cfg)
+        self._initMapper(repoData)
 
-    def _initMapper(self, repositoryCfg):
+    def _initMapper(self, repoData):
         '''Initialize and keep the mapper in a member var.
 
-        :param repositoryCfg:
-        :return:
+        Parameters
+        ----------
+        repoData : RepoData
+            The RepoData with the properties of this Repository.
         '''
 
         # rule: If mapper is:
         # - an object: use it as the mapper.
         # - a string: import it and instantiate it with mapperArgs
         # - a class object: instantiate it with mapperArgs
-        mapper = repositoryCfg.mapper
+        mapper = repoData.cfg.mapper
 
         # if mapper is a string, import it:
         if isinstance(mapper, basestring):
             mapper = doImport(mapper)
         # now if mapper is a class type (not instance), instantiate it:
         if inspect.isclass(mapper):
-            mapperArgs = copy.copy(repositoryCfg.mapperArgs)
+            mapperArgs = copy.copy(repoData.cfg.mapperArgs)
             if mapperArgs is None:
                 mapperArgs = {}
-            if repositoryCfg.policy and 'policy' not in mapperArgs:
-                mapperArgs['policy'] = repositoryCfg.policy
-            # so that root doesn't have to be redundantly passed in cfgs, if root is specified in the
-            # storage and if it is an argument to the mapper, make sure that it's present in mapperArgs.
-            for arg in ('root', 'storage'):
-                if arg not in mapperArgs:
-                    mro = inspect.getmro(mapper)
-                    if mro[-1] is object:
-                        mro = mro[:-1]
-                    for c in mro:
-                        try:
-                            if arg in inspect.getargspec(c.__init__).args:
-                                mapperArgs[arg] = self._storage.root
-                                break
-                        except TypeError:
-                            pass
-            mapper = mapper(**mapperArgs)
-
+            if 'root' not in mapperArgs:
+                mapperArgs['root'] = repoData.cfg.root
+            mapper = mapper(parentRegistry=repoData.parentRegistry,
+                            repositoryCfg=repoData.cfg,
+                            **mapperArgs)
         self._mapper = mapper
 
         def __repr__(self):
@@ -156,7 +179,11 @@ class Repository(object):
         :param dataset: The dataset to be written.
         :return:
         """
-        return self._storage.write(butlerLocation, obj)
+        butlerLocationStorage = butlerLocation.getStorage()
+        if butlerLocationStorage:
+            return butlerLocationStorage.write(butlerLocation, obj)
+        else:
+            return self._storage.write(butlerLocation, obj)
 
     def read(self, butlerLocation):
         """Read a dataset from Storage.
@@ -164,13 +191,29 @@ class Repository(object):
         :param butlerLocation: Contains the details needed to find the desired dataset.
         :return: An instance of the dataset requested by butlerLocation.
         """
-        return self._storage.read(butlerLocation)
+        butlerLocationStorage = butlerLocation.getStorage()
+        if butlerLocationStorage:
+            return butlerLocationStorage.read(butlerLocation)
+        else:
+            return self._storage.read(butlerLocation)
 
     #################
     # Mapper Access #
 
     def mappers(self):
         return (self._mapper, )
+
+    def getRegistry(self):
+        """Get the registry from the mapper
+
+        Returns
+        -------
+        Registry or None
+            The registry from the mapper or None if the mapper does not have one.
+        """
+        if self._mapper is None:
+            return None
+        return self._mapper.getRegistry()
 
     def getKeys(self, *args, **kwargs):
         """
@@ -243,3 +286,22 @@ class Repository(object):
         if self._mapper is None:
             return None
         return self._mapper.getDefaultLevel()
+
+    def exists(self, location):
+        """Check if location exists in storage.
+
+        Parameters
+        ----------
+        location : ButlerLocation
+            Desrcibes a location in storage to look for.
+
+        Returns
+        -------
+        bool
+            True if location exists, False if not.
+        """
+        butlerLocationStorage = location.getStorage()
+        if butlerLocationStorage:
+            return butlerLocationStorage.exists(location)
+        else:
+            return self._storage.exists(location)

@@ -30,10 +30,13 @@ import pickle
 import importlib
 import os
 import urllib.parse
+import glob
+import shutil
 
 import yaml
 
-from . import LogicalLocation, Persistence, Policy, StorageList, Registry, Storage, RepositoryCfg, safeFileIo
+from . import (LogicalLocation, Persistence, Policy, StorageList, Registry,
+               Storage, RepositoryCfg, safeFileIo, ButlerLocation)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename
@@ -47,7 +50,7 @@ class PosixStorage(Storage):
         :return:
         """
         self.log = Log.getLogger("daf.persistence.butler")
-        self.root = parseRes = urllib.parse.urlparse(uri).path
+        self.root = urllib.parse.urlparse(uri).path
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
 
@@ -55,14 +58,66 @@ class PosixStorage(Storage):
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
 
-        self.registry = Registry.create(location=self.root)
-
     def __repr__(self):
         return 'PosixStorage(root=%s)' % self.root
 
     @staticmethod
+    def relativePath(fromPath, toPath):
+        """Get a relative path from a location to a location.
+
+        Parameters
+        ----------
+        fromPath : string
+            A path at which to start. It can be a relative path or an
+            absolute path.
+        toPath : string
+            A target location. It can be a relative path or an absolute path.
+
+        Returns
+        -------
+        string
+            A relative path that describes the path from fromPath to toPath.
+        """
+        return os.path.relpath(toPath, fromPath)
+
+    @staticmethod
+    def absolutePath(fromPath, relativePath):
+        """Get an absolute path for the path from fromUri to toUri
+
+        Parameters
+        ----------
+        fromPath : the starting location
+            A location at which to start. It can be a relative path or an
+            absolute path.
+        relativePath : the location relative to fromPath
+            A relative path.
+
+        Returns
+        -------
+        string
+            Path that is an absolute path representation of fromPath +
+            relativePath, if one exists. If relativePath is absolute or if
+            fromPath is not related to relativePath then relativePath will be
+            returned.
+        """
+        if os.path.isabs(relativePath):
+            return relativePath
+        if not os.path.isabs(fromPath):
+            fromPath = os.path.abspath(fromPath)
+        return os.path.normpath(os.path.join(fromPath, relativePath))
+
+    @staticmethod
     def _getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
+
+        Parameters
+        ----------
+        uri : URI or path to a RepositoryCfg
+            Description
+
+        Returns
+        -------
+        A RepositoryCfg instance or None
         """
         repositoryCfg = None
         parseRes = urllib.parse.urlparse(uri)
@@ -76,6 +131,17 @@ class PosixStorage(Storage):
 
     @staticmethod
     def getRepositoryCfg(uri):
+        """Get a persisted RepositoryCfg
+
+        Parameters
+        ----------
+        uri : URI or path to a RepositoryCfg
+            Description
+
+        Returns
+        -------
+        A RepositoryCfg instance or None
+        """
         repositoryCfg = PosixStorage._getRepositoryCfg(uri)
         if repositoryCfg is not None:
             return repositoryCfg
@@ -84,9 +150,26 @@ class PosixStorage(Storage):
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
+        """Serialize a RepositoryCfg to a location.
+
+        When loc == cfg.root, the RepositoryCfg is to be writtenat the root
+        location of the repository. In that case, root is not written, it is
+        implicit in the location of the cfg. This allows the cfg to move from
+        machine to machine without modification.
+
+        Parameters
+        ----------
+        cfg : RepositoryCfg instance
+            The RepositoryCfg to be serailized.
+        loc : None, optional
+            The location to write the RepositoryCfg. If loc is None, the
+            location will be read from the root parameter of loc.
+
+        Returns
+        -------
+        None
+        """
         if loc is None or cfg.root == loc:
-            # the cfg is at the root location of the repository so don't write root, let it be implicit in the
-            # location of the cfg.
             cfg = copy.copy(cfg)
             loc = cfg.root
             cfg.root = None
@@ -107,10 +190,16 @@ class PosixStorage(Storage):
         Supports the legacy _parent symlink search (which was only ever posix-only. This should not be used by
         new code and repositories; they should use the Repository parentCfg mechanism.
 
-        :param root: the location of a persisted ReositoryCfg is (new style repos), or the location where a
-                     _mapper file is (old style repos).
-        :return: a class object or a class instance, depending on the state of the mapper when the repository
-                 was created.
+        Parameters
+        ----------
+        root : string
+            The location of a persisted ReositoryCfg is (new style repos), or
+            the location where a _mapper file is (old style repos).
+
+        Returns
+        -------
+        A class object or a class instance, depending on the state of the
+        mapper when the repository was created.
         """
         if not (root):
             return None
@@ -171,16 +260,16 @@ class PosixStorage(Storage):
                 return os.path.join(root, '_parent')
         return None
 
-    def mapperClass(self):
-        """Get the class object for the mapper specified in the stored repository"""
-        return PosixStorage.getMapperClass(self.root)
-
     def write(self, butlerLocation, obj):
-        """Writes an object to a location and persistence format specified by ButlerLocation
+        """Writes an object to a location and persistence format specified by
+        ButlerLocation
 
-        :param butlerLocation: the location & formatting for the object to be written.
-        :param obj: the object to be written.
-        :return: None
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object to be written.
+        obj : object instance
+            The object to be written.
         """
         self.log.debug("Put location=%s obj=%s", butlerLocation, obj)
 
@@ -206,7 +295,7 @@ class PosixStorage(Storage):
             pythonType.butlerWrite(obj, butlerLocation=butlerLocation)
             return
 
-        with SafeFilename(locations[0]) as locationString:
+        with SafeFilename(os.path.join(self.root, locations[0])) as locationString:
             logLoc = LogicalLocation(locationString, additionalData)
 
             if storageName == "PickleStorage":
@@ -242,9 +331,15 @@ class PosixStorage(Storage):
     def read(self, butlerLocation):
         """Read from a butlerLocation.
 
-        :param butlerLocation:
-        :return: a list of objects as described by the butler location. One item for each location in
-                 butlerLocation.getLocations()
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object(s) to be read.
+
+        Returns
+        -------
+        A list of objects as described by the butler location. One item for
+        each location in butlerLocation.getLocations()
         """
         additionalData = butlerLocation.getAdditionalData()
         # Create a list of Storages for the item.
@@ -269,6 +364,8 @@ class PosixStorage(Storage):
             return results
 
         for locationString in locations:
+            locationString = os.path.join(self.root, locationString)
+
             logLoc = LogicalLocation(locationString, additionalData)
 
             if storageName == "PafStorage":
@@ -307,13 +404,39 @@ class PosixStorage(Storage):
 
         return results
 
-    def exists(self, location):
-        """Check if 'location' exists relative to root.
+    def butlerLocationExists(self, location):
+        """Implementaion of PosixStorage.exists for ButlerLocation objects."""
+        storageName = location.getStorageName()
+        if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
+                               'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
+            self.log.warn("butlerLocationExists for non-supported storage %s" % location)
+            return False
+        for locationString in location.getLocations():
+            logLoc = LogicalLocation(locationString, location.getAdditionalData()).locString()
+            obj = self.instanceSearch(path=logLoc)
+            if obj:
+                return True
+        return False
 
-        :param location:
-        :return:
+    def exists(self, location):
+        """Check if location exists.
+
+        Parameters
+        ----------
+        location : ButlerLocation or string
+            A a string or a ButlerLocation that describes the location of an
+            object in this storage.
+
+        Returns
+        -------
+        bool
+            True if exists, else False.
         """
-        return os.path.exists(os.path.join(self.root, location))
+        if isinstance(location, ButlerLocation):
+            return self.butlerLocationExists(location)
+
+        obj = self.instanceSearch(path=location)
+        return bool(obj)
 
     def locationWithRoot(self, location):
         """Get the full path to the location.
@@ -322,10 +445,6 @@ class PosixStorage(Storage):
         :return:
         """
         return os.path.join(self.root, location)
-
-    def lookup(self, *args, **kwargs):
-        """Perform a lookup in the registry"""
-        return self.registry.lookup(*args, **kwargs)
 
     @staticmethod
     def v1RepoExists(root):
@@ -345,6 +464,142 @@ class PosixStorage(Storage):
             True if the repository at root exists, else False.
         """
         return os.path.exists(root) and bool(os.listdir(root))
+
+    def copyFile(self, fromLocation, toLocation):
+        """Copy a file from one location to another on the local filesystem.
+
+        Parameters
+        ----------
+        fromLocation : path
+            Path and name of existing file.
+         toLocation : path
+            Path and name of new file.
+
+        Returns
+        -------
+        None
+        """
+        shutil.copy(os.path.join(self.root, fromLocation), os.path.join(self.root, toLocation))
+
+    def getLocalFile(self, path):
+        """Get the path to a local copy of the file, downloading it to a
+        temporary if needed.
+
+        Parameters
+        ----------
+        A path the the file in storage, relative to root.
+
+        Returns
+        -------
+        A path to a local copy of the file. May be the original file (if
+        storage is local).
+        """
+        p = os.path.join(self.root, path)
+        if os.path.exists(p):
+            return p
+        else:
+            return None
+
+    def instanceSearch(self, path):
+        """Search for the given path in this storage instance.
+
+        If the path contains an HDU indicator (a number in brackets before the
+        dot, e.g. 'foo.fits[1]', this will be stripped when searching and so
+        will match filenames without the HDU indicator, e.g. 'foo.fits'. The
+        path returned WILL contain the indicator though, e.g. ['foo.fits[1]'].
+
+        Parameters
+        ----------
+        path : string
+            A filename (and optionally prefix path) to search for within root.
+
+        Returns
+        -------
+        string or None
+            The location that was found, or None if no location was found.
+        """
+        return self.search(self.root, path)
+
+    @staticmethod
+    def search(root, path, searchParents=False):
+        """Look for the given path in the current root.
+
+        Also supports searching for the path in Butler v1 repositories by
+        following the Butler v1 _parent symlink
+
+        If the path contains an HDU indicator (a number in brackets, e.g.
+        'foo.fits[1]', this will be stripped when searching and so
+        will match filenames without the HDU indicator, e.g. 'foo.fits'. The
+        path returned WILL contain the indicator though, e.g. ['foo.fits[1]'].
+
+        Parameters
+        ----------
+        root : string
+            The path to the root directory.
+        path : string
+            The path to the file within the root directory.
+        searchParents : bool, optional
+            For Butler v1 repositories only, if true and a _parent symlink
+            exists, then the directory at _parent will be searched if the file
+            is not found in the root repository. Will continue searching the
+            parent of the parent until the file is found or no additional
+            parent exists.
+
+        Returns
+        -------
+        string or None
+            The location that was found, or None if no location was found.
+        """
+        # Separate path into a root-equivalent prefix (in dir) and the rest
+        # (left in path)
+        rootDir = root
+        # First remove trailing slashes (#2527)
+        while len(rootDir) > 1 and rootDir[-1] == '/':
+            rootDir = rootDir[:-1]
+
+        if path.startswith(rootDir + "/"):
+            # Common case; we have the same root prefix string
+            path = path[len(rootDir + '/'):]
+            pathPrefix = rootDir
+        elif rootDir == "/" and path.startswith("/"):
+            path = path[1:]
+            pathPrefix = None
+        else:
+            # Search for prefix that is the same as root
+            pathPrefix = os.path.dirname(path)
+            while pathPrefix != "" and pathPrefix != "/":
+                if os.path.realpath(pathPrefix) == os.path.realpath(root):
+                    break
+                pathPrefix = os.path.dirname(pathPrefix)
+            if pathPrefix == "/":
+                path = path[1:]
+            elif pathPrefix != "":
+                path = path[len(pathPrefix)+1:]
+
+        # Now search for the path in the root or its parents
+        # Strip off any cfitsio bracketed extension if present
+        strippedPath = path
+        pathStripped = None
+        firstBracket = path.find("[")
+        if firstBracket != -1:
+            strippedPath = path[:firstBracket]
+            pathStripped = path[firstBracket:]
+
+        dir = rootDir
+        while True:
+            paths = glob.glob(os.path.join(dir, strippedPath))
+            if len(paths) > 0:
+                if pathPrefix != rootDir:
+                    paths = [p[len(rootDir+'/'):] for p in paths]
+                if pathStripped is not None:
+                    paths = [p + pathStripped for p in paths]
+                return paths
+            if searchParents:
+                dir = os.path.join(dir, "_parent")
+                if not os.path.exists(dir):
+                    return None
+            else:
+                return None
 
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)

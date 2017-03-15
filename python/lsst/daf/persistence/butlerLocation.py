@@ -28,6 +28,7 @@
 import lsst.daf.base as dafBase
 
 from collections import namedtuple
+import os
 from past.builtins import basestring
 import yaml
 
@@ -201,12 +202,12 @@ class ButlerLocation(yaml.YAMLObject):
 
     def __repr__(self):
         return \
-            'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, locationList=%r,' \
+            'ButlerLocation(pythonType=%r, cppType=%r, storageName=%r, storage=%r, locationList=%r,' \
             ' additionalData=%r, mapper=%r, dataId=%r)' % \
-            (self.pythonType, self.cppType, self.storageName, self.locationList,
+            (self.pythonType, self.cppType, self.storageName, self.storage, self.locationList,
              self.additionalData, self.mapper, self.dataId)
 
-    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage=None,
+    def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage,
                  usedDataId=None, datasetType=None):
         # pythonType is sometimes unicode with Python 2 and pybind11; this breaks the interpreter
         self.pythonType = str(pythonType) if isinstance(pythonType, basestring) else pythonType
@@ -263,5 +264,11 @@ class ButlerLocation(yaml.YAMLObject):
     def getLocations(self):
         return self.locationList
 
+    def getLocationsWithRoot(self):
+        return [os.path.join(self.storage.root, l) for l in self.getLocations()]
+
     def getAdditionalData(self):
         return self.additionalData
+
+    def getStorage(self):
+        return self.storage

@@ -128,14 +128,20 @@ class Storage:
             storage formats (DM-6225). Use of it in production code other than via the 'old butler' API is
             strongly discouraged.
 
-        :param uri: the uri to a locaiton that contains a repositoryCfg.
-        :return: a Storage subclass instance.
+        Parameters
+        ----------
+        uri : string
+            The uri to the root location of a repository.
+
+        Returns
+        -------
+        A Storage subclass instance.
         '''
         ret = None
         parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             theClass = Storage.storages[parseRes.scheme]
-            ret = theClass(uri)
+            ret = theClass(uri=uri)
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
@@ -166,3 +172,83 @@ class Storage:
             return True
         return False
 
+    @staticmethod
+    def relativePath(fromUri, toUri):
+        """Get a relative path from a location to a location, if a relative path for these 2 locations exists.
+
+        Parameters
+        ----------
+        fromPath : string
+            A URI that describes a location at which to start.
+        toPath : string
+            A URI that describes a target location.
+
+        Returns
+        -------
+        string
+            A relative path that describes the path from fromUri to toUri, provided one exists. If a relative
+            path between the two URIs does not exist then the entire toUri path is returned.
+        """
+        fromUriParseRes = urllib.parse.urlparse(fromUri)
+        toUriParseRes = urllib.parse.urlparse(toUri)
+        if fromUriParseRes.scheme != toUriParseRes.scheme:
+            return toUri
+        storage = Storage.storages.get(fromUriParseRes.scheme, None)
+        if not storage:
+            return toUri
+        return storage.relativePath(fromUri, toUri)
+
+    @staticmethod
+    def absolutePath(fromUri, toUri):
+        """Get an absolute path for the path from fromUri to toUri
+
+        Parameters
+        ----------
+        fromUri : the starting location
+            Description
+        toUri : the location relative to fromUri
+            Description
+
+        Returns
+        -------
+        string
+            URI that is absolutepath fromUri + toUri, if one exists. If toUri is absolute or if fromUri is not
+            related to toUri (e.g. are of different storage types) then toUri will be returned.
+        """
+        fromUriParseRes = urllib.parse.urlparse(fromUri)
+        toUriParseRes = urllib.parse.urlparse(toUri)
+        if fromUriParseRes.scheme != toUriParseRes.scheme:
+            return toUri
+        storage = Storage.storages.get(fromUriParseRes.scheme, None)
+        if not storage:
+            return toUri
+        return storage.absolutePath(fromUri, toUri)
+
+
+    @staticmethod
+    def search(uri, path):
+        """Look for the given path in a storage root at URI; return None if it can't be found.
+
+        If the path contains an HDU indicator (a number in brackets before the
+        dot, e.g. 'foo.fits[1]', this will be stripped when searching and so
+        will match filenames without the HDU indicator, e.g. 'foo.fits'. The
+        path returned WILL contain the indicator though, e.g. ['foo.fits[1]'].
+
+
+        Parameters
+        ----------
+        root : string
+            URI to the the root location to search
+        path : string
+            A filename (and optionally prefix path) to search for within root.
+
+        Returns
+        -------
+        string or None
+            The location that was found, or None if no location was found.
+        """
+        parseRes = urllib.parse.urlparse(uri)
+        storage = Storage.storages.get(parseRes.scheme, None)
+        if storage:
+            return storage.search(uri, path)
+        return None

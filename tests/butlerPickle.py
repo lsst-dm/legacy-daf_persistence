@@ -26,18 +26,21 @@
 import pickle
 import unittest
 import lsst.utils.tests
+import os
 
 import lsst.daf.persistence as dafPersist
 
 
 class MinMapper(dafPersist.Mapper):
 
-    def __init__(self):
+    def __init__(self, root, parentRegistry, repositoryCfg):
         pass
 
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.pickle" % dataId
-        return dafPersist.ButlerLocation(None, None, "PickleStorage", path, {}, self)
+        return dafPersist.ButlerLocation(
+            None, None, "PickleStorage", path, {},
+            self, dafPersist.Storage.makeFromURI(os.getcwd()))
 
 
 class ButlerPickleTestCase(unittest.TestCase):
@@ -47,7 +50,7 @@ class ButlerPickleTestCase(unittest.TestCase):
     localTypeNameIsAliasOf = "x"
 
     def setUp(self):
-        self.butler = dafPersist.Butler(root='.', mapper=MinMapper())
+        self.butler = dafPersist.Butler(root='.', mapper=MinMapper)
         self.butler.defineAlias(self.localTypeName, self.localTypeNameIsAliasOf)
 
     def tearDown(self):
@@ -75,6 +78,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

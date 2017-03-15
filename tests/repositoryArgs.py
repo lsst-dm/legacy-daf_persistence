@@ -85,25 +85,25 @@ class DefaultMapper(unittest.TestCase):
     def testInstanceAndMatchingString(self):
         """Pass a class instance and a string that evaluates to the same object, and verify a default mapper
         can be found."""
-        butler = self._setup(dp.Mapper(), 'lsst.daf.persistence.Mapper')
+        butler = self._setup(dp.Mapper, 'lsst.daf.persistence.Mapper')
         self.assertEqual(butler._getDefaultMapper(), lsst.daf.persistence.Mapper)
 
     def testInstanceAndNotMatchingString(self):
         """Pass a class instance and a non-matching string, and verify a default mapper can not be found."""
-        butler = self._setup(MapperTest(), 'lsst.daf.persistence.Mapper')
+        butler = self._setup(MapperTest, 'lsst.daf.persistence.Mapper')
         self.assertIsNone(butler._getDefaultMapper())
 
     def testClassObjAndMatchingInstance(self):
         """Pass a class object and a class instance of the same type, and verify a default mapper can be
         found."""
-        butler = self._setup(dp.Mapper, dp.Mapper())
+        butler = self._setup(dp.Mapper, dp.Mapper)
         self.assertEqual(butler._getDefaultMapper(), lsst.daf.persistence.Mapper)
 
 
     def testClassObjAndNotMatchingInstance(self):
         """Pass a class object and a class instance of a different type, and verify a default mapper can not
         be found."""
-        butler = self._setup(MapperTest, dp.Mapper())
+        butler = self._setup(MapperTest, dp.Mapper)
         self.assertIsNone(butler._getDefaultMapper())
 
 
@@ -124,6 +124,8 @@ class ParseRootURI(unittest.TestCase):
         args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
         butler = dp.Butler(outputs=args)
         self.assertTrue(os.path.exists(os.path.join(self.testDir, 'repositoryCfg.yaml')))
+
+        butler2 = dp.Butler(inputs=uri)
 
         try:
             butler2 = dp.Butler(inputs=uri)

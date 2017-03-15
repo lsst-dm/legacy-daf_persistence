@@ -47,6 +47,13 @@ from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persisten
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
     genericDisassembler, PosixStorage
 
+preinitedMapperWarning = ("Passing an instantiated mapper into " +
+                          "Butler.__init__ will prevent Butler from passing " +
+                          "parentRegistry or repositoryCfg information to " +
+                          "the mapper, which is done only at init time. " +
+                          "It is better to pass a importable string or " +
+                          "class object.")
+
 
 class ButlerCfg(Policy, yaml.YAMLObject):
     """Represents a Butler configuration.
@@ -91,25 +98,29 @@ class RepoData(object):
         self.tags = set()
         self.isNewRepository = isNewRepository
         self.isV1Repository = isV1Repository
+        self.parentRegistry = None
 
     def __reduce__(self):
         return (RepoData, (self.args, self.cfg, self.repo, self.mode, self.tags))
 
     def __repr__(self):
-        return "RepoData(args=%s cfg=%s repo=%s tags=%s" % (self.args, self.cfg, self.repo, self.tags)
+        s = "RepoData(args=%s cfg=%s repo=%s tags=%s isNewRepository=%s isV1Repository:%s parentRegistry:%s)"
+        return s % (self.args, self.cfg, self.repo, self.tags, self.isNewRepository, self.isV1Repository,
+                    self.parentRegistry)
 
     def addTags(self, tags):
         self.tags = self.tags.union(tags)
+
 
 class RepoDataContainer(object):
     """Container object for RepoData instances owned by a Butler instance."""
 
     def __init__(self):
-        self.byRepoRoot = {} # {args.root, RepoData}
+        self.byRepoRoot = {}  # {args.root, RepoData}
         self.byCfgRoot = {}  # {args.cfgRoot, RepoData}
         self._inputs = None
         self._outputs = None
-        self._all = None # {cfg.root, RepoData}
+        self._all = None  # {cfg.root, RepoData}
 
     def add(self, repoData):
         """Add a RepoData to the container
@@ -166,7 +177,7 @@ class RepoDataContainer(object):
             self._outputs,
             self._all)
 
-    def _buildLookupList(self, inputs, outputs):
+    def _buildLookupLists(self, inputs, outputs):
         """Buld the lists of inputs, outputs, and all repo datas in lookup
         order.
 
@@ -185,20 +196,19 @@ class RepoDataContainer(object):
             """"Adds the cfg represented by repoData to the _all dict/list, as
             well as the _inputs or _outputs list, as indicated by inout. Then,
             adds all the parents of the cfg to the lists."""
-            if repoData.cfg.root in self._all:
-                return
-            self._all[repoData.cfg.root] = repoData
-            if inout == 'in':
+            if inout not in ('in', 'out', 'ref'):
+                raise RuntimeError("'inout' must be 'in', 'out', or 'ref', not '%s'" % inout)
+            if repoData.cfg.root not in self._all:
+                self._all[repoData.cfg.root] = repoData
+            if inout == 'in' and repoData not in self._inputs:
                 self._inputs.append(repoData)
-            elif inout == 'out':
+            elif inout == 'out' and repoData not in self._outputs:
                 self._outputs.append(repoData)
                 if 'r' in repoData.args.mode:
                     self._inputs.append(repoData)
-            else:
-                raise RuntimeError("'inout' must be 'in' or 'out', not %s" % inout)
             for parent in repoData.cfg.parents:
-                if 'r' in repoData.args.mode:
-                    addRepoDataToLists(self.byRepoRoot[parent], 'in')
+                addParentAs = 'in' if 'r' in repoData.args.mode and inout != 'ref' else 'ref'
+                addRepoDataToLists(self.byRepoRoot[parent], addParentAs)
 
         self._all = collections.OrderedDict()
         self._inputs = []
@@ -297,7 +307,6 @@ class Butler(object):
 
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}
-
         # inputs and outputs may be modified, do not change the external value.
         inputs = copy.deepcopy(inputs)
         outputs = copy.deepcopy(outputs)
@@ -309,14 +318,15 @@ class Butler(object):
             raise RuntimeError(
                 'Butler version 1 API (root, mapper, **mapperArgs) may ' +
                 'not be used with version 2 API (inputs, outputs)')
-
         self.datasetTypeAliasDict = {}
 
         # make sure inputs and outputs are lists, and if list items are a string convert it RepositoryArgs.
         inputs = listify(inputs)
         outputs = listify(outputs)
-        inputs = [RepositoryArgs(cfgRoot=args) if isinstance(args, basestring) else args for args in inputs]
-        outputs = [RepositoryArgs(cfgRoot=args) if isinstance(args, basestring) else args for args in outputs]
+        inputs = [RepositoryArgs(cfgRoot=args)
+                  if not isinstance(args, RepositoryArgs) else args for args in inputs]
+        outputs = [RepositoryArgs(cfgRoot=args)
+                   if not isinstance(args, RepositoryArgs) else args for args in outputs]
         # Set default rw modes on input and output args as needed
         for args in inputs:
             if args.mode is None:
@@ -328,6 +338,11 @@ class Butler(object):
                 args.mode = 'w'
             elif 'w' not in args.mode:
                 raise RuntimeError("The mode of an output should be writable.")
+        # check for class instances in args.mapper (not allowed)
+        for args in inputs + outputs:
+            if (args.mapper and not isinstance(args.mapper, basestring) and
+               not inspect.isclass(args.mapper)):
+                self.log.warn(preinitedMapperWarning)
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
@@ -335,18 +350,71 @@ class Butler(object):
 
         self._createRepoDatas(inputs, outputs)
 
-        self._repos._buildLookupList(inputs, outputs)
+        self._repos._buildLookupLists(inputs, outputs)
 
         self._setRepoDataTags()
 
         defaultMapper = self._getDefaultMapper()
         self._assignDefaultMapper(defaultMapper)
 
-        for repoData in self._repos.all().values():
+        for repoData in reversed(self._repos.all().values()):
+            parentRegistry = self._getParentRegistry(repoData)
+            repoData.parentRegistry = parentRegistry
             repoData.repo = Repository(repoData)
 
         self.objectCache = weakref.WeakValueDictionary()
 
+    def _getParentRegistry(self, repoData):
+        """Get the first found registry that matches the the passed-in repo.
+
+        "Matches" means the mapper in the passed-in repo is the same type as
+        the mapper in the parent.
+
+        Parameters
+        ----------
+        repoData : RepoData
+            The RepoData for the repository for which we are searching for a
+            parent registry.
+
+        Returns
+        -------
+        Registry or None
+            A registry from a parent if one can be found, or None.
+
+        Raises
+        ------
+        RuntimeError
+            Indicates a butler init order problem, all parents should be initialized before child
+            repositories, so this function should be able to get any parent of any child repo.
+        """
+        registry = None
+        for parentRepoData in self._getParentRepoDatas(repoData):
+            if parentRepoData.cfg.mapper == repoData.cfg.mapper:
+                if not parentRepoData.repo:
+                    raise RuntimeError("Parent repo should be initialized before child repos.")
+                registry = parentRepoData.repo.getRegistry()
+                if registry:
+                    break
+        return registry
+
+    def _getParentRepoDatas(self, repoData):
+        """Get the parents & grandparents etc of a given repo data, in depth-first search order.
+
+        Parameters
+        ----------
+        repoData : RepoData instance
+            The RepoData whose parents should be retreived.
+
+        Returns
+        -------
+        list of RepoData
+            A list of the parents & grandparents etc of a given repo data, in depth-first search order.
+        """
+        for parentCfgRoot in repoData.cfg.parents:
+            parentRepoData = self._repos.byCfgRoot[parentCfgRoot]
+            yield parentRepoData
+            for parentRepoData in self._getParentRepoDatas(parentRepoData):
+                yield parentRepoData
 
     def _setRepoDataTags(self):
         """Set the tags from each repoArgs into all its parent repoArgs so that they can be included in tagged
@@ -365,7 +433,6 @@ class Butler(object):
         for repoData in self._repos.all().values():
             setTags(self, repoData, set())
 
-
     def _createRepoData(self, args, inout, instanceParents):
         """Make a RepoData object for args, adding it to the RepoDataContainer.
 
@@ -383,6 +450,16 @@ class Butler(object):
         -------
         None
         """
+        def parentListWithoutThis(root, instanceParents):
+            """instanceParents is typically all the inputs to butler. If 'this' root is in that list (because
+            this repo is writable) then remove it, as a repo is never its own parent."""
+            parents = copy.copy(instanceParents)
+            try:
+                parents.remove(args.cfgRoot)
+            except ValueError:
+                pass
+            return parents
+
         # if only a string is passed for inputs or outputs, assumption is that it's a URI;
         # place it in a RepositoryArgs instance; cfgRoot for inputs, root for outputs.
         if inout not in ('in', 'out'):
@@ -395,10 +472,16 @@ class Butler(object):
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
         if cfg:
             if not cfg.matchesArgs(args):
-                if cfg.parents != instanceParents:
-                    raise RuntimeError("Parents do not match.") # maybe this is ok to capture in an intermediate cfg?
-                storedCfg = cfg
-                cfg = RepositoryCfg.makeFromArgs(args)
+                raise RuntimeError("Persisted repo cfg does not match input args. cfg:%s, args:%s"
+                                   % (cfg, args))
+                # need to fix intermediate cfgs
+                # storedCfg = cfg
+                # cfg = RepositoryCfg.makeFromArgs(args)
+            parents = parentListWithoutThis(args.cfgRoot, instanceParents)
+            if inout == 'out' and cfg.parents != parents:
+                raise RuntimeError(
+                    "Persisted repo cfg parents do not match butler parents: cfg:%s, parents:%s"
+                    % (cfg, instanceParents))
             else:
                 storedCfg = None
             repoData = RepoData(args=args, cfg=cfg, storedCfg=storedCfg)
@@ -416,26 +499,21 @@ class Butler(object):
                           " folder exists AND contains items.)" % args.cfgRoot
                     raise RuntimeError(msg)
                 if inout == 'out' and not v1RepoExists:
-                    p = instanceParents
-                    if args.cfgRoot in p:
-                        p.remove(args.cfgRoot)
+                    parents = parentListWithoutThis(args.cfgRoot, instanceParents)
                 else:
-                    p = None
+                    parents = None
                 if v1RepoExists:
                     if not args.mapper:
                         args.mapper = PosixStorage.getMapperClass(args.cfgRoot)
-                cfg = RepositoryCfg.makeFromArgs(args, p)
+                cfg = RepositoryCfg.makeFromArgs(args, parents)
                 repoData = RepoData(args=args, cfg=cfg, isNewRepository=not v1RepoExists,
                                     isV1Repository=v1RepoExists)
                 self._repos.add(repoData)
                 if v1RepoExists:
                     parent = PosixStorage.getParentSymlinkPath(args.cfgRoot)
                     if parent:
-                        parent = os.path.relpath(os.path.join(cfg.root, parent), '.')
+                        parent = PosixStorage.absolutePath(args.cfgRoot, parent)
                         cfg.addParents(parent)
-                        # TODO the parent path can be (is always) relative;
-                        # resolving path-to-parent-from-here should be handled
-                        # by Storage and/or the cfg.
                         self._createRepoData(RepositoryArgs(parent, mode='r'), 'in', instanceParents)
             # Do not need to check for Butler V1 Repos in non-posix Storages:
             else:
@@ -450,8 +528,20 @@ class Butler(object):
     @staticmethod
     def _getParentsList(inputs, outputs):
         parents = []
-        for args in outputs + inputs:
+        # The parents of readable output repositories are handled as though they were passed to butler as
+        # inputs.
+        # When we add remote storage types, getting the repositoryCfg here and again later in _createRepoData
+        # may be slow. We could fetch & cache if needed.
+        for args in outputs:
             if 'r' in args.mode and args.cfgRoot not in parents:
+                parents.append(args.cfgRoot)
+                cfg = Storage.getRepositoryCfg(args.cfgRoot)
+                if cfg:
+                    for parent in cfg.parents:
+                        if parent not in parents:
+                            parents.append(parent)
+        for args in inputs:
+            if args.cfgRoot not in parents:
                 parents.append(args.cfgRoot)
         return parents
 
@@ -504,13 +594,10 @@ class Butler(object):
         tuple
             (inputs, outputs) - values to be used for inputs and outputs in Butler.__init__
         """
-        # mapper ought to be an importable string or a class object (not a mapper class instance)
-        if mapper and not isinstance(mapper, basestring) and not inspect.isclass(mapper):
-            err = "mapper ought to be an importable string or a class object (not a mapper class instance)"
-            # TBD we might have to handle this. It'll be complicated because of e.g. outputRoot & calibRoot
-            self.log.warn(err)
+        if (mapper and not isinstance(mapper, basestring) and
+           not inspect.isclass(mapper)):
+            self.log.warn(preinitedMapperWarning)
         inputs = None
-
         if root is None:
             if hasattr(mapper, 'root'):
                 # in legacy repos, the mapper may be given the root directly.
@@ -737,30 +824,13 @@ class Butler(object):
         for repoData in self._repos.inputs():
             if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 location = repoData.repo.map(datasetType, dataId)
-                if location:
+                if location and location.repository.exists(location):
                     break
+                else:
+                    location = None
 
-        if location is None:
-            return False
+        return bool(location)
 
-        additionalData = location.getAdditionalData()
-        storageName = location.getStorageName()
-        if storageName in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                           'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
-            locations = location.getLocations()
-            for locationString in locations:
-                logLoc = LogicalLocation(locationString, additionalData).locString()
-                if storageName == 'FitsStorage':
-                    # Strip off directives for cfitsio (in square brackets, e.g., extension name)
-                    bracket = logLoc.find('[')
-                    if bracket > 0:
-                        logLoc = logLoc[:bracket]
-                if not os.path.exists(logLoc):
-                    return False
-            return True
-        self.log.warn("datasetExists() for non-file storage %s, dataset type=%s, keys=%s",
-                      storageName, datasetType, str(dataId))
-        return True
 
     def _locate(self, datasetType, dataId, write):
         """Get one or more ButlerLocations and/or ButlercComposites.
@@ -792,7 +862,10 @@ class Butler(object):
             components = datasetType.split('.')
             datasetType = components[0]
             components = components[1:]
-            location = repoData.repo.map(datasetType, dataId, write=write)
+            try:
+                location = repoData.repo.map(datasetType, dataId, write=write)
+            except NoResults:
+                continue
             if location is None:
                 continue
             location.datasetType = datasetType  # todo is there a better way than monkey patching here?
@@ -810,7 +883,22 @@ class Butler(object):
             # if reading, only one location is desired.
             if location:
                 if not write:
-                    return location
+                    # If there is a bypass function for this dataset type, we can't test to see if the object
+                    # exists in storage. Just return the location.
+                    if hasattr(location.mapper, "bypass_" + location.datasetType):
+                        try:
+                            # The dataset for the location may or may not exist
+                            # and may or may not be needed. Right now the only
+                            # way to know is to call the bypass function.
+                            location.bypass = self._getBypassFunc(location, dataId)()
+                            return location
+                        except:
+                            continue
+                    # If a location was found but the location does not exist, keep looking in input
+                    # repositories (the registry may have had enough data for a lookup even thought the object
+                    # exists in a different repository.)
+                    if isinstance(location, ButlerComposite) or location.repository.exists(location):
+                        return location
                 else:
                     try:
                         locations.extend(location)
@@ -819,6 +907,16 @@ class Butler(object):
         if not write:
             return None
         return locations
+
+    @staticmethod
+    def _getBypassFunc(location, dataId):
+        pythonType = location.getPythonType()
+        if pythonType is not None:
+            if isinstance(pythonType, basestring):
+                pythonType = doImport(pythonType)
+        bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
+        return lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
+
 
     def get(self, datasetType, dataId=None, immediate=True, **rest):
         """Retrieves a dataset given an input collection data id.
@@ -859,14 +957,9 @@ class Butler(object):
             obj = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
             return obj
 
-        if location.datasetType and hasattr(location.mapper, "bypass_" + location.datasetType):
+        if hasattr(location, 'bypass'):
             # this type loader block should get moved into a helper someplace, and duplciations removed.
-            pythonType = location.getPythonType()
-            if pythonType is not None:
-                if isinstance(pythonType, basestring):
-                    pythonType = doImport(pythonType)
-            bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
-            callback = lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
+            callback = lambda : location.bypass
         else:
             callback = lambda: self._read(location)
         if location.mapper.canStandardize(location.datasetType):
