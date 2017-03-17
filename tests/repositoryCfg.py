@@ -149,6 +149,18 @@ class TestCfgRelationship(unittest.TestCase):
         # also verify that the parent gotten via the symlink is a path to A
         self.assertEqual(repoADir, cfg.parents[0])
 
+    def testStorageRepoCfgCache(self):
+        """Tests that when a cfg is gotten from storage it is cached."""
+        butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
+                                                     mapper=dpTest.EmptyTestMapper,
+                                                     root=os.path.join(ROOT, 'repositoryCfg/a')))
+        del butler
+        storage = dp.Storage()
+        self.assertEqual(0, len(storage.repositoryCfgs))
+        cfg = storage.getRepositoryCfg(os.path.join(ROOT, 'repositoryCfg/a'))
+        self.assertEqual(cfg, storage.repositoryCfgs[os.path.join(ROOT, 'repositoryCfg/a')])
+
+
 # "fake" repository version 0
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v0"
@@ -161,6 +173,7 @@ class RepositoryCfg(yaml.YAMLObject):
     def v0Constructor(loader, node):
         d = loader.construct_mapping(node)
         return dp.RepositoryCfg(root=d['_root'], mapper=None, mapperArgs=None, parents=None, policy=None)
+
 
 yaml.add_constructor(u"!RepositoryCfg_v0", RepositoryCfg.v0Constructor)
 
