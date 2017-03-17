@@ -74,16 +74,29 @@ class Storage:
             raise RuntimeError("Scheme '%s' already registered:%s" % (scheme, Storage.storages[scheme]))
         Storage.storages[scheme] = cls
 
-    @staticmethod
-    def getRepositoryCfg(uri):
-        """Get a RepositoryCfg from a location specified by uri."""
-        ret = None
+    def getRepositoryCfg(self, uri):
+        """Get a RepositoryCfg from a location specified by uri.
+
+        If a cfg is found the it is cached by the uri, so that multiple lookups
+        are not performed on storages that might be remote.
+
+        RepositoryCfgs are not supposed to change once they are created so this
+        should not lead to stale data.
+        """
+        if not hasattr(self, 'repositoryCfgs'):
+            self.repositoryCfgs = {}
+
+        cfg = self.repositoryCfgs.get(uri, None)
+        if cfg:
+            return cfg
         parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
-            ret = Storage.storages[parseRes.scheme].getRepositoryCfg(uri)
+            cfg = Storage.storages[parseRes.scheme].getRepositoryCfg(uri)
+            if cfg:
+                self.repositoryCfgs[uri] = cfg
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
-        return ret
+        return cfg
 
     @staticmethod
     def putRepositoryCfg(cfg, uri):

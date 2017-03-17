@@ -123,6 +123,17 @@ class TestCfgRelationship(unittest.TestCase):
                                        os.path.join(ROOT, 'repositoryCfg/c')),
                                outputs=os.path.join(ROOT, 'repositoryCfg/b'))
 
+    def testStorageRepoCfgCache(self):
+        """Tests that when a cfg is gotten from storage it is cached."""
+        butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
+                                                     mapper=dpTest.EmptyTestMapper,
+                                                     root=os.path.join(ROOT, 'repositoryCfg/a')))
+        del butler
+        storage = dp.Storage()
+        self.assertEqual(0, len(storage.repositoryCfgs))
+        cfg = storage.getRepositoryCfg(os.path.join(ROOT, 'repositoryCfg/a'))
+        self.assertEqual(cfg, storage.repositoryCfgs[os.path.join(ROOT, 'repositoryCfg/a')])
+
 
 # "fake" repository version 0
 class RepositoryCfg(yaml.YAMLObject):
