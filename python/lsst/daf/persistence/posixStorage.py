@@ -50,7 +50,7 @@ class PosixStorage(Storage):
         :return:
         """
         self.log = Log.getLogger("daf.persistence.butler")
-        self.root = urllib.parse.urlparse(uri).path
+        self.root = self._pathFromURI(uri)
         if self.root and not os.path.exists(self.root):
             os.makedirs(self.root)
 
@@ -60,6 +60,11 @@ class PosixStorage(Storage):
 
     def __repr__(self):
         return 'PosixStorage(root=%s)' % self.root
+
+    @staticmethod
+    def _pathFromURI(uri):
+        """Get the path part of the URI"""
+        return urllib.parse.urlparse(uri).path
 
     @staticmethod
     def relativePath(fromPath, toPath):
@@ -600,6 +605,22 @@ class PosixStorage(Storage):
                     return None
             else:
                 return None
+
+    @staticmethod
+    def storageExists(uri):
+        """Ask if a storage at the location described by uri exists
+
+        Parameters
+        ----------
+        root : string
+            URI to the the root location of the storage
+
+        Returns
+        -------
+        bool
+            True if the storage exists, false if not
+        """
+        return os.path.exists(PosixStorage._pathFromURI(uri))
 
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
