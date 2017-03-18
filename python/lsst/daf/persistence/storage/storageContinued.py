@@ -224,7 +224,6 @@ class Storage:
             return toUri
         return storage.absolutePath(fromUri, toUri)
 
-
     @staticmethod
     def search(uri, path):
         """Look for the given path in a storage root at URI; return None if it can't be found.
@@ -251,4 +250,24 @@ class Storage:
         storage = Storage.storages.get(parseRes.scheme, None)
         if storage:
             return storage.search(uri, path)
+        return None
+
+    @staticmethod
+    def storageExists(uri):
+        """Ask if a storage at the location described by uri exists
+
+        Parameters
+        ----------
+        root : string
+            URI to the the root location of the storage
+
+        Returns
+        -------
+        bool
+            True if the storage exists, false if not
+        """
+        parseRes = urllib.parse.urlparse(uri)
+        storage = Storage.storages.get(parseRes.scheme, None)
+        if storage:
+            return storage.storageExists(uri)
         return None
