@@ -39,7 +39,7 @@ from . import (LogicalLocation, Persistence, Policy, StorageList, Registry,
                Storage, RepositoryCfg, safeFileIo, ButlerLocation)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
-from .safeFileIo import SafeFilename
+from .safeFileIo import SafeFilename, safeMakeDir
 
 
 class PosixStorage(Storage):
@@ -52,7 +52,7 @@ class PosixStorage(Storage):
         self.log = Log.getLogger("daf.persistence.butler")
         self.root = self._pathFromURI(uri)
         if self.root and not os.path.exists(self.root):
-            os.makedirs(self.root)
+            safeMakeDir(self.root)
 
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
