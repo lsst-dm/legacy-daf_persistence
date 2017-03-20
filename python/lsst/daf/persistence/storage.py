@@ -23,23 +23,20 @@
 #
 from __future__ import absolute_import
 
-__all__ = []
-
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
 
 import urllib.parse
-from .storage import Storage
-
-from lsst.utils import continueClass
 
 
-@continueClass
 class Storage:
     """Base class for storages"""
 
     storages = {}
+
+    def __init__(self):
+        self.repositoryCfgs = {}
 
     @staticmethod
     def registerStorageClass(scheme, cls):
@@ -77,15 +74,12 @@ class Storage:
     def getRepositoryCfg(self, uri):
         """Get a RepositoryCfg from a location specified by uri.
 
-        If a cfg is found the it is cached by the uri, so that multiple lookups
+        If a cfg is found then it is cached by the uri, so that multiple lookups
         are not performed on storages that might be remote.
 
         RepositoryCfgs are not supposed to change once they are created so this
         should not lead to stale data.
         """
-        if not hasattr(self, 'repositoryCfgs'):
-            self.repositoryCfgs = {}
-
         cfg = self.repositoryCfgs.get(uri, None)
         if cfg:
             return cfg

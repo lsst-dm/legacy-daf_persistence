@@ -1,9 +1,9 @@
 // -*- lsst-c++ -*-
 
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -11,17 +11,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 
 /** \file
  * \brief Implementation of StorageRegistry class
@@ -46,7 +46,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 // a Persistable, in them.
 #include <stdexcept>
 
-// All Storage subclasses must be included here.
+// All StorageFormatter subclasses must be included here.
 
 #include "lsst/daf/persistence/BoostStorage.h"
 #include "lsst/daf/persistence/DbStorage.h"
@@ -70,30 +70,30 @@ StorageRegistry::StorageRegistry(void) {
 StorageRegistry::~StorageRegistry(void) {
 }
 
-/** Create a Storage subclass instance by name.
+/** Create a StorageFormatter subclass instance by name.
  * \param[in] name Name of subclass
  * \return Shared pointer to subclass instance
  *
- * All Storage subclasses must be listed here.
+ * All StorageFormatter subclasses must be listed here.
  * Implemented as code; could be a lookup in a data structure.
  */
-Storage::Ptr StorageRegistry::createInstance(std::string const& name) {
+StorageFormatter::Ptr StorageRegistry::createInstance(std::string const& name) {
     if (name == "BoostStorage") {
-        return Storage::Ptr(new BoostStorage);
+        return StorageFormatter::Ptr(new BoostStorage);
     }
     else if (name == "DbStorage") {
-        return Storage::Ptr(new DbStorage);
+        return StorageFormatter::Ptr(new DbStorage);
     }
     else if (name == "DbTsvStorage") {
-        return Storage::Ptr(new DbTsvStorage);
+        return StorageFormatter::Ptr(new DbTsvStorage);
     }
     else if (name == "FitsStorage") {
-        return Storage::Ptr(new FitsStorage);
+        return StorageFormatter::Ptr(new FitsStorage);
     }
     else if (name == "XmlStorage") {
-        return Storage::Ptr(new XmlStorage);
+        return StorageFormatter::Ptr(new XmlStorage);
     }
-    else throw std::invalid_argument("Invalid storage type: " + name);
+    else throw std::invalid_argument("Invalid StorageFormatter type: " + name);
 }
 
 /** Return a reference to a subclass registry.
