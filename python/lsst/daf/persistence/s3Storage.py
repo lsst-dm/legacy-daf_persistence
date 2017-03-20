@@ -21,28 +21,99 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from abc import ABCMeta, abstractmethod
 
+from . import PosixStorage, StorageInterface
 
-class StorageInterface:
-    """Defines the interface for a connection to a Storage location.
+import boto3
+import botocore
+import os
+import tempfile
+import time
 
-    Init will create the storage location if it does not exist.
+class S3Storage(StorageInterface):
+    """Storage Interface implementation specific for Swift
+
+    Requires that the following environment variables exist:
+    S3_USERNAME : string
+        The username to use when authorizing the connection.
+    S3_PASSWORD : string
+        The password to use when authorizing the connection.
 
     Parameters
     ----------
     uri : string
-        URI or path that is used as the storage location.
-    """
-    __metaclass__ = ABCMeta
+        A URI to connect to a swift storage location. The form of the URI is
+        `s3://[URL without 'http://']/[bucket]`
+        For example:
+        `TODO`
 
-    @abstractmethod
+    Downloads blobs from storage to a file, and uses PosixStorage to load that
+    file into an object. Handles to files are cached (this is effectively
+    necessary for e.g. iterating over fits headers) by location in
+    self.fileCache. If it turns out that this allows the temporary file
+    directory to grow too large it may work to modify this to keep only the
+    most recently accessed file, which would still support iterating over a
+    single file's fits headers.
+    """
+
     def __init__(self, uri):
         """initialzer"""
 
-    @abstractmethod
+        scheme, bucket = self._parseURI(uri)
+        self.s3 = boto3.resource('s3')
+        self.bucket = self.s3.Bucket(bucket)
+        status = 'init'
+        try:
+            self.s3.meta.client.head_bucket(Bucket=bucket)
+        except botocore.exceptions.ClientError as e:
+            error_code = int(e.response['Error']['Code'])
+            if error_code == 404:
+                status = 'not_exist'
+        if status == 'not_exist':
+            self.s3.create_bucket(Bucket=bucket)
+        else:
+            raise RuntimeError("Could not connect to s3.")
+
+    @staticmethod
+    def _parseURI(uri):
+        """Parse the URI into paramters expected for the S3Storage URI.
+
+        Parameters
+        ----------
+        uri : string
+            URI with form described by the init function documentation.
+
+        Returns
+        -------
+        tuple of strings
+            (scheme, bucketName)
+
+        Raises
+        ------
+        RuntimeError
+            If the URI does not start with 's3://'
+        ValueError
+            If the URI after scheme does not have the correct number of fields.
+        """
+        expectedScheme = "s3://"
+        if not uri.startswith(expectedScheme):
+            raise RuntimeError(
+                "S3 URI must start with {}, {} will not work".format(
+                    expectedScheme, uri))
+        scheme = "s3"
+        uri = uri[len(expectedScheme):]
+        bucket = uri
+        return (scheme, bucket)
+
     def write(self, butlerLocation, obj):
-        """Writes an object to a location and persistence format specified by ButlerLocation
+        """Writes an object to a location and persistence format specified by
+        ButlerLocation
+
+        This file uses PosixStorage to write the object to a file on disk (that
+        is to say: serialize it). Then the file is uploaded to the swift
+        container. When we have better support for pluggable serializers,
+        hopefully the first step of writing to disk can be skipped and the
+        object can be serialzied and streamed directly to the swift container.
 
         Parameters
         ----------
@@ -51,8 +122,17 @@ class StorageInterface:
         obj : object instance
             The object to be written.
         """
+        locations = butlerLocation.getLocations()
+        # Here the ButlerLocation is modified sligtly to write to a temporary
+        # file via PosixStorage. (Then the temporary file is written to the
+        # swift container)
+        localFile = tempfile.NamedTemporaryFile()
+        butlerLocation.locationList = [localFile.name]
+        butlerLocation.storage = PosixStorage('/')
+        butlerLocation.storage.write(butlerLocation, obj)
+        obj = self.s3.Object(self.bucket, locations[0])
+        obj.put(Body=open(localFile.name, 'rb'))
 
-    @abstractmethod
     def read(self, butlerLocation):
         """Read from a butlerLocation.
 
@@ -66,15 +146,54 @@ class StorageInterface:
         A list of objects as described by the butler location. One item for
         each location in butlerLocation.getLocations()
         """
+        localFile = self.getLocalFile(butlerLocation.getLocations()[0])
+        butlerLocation.locationList = [localFile.name]
+        butlerLocation.storage = PosixStorage('/')
+        obj = butlerLocation.storage.read(butlerLocation)
+        return obj
 
-    @abstractmethod
-    def getLocalFile(self, path):
-        """Get the path to a local copy of the file, downloading it to a
-        temporary if needed.
+    def _getLocalFile(self, location):
+        """Implementation of getLocalFile that does not wrap the swift
+        ClientException so that this function may be used by this class in
+        various functions that want to handle the exception directly.
 
         Parameters
         ----------
-        A path the the file in storage, relative to root.
+        location : string
+            A location of the the file in storage, relative to the storage's
+            root.
+
+        Raises
+        ------
+        swift.ClientException
+            Indicates an error downloading the object.
+        """
+        location = self.getFitsHeaderStrippedPath(location)[0]
+        localFile = self.fileCache.get(location, None)
+        if not localFile:
+            localFile = tempfile.NamedTemporaryFile(
+                suffix=os.path.splitext(location)[1])
+            response = self.s3.Object(self.bucket, location)
+            localFile.write(response)
+            localFile.flush()
+            self.fileCache[location] = localFile
+        localFile.seek(0)
+        return localFile
+
+    def getLocalFile(self, location):
+        """As it is expected the local file will be read (not written to), the
+        current position in the file is set to 0 before it is returned.
+
+        The local file will be deleted when the file object is deleted, so this
+        function does not close the file unless an error is raised internally.
+        Callers may close or explicitly delete the object when they are done
+        with it or may allow it to be garbage collected.
+
+        Parameters
+        ----------
+        location : string
+            A location of the the file in storage, relative to the storage's
+            root.
 
         Returns
         -------
@@ -82,9 +201,24 @@ class StorageInterface:
         a temporary file. If storage is local it may be the original file or
         a temporary file. The file name can be gotten via the 'name' property
         of the returned object.
-        """
 
-    @abstractmethod
+        Raises
+        ------
+        RuntimeError
+            If there is an error downloading the object.
+        """
+        self._log.info("S3Storage getting file {}".format(location))
+        start = time.time()
+        try:
+            f = self._getLocalFile(location)
+            self._log.info(
+                "...getting file took {} seconds.".format(time.time() - start))
+            return f
+        except swift.ClientException:
+            raise RuntimeError(
+                "Could not download object '{0}/{1}' not found.".format(
+                    self._containerName, location))
+
     def exists(self, location):
         """Check if location exists.
 
@@ -100,7 +234,6 @@ class StorageInterface:
             True if exists, else False.
         """
 
-    @abstractmethod
     def instanceSearch(self, path):
         """Search for the given path in this storage instance.
 
@@ -121,7 +254,6 @@ class StorageInterface:
         """
 
     @staticmethod
-    @abstractmethod
     def search(root, path):
         """Look for the given path in the current root.
 
@@ -146,7 +278,6 @@ class StorageInterface:
             The location that was found, or None if no location was found.
         """
 
-    @abstractmethod
     def copyFile(self, fromLocation, toLocation):
         """Copy a file from one location to another on the local filesystem.
 
@@ -162,7 +293,6 @@ class StorageInterface:
         None
         """
 
-    @abstractmethod
     def locationWithRoot(self, location):
         """Get the full path to the location.
 
@@ -171,7 +301,6 @@ class StorageInterface:
         """
 
     @staticmethod
-    @abstractmethod
     def getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
 
@@ -186,7 +315,6 @@ class StorageInterface:
         """
 
     @staticmethod
-    @abstractmethod
     def putRepositoryCfg(cfg, loc=None):
         """Serialize a RepositoryCfg to a location.
 
@@ -209,7 +337,6 @@ class StorageInterface:
         """
 
     @staticmethod
-    @abstractmethod
     def getMapperClass(root):
         """Get the mapper class associated with a repository root.
 
@@ -270,26 +397,3 @@ class StorageInterface:
             returned.
          """
         return relativePath
-
-    @staticmethod
-    def getFitsHeaderStrippedPath(path):
-        """Get the path with the optional FITS header selector stripped off.
-
-        Parameters
-        ----------
-        path : string
-            A file path that may end with [n]
-
-        Returns
-        -------
-        (string, string)
-            Tuple, the first item is the path without the fits header, the
-            second item is the part that was stripped, if any.
-        """
-        strippedPath = path
-        pathStripped = ''
-        firstBracket = path.find("[")
-        if firstBracket != -1:
-            strippedPath = path[:firstBracket]
-            pathStripped = path[firstBracket:]
-        return strippedPath, pathStripped
