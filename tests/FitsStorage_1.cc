@@ -1,7 +1,7 @@
-/* 
+/*
  * LSST Data Management System
  * Copyright 2014 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -9,17 +9,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 /**
  * \file FitsStorage_1.cc
  *
@@ -51,9 +51,9 @@ BOOST_AUTO_TEST_CASE(FitsStorageRetrieveTest) {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
         BOOST_CHECK_NE(persist, dafPersist::Persistence::Ptr());
-        PTR(dafPersist::Storage) storage =
+        PTR(dafPersist::StorageFormatter) storage =
             persist->getRetrieveStorage("FitsStorage", pathLoc);
-        BOOST_CHECK_NE(storage, PTR(dafPersist::Storage)());
+        BOOST_CHECK_NE(storage, PTR(dafPersist::StorageFormatter)());
         dafPersist::FitsStorage* fits =
             dynamic_cast<dafPersist::FitsStorage*>(storage.get());
         dafPersist::FitsStorage* null = 0;
@@ -70,9 +70,9 @@ BOOST_AUTO_TEST_CASE(FitsStoragePersistTest) {
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policy);
     BOOST_CHECK_NE(persist, dafPersist::Persistence::Ptr());
-    PTR(dafPersist::Storage) storage =
+    PTR(dafPersist::StorageFormatter) storage =
         persist->getPersistStorage("FitsStorage", pathLoc);
-    BOOST_CHECK_NE(storage, PTR(dafPersist::Storage)());
+    BOOST_CHECK_NE(storage, PTR(dafPersist::StorageFormatter)());
     dafPersist::FitsStorage* fits =
         dynamic_cast<dafPersist::FitsStorage*>(storage.get());
     dafPersist::FitsStorage* null = 0;

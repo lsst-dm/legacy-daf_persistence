@@ -95,7 +95,7 @@ dafPersist::PropertySetFormatter::~PropertySetFormatter(void) {
 
 void dafPersist::PropertySetFormatter::write(
     dafBase::Persistable const* persistable,
-    dafPersist::Storage::Ptr storage,
+    dafPersist::StorageFormatter::Ptr storage,
     dafBase::PropertySet::Ptr additionalData) {
     LOGLS_TRACE(_log, "PropertySetFormatter write start");
     dafBase::PropertySet const* ps =
@@ -210,11 +210,11 @@ void dafPersist::PropertySetFormatter::write(
         return;
     }
 
-    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unrecognized Storage for PropertySet");
+    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unrecognized StorageFormatter for PropertySet");
 }
 
 dafBase::Persistable* dafPersist::PropertySetFormatter::read(
-    dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+    dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     LOGLS_TRACE(_log, "PropertySetFormatter read start");
     dafBase::PropertySet* ps = new dafBase::PropertySet;
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
@@ -233,11 +233,11 @@ dafBase::Persistable* dafPersist::PropertySetFormatter::read(
         LOGLS_TRACE(_log, "PropertySetFormatter read end");
         return ps;
     }
-    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unrecognized Storage for PropertySet");
+    throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unrecognized StorageFormatter for PropertySet");
 }
 
 void dafPersist::PropertySetFormatter::update(dafBase::Persistable* persistable,
-                                   dafPersist::Storage::Ptr storage,
+                                   dafPersist::StorageFormatter::Ptr storage,
                                    dafBase::PropertySet::Ptr additionalData) {
     throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Unexpected call to update for PropertySet");
 }
