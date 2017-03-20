@@ -1,7 +1,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "lsst/daf/persistence/Storage.h"
+#include "lsst/daf/persistence/StorageFormatter.h"
 #include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 
@@ -26,7 +26,7 @@ void declareParams(C& cls, const std::string& suffix) {
 PYBIND11_PLUGIN(dbStorage) {
     py::module mod("dbStorage");
 
-    py::class_<DbStorage, std::shared_ptr<DbStorage>, Storage> cls(mod, "DbStorage");
+    py::class_<DbStorage, std::shared_ptr<DbStorage>, StorageFormatter> cls(mod, "DbStorage");
 
     /* Constructors */
     cls.def(py::init<>());

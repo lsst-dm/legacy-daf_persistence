@@ -1,9 +1,9 @@
 // -*- lsst-c++ -*-
 
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -11,17 +11,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 #ifndef LSST_MWI_PERSISTENCE_PERSISTENCE_H
 #define LSST_MWI_PERSISTENCE_PERSISTENCE_H
 
@@ -39,9 +39,9 @@
   * @brief Class implementing object persistence.
   *
   * This class persists and retrieves objects by calling Formatter subclasses
-  * with a sequence of Storage subclasses that have been configured with
+  * with a sequence of StorageFormatter subclasses that have been configured with
   * LogicalLocations.  This class handles all transaction semantics by starting
-  * per-Storage transactions, detecting failures, and causing the Storage
+  * per-StorageFormatter transactions, detecting failures, and causing the StorageFormatter
   * subclasses to roll back if necessary.
   *
   * @ingroup daf_persistence
@@ -56,7 +56,7 @@
 #include "lsst/daf/base/PropertySet.h"
 #include "lsst/daf/base/Persistable.h"
 #include "lsst/pex/policy.h"
-#include "lsst/daf/persistence/Storage.h"
+#include "lsst/daf/persistence/StorageFormatter.h"
 
 namespace lsst {
 namespace daf {
@@ -71,18 +71,18 @@ public:
 
     virtual ~Persistence(void);
 
-    virtual Storage::Ptr getPersistStorage(std::string const& storageType,
-                                           LogicalLocation const& location);
-    virtual Storage::Ptr getRetrieveStorage(std::string const& storageType,
-                                            LogicalLocation const& location);
+    virtual StorageFormatter::Ptr getPersistStorage(std::string const& storageType,
+                                                    LogicalLocation const& location);
+    virtual StorageFormatter::Ptr getRetrieveStorage(std::string const& storageType,
+                                                     LogicalLocation const& location);
     virtual void persist(
-        lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
+        lsst::daf::base::Persistable const& persistable, StorageFormatter::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
     virtual lsst::daf::base::Persistable::Ptr retrieve(
-        std::string const& persistableType, Storage::List const& storageList,
+        std::string const& persistableType, StorageFormatter::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
     virtual lsst::daf::base::Persistable* unsafeRetrieve(
-        std::string const& persistableType, Storage::List const& storageList,
+        std::string const& persistableType, StorageFormatter::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
 
     static Ptr getPersistence(lsst::pex::policy::Policy::Ptr policy);
@@ -96,9 +96,8 @@ private:
     Persistence(Persistence const&);
     Persistence& operator=(Persistence const&);
 
-    Storage::Ptr _getStorage(std::string const& storageType,
-                             LogicalLocation const& location,
-                             bool persist);
+    StorageFormatter::Ptr _getStorage(std::string const& storageType,
+        LogicalLocation const& location, bool persist);
 
     lsst::pex::policy::Policy::Ptr _policy;
         ///< Pointer to Policy used to configure Persistence.
