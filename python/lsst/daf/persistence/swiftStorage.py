@@ -26,7 +26,6 @@ standard_library.install_aliases()
 
 import copy
 import os
-import swiftclient as swift
 import tempfile
 import time
 import yaml
@@ -39,9 +38,9 @@ class SwiftStorage(StorageInterface):
     """Storage Interface implementation specific for Swift
 
     Requires that the following environment variables exist:
-    OS_USERNAME : string
+    SWIFT_USERNAME : string
         The username to use when authorizing the connection.
-    OS_PASSWORD : string
+    SWIFT_PASSWORD : string
         The password to use when authorizing the connection.
 
     Parameters
@@ -61,6 +60,11 @@ class SwiftStorage(StorageInterface):
     single file's fits headers.
     """
     def __init__(self, uri):
+        # late import allows systems wihtout swiftclient to import this but not
+        # fail as long as they don't try to use it.
+        import swiftclient
+        self.swift = swiftclient
+
         self._log = Log.getLogger("daf.persistence.butler")
         self._uri = uri
         scheme, \
@@ -115,7 +119,7 @@ class SwiftStorage(StorageInterface):
         """Get a connection to a swift container.
 
         Gets the username and password to access the container from the
-        environment variables OS_USERNAME and OS_PASSWORD.
+        environment variables SWIFT_USERNAME and SWIFT_PASSWORD.
 
         Gets the authorization url and the tenant name from the URI passed to
         __init__.
@@ -128,27 +132,27 @@ class SwiftStorage(StorageInterface):
             The object representing the connection. The object may or may not
             actually be connected.
         """
-        user = os.getenv('OS_USERNAME')
+        user = os.getenv('SWIFT_USERNAME')
         if user is None:
             raise RuntimeError(
-                'SwiftStorage could not find OS_USERNAME in environment')
-        key = os.getenv('OS_PASSWORD')
+                'SwiftStorage could not find SWIFT_USERNAME in environment')
+        key = os.getenv('SWIFT_PASSWORD')
         if key is None:
             raise RuntimeError(
-                'SwiftStorage could not find OS_PASSWORD in environment')
+                'SwiftStorage could not find SWIFT_PASSWORD in environment')
 
         # TODO are auth_version and self._version (from the input URI, usually
         # 'v2.0') supposed to correlate? How?
 
-        return swift.Connection(authurl=self._url, user=user, key=key,
-                                tenant_name=self._tenantName,
-                                auth_version=2)
+        return self.swift.Connection(
+            authurl=self._url, user=user, key=key,
+            tenant_name=self._tenantName, auth_version=2)
 
     def containerExists(self):
         """Query if the container for this SwiftStorage exists."""
         try:
             self._connection.head_container(self._containerName)
-        except swift.ClientException:
+        except self.swift.ClientException:
             return False
         return True
 
@@ -281,7 +285,7 @@ class SwiftStorage(StorageInterface):
             self._log.info(
                 "...getting file took {} seconds.".format(time.time() - start))
             return f
-        except swift.ClientException:
+        except self.swift.ClientException:
             raise RuntimeError(
                 "Could not download object '{0}/{1}' not found.".format(
                     self._containerName, location))
@@ -352,7 +356,7 @@ class SwiftStorage(StorageInterface):
             headers, objects = self._connection.get_container(
                 self._containerName)
             locations = [obj['name'] for obj in objects]
-        except swift.ClientException as err:
+        except self.swift.ClientException as err:
             raise RuntimeError("Container \'{0}\' not found: {1}".format(
                 self._containerName, err))
         import fnmatch
@@ -410,7 +414,7 @@ class SwiftStorage(StorageInterface):
             self._connection.copy_object(
                 self._containerName, fromLocation,
                 self._containerName + '/' + toLocation)
-        except swift.ClientException as err:
+        except self.swift.ClientException as err:
             raise RuntimeError("copyFile error: {}".format(err))
 
     def locationWithRoot(self, location):
@@ -439,6 +443,7 @@ class SwiftStorage(StorageInterface):
         -------
         A RepositoryCfg instance or None
         """
+        import swiftclient as swift
         storage = SwiftStorage(uri)
         try:
             localFile = storage._getLocalFile('repositoryCfg')
@@ -509,5 +514,6 @@ class SwiftStorage(StorageInterface):
         if cfg is None:
             return None
         return cfg.mapper
+
 
 Storage.registerStorageClass(scheme='swift', cls=SwiftStorage)

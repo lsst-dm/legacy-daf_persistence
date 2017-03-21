@@ -51,11 +51,11 @@ class TestSwiftStorage(unittest.TestCase):
 
     def setUp(self):
         # swiftStorage requires these keys to be set up to connect to swift:
-        user = os.getenv('OS_USERNAME')
+        user = os.getenv('SWIFT_USERNAME')
         if user is None:
             raise unittest.SkipTest(
                 'Can not run test: OS_USERNAME not in environment')
-        key = os.getenv('OS_PASSWORD')
+        key = os.getenv('SWIFT_PASSWORD')
         if key is None:
             raise unittest.SkipTest(
                 'Can not run test: OS_PASSWORD not in environment')
