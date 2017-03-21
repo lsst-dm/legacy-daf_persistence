@@ -22,13 +22,16 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from . import PosixStorage, StorageInterface
+from . import ButlerLocation, PosixStorage, Storage, StorageInterface
 
 import boto3
 import botocore
+import copy
+import fnmatch
 import os
 import tempfile
-import time
+import yaml
+
 
 class S3Storage(StorageInterface):
     """Storage Interface implementation specific for Swift
@@ -173,8 +176,8 @@ class S3Storage(StorageInterface):
         if not localFile:
             localFile = tempfile.NamedTemporaryFile(
                 suffix=os.path.splitext(location)[1])
-            response = self.s3.Object(self.bucket, location)
-            localFile.write(response)
+            obj = self.s3.Object(self.bucket, location)
+            localFile.write(obj.get()['Body'])
             localFile.flush()
             self.fileCache[location] = localFile
         localFile.seek(0)
@@ -207,17 +210,8 @@ class S3Storage(StorageInterface):
         RuntimeError
             If there is an error downloading the object.
         """
-        self._log.info("S3Storage getting file {}".format(location))
-        start = time.time()
-        try:
-            f = self._getLocalFile(location)
-            self._log.info(
-                "...getting file took {} seconds.".format(time.time() - start))
-            return f
-        except swift.ClientException:
-            raise RuntimeError(
-                "Could not download object '{0}/{1}' not found.".format(
-                    self._containerName, location))
+        f = self._getLocalFile(location)
+        return f
 
     def exists(self, location):
         """Check if location exists.
@@ -233,6 +227,18 @@ class S3Storage(StorageInterface):
         bool
             True if exists, else False.
         """
+        if isinstance(location, ButlerLocation):
+            location = location.getLocations()[0]
+        try:
+            self.s3.Object(self.bucket, location).load()
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                exists = False
+            else:
+                raise RuntimeError("Error communicating with s3: {}".format(e))
+        else:
+            exists = True
+        return exists
 
     def instanceSearch(self, path):
         """Search for the given path in this storage instance.
@@ -252,6 +258,16 @@ class S3Storage(StorageInterface):
         string or None
             The location that was found, or None if no location was found.
         """
+        strippedPath, pathStripped = self.getFitsHeaderStrippedPath(path)
+
+        bucket = self.s3.buckets[self.bucket]
+
+        locations = []
+        locations.extend(fnmatch.filter((key for key in bucket.objects()),
+                                        strippedPath))
+        locations = [location + pathStripped for location in locations]
+        return locations if locations else None
+
 
     @staticmethod
     def search(root, path):
@@ -277,6 +293,8 @@ class S3Storage(StorageInterface):
         string or None
             The location that was found, or None if no location was found.
         """
+        storage = S3Storage(root)
+        return storage.instanceSearch(path)
 
     def copyFile(self, fromLocation, toLocation):
         """Copy a file from one location to another on the local filesystem.
@@ -292,6 +310,13 @@ class S3Storage(StorageInterface):
         -------
         None
         """
+        copy_source = {
+            'Bucket': self.bucket,
+            'Key': fromLocation
+        }
+        bucket = self.s3.Bucket(self.bucket)
+        obj = bucket.Object(toLocation)
+        obj.copy(copy_source)
 
     def locationWithRoot(self, location):
         """Get the full path to the location.
@@ -299,6 +324,7 @@ class S3Storage(StorageInterface):
         :param location:
         :return:
         """
+        return self._uri + '/' + location
 
     @staticmethod
     def getRepositoryCfg(uri):
@@ -313,6 +339,8 @@ class S3Storage(StorageInterface):
         -------
         A RepositoryCfg instance or None
         """
+        storage = Storage(uri)
+        return storage._getLocalFile('repositoryCfg')
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
@@ -335,6 +363,19 @@ class S3Storage(StorageInterface):
         -------
         None
         """
+        # TODO probably this could be serialized direclty, skipping the local file.
+        if loc is None or cfg.root == loc:
+            # the cfg is at the root location of the repository so don't write
+            # root, let it be implicit in the location of the cfg.
+            cfg = copy.copy(cfg)
+            loc = cfg.root
+            cfg.root = None
+        storage = Storage(loc)
+        with tempfile.NamedTemporaryFile() as f:
+            yaml.dump(cfg, f)
+            f.seek(0)
+            obj = storage.s3.Object(storage.bucket, tempfile.name)
+            obj.put(Body=open(tempfile.name, 'rb'))
 
     @staticmethod
     def getMapperClass(root):
@@ -350,6 +391,10 @@ class S3Storage(StorageInterface):
         A class object or a class instance, depending on the state of the
         mapper when the repository was created.
         """
+        cfg = S3Storage.getRepositoryCfg(root)
+        if cfg is None:
+            return None
+        return cfg.mapper
 
     # Optional: Only needs to work if relative paths are sensical on this
     # storage type and for the case where fromPath and toPath are of the same
