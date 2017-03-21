@@ -305,29 +305,6 @@ class SwiftStorage(StorageInterface):
             location = location.getLocations()[0]
         return bool(self.instanceSearch(location))
 
-    @staticmethod
-    def getFitsHeaderStrippedPath(path):
-        """Get the path with the optional FITS header selector stripped off.
-
-        Parameters
-        ----------
-        path : string
-            A file path that may end with [n]
-
-        Returns
-        -------
-        (string, string)
-            Tuple, the first item is the path without the fits header, the
-            second item is the part that was stripped, if any.
-        """
-        strippedPath = path
-        pathStripped = ''
-        firstBracket = path.find("[")
-        if firstBracket != -1:
-            strippedPath = path[:firstBracket]
-            pathStripped = path[firstBracket:]
-        return strippedPath, pathStripped
-
     def instanceSearch(self, path):
         """Search for the given path in this storage instance.
 
