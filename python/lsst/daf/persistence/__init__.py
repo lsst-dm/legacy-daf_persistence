@@ -49,6 +49,7 @@ from .storageInterface import *
 from .repositoryCfg import *
 from .posixStorage import *
 from .swiftStorage import *
+from .s3Storage import *
 from .mapper import *
 from .repositoryMapper import *
 from .repository import *

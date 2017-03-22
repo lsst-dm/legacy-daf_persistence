@@ -34,21 +34,22 @@ import yaml
 
 
 class S3Storage(StorageInterface):
-    """Storage Interface implementation specific for Swift
+    """Storage Interface implementation specific for S3
 
-    Requires that the following environment variables exist:
-    S3_USERNAME : string
-        The username to use when authorizing the connection.
-    S3_PASSWORD : string
-        The password to use when authorizing the connection.
+    Requires aws credentials to be findable by boto3, for example that a file
+    `~/.aws/credentials` exist and contain the keys and values for:
+    * aws_access_key_id
+    * aws_secret_access_key
+    See  https://boto3.readthedocs.io/ for more information.
 
     Parameters
     ----------
     uri : string
-        A URI to connect to a swift storage location. The form of the URI is
-        `s3://[URL without 'http://']/[bucket]`
+        A URI to connect to a s3 storage location. The form of the URI is
+        `s3://[URL to auth server, without 'http://']/[bucket]`
         For example:
-        `TODO`
+        'lsst.signin.aws.amazon.com/console/myRepo.foo', where the repository
+        bucket name here is "myRepo.foo"
 
     Downloads blobs from storage to a file, and uses PosixStorage to load that
     file into an object. Handles to files are cached (this is effectively
@@ -73,7 +74,9 @@ class S3Storage(StorageInterface):
             if error_code == 404:
                 status = 'not_exist'
         if status == 'not_exist':
-            self.s3.create_bucket(Bucket=bucket)
+            self.s3.create_bucket(Bucket=bucket,
+                                  CreateBucketConfiguration={
+                                      'LocationConstraint': 'us-east-1'})
         else:
             raise RuntimeError("Could not connect to s3.")
 
@@ -105,7 +108,8 @@ class S3Storage(StorageInterface):
                     expectedScheme, uri))
         scheme = "s3"
         uri = uri[len(expectedScheme):]
-        bucket = uri
+        uriFields = uri.split('/')
+        bucket = uriFields.pop()
         return (scheme, bucket)
 
     def write(self, butlerLocation, obj):
@@ -113,10 +117,10 @@ class S3Storage(StorageInterface):
         ButlerLocation
 
         This file uses PosixStorage to write the object to a file on disk (that
-        is to say: serialize it). Then the file is uploaded to the swift
+        is to say: serialize it). Then the file is uploaded to the s3
         container. When we have better support for pluggable serializers,
         hopefully the first step of writing to disk can be skipped and the
-        object can be serialzied and streamed directly to the swift container.
+        object can be serialzied and streamed directly to the s3 container.
 
         Parameters
         ----------
@@ -128,7 +132,7 @@ class S3Storage(StorageInterface):
         locations = butlerLocation.getLocations()
         # Here the ButlerLocation is modified sligtly to write to a temporary
         # file via PosixStorage. (Then the temporary file is written to the
-        # swift container)
+        # s3 container)
         localFile = tempfile.NamedTemporaryFile()
         butlerLocation.locationList = [localFile.name]
         butlerLocation.storage = PosixStorage('/')
@@ -156,7 +160,7 @@ class S3Storage(StorageInterface):
         return obj
 
     def _getLocalFile(self, location):
-        """Implementation of getLocalFile that does not wrap the swift
+        """Implementation of getLocalFile that does not wrap the s3
         ClientException so that this function may be used by this class in
         various functions that want to handle the exception directly.
 
@@ -168,7 +172,7 @@ class S3Storage(StorageInterface):
 
         Raises
         ------
-        swift.ClientException
+        s3.ClientException
             Indicates an error downloading the object.
         """
         location = self.getFitsHeaderStrippedPath(location)[0]
