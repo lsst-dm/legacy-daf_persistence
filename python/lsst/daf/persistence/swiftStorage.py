@@ -195,10 +195,7 @@ class SwiftStorage(StorageInterface):
         butlerLocation.storage = PosixStorage('/')
         butlerLocation.storage.write(butlerLocation, obj)
         butlerLocation.locationList = swiftLocations
-        with open(localFile.name, 'rb') as f:
-            self._connection.put_object(
-                container=self._containerName, obj=swiftLocations[0],
-                contents=f, content_length=os.stat(localFile.name).st_size)
+        self._putFile(swiftLocations[0], localFile.name)
 
     def read(self, butlerLocation):
         """Read from a butlerLocation.
@@ -491,10 +488,28 @@ class SwiftStorage(StorageInterface):
         storage = SwiftStorage(loc)
         with tempfile.NamedTemporaryFile() as f:
             yaml.dump(cfg, f)
-            f.seek(0)
-            storage._connection.put_object(
-                container=storage._containerName, obj='repositoryCfg',
-                contents=f, content_length=os.stat(f.name).st_size)
+            f.flush()
+            storage._putFile('repositoryCfg', f.name)
+
+    def _putFile(self, objectName, fileName):
+        """Copy a local file to the object store container.
+
+        Parameters
+        ----------
+        objectName : string
+            The id of the object in the container.
+        fileName : string
+            The path to the local file to copy to the object store.
+
+        Returns
+        -------
+        None
+        """
+        with open(fileName) as f:
+            self._connection.put_object(container=self._containerName,
+                                        obj=objectName,
+                                        contents=f,
+                                        content_length=os.stat(f.name).st_size)
 
     @staticmethod
     def getMapperClass(root):
