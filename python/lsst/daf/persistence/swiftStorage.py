@@ -200,6 +200,13 @@ class SwiftStorage(StorageInterface):
     def read(self, butlerLocation):
         """Read from a butlerLocation.
 
+        This implementation downloads the file object from the swift container
+        to a temporary file and instantiates the object using
+        PosixStorage.read. The temporary file will be deleted when the handle
+        to temporary file is deleted, so the handle is monkey patched onto the
+        local file to keep the file from being deleted as long as the object
+        exists.
+
         Parameters
         ----------
         butlerLocation : ButlerLocation
@@ -214,6 +221,7 @@ class SwiftStorage(StorageInterface):
         butlerLocation.locationList = [localFile.name]
         butlerLocation.storage = PosixStorage('/')
         obj = butlerLocation.storage.read(butlerLocation)
+        obj.tempFileHandle = localFile
         return obj
 
     def _getLocalFile(self, location):
