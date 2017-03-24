@@ -24,12 +24,14 @@
 
 import os
 import unittest
+import gc
 import lsst.daf.persistence as dp
 import lsst.daf.persistence.test as dpTest
 from lsst.utils import getPackageDir
 import lsst.utils.tests
 import pickle
 import shutil
+import sqlite3
 import sys
 import uuid
 
@@ -68,6 +70,7 @@ class TestSwiftStorage(unittest.TestCase):
         self.uri2 = \
             "{}/{}".format(serverURI, self.container2Name)
         self.tearDown()
+        os.makedirs(TestSwiftStorage.testDir)
 
     def tearDown(self):
         for uri in (self.uri, self.uri2):
@@ -92,6 +95,51 @@ class TestSwiftStorage(unittest.TestCase):
         uri = "swift://nebula.ncsa.illinois.edu:5000/LSST/testContainer01"
         with self.assertRaises(ValueError):
             dp.SwiftStorage._parseURI(uri)
+
+    def testGetSqliteRegistry(self):
+        """Verify that an sqlite3 registry in the object store is downloaded
+        to a temp file that can be used to instantiate an SqliteRegistry."""
+        storage = dp.SwiftStorage(uri=self.uri)
+        # create a local registry sqlite3 database.
+        registryFilePath = os.path.join(TestSwiftStorage.testDir,
+                                        'registry.sqlite3')
+        conn = sqlite3.connect(registryFilePath)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE foo (val text)''')
+        c.execute("INSERT INTO foo VALUES ('myValue')")
+        conn.commit()
+        conn.close()
+        # put the database into the storage as 'registry.sqlite3'
+        storage._putFile('registry.sqlite3', registryFilePath)
+        # delete the local copy of the database, just to be sure.
+        os.remove(registryFilePath)
+        # download a local copy of the registry database from the storage
+        f = storage.getLocalFile('registry.sqlite3')
+        # and instantiate an sqlite3 registry with it.
+        registry = dp.Registry.create(f.name)
+        # Release the temporary file handle. The registry should have cached a
+        # copy of the handle to preserve it.
+        fname = f.name
+        del f
+        self.assertIsInstance(registry, dp.SqliteRegistry)
+        # check the value we insterted into the registry as a sanity check that
+        # the object was written and read successfully
+        vals = registry.executeQuery(returnFields=['val'],
+                                     joinClause=['foo'],
+                                     whereFields=None,
+                                     range=None,
+                                     values=[])
+        self.assertEqual(vals, [('myValue',)])
+        # check that the local file still exists
+        self.assertTrue(os.path.exists(fname))
+        # delete the registry, this releases its handle to the sqlite3 file
+        del registry
+        # also delete the swiftStorage because it keeps a handle to any
+        # downloaded files.
+        del storage
+        # run the garbage collector to be sure the temp file handle gets closed
+        gc.collect()
+        self.assertFalse(os.path.exists(fname))
 
     def testSwiftStorage(self):
         """Verify that SwiftStorage implements all the StorageInterface
