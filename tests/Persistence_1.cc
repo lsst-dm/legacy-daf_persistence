@@ -64,9 +64,9 @@ private:
 class MyFormatter : public dafPersist::Formatter {
 public:
     MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual dafBase::Persistable* read(dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual void update(dafBase::Persistable* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual dafBase::Persistable* read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual void update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, dafBase::Persistable* persistable);
 private:
     static dafPersist::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
@@ -86,7 +86,7 @@ dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy
 
 // Persistence for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     BOOST_CHECK_MESSAGE(persistable != 0, "Persisting null");
     BOOST_CHECK_MESSAGE(storage, "No Storage provided");
     long long testId = additionalData->get<long long>("visitId");
@@ -129,7 +129,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-dafBase::Persistable* MyFormatter::read(dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+dafBase::Persistable* MyFormatter::read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     MyPersistable* mp = new MyPersistable;
 
     long long testId = additionalData->get<long long>("visitId");
@@ -165,7 +165,7 @@ dafBase::Persistable* MyFormatter::read(dafPersist::StorageFormatter::Ptr storag
     return mp;
 }
 
-void MyFormatter::update(dafBase::Persistable* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     BOOST_FAIL("Shouldn't be updating");
 }
 
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
     {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
-        dafPersist::StorageFormatter::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getPersistStorage("BoostStorage", pathLoc));
         persist->persist(mp, storageList, additionalData);
     }
@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
     {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
-        dafPersist::StorageFormatter::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getPersistStorage("DbStorage", dbLoc));
         persist->persist(mp, storageList, additionalData);
     }
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
     {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
-        dafPersist::StorageFormatter::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getRetrieveStorage("BoostStorage", pathLoc));
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);
         BOOST_CHECK(pp != 0);
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
     {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
-        dafPersist::StorageFormatter::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getRetrieveStorage("DbStorage", dbLoc));
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);
         BOOST_CHECK(pp);
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
     {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
-        dafPersist::StorageFormatter::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getPersistStorage("DbTsvStorage", dbLoc));
         persist->persist(mp, storageList, additionalData);
     }
@@ -269,7 +269,7 @@ BOOST_AUTO_TEST_CASE(PersistenceTest) {
     {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
-        dafPersist::StorageFormatter::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getRetrieveStorage("DbTsvStorage", dbLoc));
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);
         BOOST_CHECK(pp);

@@ -52,7 +52,7 @@ namespace persistence {
 
 /** Constructor.
  */
-FitsStorage::FitsStorage(void) : StorageFormatter(typeid(*this)) {
+FitsStorage::FitsStorage(void) : FormatterStorage(typeid(*this)) {
 }
 
 /** Destructor.

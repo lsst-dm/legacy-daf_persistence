@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(PersistToBoostAndXML) {
     lsst::pex::policy::Policy::Ptr policyPtr(new lsst::pex::policy::Policy);
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policyPtr);
-    dafPersist::StorageFormatter::List storageList;
+    dafPersist::FormatterStorage::List storageList;
 
     dafPersist::LogicalLocation loc("tests/data/root.boost");
     storageList.push_back(persist->getPersistStorage("BoostStorage", loc));
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(PersistDifferentTypes) {
     lsst::pex::policy::Policy::Ptr policyPtr(new lsst::pex::policy::Policy);
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policyPtr);
-    dafPersist::StorageFormatter::List storageList;
+    dafPersist::FormatterStorage::List storageList;
 
     dafPersist::LogicalLocation loc("tests/data/foo.boost");
     dafPersist::LogicalLocation loc2("tests/data/foo2.boost");
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(PersistManyTypes) {
     dafPersist::LogicalLocation loc("tests/data/many.boost");
     dafPersist::LogicalLocation loc2("tests/data/many.xml");
 
-    dafPersist::StorageFormatter::List storageList;
+    dafPersist::FormatterStorage::List storageList;
     storageList.push_back(persist->getPersistStorage("BoostStorage", loc));
     persist->persist(*fooProp, storageList, additionalData);
 

@@ -51,7 +51,7 @@ namespace persistence {
 
 /** Constructor.
  */
-XmlStorage::XmlStorage(void) : StorageFormatter(typeid(*this)),
+XmlStorage::XmlStorage(void) : FormatterStorage(typeid(*this)),
     _ostream{}, _istream{}, _oarchive{}, _iarchive{} {
 }
 
@@ -62,7 +62,7 @@ XmlStorage::XmlStorage(void) : StorageFormatter(typeid(*this)),
 XmlStorage::~XmlStorage(void) {
 }
 
-/** Allow a Policy to be used to configure the StorageFormatter.
+/** Allow a Policy to be used to configure the FormatterStorage.
  * \param[in] policy
  */
 void XmlStorage::setPolicy(lsst::pex::policy::Policy::Ptr policy) {

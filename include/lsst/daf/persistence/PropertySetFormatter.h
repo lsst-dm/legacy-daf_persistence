@@ -44,7 +44,7 @@
 #include <lsst/daf/base/PropertySet.h>
 #include <lsst/daf/base/Persistable.h>
 #include <lsst/daf/persistence/Formatter.h>
-#include <lsst/daf/persistence/StorageFormatter.h>
+#include <lsst/daf/persistence/FormatterStorage.h>
 #include <lsst/pex/policy.h>
 
 namespace lsst {
@@ -60,14 +60,14 @@ public:
     virtual ~PropertySetFormatter(void);
 
     virtual void write(dafBase::Persistable const* persistable,
-        dafPersist::StorageFormatter::Ptr storage,
+        dafPersist::FormatterStorage::Ptr storage,
         dafBase::PropertySet::Ptr additionalData);
 
-    virtual dafBase::Persistable* read(dafPersist::StorageFormatter::Ptr storage,
+    virtual dafBase::Persistable* read(dafPersist::FormatterStorage::Ptr storage,
         dafBase::PropertySet::Ptr additionalData);
 
     virtual void update(dafBase::Persistable* persistable,
-        dafPersist::StorageFormatter::Ptr storage,
+        dafPersist::FormatterStorage::Ptr storage,
         dafBase::PropertySet::Ptr additionalData);
 
     template <class Archive>

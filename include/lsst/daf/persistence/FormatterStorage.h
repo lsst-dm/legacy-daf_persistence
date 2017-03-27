@@ -22,21 +22,21 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_MWI_PERSISTENCE_STORAGE_H
-#define LSST_MWI_PERSISTENCE_STORAGE_H
+#ifndef LSST_MWI_PERSISTENCE_FORMATTER_STORAGE_H
+#define LSST_MWI_PERSISTENCE_FORMATTER_STORAGE_H
 
 /** @file
   * @ingroup daf_persistence
   *
-  * @brief Interface for StorageFormatter abstract base class
+  * @brief Interface for FormatterStorage abstract base class
   *
   * @author Kian-Tat Lim (ktl@slac.stanford.edu)
   * @version $Revision$
   * @date $Date$
   */
 
-/** @class lsst::daf::persistence::StorageFormatter
-  * @brief Abstract base class for StorageFormatter implementations.
+/** @class lsst::daf::persistence::FormatterStorage
+  * @brief Abstract base class for FormatterStorage implementations.
   *
   * All subclasses of this base class must be added to StorageRegistry.
   *
@@ -57,14 +57,14 @@ namespace persistence {
 
 class LogicalLocation;
 
-class StorageFormatter : public lsst::daf::base::Citizen {
+class FormatterStorage : public lsst::daf::base::Citizen {
 public:
-    typedef std::shared_ptr<StorageFormatter> Ptr;
+    typedef std::shared_ptr<FormatterStorage> Ptr;
     typedef std::vector<Ptr> List;
 
-    virtual ~StorageFormatter(void);
+    virtual ~FormatterStorage(void);
 
-    /** Allow a Policy to be used to configure the StorageFormatter.
+    /** Allow a Policy to be used to configure the FormatterStorage.
       * @param[in] policy
       *
       * Should be called first, after construction.
@@ -98,14 +98,14 @@ public:
                               lsst::pex::policy::Policy::Ptr policy);
 
 protected:
-    explicit StorageFormatter(std::type_info const& type);
+    explicit FormatterStorage(std::type_info const& type);
 
     void verifyPathName(std::string const& pathName);
 
 private:
-    // Do not copy or assign a StorageFormatter instance.
-    StorageFormatter(StorageFormatter const&);
-    StorageFormatter& operator=(StorageFormatter const&);
+    // Do not copy or assign a FormatterStorage instance.
+    FormatterStorage(FormatterStorage const&);
+    FormatterStorage& operator=(FormatterStorage const&);
 };
 
 }}} // lsst::daf::persistence

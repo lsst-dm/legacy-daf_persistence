@@ -39,9 +39,9 @@
   * @brief Class implementing object persistence.
   *
   * This class persists and retrieves objects by calling Formatter subclasses
-  * with a sequence of StorageFormatter subclasses that have been configured with
+  * with a sequence of FormatterStorage subclasses that have been configured with
   * LogicalLocations.  This class handles all transaction semantics by starting
-  * per-StorageFormatter transactions, detecting failures, and causing the StorageFormatter
+  * per-FormatterStorage transactions, detecting failures, and causing the FormatterStorage
   * subclasses to roll back if necessary.
   *
   * @ingroup daf_persistence
@@ -56,7 +56,7 @@
 #include "lsst/daf/base/PropertySet.h"
 #include "lsst/daf/base/Persistable.h"
 #include "lsst/pex/policy.h"
-#include "lsst/daf/persistence/StorageFormatter.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 
 namespace lsst {
 namespace daf {
@@ -71,18 +71,18 @@ public:
 
     virtual ~Persistence(void);
 
-    virtual StorageFormatter::Ptr getPersistStorage(std::string const& storageType,
+    virtual FormatterStorage::Ptr getPersistStorage(std::string const& storageType,
                                                     LogicalLocation const& location);
-    virtual StorageFormatter::Ptr getRetrieveStorage(std::string const& storageType,
+    virtual FormatterStorage::Ptr getRetrieveStorage(std::string const& storageType,
                                                      LogicalLocation const& location);
     virtual void persist(
-        lsst::daf::base::Persistable const& persistable, StorageFormatter::List const& storageList,
+        lsst::daf::base::Persistable const& persistable, FormatterStorage::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
     virtual lsst::daf::base::Persistable::Ptr retrieve(
-        std::string const& persistableType, StorageFormatter::List const& storageList,
+        std::string const& persistableType, FormatterStorage::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
     virtual lsst::daf::base::Persistable* unsafeRetrieve(
-        std::string const& persistableType, StorageFormatter::List const& storageList,
+        std::string const& persistableType, FormatterStorage::List const& storageList,
         lsst::daf::base::PropertySet::Ptr additionalData);
 
     static Ptr getPersistence(lsst::pex::policy::Policy::Ptr policy);
@@ -96,7 +96,7 @@ private:
     Persistence(Persistence const&);
     Persistence& operator=(Persistence const&);
 
-    StorageFormatter::Ptr _getStorage(std::string const& storageType,
+    FormatterStorage::Ptr _getStorage(std::string const& storageType,
         LogicalLocation const& location, bool persist);
 
     lsst::pex::policy::Policy::Ptr _policy;

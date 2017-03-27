@@ -36,7 +36,7 @@
   */
 
 /** @class lsst::daf::persistence::StorageRegistry
-  * @brief Class to register StorageFormatter subclasses.
+  * @brief Class to register FormatterStorage subclasses.
   *
   * A registry so that subclasses can be looked up by name.
   *
@@ -47,7 +47,7 @@
 #include <string>
 
 // #include "lsst/daf/base/Citizen.h"
-#include "lsst/daf/persistence/StorageFormatter.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 
 namespace lsst {
 namespace daf {
@@ -56,7 +56,7 @@ namespace persistence {
 class StorageRegistry {
     // : private lsst::daf::base::Citizen
 public:
-    StorageFormatter::Ptr createInstance(std::string const& name);
+    FormatterStorage::Ptr createInstance(std::string const& name);
 
     static StorageRegistry& getRegistry(void);
 

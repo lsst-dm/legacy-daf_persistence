@@ -51,9 +51,9 @@ BOOST_AUTO_TEST_CASE(FitsStorageRetrieveTest) {
         dafPersist::Persistence::Ptr persist =
             dafPersist::Persistence::getPersistence(policy);
         BOOST_CHECK_NE(persist, dafPersist::Persistence::Ptr());
-        PTR(dafPersist::StorageFormatter) storage =
+        PTR(dafPersist::FormatterStorage) storage =
             persist->getRetrieveStorage("FitsStorage", pathLoc);
-        BOOST_CHECK_NE(storage, PTR(dafPersist::StorageFormatter)());
+        BOOST_CHECK_NE(storage, PTR(dafPersist::FormatterStorage)());
         dafPersist::FitsStorage* fits =
             dynamic_cast<dafPersist::FitsStorage*>(storage.get());
         dafPersist::FitsStorage* null = 0;
@@ -70,9 +70,9 @@ BOOST_AUTO_TEST_CASE(FitsStoragePersistTest) {
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policy);
     BOOST_CHECK_NE(persist, dafPersist::Persistence::Ptr());
-    PTR(dafPersist::StorageFormatter) storage =
+    PTR(dafPersist::FormatterStorage) storage =
         persist->getPersistStorage("FitsStorage", pathLoc);
-    BOOST_CHECK_NE(storage, PTR(dafPersist::StorageFormatter)());
+    BOOST_CHECK_NE(storage, PTR(dafPersist::FormatterStorage)());
     dafPersist::FitsStorage* fits =
         dynamic_cast<dafPersist::FitsStorage*>(storage.get());
     dafPersist::FitsStorage* null = 0;
