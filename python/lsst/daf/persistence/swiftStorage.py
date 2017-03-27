@@ -25,6 +25,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 import copy
+import fnmatch
 import os
 import tempfile
 import time
@@ -364,7 +365,6 @@ class SwiftStorage(StorageInterface):
         except self.swift.ClientException as err:
             raise RuntimeError("Container \'{0}\' not found: {1}".format(
                 self._containerName, err))
-        import fnmatch
         locations = fnmatch.filter(locations, strippedPath)
         locations = [location + pathStripped for location in locations]
         return locations if locations else None
