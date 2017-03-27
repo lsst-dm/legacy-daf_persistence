@@ -69,7 +69,7 @@ class StorageInterface:
 
     @abstractmethod
     def getLocalFile(self, path):
-        """Get the path to a local copy of the file, downloading it to a
+        """Get a handle to a local copy of the file, downloading it to a
         temporary if needed.
 
         Parameters
