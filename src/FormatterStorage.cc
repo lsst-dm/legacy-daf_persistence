@@ -24,7 +24,7 @@
 
 
 /** \file
- * \brief Implementation of StorageFormatter abstract base class
+ * \brief Implementation of FormatterStorage abstract base class
  *
  * \author $Author$
  * \version $Revision$
@@ -40,7 +40,7 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/daf/persistence/StorageFormatter.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 
 #include <cerrno>
 #include <cstring>
@@ -57,25 +57,25 @@ namespace persistence {
 /** Constructor.
  * \param[in] type typeid() of subclass
  */
-StorageFormatter::StorageFormatter(std::type_info const& type) : lsst::daf::base::Citizen(type) {
+FormatterStorage::FormatterStorage(std::type_info const& type) : lsst::daf::base::Citizen(type) {
 }
 
 /** Minimal destructor
   */
-StorageFormatter::~StorageFormatter(void) {
+FormatterStorage::~FormatterStorage(void) {
 }
 
-/** Create and configure a StorageFormatter subclass instance.
+/** Create and configure a FormatterStorage subclass instance.
  * \param[in] name Name of subclass
  * \param[in] location Location to persist to or retrieve from
  * \param[in] persist True if persisting, false if retrieving
- * \param[in] policy Policy used to configure the StorageFormatter
- * \return Shared pointer to StorageFormatter subclass instance
+ * \param[in] policy Policy used to configure the FormatterStorage
+ * \return Shared pointer to FormatterStorage subclass instance
  */
-StorageFormatter::Ptr StorageFormatter::createInstance(
+FormatterStorage::Ptr FormatterStorage::createInstance(
     std::string const& name, LogicalLocation const& location, bool persist,
     lsst::pex::policy::Policy::Ptr policy) {
-    StorageFormatter::Ptr storage = StorageRegistry::getRegistry().createInstance(name);
+    FormatterStorage::Ptr storage = StorageRegistry::getRegistry().createInstance(name);
     storage->setPolicy(policy);
     if (persist) {
         storage->setPersistLocation(location);
@@ -90,7 +90,7 @@ StorageFormatter::Ptr StorageFormatter::createInstance(
  * necessary.
  * \param[in] name Pathname to file to be created
  */
-void StorageFormatter::verifyPathName(std::string const& name) {
+void FormatterStorage::verifyPathName(std::string const& name) {
     // Get the directory by stripping off anything after the last slash.
     std::string::size_type pos = name.find_last_of('/');
     if (pos == std::string::npos) return;

@@ -54,7 +54,7 @@ namespace persistence {
 
 /** Constructor.
  */
-BoostStorage::BoostStorage(void) : StorageFormatter(typeid(*this)),
+BoostStorage::BoostStorage(void) : FormatterStorage(typeid(*this)),
     _ostream{}, _istream{}, _oarchive{}, _iarchive{} {
 }
 

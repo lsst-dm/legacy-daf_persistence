@@ -54,14 +54,14 @@ namespace persistence {
 
 /** Constructor.
 */
-DbStorage::DbStorage(void) : StorageFormatter(typeid(*this)), _impl(new DbStorageImpl) {
+DbStorage::DbStorage(void) : FormatterStorage(typeid(*this)), _impl(new DbStorageImpl) {
 }
 
 /** Constructor with subclass type.
  * \param[in] type typeid() of subclass
  */
 DbStorage::DbStorage(std::type_info const& type) :
-    StorageFormatter(type), _impl(new DbStorageImpl) {
+    FormatterStorage(type), _impl(new DbStorageImpl) {
 }
 
 /** Minimal destructor.

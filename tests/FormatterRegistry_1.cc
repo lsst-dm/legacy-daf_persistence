@@ -49,9 +49,9 @@ public:
     MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
     // Normally, the following functions would do something.  For testing,
     // they do nothing.
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
-    virtual dafBase::Persistable* read(dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
-    virtual void update(dafBase::Persistable* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual dafBase::Persistable* read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 private:
     static dafPersist::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
     static dafPersist::FormatterRegistration registration;
@@ -70,9 +70,9 @@ dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy
 class YourFormatter : public dafPersist::Formatter {
 public:
     YourFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
-    virtual dafBase::Persistable* read(dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
-    virtual void update(dafBase::Persistable* persistable, dafPersist::StorageFormatter::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual dafBase::Persistable* read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 };
 
 // External factory function for YourFormatters.  This would normally be a

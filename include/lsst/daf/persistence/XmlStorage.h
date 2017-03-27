@@ -46,7 +46,7 @@
 #include <fstream>
 #include <memory>
 
-#include "lsst/daf/persistence/StorageFormatter.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
@@ -55,7 +55,7 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
-class XmlStorage : public StorageFormatter {
+class XmlStorage : public FormatterStorage {
 public:
     typedef std::shared_ptr<XmlStorage> Ptr;
 

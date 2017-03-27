@@ -43,13 +43,13 @@
   * @ingroup daf_persistence
   */
 
-#include "lsst/daf/persistence/StorageFormatter.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 
 namespace lsst {
 namespace daf {
 namespace persistence {
 
-class FitsStorage : public StorageFormatter {
+class FitsStorage : public FormatterStorage {
 public:
     typedef std::shared_ptr<FitsStorage> Ptr;
 

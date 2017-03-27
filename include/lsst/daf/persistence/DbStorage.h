@@ -46,7 +46,7 @@
   */
 
 
-#include "lsst/daf/persistence/StorageFormatter.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 
 #include <string>
 #include <vector>
@@ -60,7 +60,7 @@ namespace persistence {
 class DbStorageImpl;
 class DbStorageLocation;
 
-class DbStorage : public StorageFormatter {
+class DbStorage : public FormatterStorage {
 public:
     typedef std::shared_ptr<DbStorage> Ptr;
 
