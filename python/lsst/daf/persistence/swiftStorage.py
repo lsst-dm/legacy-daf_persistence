@@ -255,8 +255,8 @@ class SwiftStorage(StorageInterface):
         return localFile
 
     def getLocalFile(self, location):
-        """TODO this is changed to return a handle to a local temproary file.
-        If we keep it there's a few places that will have to be modified.
+        """Get a handle to a local copy of the file, downloading it to a
+        temporary if needed.
 
         As it is expected the local file will be read (not written to), the
         current position in the file is set to 0 before it is returned.

@@ -488,7 +488,7 @@ class PosixStorage(StorageInterface):
         shutil.copy(os.path.join(self.root, fromLocation), os.path.join(self.root, toLocation))
 
     def getLocalFile(self, path):
-        """Get the path to a local copy of the file, downloading it to a
+        """Get a handle to a local copy of the file, downloading it to a
         temporary if needed.
 
         Parameters
