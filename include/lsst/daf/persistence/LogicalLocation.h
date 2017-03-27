@@ -39,7 +39,7 @@
   * @brief Class for logical location of a persisted Persistable instance.
   *
   * Implemented as a minimal string representing a pathname or a database
-  * connection string.  Interpreted by StorageFormatter subclasses.
+  * connection string.  Interpreted by FormatterStorage subclasses.
   *
   * @ingroup daf_persistence
   */

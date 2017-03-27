@@ -46,7 +46,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 // a Persistable, in them.
 #include <stdexcept>
 
-// All StorageFormatter subclasses must be included here.
+// All FormatterStorage subclasses must be included here.
 
 #include "lsst/daf/persistence/BoostStorage.h"
 #include "lsst/daf/persistence/DbStorage.h"
@@ -70,30 +70,30 @@ StorageRegistry::StorageRegistry(void) {
 StorageRegistry::~StorageRegistry(void) {
 }
 
-/** Create a StorageFormatter subclass instance by name.
+/** Create a FormatterStorage subclass instance by name.
  * \param[in] name Name of subclass
  * \return Shared pointer to subclass instance
  *
- * All StorageFormatter subclasses must be listed here.
+ * All FormatterStorage subclasses must be listed here.
  * Implemented as code; could be a lookup in a data structure.
  */
-StorageFormatter::Ptr StorageRegistry::createInstance(std::string const& name) {
+FormatterStorage::Ptr StorageRegistry::createInstance(std::string const& name) {
     if (name == "BoostStorage") {
-        return StorageFormatter::Ptr(new BoostStorage);
+        return FormatterStorage::Ptr(new BoostStorage);
     }
     else if (name == "DbStorage") {
-        return StorageFormatter::Ptr(new DbStorage);
+        return FormatterStorage::Ptr(new DbStorage);
     }
     else if (name == "DbTsvStorage") {
-        return StorageFormatter::Ptr(new DbTsvStorage);
+        return FormatterStorage::Ptr(new DbTsvStorage);
     }
     else if (name == "FitsStorage") {
-        return StorageFormatter::Ptr(new FitsStorage);
+        return FormatterStorage::Ptr(new FitsStorage);
     }
     else if (name == "XmlStorage") {
-        return StorageFormatter::Ptr(new XmlStorage);
+        return FormatterStorage::Ptr(new XmlStorage);
     }
-    else throw std::invalid_argument("Invalid StorageFormatter type: " + name);
+    else throw std::invalid_argument("Invalid FormatterStorage type: " + name);
 }
 
 /** Return a reference to a subclass registry.

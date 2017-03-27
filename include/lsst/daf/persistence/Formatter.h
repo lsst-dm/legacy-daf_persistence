@@ -39,7 +39,7 @@
   * @brief Abstract base class for all formatters.
   *
   * Formatters map Persistable subclasses into an appropriate form for output
-  * to StorageFormatter subclasses and vice versa upon retrieval.  They also may use an
+  * to FormatterStorage subclasses and vice versa upon retrieval.  They also may use an
   * additional piece of data to select the appropriate data for retrieval.
   *
   * Subclasses of Formatter must register themselves by creating a static
@@ -59,7 +59,7 @@
 
 #include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/PropertySet.h"
-#include "lsst/daf/persistence/StorageFormatter.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 #include "lsst/pex/policy.h"
 
 namespace lsst {
@@ -87,35 +87,35 @@ public:
 
     virtual ~Formatter(void);
 
-    /** Write a Persistable instance to a StorageFormatter instance.
+    /** Write a Persistable instance to a FormatterStorage instance.
       * @param[in] persistable Pointer to the Persistable instance.
-      * @param[in] storage Shared pointer to the StorageFormatter instance.
+      * @param[in] storage Shared pointer to the FormatterStorage instance.
       * @param[in] additionalData Additional data used to find the proper
-      * place to put the instance into the StorageFormatter.
+      * place to put the instance into the FormatterStorage.
       */
     virtual void write(
-        lsst::daf::base::Persistable const* persistable, StorageFormatter::Ptr storage,
+        lsst::daf::base::Persistable const* persistable, FormatterStorage::Ptr storage,
         lsst::daf::base::PropertySet::Ptr additionalData) = 0;
 
-    /** Read a Persistable instance from a StorageFormatter instance.
-      * @param[in] storage Pointer to the StorageFormatter instance.
+    /** Read a Persistable instance from a FormatterStorage instance.
+      * @param[in] storage Pointer to the FormatterStorage instance.
       * @param[in] additionalData Additional data used to find the proper
-      * instance within the StorageFormatter.
+      * instance within the FormatterStorage.
       * @return Shared pointer to the new Persistable instance.
       */
     virtual lsst::daf::base::Persistable* read(
-        StorageFormatter::Ptr storage,
+        FormatterStorage::Ptr storage,
         lsst::daf::base::PropertySet::Ptr additionalData) = 0;
 
     /** Update an existing Persistable instance with information from
-      * an additional StorageFormatter instance.
+      * an additional FormatterStorage instance.
       * @param[in,out] persistable Pointer to the Persistable instance.
-      * @param[in] storage Shared pointer to the additional StorageFormatter instance.
+      * @param[in] storage Shared pointer to the additional FormatterStorage instance.
       * @param[in] additionalData Additional data used to find the proper
-      * instance within the StorageFormatter.
+      * instance within the FormatterStorage.
       */
     virtual void update(
-        lsst::daf::base::Persistable* persistable, StorageFormatter::Ptr storage,
+        lsst::daf::base::Persistable* persistable, FormatterStorage::Ptr storage,
         lsst::daf::base::PropertySet::Ptr additionalData) = 0;
 
     static Formatter::Ptr lookupFormatter(
