@@ -502,10 +502,13 @@ class PosixStorage(StorageInterface):
         of the returned object.
         """
         p = os.path.join(self.root, path)
-        if os.path.exists(p):
+        try:
             return open(p)
-        else:
-            return None
+        except IOError as e:
+            if e.errno == 2:  # 'No such file or directory'
+                return None
+            else:
+                raise e
 
     def instanceSearch(self, path):
         """Search for the given path in this storage instance.
