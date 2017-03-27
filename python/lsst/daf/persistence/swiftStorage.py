@@ -456,12 +456,10 @@ class SwiftStorage(StorageInterface):
             # Assuming the file does not exist, not some other kind of error
             # (how can we do more precise handling of this expcetion?)
             return None
-        with open(localFile.name, mode='r') as f:
-            repositoryCfg = yaml.load(f)
-            if repositoryCfg.root is None:
-                repositoryCfg.root = storage._uri
-            return repositoryCfg
-        return None
+        repositoryCfg = yaml.load(localFile)
+        if repositoryCfg.root is None:
+            repositoryCfg.root = storage._uri
+        return repositoryCfg
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
