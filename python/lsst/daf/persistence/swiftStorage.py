@@ -222,7 +222,6 @@ class SwiftStorage(StorageInterface):
         butlerLocation.locationList = [localFile.name]
         butlerLocation.storage = PosixStorage('/')
         obj = butlerLocation.storage.read(butlerLocation)
-        obj.tempFileHandle = localFile
         return obj
 
     def _getLocalFile(self, location):
