@@ -132,7 +132,7 @@ class TestGetLocalFile(unittest.TestCase):
     def testAbsolutePath(self):
         """Tests that GetLocalFile returns a file when it exists and returns
         None when it does not exist."""
-        storage = dp.PosixStorage(TestGetLocalFile.testDir)
+        storage = dp.PosixStorage(TestGetLocalFile.testDir, create=True)
         self.assertIsNone(storage.getLocalFile('foo.txt'))
         f = open(os.path.join(TestGetLocalFile.testDir, 'foo.txt'), 'w')
         f.write('foobarbaz')

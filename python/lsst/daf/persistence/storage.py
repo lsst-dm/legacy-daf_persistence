@@ -23,11 +23,11 @@
 #
 from __future__ import absolute_import
 
-from future import standard_library
-standard_library.install_aliases()
 from builtins import object
-
+from future import standard_library
 import urllib.parse
+from . import NoRepositroyAtRoot
+standard_library.install_aliases()
 
 
 class Storage:
@@ -127,8 +127,8 @@ class Storage:
         return ret
 
     @staticmethod
-    def makeFromURI(uri):
-        '''Instantiate a storage sublcass from a URI.
+    def makeFromURI(uri, create=True):
+        '''Instantiate a StorageInterface sublcass from a URI.
 
         .. warning::
 
@@ -140,16 +140,30 @@ class Storage:
         ----------
         uri : string
             The uri to the root location of a repository.
+        create : bool, optional
+            If True The StorageInterface subclass should create a new
+            repository at the root location. If False then a new repository
+            will not be created.
 
         Returns
         -------
-        A Storage subclass instance.
+        A Storage subclass instance, or if create is False and a repository
+        does not exist at the root location then returns None.
+
+        Raises
+        ------
+        RuntimeError
+            When a StorageInterface subclass does not exist for the scheme
+            indicated by the uri.
         '''
         ret = None
         parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             theClass = Storage.storages[parseRes.scheme]
-            ret = theClass(uri=uri)
+            try:
+                ret = theClass(uri=uri, create=create)
+            except NoRepositroyAtRoot:
+                pass
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret
