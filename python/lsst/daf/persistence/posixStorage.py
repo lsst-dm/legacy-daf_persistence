@@ -34,7 +34,8 @@ import shutil
 import yaml
 
 from . import (LogicalLocation, Persistence, Policy, StorageList,
-               StorageInterface, Storage, safeFileIo, ButlerLocation)
+               StorageInterface, Storage, safeFileIo, ButlerLocation,
+               NoRepositroyAtRoot)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
@@ -43,15 +44,29 @@ standard_library.install_aliases()
 
 
 class PosixStorage(StorageInterface):
+    """Defines the interface for a storage location on the local filesystem.
 
-    def __init__(self, uri):
-        """Initializer
+    Parameters
+    ----------
+    uri : string
+        URI or path that is used as the storage location.
+    create : bool
+        If True a new repository will be created at the root location if it
+        does not exist. If False then a new repository will not be created.
 
-        :return:
-        """
+    Raises
+    ------
+    NoRepositroyAtRoot
+        If create is False and a repository does not exist at the root
+        specified by uri then NoRepositroyAtRoot is raised.
+    """
+
+    def __init__(self, uri, create):
         self.log = Log.getLogger("daf.persistence.butler")
         self.root = self._pathFromURI(uri)
         if self.root and not os.path.exists(self.root):
+            if not create:
+                raise NoRepositroyAtRoot("No repository at {}".format(uri))
             safeMakeDir(self.root)
 
         # Always use an empty Persistence policy until we can get rid of it

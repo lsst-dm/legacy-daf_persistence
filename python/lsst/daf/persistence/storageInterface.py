@@ -24,19 +24,31 @@
 from abc import ABCMeta, abstractmethod
 
 
+class NoRepositroyAtRoot(RuntimeError):
+    pass
+
+
 class StorageInterface:
     """Defines the interface for a connection to a Storage location.
-
-    Init will create the storage location if it does not exist.
 
     Parameters
     ----------
     uri : string
         URI or path that is used as the storage location.
+    create : bool
+        If True The StorageInterface subclass should create a new
+        repository at the root location. If False then a new repository
+        will not be created.
+
+    Raises
+    ------
+    NoRepositroyAtRoot
+        If create is False and a repository does not exist at the root
+        specified by uri then NoRepositroyAtRoot is raised.
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, uri):
+    def __init__(self, uri, create):
         """initialzer"""
         pass
 
