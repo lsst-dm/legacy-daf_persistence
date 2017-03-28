@@ -29,6 +29,7 @@ StorageList = list
 from .logicalLocation import *
 from .persistence import *
 from .formatterStorage import *
+from .storageInterface import *
 from .storage import *
 from .dbAuth import *
 from .dbStorage import *
@@ -45,7 +46,6 @@ from .butlerLocation import *
 from .readProxy import *
 from .butlerSubset import *
 from .access import *
-from .storageInterface import *
 from .repositoryCfg import *
 from .posixStorage import *
 from .swiftStorage import *

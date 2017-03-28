@@ -31,7 +31,8 @@ import tempfile
 import time
 import yaml
 
-from . import Storage, StorageInterface, PosixStorage, ButlerLocation
+from . import Storage, StorageInterface, PosixStorage, ButlerLocation, \
+    NoRepositroyAtRoot
 from lsst.log import Log
 
 
@@ -44,14 +45,6 @@ class SwiftStorage(StorageInterface):
     SWIFT_PASSWORD : string
         The password to use when authorizing the connection.
 
-    Parameters
-    ----------
-    uri : string
-        A URI to connect to a swift storage location. The form of the URI is
-        `swift://[URL without 'http://']/[Object API Version]/[tenant name (account)]/[container]`
-        For example:
-        `swift://nebula.ncsa.illinois.edu:5000/v2.0/lsst/my_container`
-
     Downloads blobs from storage to a file, and uses PosixStorage to load that
     file into an object. Handles to files are cached (this is effectively
     necessary for e.g. iterating over fits headers) by location in
@@ -59,8 +52,25 @@ class SwiftStorage(StorageInterface):
     directory to grow too large it may work to modify this to keep only the
     most recently accessed file, which would still support iterating over a
     single file's fits headers.
+
+    Parameters
+    ----------
+    uri : string
+        A URI to connect to a swift storage location. The form of the URI is
+        `swift://[URL without 'http://']/[Object API Version]/[tenant name (account)]/[container]`
+        For example:
+        `swift://nebula.ncsa.illinois.edu:5000/v2.0/lsst/my_container`
+    create : bool
+        If True a new repository will be created at the root location if it
+        does not exist. If False then a new repository will not be created.
+
+    Raises
+    ------
+    NoRepositroyAtRoot
+        If create is False and a repository does not exist at the root
+        specified by uri then NoRepositroyAtRoot is raised.
     """
-    def __init__(self, uri):
+    def __init__(self, uri, create):
         # late import allows systems wihtout swiftclient to import this but not
         # fail as long as they don't try to use it.
         import swiftclient
@@ -78,13 +88,16 @@ class SwiftStorage(StorageInterface):
 
         self.fileCache = {}  # (location, file handle)
 
-        # Creating a new container is an idempotent operation: if the container
-        # already exists it is a no-operation.
-        try:
-            self._connection.put_container(self._containerName)
-        except self.swift.ClientException:
-            raise RuntimeError("Connection to {} tenant '{}' failed.".format(
-                self._url, self._tenantName))
+        if not self.containerExists():
+            if not create:
+                raise NoRepositroyAtRoot("No repository at {}".format(uri))
+            else:
+                try:
+                    self._connection.put_container(self._containerName)
+                except self.swift.ClientException:
+                    raise RuntimeError(
+                        "Connection to {} tenant '{}' failed.".format(
+                            self._url, self._tenantName))
 
     @staticmethod
     def _parseURI(uri):
@@ -193,7 +206,7 @@ class SwiftStorage(StorageInterface):
         # swift container)
         localFile = tempfile.NamedTemporaryFile()
         butlerLocation.locationList = [localFile.name]
-        butlerLocation.storage = PosixStorage('/')
+        butlerLocation.storage = PosixStorage('/', create=False)
         butlerLocation.storage.write(butlerLocation, obj)
         butlerLocation.locationList = swiftLocations
         self._putFile(swiftLocations[0], localFile.name)
@@ -220,7 +233,7 @@ class SwiftStorage(StorageInterface):
         """
         localFile = self.getLocalFile(butlerLocation.getLocations()[0])
         butlerLocation.locationList = [localFile.name]
-        butlerLocation.storage = PosixStorage('/')
+        butlerLocation.storage = PosixStorage('/', create=False)
         obj = butlerLocation.storage.read(butlerLocation)
         return obj
 
@@ -392,8 +405,8 @@ class SwiftStorage(StorageInterface):
         string or None
             The location that was found, or None if no location was found.
         """
-        storage = SwiftStorage(uri)
-        return storage.instanceSearch(path)
+        storage = SwiftStorage(uri, create=False)
+        return storage.instanceSearch(path) if storage else None
 
     def copyFile(self, fromLocation, toLocation):
         """Copy a file from one location to another on the local filesystem.
@@ -448,7 +461,10 @@ class SwiftStorage(StorageInterface):
         A RepositoryCfg instance or None
         """
         import swiftclient as swift
-        storage = SwiftStorage(uri)
+        try:
+            storage = SwiftStorage(uri, create=False)
+        except NoRepositroyAtRoot:
+            return None
         try:
             localFile = storage._getLocalFile('repositoryCfg')
         except swift.ClientException:
@@ -490,7 +506,7 @@ class SwiftStorage(StorageInterface):
             cfg = copy.copy(cfg)
             loc = cfg.root
             cfg.root = None
-        storage = SwiftStorage(loc)
+        storage = SwiftStorage(loc, create=False)
         with tempfile.NamedTemporaryFile() as f:
             yaml.dump(cfg, f)
             f.flush()
