@@ -74,7 +74,10 @@ class Registry(object):
         #     return CalibRegistry(location)
 
         # look for an sqlite3 registry
-        if haveSqlite3 and re.match(r'.*\.sqlite3', location):
+        if re.match(r'.*\.sqlite3', location):
+            if not haveSqlite3:
+                raise RuntimeError("sqlite3 registry specified (%s), but unable to import sqlite3 module" %
+                                   (location,))
             registry = SqliteRegistry(location)
             if registry.conn is None:
                 return None
