@@ -88,7 +88,7 @@ class Registry(object):
         # return FsRegistry(location)
 
         # next try to create a PosixRegistry
-        if os.path.exists(location):
+        if os.path.isdir(location):
             return PosixRegistry(root=location)
 
         raise RuntimeError("Unable to create registry using location: " + location)
