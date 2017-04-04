@@ -391,7 +391,8 @@ class PosixStorage(Storage):
             elif storageName == "FitsCatalogStorage":
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
-                hdu = additionalData.getInt("hdu", 0)
+                INT_MIN = -(1 << 31)
+                hdu = additionalData.getInt("hdu", INT_MIN)
                 flags = additionalData.getInt("flags", 0)
                 finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
             elif storageName == "ConfigStorage":
