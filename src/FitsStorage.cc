@@ -71,7 +71,7 @@ void FitsStorage::setPolicy(lsst::pex::policy::Policy::Ptr policy) {
  */
 void FitsStorage::setPersistLocation(LogicalLocation const& location) {
     _path = location.locString();
-    _hdu = 0;
+    _hdu = INT_MIN;
     verifyPathName(_path);
 }
 
@@ -83,11 +83,10 @@ void FitsStorage::setRetrieveLocation(LogicalLocation const& location) {
     _path = location.locString();
     size_t loc = _path.find_last_of('[');
     if (loc == std::string::npos) {
-        _hdu = 0;
+        _hdu = INT_MIN;
     }
     else {
-        // HDUs for setHdu() are off by one from bracket extensions.
-        _hdu = strtol(_path.substr(loc + 1).c_str(), 0, 10) + 1;
+        _hdu = strtol(_path.substr(loc + 1).c_str(), 0, 10);
     }
 }
 

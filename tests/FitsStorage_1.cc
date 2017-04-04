@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(FitsStorageRetrieveTest) {
         dafPersist::FitsStorage* null = 0;
         BOOST_CHECK_NE(fits, null);
         BOOST_CHECK_EQUAL(fits->getPath(), loc);
-        BOOST_CHECK_EQUAL(fits->getHdu(), i + 1);
+        BOOST_CHECK_EQUAL(fits->getHdu(), i);
     }
 }
 
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(FitsStoragePersistTest) {
     BOOST_CHECK_NE(fits, null);
     BOOST_CHECK_EQUAL(fits->getPath(), "tests/data/mef.fits[2]");
     // Persistence ignores HDU
-    BOOST_CHECK_EQUAL(fits->getHdu(), 0);
+    BOOST_CHECK_EQUAL(fits->getHdu(), INT_MIN);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
