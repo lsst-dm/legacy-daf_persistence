@@ -833,6 +833,67 @@ class TestParentRepository(unittest.TestCase):
         self.assertEqual(tables, [('repoB', )])
 
 
+class TestParentPaths(unittest.TestCase):
+    """A test to verify internal conversion to & from absolute & relative paths
+    works properly."""
+
+    testDir = os.path.join(ROOT, 'TestParentPaths')
+    tempDirFolder = '/tmp/TestParentPaths'
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+        if os.path.exists(self.tempDirFolder):
+            shutil.rmtree(self.tempDirFolder)
+
+    def testReposThatSymlinkToAnotherRoot(self):
+        """Tests repos that use a symlink to refer to a root in another
+        location."""
+        os.makedirs(TestParentPaths.testDir)
+        os.makedirs(TestParentPaths.tempDirFolder)
+        # name a repo directory 'a'
+        repoADir = os.path.join(TestParentPaths.testDir, 'a')
+        # create a symlink that does from the testDir to the tmp dir repos
+        # folder
+        os.symlink(self.tempDirFolder,
+                   os.path.join(TestParentPaths.testDir, 'repos'))
+        # name a repo 'b' that goes in the symlinked target in the tmp folder.
+        repoBDir = os.path.join(TestParentPaths.testDir, 'repos', 'b')
+        # create a repo (via a butler) at 'a'. Put a test object in it and then
+        # delete the butler.
+        butler = dp.Butler(outputs={'root': repoADir,
+                                    'mapper': MapperForTestWriting})
+        objA = tstObj('abc')
+        butler.put(objA, 'foo', {'val': 1})
+        del butler
+        # create a repo (via a butler) at 'b' that ends up in the symlinked
+        # in the tmp folder.
+        butler = dp.Butler(inputs=repoADir,
+                           outputs=repoBDir)
+        # get A from the butler and verify it
+        self.assertEqual(butler.get('foo', {'val': 1}), objA)
+        objB = tstObj('bcd')
+        butler.put(objB, 'foo', {'val': 2})
+        del butler
+
+        butler = dp.Butler(repoBDir)
+        self.assertEqual(butler.get('foo', {'val': 1}), objA)
+        self.assertEqual(butler.get('foo', {'val': 2}), objB)
+
+
+
+        # objB = tstObj('bcd')
+        # butler.put(objB, 'foo', {'val': 2})
+        # butler = dp.Butler(inputs=repoBDir)
+        # reloadedObjA = butler.get('foo', {'val': 1})
+        # self.assertEqual(reloadedObjA, objA)
+
+        # butler = dp.Butler(inputs=repoBDir)
+        # import pdb; pdb.set_trace()
+        # self.assertEqual(butler.get('foo', {'val': 2}), objB)
+
+
+
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
 
