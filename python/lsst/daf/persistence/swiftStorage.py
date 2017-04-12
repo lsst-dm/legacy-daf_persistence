@@ -32,7 +32,7 @@ import time
 import yaml
 
 from . import Storage, StorageInterface, PosixStorage, ButlerLocation, \
-    NoRepositroyAtRoot
+    NoRepositoryAtRoot
 from lsst.log import Log
 
 
@@ -66,9 +66,9 @@ class SwiftStorage(StorageInterface):
 
     Raises
     ------
-    NoRepositroyAtRoot
+    NoRepositoryAtRoot
         If create is False and a repository does not exist at the root
-        specified by uri then NoRepositroyAtRoot is raised.
+        specified by uri then NoRepositoryAtRoot is raised.
     """
     def __init__(self, uri, create):
         # late import allows systems wihtout swiftclient to import this but not
@@ -90,7 +90,7 @@ class SwiftStorage(StorageInterface):
 
         if not self.containerExists():
             if not create:
-                raise NoRepositroyAtRoot("No repository at {}".format(uri))
+                raise NoRepositoryAtRoot("No repository at {}".format(uri))
             else:
                 try:
                     self._connection.put_container(self._containerName)
@@ -463,7 +463,7 @@ class SwiftStorage(StorageInterface):
         import swiftclient as swift
         try:
             storage = SwiftStorage(uri, create=False)
-        except NoRepositroyAtRoot:
+        except NoRepositoryAtRoot:
             return None
         try:
             localFile = storage._getLocalFile('repositoryCfg')

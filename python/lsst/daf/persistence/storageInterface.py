@@ -24,7 +24,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class NoRepositroyAtRoot(RuntimeError):
+class NoRepositoryAtRoot(RuntimeError):
     pass
 
 
@@ -42,9 +42,9 @@ class StorageInterface:
 
     Raises
     ------
-    NoRepositroyAtRoot
+    NoRepositoryAtRoot
         If create is False and a repository does not exist at the root
-        specified by uri then NoRepositroyAtRoot is raised.
+        specified by uri then NoRepositoryAtRoot is raised.
     """
     __metaclass__ = ABCMeta
 

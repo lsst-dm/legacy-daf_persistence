@@ -26,7 +26,7 @@ from __future__ import absolute_import
 from builtins import object
 from future import standard_library
 import urllib.parse
-from . import NoRepositroyAtRoot
+from . import NoRepositoryAtRoot
 standard_library.install_aliases()
 
 
@@ -162,7 +162,7 @@ class Storage:
             theClass = Storage.storages[parseRes.scheme]
             try:
                 ret = theClass(uri=uri, create=create)
-            except NoRepositroyAtRoot:
+            except NoRepositoryAtRoot:
                 pass
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
