@@ -1116,8 +1116,13 @@ class Butler(object):
         if not results:
             self.log.debug("Starting read from %s", location)
             results = location.repository.read(location)
-            if len(results) == 1:
-                results = results[0]
+            if isinstance(results, list) or isinstance(results, tuple):
+                # We must check if results is a list or tuple because some
+                # other object types that should be returned unmodified may
+                # have list-like behaviors (i.e. they implement __len__ but are
+                # not a sequence container). For example, afw BaseCatalog.
+                if len(results) == 1:
+                    results = results[0]
             self.log.debug("Ending read from %s", location)
             try:
                 self.objectCache[locationHash] = results
