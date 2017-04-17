@@ -470,6 +470,7 @@ class Butler(object):
         # Get the RepositoryCfg, if it exists:
         cfg = self.storage.getRepositoryCfg(args.cfgRoot)
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
+        parents = parentListWithoutThis(args.cfgRoot, instanceParents)
         if cfg:
             if not cfg.matchesArgs(args):
                 raise RuntimeError("Persisted repo cfg does not match input args. cfg:%s, args:%s"
@@ -477,7 +478,6 @@ class Butler(object):
                 # need to fix intermediate cfgs
                 # storedCfg = cfg
                 # cfg = RepositoryCfg.makeFromArgs(args)
-            parents = parentListWithoutThis(args.cfgRoot, instanceParents)
             if inout == 'out' and cfg.parents != parents:
                 raise RuntimeError(
                     "Persisted repo cfg parents do not match butler parents: cfg:%s, parents:%s"
@@ -522,7 +522,8 @@ class Butler(object):
                           "%s." % args.cfgRoot
                     raise RuntimeError(msg)
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
-                repoData = RepoData(args=args, cfg=cfg, isNewRepository=True)
+                repoData = RepoData(args=args, cfg=cfg, isNewRepository=True,
+                                    isV1Repository=False)
                 self._repos.add(repoData)
 
     def _getParentsList(self, inputs, outputs):
