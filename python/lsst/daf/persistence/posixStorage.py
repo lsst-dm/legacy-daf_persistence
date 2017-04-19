@@ -83,6 +83,7 @@ class PosixStorage(Storage):
         string
             A relative path that describes the path from fromPath to toPath.
         """
+        fromPath = os.path.realpath(fromPath)
         return os.path.relpath(toPath, fromPath)
 
     @staticmethod
@@ -107,8 +108,7 @@ class PosixStorage(Storage):
         """
         if os.path.isabs(relativePath):
             return relativePath
-        if not os.path.isabs(fromPath):
-            fromPath = os.path.abspath(fromPath)
+        fromPath = os.path.realpath(fromPath)
         return os.path.normpath(os.path.join(fromPath, relativePath))
 
     @staticmethod
