@@ -75,6 +75,9 @@ def FileForWriteOnceCompareSame(name):
             # If the symlink was created then this is the process that created the first instance of the
             # file, and we know its contents match. Move the temp file over the symlink.
             os.rename(temp.name, name)
+            # At this point, we know the file has just been created. Set permissions according to the
+            # current umask.
+            setFileMode(name)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise e

@@ -24,6 +24,7 @@
 
 import os
 import shutil
+import stat
 import unittest
 
 import lsst.daf.persistence as dp
@@ -74,6 +75,20 @@ class WriteOnceCompareSameTest(unittest.TestCase):
                 f.write('boo\n')
                 f.write('fop\n')
         self.assertRaises(RuntimeError, writeNonMatchingFile)
+
+    def testPermissions(self):
+        """Check that the file is created with the current umask."""
+        # The only way to get the umask is to set it.
+        umask = os.umask(0)
+        os.umask(umask)
+
+        fileName = os.path.join(ROOT, 'safeFileIo/test.txt')
+        with dp.safeFileIo.FileForWriteOnceCompareSame(fileName) as f:
+            f.write('bar\n')
+            f.write('baz\n')
+
+        filePerms = stat.S_IMODE(os.lstat(fileName).st_mode)
+        self.assertEqual(~umask & 0o666, filePerms)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
