@@ -1,9 +1,9 @@
 // -*- lsst-c++ -*-
 
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -11,17 +11,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 #include <memory>
 
 #include <lsst/daf/base/PropertySet.h>
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(PersistToBoostAndXML) {
     lsst::pex::policy::Policy::Ptr policyPtr(new lsst::pex::policy::Policy);
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policyPtr);
-    dafPersist::Storage::List storageList;
+    dafPersist::FormatterStorage::List storageList;
 
     dafPersist::LogicalLocation loc("tests/data/root.boost");
     storageList.push_back(persist->getPersistStorage("BoostStorage", loc));
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(PersistToBoostAndXML) {
     dafPersist::LogicalLocation loc2("tests/data/root.xml");
     storageList[0] = persist->getPersistStorage("XmlStorage", loc2);
     persist->persist(*root, storageList, additionalData);
-}     
+}
 
 BOOST_AUTO_TEST_CASE(PersistDifferentTypes) {
     dafBase::PropertySet::Ptr additionalData(new dafBase::PropertySet); // empty for testing
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(PersistDifferentTypes) {
     lsst::pex::policy::Policy::Ptr policyPtr(new lsst::pex::policy::Policy);
     dafPersist::Persistence::Ptr persist =
         dafPersist::Persistence::getPersistence(policyPtr);
-    dafPersist::Storage::List storageList;
+    dafPersist::FormatterStorage::List storageList;
 
     dafPersist::LogicalLocation loc("tests/data/foo.boost");
     dafPersist::LogicalLocation loc2("tests/data/foo2.boost");
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(PersistManyTypes) {
     dafPersist::LogicalLocation loc("tests/data/many.boost");
     dafPersist::LogicalLocation loc2("tests/data/many.xml");
 
-    dafPersist::Storage::List storageList;
+    dafPersist::FormatterStorage::List storageList;
     storageList.push_back(persist->getPersistStorage("BoostStorage", loc));
     persist->persist(*fooProp, storageList, additionalData);
 

@@ -90,6 +90,7 @@ class TestRelativePath(unittest.TestCase):
         relpathAtoB = dp.PosixStorage.relativePath(abspathA, abspathB)
         self.assertEqual('../b', relpathAtoB)
 
+
 class TestAbsolutePath(unittest.TestCase):
     """A test case for the PosixStorage.absolutePath function."""
 
@@ -114,6 +115,32 @@ class TestAbsolutePath(unittest.TestCase):
                          dp.PosixStorage.absolutePath(abspathA, '../b'))
         self.assertEqual(abspathB,
                          dp.PosixStorage.absolutePath(relpathA, '../b'))
+
+
+class TestGetLocalFile(unittest.TestCase):
+    """A test case for the PosixStorage.getLocalFile function."""
+
+    testDir = os.path.join(packageDir, 'tests', 'TestGetLocalFile')
+
+    def setUp(self):
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def testAbsolutePath(self):
+        """Tests that GetLocalFile returns a file when it exists and returns
+        None when it does not exist."""
+        storage = dp.PosixStorage(TestGetLocalFile.testDir, create=True)
+        self.assertIsNone(storage.getLocalFile('foo.txt'))
+        f = open(os.path.join(TestGetLocalFile.testDir, 'foo.txt'), 'w')
+        f.write('foobarbaz')
+        f.close()
+        del f
+        f = storage.getLocalFile('foo.txt')
+        self.assertIsInstance(f, file)
+        self.assertEqual(f.read(), 'foobarbaz')
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

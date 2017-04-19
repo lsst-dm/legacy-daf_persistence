@@ -320,6 +320,8 @@ class Butler(object):
                 'not be used with version 2 API (inputs, outputs)')
         self.datasetTypeAliasDict = {}
 
+        self.storage = Storage()
+
         # make sure inputs and outputs are lists, and if list items are a string convert it RepositoryArgs.
         inputs = listify(inputs)
         outputs = listify(outputs)
@@ -468,8 +470,9 @@ class Butler(object):
         if args.cfgRoot in self._repos.byCfgRoot:
             return
         # Get the RepositoryCfg, if it exists:
-        cfg = Storage.getRepositoryCfg(args.cfgRoot)
+        cfg = self.storage.getRepositoryCfg(args.cfgRoot)
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
+        parents = parentListWithoutThis(args.cfgRoot, instanceParents)
         if cfg:
             if not cfg.matchesArgs(args):
                 raise RuntimeError("Persisted repo cfg does not match input args. cfg:%s, args:%s"
@@ -477,7 +480,6 @@ class Butler(object):
                 # need to fix intermediate cfgs
                 # storedCfg = cfg
                 # cfg = RepositoryCfg.makeFromArgs(args)
-            parents = parentListWithoutThis(args.cfgRoot, instanceParents)
             if inout == 'out' and cfg.parents != parents:
                 raise RuntimeError(
                     "Persisted repo cfg parents do not match butler parents: cfg:%s, parents:%s"
@@ -522,11 +524,11 @@ class Butler(object):
                           "%s." % args.cfgRoot
                     raise RuntimeError(msg)
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
-                repoData = RepoData(args=args, cfg=cfg, isNewRepository=True)
+                repoData = RepoData(args=args, cfg=cfg, isNewRepository=True,
+                                    isV1Repository=False)
                 self._repos.add(repoData)
 
-    @staticmethod
-    def _getParentsList(inputs, outputs):
+    def _getParentsList(self, inputs, outputs):
         parents = []
         # The parents of readable output repositories are handled as though they were passed to butler as
         # inputs.
@@ -535,7 +537,7 @@ class Butler(object):
         for args in outputs:
             if 'r' in args.mode and args.cfgRoot not in parents:
                 parents.append(args.cfgRoot)
-                cfg = Storage.getRepositoryCfg(args.cfgRoot)
+                cfg = self.storage.getRepositoryCfg(args.cfgRoot)
                 if cfg:
                     for parent in cfg.parents:
                         if parent not in parents:
@@ -1115,8 +1117,13 @@ class Butler(object):
         if not results:
             self.log.debug("Starting read from %s", location)
             results = location.repository.read(location)
-            if len(results) == 1:
-                results = results[0]
+            if isinstance(results, list) or isinstance(results, tuple):
+                # We must check if results is a list or tuple because some
+                # other object types that should be returned unmodified may
+                # have list-like behaviors (i.e. they implement __len__ but are
+                # not a sequence container). For example, afw BaseCatalog.
+                if len(results) == 1:
+                    results = results[0]
             self.log.debug("Ending read from %s", location)
             try:
                 self.objectCache[locationHash] = results

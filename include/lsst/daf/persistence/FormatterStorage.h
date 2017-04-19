@@ -1,9 +1,9 @@
 // -*- lsst-c++ -*-
 
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -11,32 +11,32 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 #ifndef LSST_MWI_PERSISTENCE_STORAGE_H
 #define LSST_MWI_PERSISTENCE_STORAGE_H
 
 /** @file
   * @ingroup daf_persistence
   *
-  * @brief Interface for Storage abstract base class
+  * @brief Interface for FormatterStorage abstract base class
   *
   * @author Kian-Tat Lim (ktl@slac.stanford.edu)
   * @version $Revision$
   * @date $Date$
   */
 
-/** @class lsst::daf::persistence::Storage
-  * @brief Abstract base class for storage implementations.
+/** @class lsst::daf::persistence::FormatterStorage
+  * @brief Abstract base class for FormatterStorage implementations.
   *
   * All subclasses of this base class must be added to StorageRegistry.
   *
@@ -57,14 +57,14 @@ namespace persistence {
 
 class LogicalLocation;
 
-class Storage : public lsst::daf::base::Citizen {
+class FormatterStorage : public lsst::daf::base::Citizen {
 public:
-    typedef std::shared_ptr<Storage> Ptr;
+    typedef std::shared_ptr<FormatterStorage> Ptr;
     typedef std::vector<Ptr> List;
 
-    virtual ~Storage(void);
+    virtual ~FormatterStorage(void);
 
-    /** Allow a Policy to be used to configure the Storage.
+    /** Allow a Policy to be used to configure the FormatterStorage.
       * @param[in] policy
       *
       * Should be called first, after construction.
@@ -98,14 +98,14 @@ public:
                               lsst::pex::policy::Policy::Ptr policy);
 
 protected:
-    explicit Storage(std::type_info const& type);
+    explicit FormatterStorage(std::type_info const& type);
 
     void verifyPathName(std::string const& pathName);
 
 private:
-    // Do not copy or assign a Storage instance.
-    Storage(Storage const&);
-    Storage& operator=(Storage const&);
+    // Do not copy or assign a FormatterStorage instance.
+    FormatterStorage(FormatterStorage const&);
+    FormatterStorage& operator=(FormatterStorage const&);
 };
 
 }}} // lsst::daf::persistence

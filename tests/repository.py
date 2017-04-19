@@ -513,7 +513,7 @@ class TestTagging(unittest.TestCase):
         self.assertEqual(butler.get('foo', dp.DataId({'bar': 1}, tag='two')), objB)
         del butler
 
-        repo3Cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestTagging/repo3'))
+        repo3Cfg = dp.Storage().getRepositoryCfg(os.path.join(ROOT, 'TestTagging/repo3'))
         self.assertEqual(repo3Cfg.parents, [os.path.join(ROOT, 'TestTagging/repo1'),
                                             os.path.join(ROOT, 'TestTagging/repo2')])
 
@@ -720,7 +720,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
             self.assertEqual(len(butler._repos.outputs()), 1)
             self.assertEqual(butler._repos.outputs()[0].cfg.root,
                              os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-            cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+            cfg = dp.Storage().getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
             self.assertEqual(cfg, dp.RepositoryCfg(root=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'),
                                                    mapper=MapperForTestWriting,
                                                    mapperArgs=None,
@@ -741,7 +741,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
             self.assertEqual(len(butler._repos.outputs()), 1)
             self.assertEqual(butler._repos.outputs()[0].cfg.root,
                              os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-            cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+            cfg = dp.Storage().getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
             self.assertEqual(cfg, dp.RepositoryCfg(root=os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'),
                                                    mapper=MapperForTestWriting,
                                                    mapperArgs=None,
@@ -763,7 +763,7 @@ class TestOutputAlreadyHasParent(unittest.TestCase):
                          os.path.join(ROOT, 'TestOutputAlreadyHasParent/a'))
         self.assertEqual(butler._repos.outputs()[0].cfg.root,
                          os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
-        cfg = dp.Storage.getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
+        cfg = dp.Storage().getRepositoryCfg(os.path.join(ROOT, 'TestOutputAlreadyHasParent/b'))
 
 
 class ParentRepoTestMapper(dp.Mapper):

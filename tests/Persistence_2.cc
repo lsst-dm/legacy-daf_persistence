@@ -1,7 +1,7 @@
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -9,17 +9,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 /**
  * \file Persistence_2.cc
  *
@@ -65,9 +65,9 @@ private:
 class MyFormatter : public dafPersist::Formatter {
 public:
     MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
-    virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual dafBase::Persistable* read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
+    virtual void update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData);
     template <class Archive> static void delegateSerialize(Archive& ar, unsigned int const version, dafBase::Persistable* persistable);
 private:
     static dafPersist::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
@@ -87,7 +87,7 @@ dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy
 
 // Persistence for MyPersistables.
 // Supports BoostStorage and DbStorage.
-void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     BOOST_CHECK_MESSAGE(persistable != 0, "Persisting null");
     BOOST_CHECK_MESSAGE(storage, "No Storage provided");
     long long testId = additionalData->get<long long>("visitId");
@@ -114,7 +114,7 @@ void MyFormatter::write(dafBase::Persistable const* persistable, dafPersist::Sto
 
 // Retrieval for MyPersistables.
 // Supports BoostStorage, DbStorage, and DbTsvStorage.
-dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+dafBase::Persistable* MyFormatter::read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     MyPersistable* mp = new MyPersistable;
 
     long long testId = additionalData->get<long long>("visitId");
@@ -145,7 +145,7 @@ dafBase::Persistable* MyFormatter::read(dafPersist::Storage::Ptr storage, dafBas
     return mp;
 }
 
-void MyFormatter::update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
+void MyFormatter::update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) {
     MyPersistable* mp = dynamic_cast<MyPersistable*>(persistable);
     long long testId = additionalData->get<long long>("visitId");
     if (typeid(*storage) == typeid(dafPersist::BoostStorage)) {
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(Persistence2Test) {
 
     // Get a unique id for this test.
     struct timeval tv;
-    gettimeofday(&tv, 0);      
+    gettimeofday(&tv, 0);
     long long testId = tv.tv_sec * 1000000LL + tv.tv_usec;
 
     std::ostringstream os;
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(Persistence2Test) {
 
     {
         dafPersist::Persistence::Ptr persist = dafPersist::Persistence::getPersistence(policy);
-        dafPersist::Storage::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getPersistStorage("BoostStorage", pathLoc));
         storageList.push_back(persist->getPersistStorage("DbStorage", dbLoc));
         persist->persist(mp, storageList, additionalData);
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(Persistence2Test) {
 
     {
         dafPersist::Persistence::Ptr persist = dafPersist::Persistence::getPersistence(policy);
-        dafPersist::Storage::List storageList;
+        dafPersist::FormatterStorage::List storageList;
         storageList.push_back(persist->getRetrieveStorage("BoostStorage", pathLoc));
         storageList.push_back(persist->getRetrieveStorage("DbStorage", dbLoc));
         dafBase::Persistable::Ptr pp = persist->retrieve("MyPersistable", storageList, additionalData);

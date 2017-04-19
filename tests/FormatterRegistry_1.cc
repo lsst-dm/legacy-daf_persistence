@@ -1,7 +1,7 @@
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -9,17 +9,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 /**
  * \file FormatterRegistry_1.cc
  *
@@ -49,9 +49,9 @@ public:
     MyFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
     // Normally, the following functions would do something.  For testing,
     // they do nothing.
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
-    virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual dafBase::Persistable* read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 private:
     static dafPersist::Formatter::Ptr createInstance(lsst::pex::policy::Policy::Ptr policy);
     static dafPersist::FormatterRegistration registration;
@@ -70,9 +70,9 @@ dafPersist::Formatter::Ptr MyFormatter::createInstance(lsst::pex::policy::Policy
 class YourFormatter : public dafPersist::Formatter {
 public:
     YourFormatter(void) : dafPersist::Formatter(typeid(*this)) { };
-    virtual void write(dafBase::Persistable const* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
-    virtual dafBase::Persistable* read(dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
-    virtual void update(dafBase::Persistable* persistable, dafPersist::Storage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual void write(dafBase::Persistable const* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
+    virtual dafBase::Persistable* read(dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { return 0; };
+    virtual void update(dafBase::Persistable* persistable, dafPersist::FormatterStorage::Ptr storage, dafBase::PropertySet::Ptr additionalData) { };
 };
 
 // External factory function for YourFormatters.  This would normally be a
