@@ -274,19 +274,34 @@ class PosixRegistry(Registry):
             lookupData.addFoundItems({property: propertyValue})
 
 
-class SqliteRegistry(Registry):
-    """A SQLite3-based registry."""
+class SqlRegistry(Registry):
+    """A base class for SQL-based registries
 
-    def __init__(self, location):
+    Subclasses should define the class variable `placeHolder` (the particular
+    placeholder to use for parameter substitution) appropriately. The
+    database's python module should define `paramstyle` (see PEP 249), which
+    would indicate what to use for a placeholder:
+    * paramstyle = "qmark" --> placeHolder = "?"
+    * paramstyle = "format" --> placeHolder = "%s"
+    Other `paramstyle` values are not currently supported.
+
+    Constructor parameters
+    ----------------------
+    conn : DBAPI connection object
+        Connection object
+    """
+    placeHolder = "?"  # Placeholder for parameter substitution
+
+    def __init__(self, conn):
         """Constructor.
-        @param location (string) Path to SQLite3 file"""
 
+        Parameters
+        ----------
+        conn : DBAPI connection object
+            Connection object
+        """
         Registry.__init__(self)
-        if os.path.exists(location):
-            self.conn = sqlite3.connect(location)
-            self.conn.text_factory = str
-        else:
-            self.conn = None
+        self.conn = conn
 
     def lookup(self, lookupProperties, reference, dataId, **kwargs):
         """Perform a lookup in the registry.
@@ -324,17 +339,15 @@ class SqliteRegistry(Registry):
                 if hasattr(k, '__iter__') and not isinstance(k, basestring):
                     if len(k) != 2:
                         raise RuntimeError("Wrong number of keys for range:%s" % (k,))
-                    whereList.append("(? BETWEEN %s AND %s)" % (k[0], k[1]))
+                    whereList.append("(%s BETWEEN %s AND %s)" % (self.placeHolder, k[0], k[1]))
                     valueList.append(v)
                 else:
-                    whereList.append("%s = ?" % k)
+                    whereList.append("%s = %s" % (k, self.placeHolder))
                     valueList.append(v)
             cmd += " WHERE " + " AND ".join(whereList)
-        c = self.conn.execute(cmd, valueList)
-        result = []
-        for row in c:
-            result.append(row)
-        return result
+        cursor = self.conn.cursor()
+        cursor.execute(cmd, valueList)
+        return [row for row in cursor.fetchall()]
 
     def executeQuery(self, returnFields, joinClause, whereFields, range, values):
         """Extract metadata from the registry.
@@ -365,8 +378,26 @@ class SqliteRegistry(Registry):
             whereList.append("(%s BETWEEN %s AND %s)" % range)
         if len(whereList) > 0:
             cmd += " WHERE " + " AND ".join(whereList)
-        c = self.conn.execute(cmd, values)
-        result = []
-        for row in c:
-            result.append(row)
-        return result
+        cursor = self.conn.cursor()
+        cursor.execute(cmd, values)
+        return [row for row in cursor.fetchall()]
+
+
+class SqliteRegistry(SqlRegistry):
+    """A SQLite-based registry"""
+    placeHolder = "?"  # Placeholder for parameter substitution
+
+    def __init__(self, location):
+        """Constructor
+
+        Parameters
+        ----------
+        location : `str`
+            Path to SQLite3 file
+        """
+        if os.path.exists(location):
+            conn = sqlite3.connect(location)
+            conn.text_factory = str
+        else:
+            conn = None
+        SqlRegistry.__init__(self, conn)
