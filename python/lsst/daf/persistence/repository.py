@@ -133,7 +133,7 @@ class Repository(object):
         """
         self._storage = Storage.makeFromURI(repoData.cfg.root)
         if repoData.isNewRepository and not repoData.isV1Repository:
-            self._storage.putRepositoryCfg(repoData.cfg, repoData.args.cfgRoot)
+            self._storage.putRepositoryCfg(repoData.cfg, repoData.cfgRoot)
         self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
         self._initMapper(repoData)
 
