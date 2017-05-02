@@ -23,6 +23,7 @@
 #
 from builtins import object
 
+import copy
 import os
 import shutil
 import unittest
@@ -183,6 +184,36 @@ class TestUpdate(unittest.TestCase):
         cfg1.mapperArgs = {'foo': 'bar'}
         with self.assertRaises(RuntimeError):
             dp.PosixStorage.putRepositoryCfg(cfg1)
+
+
+class TestNestedCfg(unittest.TestCase):
+
+    rootDir = os.path.join(ROOT, 'repositoryCfg_TestNestedCfg')
+
+    def setUp(self):
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists(self.rootDir):
+            shutil.rmtree(self.rootDir)
+
+    def test(self):
+        parentCfg = dp.RepositoryCfg(root=os.path.join(self.rootDir, 'parent'),
+                                     mapper='lsst.daf.persistence.SomeMapper',
+                                     mapperArgs = {},
+                                     parents=None,
+                                     policy=None)
+        cfg = dp.RepositoryCfg(root=self.rootDir,
+                               mapper='lsst.daf.persistence.SomeMapper',
+                               mapperArgs = {},
+                               parents=[parentCfg],
+                               policy=None)
+        dp.PosixStorage.putRepositoryCfg(cfg)
+        reloadedCfg = dp.PosixStorage.getRepositoryCfg(self.rootDir)
+        self.assertEqual(cfg, reloadedCfg)
+        self.assertEqual(cfg.parents[0], parentCfg)
+
+
 # "fake" repository version 0
 class RepositoryCfg(yaml.YAMLObject):
     yaml_tag = u"!RepositoryCfg_v0"

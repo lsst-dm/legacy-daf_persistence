@@ -24,6 +24,7 @@
 
 # -*- python -*-
 
+import copy
 import os
 import yaml
 
@@ -63,7 +64,7 @@ class RepositoryCfg(yaml.YAMLObject):
         if deserializing:
             self._parents = parents
         else:
-            self._parents = []
+            self._parents = None
             self.addParents(iterify(parents))
         self._policy = policy
 
@@ -131,12 +132,42 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @property
     def parents(self):
-        return [Storage.absolutePath(self.root, p) for p in self._parents]
+        if self._parents is None:
+            return []
+
+        def getAbs(parent):
+            if isinstance(parent, RepositoryCfg):
+                parentRoot = parent.root
+                parent.root = None
+                parent.root = Storage.absolutePath(self.root, parentRoot)
+            else:
+                parent = Storage.absolutePath(self.root, parent)
+            return parent
+
+        return [getAbs(p) for p in self._parents]
 
     def addParents(self, newParents):
+        """Add a parent or list of parents to this RepositoryCfg
+
+        Parameters
+        ----------
+        newParents : string or RepositoryCfg instance, or list of these.
+            If string, newParents should be a path or URI to the parent
+            repository. If RepositoryCfg, newParents should be a RepositoryCfg
+            that describes the parent repository in part or whole.
+        """
         newParents = listify(newParents)
+        if len(newParents) > 0 and self._parents is None:
+            self._parents = []
         for newParent in newParents:
-            newParent = Storage.relativePath(self.root, newParent)
+            if isinstance(newParent, RepositoryCfg):
+                newParent = copy.copy(newParent)
+                parentRoot = newParent.root
+                newParent.root = None
+                newParent.root = Storage.relativePath(self.root,
+                                                      parentRoot)
+            else:
+                newParent = Storage.relativePath(self.root, newParent)
             if newParent not in self._parents:
                 self._parents.append(newParent)
 
