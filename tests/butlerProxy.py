@@ -49,8 +49,8 @@ class ButlerProxyTestCase(unittest.TestCase):
 
     def tearDown(self):
         del self.butler
-        if os.path.exists(os.path.join(ROOT, 'root/out')):
-            shutil.rmtree(os.path.join(ROOT, 'root/out'))
+        if os.path.exists(os.path.join(ROOT, 'root/proxyOut')):
+            shutil.rmtree(os.path.join(ROOT, 'root/proxyOut'))
 
     def testCheckProxy(self):
         """Attempt to cycle a DateTime object through the butler

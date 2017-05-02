@@ -133,7 +133,7 @@ class Repository(object):
         """
         self._storage = Storage.makeFromURI(repoData.cfg.root)
         if repoData.isNewRepository and not repoData.isV1Repository:
-            self._storage.putRepositoryCfg(repoData.cfg, repoData.args.cfgRoot)
+            self._storage.putRepositoryCfg(repoData.cfg, repoData.cfgRoot)
         self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
         self._initMapper(repoData)
 
@@ -237,6 +237,7 @@ class Repository(object):
         :return: The type of item is dependent on the mapper being used but is typically a ButlerLocation.
         """
         if self._mapper is None:
+            import pdb; pdb.set_trace()
             raise RuntimeError("No mapper assigned to Repository")
         loc = self._mapper.map(*args, **kwargs)
         if loc is None:
