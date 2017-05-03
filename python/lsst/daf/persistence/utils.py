@@ -128,3 +128,21 @@ def doImport(pythonType):
     importedClass = doImport(importClassString)
     pythonType = getattr(importedClass, pythonTypeTokenList[-1])
     return pythonType
+
+
+class OrderedSet(object):
+    def __init__(self):
+        self._set = set()
+        self._order = []
+
+    def add(self, item):
+        if item not in self._set:
+            self._set.add(item)
+            self._order.append(item)
+
+    def __contains__(self, item):
+        return item in self._set
+
+    def __iter__(self):
+        for item in self._order:
+            yield item

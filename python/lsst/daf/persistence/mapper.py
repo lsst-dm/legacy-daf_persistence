@@ -67,6 +67,12 @@ class Mapper(object):
     standardize(self, datasetType, item, dataId)
 
     validate(self, dataId)
+
+    getRegistry(self)
+        Reurn the registry that is used for lookups by child repositories that
+        use the same mapper. The return value may be more than one registry;
+        since registries are only passed between mappers of the same type, the
+        semantics of the container can be established by the mapper subclass.
     """
 
     @staticmethod
@@ -199,5 +205,5 @@ class Mapper(object):
         raise NotImplementedError("Base-class Mapper does not implement backups")
 
     def getRegistry(self):
-        """Get the registry"""
+        """Get the registry or registries."""
         return None

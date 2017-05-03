@@ -156,9 +156,9 @@ class RepositoryCfg(yaml.YAMLObject):
             repository. If RepositoryCfg, newParents should be a RepositoryCfg
             that describes the parent repository in part or whole.
         """
-        newParents = listify(newParents)
         if len(newParents) > 0 and self._parents is None:
             self._parents = []
+        newParents = listify(newParents)
         for newParent in newParents:
             if isinstance(newParent, RepositoryCfg):
                 newParent = copy.copy(newParent)
@@ -230,5 +230,8 @@ class RepositoryCfg(yaml.YAMLObject):
             self._mapperArgs,
             self._parents,
             self._policy)
+
+    def __hash__(self):
+        return hash(self.__repr__())
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)

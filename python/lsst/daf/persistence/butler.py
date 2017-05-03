@@ -45,7 +45,7 @@ import lsst.pex.policy as pexPolicy
 from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
-    genericDisassembler, PosixStorage
+    genericDisassembler, PosixStorage, OrderedSet
 
 preinitedMapperWarning = ("Passing an instantiated mapper into " +
                           "Butler.__init__ will prevent Butler from passing " +
@@ -90,6 +90,7 @@ class RepoData(object):
     def __init__(self, args, cfg, storedCfg=None, isNewRepository=False, isV1Repository=True):
         self.args = args
         self.cfg = cfg
+        self.parentCfgs = [] # todo add this to __repr__
         self.storedCfg = storedCfg
         self.repo = None
         self.mode = args.mode
@@ -116,11 +117,9 @@ class RepoDataContainer(object):
     """Container object for RepoData instances owned by a Butler instance."""
 
     def __init__(self):
-        self.byRepoRoot = {}  # {args.root, RepoData}
-        self.byCfgRoot = {}  # {args.cfgRoot, RepoData}
         self._inputs = None
         self._outputs = None
-        self._all = None  # {cfg.root, RepoData}
+        self._all = collections.OrderedDict()  # {RepositoryCfg, RepoData}
 
     def add(self, repoData):
         """Add a RepoData to the container
@@ -129,8 +128,9 @@ class RepoDataContainer(object):
         ----------
         repoData - RepoData instance to add
         """
-        self.byRepoRoot[repoData.cfg.root] = repoData
-        self.byCfgRoot[repoData.args.cfgRoot] = repoData
+        priorRepoData = self._all.get(repoData.cfg, None)
+        if priorRepoData is None:
+            self._all[repoData.cfg] = repoData
 
     def inputs(self):
         """Get a list of RepoData that are used to as inputs to the Butler.
@@ -169,24 +169,22 @@ class RepoDataContainer(object):
         return self._all
 
     def __repr__(self):
-        return "%s(\nbyRepoRoot=%r, \nbyCfgRoot=%r, \n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
+        return "%s(\n_inputs=%r, \n_outputs=%s, \n_all=%s)" % (
             self.__class__.__name__,
-            self.byRepoRoot,
-            self.byCfgRoot,
             self._inputs,
             self._outputs,
             self._all)
 
-    def _buildLookupLists(self, inputs, outputs):
+    def _buildLookupLists(self, inputCfgs, outputCfgs):
         """Buld the lists of inputs, outputs, and all repo datas in lookup
         order.
 
         Parameters
         ----------
-        inputs : list of RepositoryArgs
-            The input RepositoryArgs, in order.
-        outputs : list of RepositoryArgs
-            The output RepositoryArgs, in order.
+        inputs : list of input RepositoryCfgs
+            The input RepositoryCfgs, in order.
+        outputs : list of output RepositoryCfgs
+            The output RepositoryCfgs, in order.
 
         Returns
         -------
@@ -198,27 +196,31 @@ class RepoDataContainer(object):
             adds all the parents of the cfg to the lists."""
             if inout not in ('in', 'out', 'ref'):
                 raise RuntimeError("'inout' must be 'in', 'out', or 'ref', not '%s'" % inout)
-            if repoData.cfg.root not in self._all:
-                self._all[repoData.cfg.root] = repoData
             if inout == 'in' and repoData not in self._inputs:
                 self._inputs.append(repoData)
             elif inout == 'out' and repoData not in self._outputs:
                 self._outputs.append(repoData)
                 if 'r' in repoData.args.mode:
                     self._inputs.append(repoData)
-            for parent in repoData.cfg.parents:
-                addParentAs = 'in' if 'r' in repoData.args.mode and inout != 'ref' else 'ref'
-                addRepoDataToLists(self.byRepoRoot[parent], addParentAs)
 
-        self._all = collections.OrderedDict()
+            for parentCfg in repoData.parentCfgs:
+                addParentAs = 'in' if 'r' in repoData.args.mode and inout != 'ref' else 'ref'
+                addRepoDataToLists(self._all[parentCfg], addParentAs)
+
         self._inputs = []
         self._outputs = []
 
-        for repoArgs in outputs:
-            repoData = self.byCfgRoot[repoArgs.cfgRoot]
+        # here; the problem is that we're looking up by args cfgroot, need a
+        # cfg key.
+
+        for repoCfg in outputCfgs:
+            try:
+                repoData = self._all[repoCfg]
+            except:
+                import pdb; pdb.set_trace()
             addRepoDataToLists(repoData, 'out')
-        for repoArgs in inputs:
-            repoData = self.byCfgRoot[repoArgs.cfgRoot]
+        for repoArgs in inputCfgs:
+            repoData = self._all[repoCfg]
             addRepoDataToLists(repoData, 'in')
 
 
@@ -348,9 +350,9 @@ class Butler(object):
         persistencePolicy = pexPolicy.Policy()
         self.persistence = Persistence.getPersistence(persistencePolicy)
 
-        self._createRepoDatas(inputs, outputs)
+        inputCfgs, outputCfgs = self._createRepoDatas(inputs, outputs)
 
-        self._repos._buildLookupLists(inputs, outputs)
+        self._repos._buildLookupLists(inputCfgs, outputCfgs)
 
         self._setRepoDataTags()
 
@@ -410,8 +412,8 @@ class Butler(object):
         list of RepoData
             A list of the parents & grandparents etc of a given repo data, in depth-first search order.
         """
-        for parentCfgRoot in repoData.cfg.parents:
-            parentRepoData = self._repos.byCfgRoot[parentCfgRoot]
+        for parentCfg in repoData.parentCfgs:
+            parentRepoData = self._repos._all[parentCfg]
             yield parentRepoData
             for parentRepoData in self._getParentRepoDatas(parentRepoData):
                 yield parentRepoData
@@ -427,8 +429,8 @@ class Butler(object):
         def setTags(butler, repoData, tags):
             tags.update(repoData.args.tags)
             repoData.addTags(tags)
-            for parent in repoData.cfg.parents:
-                setTags(butler, butler._repos.byRepoRoot[parent], copy.copy(tags))
+            for parentCfg in repoData.parentCfgs:
+                setTags(butler, butler._repos._all[parentCfg], copy.copy(tags))
 
         for repoData in self._repos.all().values():
             setTags(self, repoData, set())
@@ -448,7 +450,8 @@ class Butler(object):
 
         Returns
         -------
-        None
+        RepositoryCfg
+            The RepositoryCfg for this RepoData
         """
         def parentListWithoutThis(root, instanceParents):
             """instanceParents is typically all the inputs to butler. If 'this' root is in that list (because
@@ -464,11 +467,12 @@ class Butler(object):
         # place it in a RepositoryArgs instance; cfgRoot for inputs, root for outputs.
         if inout not in ('in', 'out'):
             raise RuntimeError("inout must be either 'in' or 'out'")
-        # if we already have RepoData for these repoArgs, we're done with that repo and it's parents.
-        if args.cfgRoot in self._repos.byCfgRoot:
-            return
+
         # Get the RepositoryCfg, if it exists:
         cfg = Storage.getRepositoryCfg(args.cfgRoot)
+        if cfg in self._repos._all:
+            self.log.debug("Already have RepoData for cfg:{}".format(cfg))
+            return
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
         if cfg:
             if not cfg.matchesArgs(args):
@@ -487,7 +491,8 @@ class Butler(object):
             repoData = RepoData(args=args, cfg=cfg, storedCfg=storedCfg)
             self._repos.add(repoData)
             for parentArgs in cfg.parents:
-                self._createRepoData(RepositoryArgs(parentArgs, mode='r'), 'in', instanceParents)
+                cfg = self._createRepoData(RepositoryArgs(parentArgs, mode='r'), 'in', instanceParents)
+                repoData.parentCfgs.append(cfg)
         # Handle the case where a RepositoryCfg file does not exist:
         else:
             # Posix repos might be Butler V1 Repos, requires special handling:
@@ -514,7 +519,9 @@ class Butler(object):
                     if parent:
                         parent = PosixStorage.absolutePath(args.cfgRoot, parent)
                         cfg.addParents(parent)
-                        self._createRepoData(RepositoryArgs(parent, mode='r'), 'in', instanceParents)
+                        parentCfg = self._createRepoData(RepositoryArgs(parent, mode='r'), 'in',
+                                                         instanceParents)
+                        repoData.parentCfgs.append(parentCfg)
             # Do not need to check for Butler V1 Repos in non-posix Storages:
             else:
                 if inout == 'in':
@@ -524,6 +531,8 @@ class Butler(object):
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
                 repoData = RepoData(args=args, cfg=cfg, isNewRepository=True)
                 self._repos.add(repoData)
+
+        return cfg
 
     @staticmethod
     def _getParentsList(inputs, outputs):
@@ -561,7 +570,9 @@ class Butler(object):
 
         Returns
         -------
-        None
+        tuple of lists
+            The first item is the list of input cfgs generated from inputs.
+            The second item is the list of output cfgs generated from outputs.
         """
         try:
             if self._repos:
@@ -571,10 +582,14 @@ class Butler(object):
         self._repos = RepoDataContainer()
         parents = self._getParentsList(inputs, outputs)
 
+        outputCfgs = []
+        inputCfgs = []
+
         for outputArgs in outputs:
-            self._createRepoData(outputArgs, 'out', parents)
+            outputCfgs.append(self._createRepoData(outputArgs, 'out', parents))
         for inputArgs in inputs:
-            self._createRepoData(inputArgs, 'in', parents)
+            inputCfgs.append(self._createRepoData(inputArgs, 'in', parents))
+        return inputCfgs, outputCfgs
 
     def _convertV1Args(self, root, mapper, mapperArgs):
         """Convert Butler V1 args (root, mapper, mapperArgs) to V2 args (inputs, outputs)
