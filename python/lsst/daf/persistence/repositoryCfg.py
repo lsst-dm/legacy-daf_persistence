@@ -54,7 +54,25 @@ class RepositoryCfg(yaml.YAMLObject):
     """
     yaml_tag = u"!RepositoryCfg_v1"
 
+    def freeze(self):
+        """Disable all setters so the RepositoryCfg can not be modified any longer."""
+        self._frozen = True
+
+    def raiseIfFrozen(self):
+        if self._frozen:
+            raise RuntimeError("{!r} is frozen.".format(self))
+
+    def __deepcopy__(self, memo):
+        """Returns a deep copy of self. Will be not-frozen"""
+        return type(self)(root=copy.deepcopy(self._root, memo),
+                          mapper=copy.deepcopy(self._mapper, memo),
+                          mapperArgs=copy.deepcopy(self._mapperArgs, memo),
+                          parents=copy.deepcopy(self._parents, memo),
+                          policy=copy.deepcopy(self._policy, memo),
+                          deserializing=True)
+
     def __init__(self, root, mapper, mapperArgs, parents, policy, deserializing=False):
+        self._frozen = False
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
@@ -108,6 +126,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @root.setter
     def root(self, root):
+        self.raiseIfFrozen()
         if root is not None and self._root is not None:
             raise RuntimeError("Explicity clear root (set to None) before changing the value of root.")
         self._root = root
@@ -118,6 +137,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @mapper.setter
     def mapper(self, mapper):
+        self.raiseIfFrozen()
         if self._mapper is not None:
             raise RuntimeError("Should not set mapper over previous not-None value.")
         self._mapper = mapper
@@ -128,6 +148,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @mapperArgs.setter
     def mapperArgs(self, newDict):
+        self.raiseIfFrozen()
         self._mapperArgs = newDict
 
     @property
@@ -156,6 +177,7 @@ class RepositoryCfg(yaml.YAMLObject):
             repository. If RepositoryCfg, newParents should be a RepositoryCfg
             that describes the parent repository in part or whole.
         """
+        self.raiseIfFrozen()
         if len(newParents) > 0 and self._parents is None:
             self._parents = []
         newParents = listify(newParents)
@@ -177,6 +199,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     def update(self, other):
         """Update self with the values from other that are not None."""
+        self.raiseIfFrozen()
         if other._root is not None:
             self._root = other._root
         if other._mapper is not None:

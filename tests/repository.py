@@ -158,6 +158,7 @@ class TestBasics(unittest.TestCase):
             del self.butler
 
     def testGet(self):
+        import pdb; pdb.set_trace()
         raw_image = self.butler.get('raw', {'visit': '2', 'filter': 'g'})
         # in this case the width is known to be 1026:
         self.assertEqual(raw_image[1].header["NAXIS1"], 1026)

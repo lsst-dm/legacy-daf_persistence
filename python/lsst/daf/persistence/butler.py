@@ -130,6 +130,7 @@ class RepoDataContainer(object):
         """
         priorRepoData = self._all.get(repoData.cfg, None)
         if priorRepoData is None:
+            repoData.cfg.freeze()
             self._all[repoData.cfg] = repoData
 
     def inputs(self):
@@ -196,6 +197,7 @@ class RepoDataContainer(object):
             adds all the parents of the cfg to the lists."""
             if inout not in ('in', 'out', 'ref'):
                 raise RuntimeError("'inout' must be 'in', 'out', or 'ref', not '%s'" % inout)
+            repoData.cfg.freeze()
             if inout == 'in' and repoData not in self._inputs:
                 self._inputs.append(repoData)
             elif inout == 'out' and repoData not in self._outputs:
@@ -205,7 +207,10 @@ class RepoDataContainer(object):
 
             for parentCfg in repoData.parentCfgs:
                 addParentAs = 'in' if 'r' in repoData.args.mode and inout != 'ref' else 'ref'
-                addRepoDataToLists(self._all[parentCfg], addParentAs)
+                try:
+                    addRepoDataToLists(self._all[parentCfg], addParentAs)
+                except KeyError:
+                    print("key:{} \nnot in _all, keys:{}".format(parentCfg, self._all.keys()))
 
         self._inputs = []
         self._outputs = []
@@ -216,8 +221,9 @@ class RepoDataContainer(object):
         for repoCfg in outputCfgs:
             try:
                 repoData = self._all[repoCfg]
-            except:
-                import pdb; pdb.set_trace()
+            except KeyError as e:
+                print("key:{}, \nkeys:{}".format(repoCfg, self._all.keys()))
+                raise e
             addRepoDataToLists(repoData, 'out')
         for repoArgs in inputCfgs:
             repoData = self._all[repoCfg]
@@ -491,6 +497,7 @@ class Butler(object):
             repoData = RepoData(args=args, cfg=cfg, storedCfg=storedCfg)
             self._repos.add(repoData)
             for parentArgs in cfg.parents:
+                # parentArgs might be a cfg, not just a root!
                 cfg = self._createRepoData(RepositoryArgs(parentArgs, mode='r'), 'in', instanceParents)
                 repoData.parentCfgs.append(cfg)
         # Handle the case where a RepositoryCfg file does not exist:
@@ -513,15 +520,19 @@ class Butler(object):
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
                 repoData = RepoData(args=args, cfg=cfg, isNewRepository=not v1RepoExists,
                                     isV1Repository=v1RepoExists)
-                self._repos.add(repoData)
+                parent = None
                 if v1RepoExists:
                     parent = PosixStorage.getParentSymlinkPath(args.cfgRoot)
                     if parent:
                         parent = PosixStorage.absolutePath(args.cfgRoot, parent)
                         cfg.addParents(parent)
-                        parentCfg = self._createRepoData(RepositoryArgs(parent, mode='r'), 'in',
-                                                         instanceParents)
-                        repoData.parentCfgs.append(parentCfg)
+                self._repos.add(repoData)
+
+                if parent is not None:
+                    parentCfg = self._createRepoData(
+                        RepositoryArgs(parent, mode='r'), 'in', instanceParents)
+                    repoData.parentCfgs.append(parentCfg)
+
             # Do not need to check for Butler V1 Repos in non-posix Storages:
             else:
                 if inout == 'in':

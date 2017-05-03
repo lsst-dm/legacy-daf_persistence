@@ -174,6 +174,7 @@ class PosixStorage(Storage):
         -------
         None
         """
+        cfg = copy.deepcopy(cfg)  # get an editable copy of cfg.
         if loc is None or cfg.root == loc:
             cfg = copy.copy(cfg)
             loc = cfg.root
