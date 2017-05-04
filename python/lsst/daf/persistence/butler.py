@@ -540,10 +540,10 @@ class Butler(object):
                     repoData = RepoData(args=args, cfg=cfg, inout=inout, isNewRepository=not v1RepoExists,
                                         isV1Repository=v1RepoExists)
                     self._repos.add(repoData)
-                    # if parents is not None:
-                    #     parentCfg = self._createRepoData(
-                    #         RepositoryArgs(parent, mode='r'), 'in', instanceParents)
-                    #     repoData.parentCfgs.append(parentCfg)
+                    if parents is not None:
+                        parentCfg = self._createRepoData(
+                            RepositoryArgs(parent, mode='r'), 'in', instanceParents)
+                        repoData.parentCfgs.append(parentCfg)
 
             # Do not need to check for Butler V1 Repos in non-posix Storages:
             else:
