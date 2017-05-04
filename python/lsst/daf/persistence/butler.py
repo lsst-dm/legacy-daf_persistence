@@ -87,9 +87,10 @@ class RepoData(object):
         The tags that apply to this repository, if any
     """
 
-    def __init__(self, args, cfg, storedCfg=None, isNewRepository=False, isV1Repository=True):
+    def __init__(self, args, cfg, inout, storedCfg=None, isNewRepository=False, isV1Repository=True):
         self.args = args
         self.cfg = cfg
+        self.inout = inout
         self.parentCfgs = [] # todo add this to __repr__
         self.storedCfg = storedCfg
         self.repo = None
@@ -191,43 +192,41 @@ class RepoDataContainer(object):
         -------
         None
         """
-        def addRepoDataToLists(repoData, inout):
+        def addRepoDataToLists(repoData):
             """"Adds the cfg represented by repoData to the _all dict/list, as
             well as the _inputs or _outputs list, as indicated by inout. Then,
             adds all the parents of the cfg to the lists."""
-            if inout not in ('in', 'out', 'ref'):
-                raise RuntimeError("'inout' must be 'in', 'out', or 'ref', not '%s'" % inout)
+            if repoData.inout not in ('in', 'out', 'ref'):
+                raise RuntimeError("'inout' must be 'in', 'out', or 'ref', not '%s'" % repoData.inout)
             repoData.cfg.freeze()
-            if inout == 'in' and repoData not in self._inputs:
+            if repoData.inout == 'in' and repoData not in self._inputs:
                 self._inputs.append(repoData)
-            elif inout == 'out' and repoData not in self._outputs:
+            elif repoData.inout == 'out' and repoData not in self._outputs:
                 self._outputs.append(repoData)
                 if 'r' in repoData.args.mode:
                     self._inputs.append(repoData)
 
             for parentCfg in repoData.parentCfgs:
-                addParentAs = 'in' if 'r' in repoData.args.mode and inout != 'ref' else 'ref'
                 try:
-                    addRepoDataToLists(self._all[parentCfg], addParentAs)
+                    addRepoDataToLists(self._all[parentCfg])
                 except KeyError:
                     print("key:{} \nnot in _all, keys:{}".format(parentCfg, self._all.keys()))
 
         self._inputs = []
         self._outputs = []
 
-        # here; the problem is that we're looking up by args cfgroot, need a
-        # cfg key.
-
-        for repoCfg in outputCfgs:
-            try:
-                repoData = self._all[repoCfg]
-            except KeyError as e:
-                print("key:{}, \nkeys:{}".format(repoCfg, self._all.keys()))
-                raise e
-            addRepoDataToLists(repoData, 'out')
-        for repoArgs in inputCfgs:
-            repoData = self._all[repoCfg]
-            addRepoDataToLists(repoData, 'in')
+        # for repoCfg in outputCfgs:
+        #     try:
+        #         repoData = self._all[repoCfg]
+        #     except KeyError as e:
+        #         print("key:{}, \nkeys:{}".format(repoCfg, self._all.keys()))
+        #         raise e
+        #     addRepoDataToLists(repoData, 'out')
+        # for repoCfg in inputCfgs:
+        #     repoData = self._all[repoCfg]
+        #     addRepoDataToLists(repoData, 'in')
+        for repoCfg, repoData in self._all.items():
+            addRepoDataToLists(repoData)
 
 
 class Butler(object):
@@ -365,7 +364,7 @@ class Butler(object):
         defaultMapper = self._getDefaultMapper()
         self._assignDefaultMapper(defaultMapper)
 
-        for repoData in reversed(self._repos.all().values()):
+        for cfg, repoData in reversed(self._repos._all.items()):
             parentRegistry = self._getParentRegistry(repoData)
             repoData.parentRegistry = parentRegistry
             repoData.repo = Repository(repoData)
@@ -474,11 +473,19 @@ class Butler(object):
         if inout not in ('in', 'out'):
             raise RuntimeError("inout must be either 'in' or 'out'")
 
-        # Get the RepositoryCfg, if it exists:
-        cfg = Storage.getRepositoryCfg(args.cfgRoot)
+        # If args is a cfg, it's a nested cfg. Read the cfg from root that can
+        # have additional parameters, and update it with the nested cfg data.
+        if isinstance(args, RepositoryCfg):
+            # todo rename args to something more meaningful: "args-or-cfg"
+            cfg = Storage.getRepositoryCfg(args.root)
+            cfg.update(args)
+        else:
+            # Get the RepositoryCfg, if it exists:
+            cfg = Storage.getRepositoryCfg(args.cfgRoot)
+
         if cfg in self._repos._all:
             self.log.debug("Already have RepoData for cfg:{}".format(cfg))
-            return
+            return None
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
         if cfg:
             if not cfg.matchesArgs(args):
@@ -494,7 +501,7 @@ class Butler(object):
                     % (cfg, instanceParents))
             else:
                 storedCfg = None
-            repoData = RepoData(args=args, cfg=cfg, storedCfg=storedCfg)
+            repoData = RepoData(args=args, cfg=cfg, inout=inout, storedCfg=storedCfg)
             self._repos.add(repoData)
             for parentArgs in cfg.parents:
                 # parentArgs might be a cfg, not just a root!
@@ -518,7 +525,7 @@ class Butler(object):
                     if not args.mapper:
                         args.mapper = PosixStorage.getMapperClass(args.cfgRoot)
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
-                repoData = RepoData(args=args, cfg=cfg, isNewRepository=not v1RepoExists,
+                repoData = RepoData(args=args, cfg=cfg, inout=inout, isNewRepository=not v1RepoExists,
                                     isV1Repository=v1RepoExists)
                 parent = None
                 if v1RepoExists:
@@ -540,7 +547,7 @@ class Butler(object):
                           "%s." % args.cfgRoot
                     raise RuntimeError(msg)
                 cfg = RepositoryCfg.makeFromArgs(args, parents)
-                repoData = RepoData(args=args, cfg=cfg, isNewRepository=True)
+                repoData = RepoData(args=args, cfg=cfg, inout=inout, isNewRepository=True)
                 self._repos.add(repoData)
 
         return cfg
@@ -597,9 +604,13 @@ class Butler(object):
         inputCfgs = []
 
         for outputArgs in outputs:
-            outputCfgs.append(self._createRepoData(outputArgs, 'out', parents))
+            cfg = self._createRepoData(outputArgs, 'out', parents)
+            if cfg is not None:
+                outputCfgs.append(cfg)
         for inputArgs in inputs:
-            inputCfgs.append(self._createRepoData(inputArgs, 'in', parents))
+            cfg = self._createRepoData(inputArgs, 'in', parents)
+            if cfg is not None:
+                inputCfgs.append(cfg)
         return inputCfgs, outputCfgs
 
     def _convertV1Args(self, root, mapper, mapperArgs):
@@ -696,7 +707,14 @@ class Butler(object):
                     raise RuntimeError(
                         "No mapper specified for %s and no default mapper could be determined." %
                         repoData.args)
-                repoData.cfg.mapper = defaultMapper
+                oldCfg = repoData.cfg
+                newCfg = copy.deepcopy(repoData.cfg)
+                newCfg.mapper = defaultMapper
+                newCfg.freeze()
+                repoData.cfg = newCfg
+                oldAll = self._repos._all
+                self._repos._all = collections.OrderedDict(
+                    ((newCfg, repoData) if key == oldCfg else (key, value) for key, value in oldAll.items()))
 
     @staticmethod
     def getMapperClass(root):
