@@ -512,33 +512,38 @@ class Butler(object):
             # Posix repos might be Butler V1 Repos, requires special handling:
             if Storage.isPosix(args.cfgRoot):
                 v1RepoExists = PosixStorage.v1RepoExists(args.cfgRoot)
-                if not v1RepoExists and inout == 'in':
-                    msg = "Input repositories must exist; no repo found at " \
-                          "%s. (A Butler V1 Repository 'exists' if the root " \
-                          " folder exists AND contains items.)" % args.cfgRoot
-                    raise RuntimeError(msg)
-                if inout == 'out' and not v1RepoExists:
-                    parents = parentListWithoutThis(args.cfgRoot, instanceParents)
-                else:
-                    parents = None
                 if v1RepoExists:
                     if not args.mapper:
                         args.mapper = PosixStorage.getMapperClass(args.cfgRoot)
-                cfg = RepositoryCfg.makeFromArgs(args, parents)
-                repoData = RepoData(args=args, cfg=cfg, inout=inout, isNewRepository=not v1RepoExists,
-                                    isV1Repository=v1RepoExists)
-                parent = None
-                if v1RepoExists:
                     parent = PosixStorage.getParentSymlinkPath(args.cfgRoot)
                     if parent:
                         parent = PosixStorage.absolutePath(args.cfgRoot, parent)
-                        cfg.addParents(parent)
-                self._repos.add(repoData)
-
-                if parent is not None:
-                    parentCfg = self._createRepoData(
-                        RepositoryArgs(parent, mode='r'), 'in', instanceParents)
-                    repoData.parentCfgs.append(parentCfg)
+                    cfg = RepositoryCfg.makeFromArgs(args, parent)
+                    repoData = RepoData(args=args, cfg=cfg, inout=inout, isNewRepository=not v1RepoExists,
+                                        isV1Repository=v1RepoExists)
+                    self._repos.add(repoData)
+                    if parent is not None:
+                        parentCfg = self._createRepoData(
+                            RepositoryArgs(parent, mode='r'), 'in', instanceParents)
+                        repoData.parentCfgs.append(parentCfg)
+                else:
+                    if inout == 'in':
+                        msg = "Input repositories must exist; no repo found at " \
+                              "%s. (A Butler V1 Repository 'exists' if the root " \
+                              " folder exists AND contains items.)" % args.cfgRoot
+                        raise RuntimeError(msg)
+                    if inout == 'out':
+                        parents = parentListWithoutThis(args.cfgRoot, instanceParents)
+                    else:
+                        parents = None
+                    cfg = RepositoryCfg.makeFromArgs(args, parents)
+                    repoData = RepoData(args=args, cfg=cfg, inout=inout, isNewRepository=not v1RepoExists,
+                                        isV1Repository=v1RepoExists)
+                    self._repos.add(repoData)
+                    # if parents is not None:
+                    #     parentCfg = self._createRepoData(
+                    #         RepositoryArgs(parent, mode='r'), 'in', instanceParents)
+                    #     repoData.parentCfgs.append(parentCfg)
 
             # Do not need to check for Butler V1 Repos in non-posix Storages:
             else:
