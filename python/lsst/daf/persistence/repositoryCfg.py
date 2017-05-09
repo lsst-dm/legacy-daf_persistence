@@ -189,11 +189,11 @@ class RepositoryCfg(yaml.YAMLObject):
             self._policy = other._policy
 
     @staticmethod
-    def makeFromArgs(repositoryArgs, parents):
+    def makeFromArgs(repositoryArgs):
         cfg = RepositoryCfg(root=repositoryArgs.root,
                             mapper=repositoryArgs.mapper,
                             mapperArgs=repositoryArgs.mapperArgs,
-                            parents=parents,
+                            parents=None,
                             policy=repositoryArgs.policy)
         return cfg
 

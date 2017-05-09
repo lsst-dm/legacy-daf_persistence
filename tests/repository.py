@@ -674,7 +674,7 @@ class TestMovedRepositoryCfg(unittest.TestCase):
         os.rename(os.path.join(ROOT, 'TestMovedRepositoryCfg/a/repositoryCfg.yaml'),
                   os.path.join(ROOT, 'TestMovedRepositoryCfg/b/repositoryCfg.yaml'))
         butler = dp.Butler(inputs=os.path.join(ROOT, 'TestMovedRepositoryCfg/b'))
-        self.assertEqual(list(butler._repos.all().values())[0].cfg,
+        self.assertEqual(list(butler._repos.inputs())[0].cfg,
                          dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMovedRepositoryCfg/b'),
                                           mapper=MapperForTestWriting,
                                           mapperArgs=None,
