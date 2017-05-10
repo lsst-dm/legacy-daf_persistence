@@ -41,6 +41,8 @@ from . import fsScanner, sequencify
 import os
 import astropy.io.fits
 import re
+import yaml
+
 try:
     import sqlite3
     haveSqlite3 = True
@@ -51,6 +53,13 @@ except ImportError:
         haveSqlite3 = True
     except ImportError:
         haveSqlite3 = False
+
+# PostgreSQL support
+try:
+    import psycopg2 as pgsql
+    havePgsql = True
+except ImportError:
+    havePgsql = False
 
 
 class Registry(object):
@@ -72,6 +81,9 @@ class Registry(object):
         #     return FileRegistry(location)
         # if re.match(r'.*\.paf', location):
         #     return CalibRegistry(location)
+
+        if location.endswith(".pgsql"):
+            return PgsqlRegistry(location)
 
         # look for an sqlite3 registry
         if re.match(r'.*\.sqlite3', location):
@@ -274,19 +286,34 @@ class PosixRegistry(Registry):
             lookupData.addFoundItems({property: propertyValue})
 
 
-class SqliteRegistry(Registry):
-    """A SQLite3-based registry."""
+class SqlRegistry(Registry):
+    """A base class for SQL-based registries
 
-    def __init__(self, location):
+    Subclasses should define the class variable `placeHolder` (the particular
+    placeholder to use for parameter substitution) appropriately. The
+    database's python module should define `paramstyle` (see PEP 249), which
+    would indicate what to use for a placeholder:
+    * paramstyle = "qmark" --> placeHolder = "?"
+    * paramstyle = "format" --> placeHolder = "%s"
+    Other `paramstyle` values are not currently supported.
+
+    Constructor parameters
+    ----------------------
+    conn : DBAPI connection object
+        Connection object
+    """
+    placeHolder = "?"  # Placeholder for parameter substitution
+
+    def __init__(self, conn):
         """Constructor.
-        @param location (string) Path to SQLite3 file"""
 
+        Parameters
+        ----------
+        conn : DBAPI connection object
+            Connection object
+        """
         Registry.__init__(self)
-        if os.path.exists(location):
-            self.conn = sqlite3.connect(location)
-            self.conn.text_factory = str
-        else:
-            self.conn = None
+        self.conn = conn
 
     def lookup(self, lookupProperties, reference, dataId, **kwargs):
         """Perform a lookup in the registry.
@@ -324,17 +351,15 @@ class SqliteRegistry(Registry):
                 if hasattr(k, '__iter__') and not isinstance(k, basestring):
                     if len(k) != 2:
                         raise RuntimeError("Wrong number of keys for range:%s" % (k,))
-                    whereList.append("(? BETWEEN %s AND %s)" % (k[0], k[1]))
+                    whereList.append("(%s BETWEEN %s AND %s)" % (self.placeHolder, k[0], k[1]))
                     valueList.append(v)
                 else:
-                    whereList.append("%s = ?" % k)
+                    whereList.append("%s = %s" % (k, self.placeHolder))
                     valueList.append(v)
             cmd += " WHERE " + " AND ".join(whereList)
-        c = self.conn.execute(cmd, valueList)
-        result = []
-        for row in c:
-            result.append(row)
-        return result
+        cursor = self.conn.cursor()
+        cursor.execute(cmd, valueList)
+        return [row for row in cursor.fetchall()]
 
     def executeQuery(self, returnFields, joinClause, whereFields, range, values):
         """Extract metadata from the registry.
@@ -365,8 +390,101 @@ class SqliteRegistry(Registry):
             whereList.append("(%s BETWEEN %s AND %s)" % range)
         if len(whereList) > 0:
             cmd += " WHERE " + " AND ".join(whereList)
-        c = self.conn.execute(cmd, values)
-        result = []
-        for row in c:
-            result.append(row)
-        return result
+        cursor = self.conn.cursor()
+        cursor.execute(cmd, values)
+        return [row for row in cursor.fetchall()]
+
+
+class SqliteRegistry(SqlRegistry):
+    """A SQLite-based registry"""
+    placeHolder = "?"  # Placeholder for parameter substitution
+
+    def __init__(self, location):
+        """Constructor
+
+        Parameters
+        ----------
+        location : `str`
+            Path to SQLite3 file
+        """
+        if os.path.exists(location):
+            conn = sqlite3.connect(location)
+            conn.text_factory = str
+        else:
+            conn = None
+        SqlRegistry.__init__(self, conn)
+
+
+class PgsqlRegistry(SqlRegistry):
+    """A PostgreSQL-based registry"""
+    placeHolder = "%s"
+
+    def __init__(self, location):
+        """Constructor
+
+        Parameters
+        ----------
+        location : `str`
+            Path to PostgreSQL configuration file.
+        """
+        if not havePgsql:
+            raise RuntimeError("Cannot use PgsqlRegistry: could not import psycopg2")
+        config = self.readYaml(location)
+        self._config = config
+        conn = pgsql.connect(host=config["host"], port=config["port"], database=config["database"],
+                             user=config["user"], password=config["password"])
+        SqlRegistry.__init__(self, conn)
+
+    def __del__(self):
+        if self.conn:
+            self.conn.close()
+
+    @staticmethod
+    def readYaml(location):
+        """Read YAML configuration file
+
+        The YAML configuration file should contain:
+        * host : host name for database connection
+        * port : port for database connection
+        * user : user name for database connection
+        * database : database name
+
+        It may also contain:
+        * password : password for database connection
+
+        The optional entries are set to `None` in the output configuration.
+
+        Parameters
+        ----------
+        location : `str`
+            Path to PostgreSQL YAML config file.
+
+        Returns
+        -------
+        config : `dict`
+            Configuration
+        """
+        with open(location) as ff:
+            data = yaml.load(ff)
+        requireKeys = set(["host", "port", "database", "user"])
+        optionalKeys = set(["password"])
+        haveKeys = set(data.keys())
+        if haveKeys - optionalKeys != requireKeys:
+            raise RuntimeError(
+                "PostgreSQL YAML configuration (%s) should contain only %s, and may contain 'password', "
+                "but this contains: %s" %
+                (location, ",".join("'%s'" % key for key in requireKeys),
+                 ",".join("'%s'" % key for key in data.keys()))
+            )
+        for key in optionalKeys:
+            if key not in data:
+                data[key] = None
+
+        return data
+
+    def lookup(self, *args, **kwargs):
+        try:
+            return SqlRegistry.lookup(self, *args, **kwargs)
+        except Exception as exc:
+            self.conn.rollback()
+            raise
