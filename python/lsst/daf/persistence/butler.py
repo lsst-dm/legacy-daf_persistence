@@ -74,7 +74,7 @@ class RepoData(object):
 
     def __init__(self):
         self.cfg = None
-        self.cfgOrigin = None  # False if the the cfg was read from disk.
+        self.cfgOrigin = None
         self.cfgRoot = None
         self.repo = None
         self.parentRepoDatas = []
@@ -220,22 +220,28 @@ class RepoDataContainer(object):
         if self._inputs is not None or self._outputs is not None:
             raise RuntimeError("Lookup lists are already built.")
         self._inputs = []
-        self._outputs = []
+
+        alreadyAdded = set()
 
         def addToList(repoData, lst):
             """Add a repoData and each of its parents (depth first) to a list"""
+            if (id(repoData)) in alreadyAdded:
+                return
             lst.append(repoData)
+            alreadyAdded.add(id(repoData))
             for parent in repoData.parentRepoDatas:
                 addToList(parent, lst)
 
-        for repoData in inputs:
-            addToList(repoData, self._inputs)
-        for repoData in outputs:
-            addToList(repoData, self._outputs)
+        for argsAndData in outputs:
+            if 'r' in argsAndData.repoArgs.mode:
+                addToList(argsAndData.repoData, self._inputs)
+        for argsAndData in inputs:
+            addToList(argsAndData.repoData, self._inputs)
+        self._outputs = [argsAndData.repoData for argsAndData in outputs]
 
 
 # Container for keeping RepositoryArgs and the associated RepoData together.
-ArgsAndData = collections.namedtuple('ArgsAndData', ['args', 'data'])
+ArgsAndData = collections.namedtuple('ArgsAndData', ['repoArgs', 'repoData'])
 
 
 class Butler(object):
@@ -330,31 +336,34 @@ class Butler(object):
         inputs, outputs = self._processInputArguments(
             root=root, mapper=mapper, inputs=inputs, outputs=outputs, **mapperArgs)
 
-        ioRepoDataDict, inputRepoDatas, outputRepoDatas = \
-            self._makeRepoDataForInputsAndOutputs(inputs, outputs)
+        inputs, outputs = self._makeRepoDataForInputsAndOutputs(inputs, outputs)
 
-        self._getCfgsForIORepoDatas(ioRepoDataDict)
+        self._getCfgsForInputsAndOutputs(inputs, outputs)
 
-        self._setAndVerifyParentsLists(inputs, outputs, ioRepoDataDict)
+        self._addMissingParentsOfOutputs(inputs, outputs)
 
-        self._setDefaultMapper(inputs, outputs, ioRepoDataDict)
+        self._setAndVerifyParentsLists(inputs, outputs)
 
-        parentRepoDatas = self._makeAndConnectParentRepoDatas(inputRepoDatas, outputRepoDatas, ioRepoDataDict)
+        self._setDefaultMapper(inputs, outputs)
+
+        parentRepoDatas = self._makeAndConnectParentRepoDatas(inputs, outputs)
 
         self._repos = RepoDataContainer()
-        for repoData in ioRepoDataDict.values() + parentRepoDatas:
+        for argsAndData in inputs + outputs:
+            self._repos.add(argsAndData.repoData)
+        for repoData in parentRepoDatas:
             self._repos.add(repoData)
 
-        self._repos._buildLookupLists(inputRepoDatas, outputRepoDatas)
+        self._repos._buildLookupLists(inputs, outputs)
 
-        self._setRepoDataTags(inputs, outputs, self.repos.all())
+        self._setRepoDataTags(inputs, outputs)
 
         # todo rewrite this more gooder.
-        for repoData in reversed(inputRepoDatas):
+        for repoData in reversed(self._repos.inputs()):
             parentRegistry = self._getParentRegistry(repoData)
             repoData.parentRegistry = parentRegistry
             repoData.repo = Repository(repoData)
-        for repoData in reversed(outputRepoDatas):
+        for repoData in reversed(self._repos.outputs()):
             parentRegistry = self._getParentRegistry(repoData)
             repoData.parentRegistry = parentRegistry
             repoData.repo = Repository(repoData)
@@ -388,6 +397,7 @@ class Butler(object):
         for parentRepoData in repoData.getParentRepoDatas():
             if parentRepoData.cfg.mapper == repoData.cfg.mapper:
                 if not parentRepoData.repo:
+                    import pdb; pdb.set_trace()
                     raise RuntimeError("Parent repo should be initialized before child repos.")
                 registry = parentRepoData.repo.getRegistry()
                 if registry:
@@ -482,13 +492,85 @@ class Butler(object):
              list of RepoDatas in order that that matches inputs,
              list of RepoDatas in order that that matches outputs)
         """
-        inputRepoDatas = [RepoData() for i in inputs]
-        outputRepoDatas = [RepoData() for i in outputs]
-        repoDataDict = {inputs[i]: inputRepoDatas[i] for i in range(len(inputs))}
-        repoDataDict.update({outputs[i]: outputRepoDatas[i] for i in range(len(outputs))})
-        return (repoDataDict, inputRepoDatas, outputRepoDatas)
+        inputs = [ArgsAndData(args, RepoData()) for args in inputs]
+        outputs = [ArgsAndData(args, RepoData()) for args in outputs]
+        return inputs, outputs
 
-    def _getCfgsForIORepoDatas(self, ioRepoDatas):
+    @staticmethod
+    def _getParentVal(repoData):
+        """Get the value of this repoData as it should appear in the parents
+        list of other repos"""
+        if repoData.cfgOrigin == 'nested':
+            return repoData.cfg
+        else:
+            return repoData.cfg.root
+
+    @staticmethod
+    def _getParents(ofRepoData, inputs, outputs):
+        """Create a parents list of ofRepoData from inputs and (readable) outputs."""
+        parents = []
+        # get the parents list of ofRepoData:
+        for argsAndData in outputs + inputs:
+            if argsAndData.repoData is ofRepoData:
+                continue
+            if 'r' not in argsAndData.repoArgs.mode:
+                continue
+            parents.append(Butler._getParentVal(argsAndData.repoData))
+        return parents
+
+    def _addMissingParentsOfOutputs(self, inputs, outputs):
+        """Parents of outputs must be inputs available to all the other outputs, so add those to the direct
+        inputs to the Butler.
+
+        Parameters
+        ----------
+        inputs : list of ArgsAndData
+            the input args and related RepoData for each repository
+        outputs : list of ArgsAndData
+            the output args and related RepoData for each repository
+        """
+
+        # The read-order of repositories is the outputs list in ascending order and then the inputs list in
+        # ascending order.
+
+        for m in range(len(outputs)):
+            offset = 0
+            for n in range(len(outputs)):
+                parentIdx = n + offset
+                if n == m or 'r' not in outputs[parentIdx].repoArgs.mode:
+                    n += 1
+                    continue
+                actualParent = Butler._getParentVal(outputs[parentIdx].repoData) \
+                    if parentIdx < len(outputs) else None
+                expectedParent = outputs[m].repoData.cfg.parents[n] \
+                    if outputs[m].repoData.cfg.parents else None
+                if expectedParent != actualParent:
+                    raise RuntimeError("Missing output:{}, got:{}".format(expectedParent, actualParent))
+
+
+
+
+        # for argsAndData in outputs:
+        #     parents = self._getParents(argsAndData.repoData, inputs, outputs)
+        #     outputParents = argsAndData.repoData.cfg.parents
+        #     for i in len(outputParents):
+        #         if parents[i] != outputParents[i]:
+        #             # inputs
+        #             if isinstance(parent, RepositoryCfg):
+        #                 cfg = parent
+        #             else:
+        #                 cfg = Storage.getRepositoryCfg(parent)
+        #             argsAndData = ArgsAndData(RepositoryArgs(root=parents[i]))
+
+
+        # # for each output:
+        # #   parents = get parents based on inputs (without the output, if it's readable)
+        # #   if there is a parent output.parents that is not in parent.parents:
+        # #   make a repo data for it, get the cfg & insert it
+        # #   add it to inputs. Args can be just cfgroot.
+
+
+    def _getCfgsForInputsAndOutputs(self, inputs, outputs):
         """Get or make a RepositoryCfg for each input & output RepositoryArgs, and put the cfg into the
         RepoData.
         If the cfg exists, compare values to make sure it works with the args.
@@ -496,10 +578,20 @@ class Butler(object):
 
         Parameters
         ----------
-        ioRepoDatas : dict
-            key is RepositoryArgs, value is a RepoData instance.
+        inputs : list of ArgsAndData
+            the input args and related RepoData for each repository
+        outputs : list of ArgsAndData
+            the output args and related RepoData for each repository
+
+        Raises
+        ------
+        RuntimeError
+            If the passed-in args indicate an existing repository but other cfg parameters in those args don't
+            match the existing repository's cfg a RuntimeError will be raised.
         """
-        for args, repoData in ioRepoDatas.items():
+        for argsAndData in inputs + outputs:
+            args = argsAndData.repoArgs
+            repoData = argsAndData.repoData
             cfg = Storage.getRepositoryCfg(args.cfgRoot)
             if cfg is None:
                 cfg = self._getOldButlerRepositoryCfg(args)
@@ -544,7 +636,7 @@ class Butler(object):
             cfg.addParents(parent)
         return cfg
 
-    def _setAndVerifyParentsLists(self, inputs, outputs, ioRepoDatas):
+    def _setAndVerifyParentsLists(self, inputs, outputs):
         """For each RepoData in the inputs & outputs of this Butler, establish its parents list. For new
         repositories, set the parents in the RepositoryCfg. For exsisting output repositories verify that the
         RepositoryCfg's parents match the parents list.
@@ -554,28 +646,14 @@ class Butler(object):
 
         Parameters
         ----------
-        inputs : list of RepositoryArgs
-            RepositoryArgs that are inputs to this Butler instance.
-        outputs : list of RepositoryArgs
-            RepositoryArgs that are output of this Butler instance.
-        ioRepoDatas : dict
-            dict of (RepositoryArgs, RepoData) that are the named inputs & outputs of this Butler, with the
-            cfg in the RepoData populated.
+        inputs : list of ArgsAndData
+            the input args and related RepoData for each repository
+        outputs : list of ArgsAndData
+            the output args and related RepoData for each repository
         """
-        for args in outputs:
-            forRepoData = ioRepoDatas.get(args)
-            parents = []
-            # get the parents list of forRepoData:
-            for args in outputs + inputs:
-                if 'r' not in args.mode:
-                    continue
-                repoData = ioRepoDatas.get(args)
-                if repoData is forRepoData:
-                    continue
-                if repoData.cfgOrigin == 'nested':
-                    parents.append(repoData.cfg)
-                else:
-                    parents.append(repoData.cfg.root)
+        for argsAndData in outputs:
+            forRepoData = argsAndData.repoData
+            parents = self._getParents(forRepoData, inputs, outputs)
             # if forRepoData is new, add the parent cfgs to it.
             if forRepoData.cfgOrigin == 'new':
                 forRepoData.cfg.addParents(parents)
@@ -584,42 +662,39 @@ class Butler(object):
                     raise RuntimeError("Inputs of this Butler:{} do not match existing cfg parents:{}".format(
                         parents, forRepoData.cfg.parents))
 
-    def _setDefaultMapper(self, inputs, outputs, ioRepoDatas):
+    def _setDefaultMapper(self, inputs, outputs):
         """Establish a default mapper if there is one.
 
         If all inputs have the same mapper it will be used as the default mapper.
 
         Parameters
         ----------
-        inputs : list of RepositoryArgs
-            The RepositoryArgs that are the inputs to this Butler.
-        ioRepoDatas : dict
-            dict of (RepositoryArgs, RepoData) that are the named inputs & outputs of this Butler, with the
-            cfg in the RepoData populated.
+        inputs : list of ArgsAndData
+            the input args and related RepoData for each repository
+        outputs : list of ArgsAndData
+            the output args and related RepoData for each repository
 
         Returns
         -------
         None
         """
         defaultMapper = None
-        for inpt in inputs:
-            repoData = ioRepoDatas.get(inpt)
+        for argsAndData in inputs:
             if defaultMapper is None:
-                defaultMapper = repoData.cfg.mapper
-            elif defaultMapper != repoData.cfg.mapper:
+                defaultMapper = argsAndData.repoData.cfg.mapper
+            elif defaultMapper != argsAndData.repoData.cfg.mapper:
                 defaultMapper = None
                 break
-        for output in outputs:
-            repoData = ioRepoDatas.get(output)
-            if repoData.cfgOrigin == 'new' and repoData.cfg.mapper is None:
+        for argsAndData in outputs:
+            if argsAndData.repoData.cfgOrigin == 'new' and argsAndData.repoData.cfg.mapper is None:
                 if defaultMapper is None:
                     raise RuntimeError(
                         ("No default mapper could be established from inputs:{} and no mapper specified " +
-                         "for output:{}").format(inputs, repoData))
+                         "for output:{}").format(inputs, argsAndData.repoData))
                 else:
-                    repoData.cfg.mapper = defaultMapper
+                    argsAndData.repoData.cfg.mapper = defaultMapper
 
-    def _makeAndConnectParentRepoDatas(self, inputRepoDatas, outputRepoDatas, ioRepoDatas):
+    def _makeAndConnectParentRepoDatas(self, inputs, outputs):
         """For each input, look in the parents dict for each cfg parent, make a
         repoData and get the cfg for it. Add a reference from each RepoData to
         its parent RepoDatas.
@@ -630,12 +705,10 @@ class Butler(object):
 
         Parameters
         ----------
-        inputRepoDatas : list of RepoData
-            list of input RepoDatas
-        outputRepoDatas : list of RepoData
-            list of output RepoDatas
-        ioRepoDatas : dict of RepositoryArgs, RepoData
-            RepoDatas associated with input and output RepositoryArgs
+        inputs : list of ArgsAndData
+            the input args and related RepoData for each repository
+        outputs : list of ArgsAndData
+            the output args and related RepoData for each repository
 
         Returns
         -------
@@ -675,23 +748,23 @@ class Butler(object):
                     addParents(parentRepoData)
 
         parents = {}  # key can be URI or RepositoryCfg. Value is a RepoData
-        for repoData in inputRepoDatas:
-            addParents(repoData)
+        for argsAndData in inputs:
+            addParents(argsAndData.repoData)
 
-        for repoData in outputRepoDatas:
-            for parent in repoData.cfg.parents:
+        for argsAndData in outputs:
+            for parent in argsAndData.repoData.cfg.parents:
                 parentToAdd = None
-                for otherRepoData in ioRepoDatas.values():
+                for otherArgsAndData in inputs + outputs:
                     if isinstance(parent, RepositoryCfg):
-                        if otherRepoData.cfg == parent:
-                            parentToAdd = otherRepoData
+                        if otherArgsAndData.repoData.repoData.cfg == parent:
+                            parentToAdd = otherArgsAndData.repoData
                             break
-                    elif otherRepoData.cfg.root == parent:
-                        parentToAdd = otherRepoData
+                    elif otherArgsAndData.repoData.cfg.root == parent:
+                        parentToAdd = otherArgsAndData.repoData
                         break
                 if not parentToAdd:
                     raise RuntimeError("TODO write a good message: could not find parent")
-                repoData.addParentRepoData(parentToAdd)
+                argsAndData.repoData.addParentRepoData(parentToAdd)
         return parents.values()
 
     @staticmethod
@@ -719,34 +792,26 @@ class Butler(object):
             elif otherRepoData.cfg.root == parent:
                 repoData = otherRepoData
                 break
-        if repoData is None:
-            import pdb; pdb.set_trace()
         return repoData
 
     @staticmethod
-    def _setRepoDataTags(inputs, outputs, repoDataSet):
+    def _setRepoDataTags(inputs, outputs):
         """Set the tags from each repoArgs into all its parent repoArgs so that they can be included in tagged
         searches.
 
         Parameters
         ----------
-        inputs : list of RepositoryArgs
-            butler input repositoryArgs
-        outputs : list of RepositoryArgs
-            butler output repositoryArgs
-        repoDataSet : set of RepoData
-            RepoData for each repo used by this Butler
+        inputs : list of ArgsAndData
+            the input args and related RepoData for each repository
+        outputs : list of ArgsAndData
+            the output args and related RepoData for each repository
         """
         def setTags(repoData, tags):
-            if repoData is None:
-                import pdb; pdb.set_trace()
             repoData.addTags(tags)
-            for parent in repoData.cfg.parents:
-                parentRepoData = Butler._getParentRepoData(parent, ioRepoDataDict.values())
+            for parentRepoData in repoData.parentRepoDatas:
                 setTags(parentRepoData, tags)
-        for args in outputs + inputs:
-            repoData = ioRepoDataDict[args]
-            setTags(repoData, args.tags)
+        for argsAndData in outputs + inputs:
+            setTags(argsAndData.repoData, argsAndData.repoArgs.tags)
 
     def _convertV1Args(self, root, mapper, mapperArgs):
         """Convert Butler V1 args (root, mapper, mapperArgs) to V2 args (inputs, outputs)
