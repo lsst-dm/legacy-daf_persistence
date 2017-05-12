@@ -251,7 +251,7 @@ class ButlerDataRef(object):
 
         if level is None:
             levelSet = set()
-            for repoData in self.butlerSubset.butler._repos.all().values():
+            for repoData in self.butlerSubset.butler._repos.all():
                 levelSet.add(repoData.repo._mapper.getDefaultSubLevel(
                              self.butlerSubset.level))
             if len(levelSet) > 1:

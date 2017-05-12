@@ -592,20 +592,30 @@ class Butler(object):
                 continue
             if output.repoData.isNewRepository:
                 continue
-            repoParents = output.repoData.cfg.parents
-            if repoParents is None:
+            if output.repoData.cfg.parents is None:
                 continue
-            butlerParents = self._getParents(output.repoData, inputs, outputs)
 
-            if len(repoParents) > len(butlerParents):
-                butlerParents.append([None for i in range(len(repoParents) - len(butlerParents))])
-            pairedParents = zip(repoParents, butlerParents)
-            for ppIdx in range(len(pairedParents)):
+            def makePairedParents(repoData, inputs, outputs):
+                """get a list of tuples [[repoDataParent, butlerIOParent]]"""
+                repoParents = repoData.cfg.parents
+                butlerParents = self._getParents(repoData, inputs, outputs)
+                if len(repoParents) > len(butlerParents):
+                    butlerParents.append([None for i in range(len(repoParents) - len(butlerParents))])
+                return zip(repoParents, butlerParents)
+
+            ppIdx = 0
+            pairedParents = makePairedParents(output.repoData, inputs, outputs)
+            while True:
+                if ppIdx >= len(pairedParents):
+                    break
                 if pairedParents[ppIdx][0] != pairedParents[ppIdx][1]:
                     newInput = RepositoryArgs(root=pairedParents[ppIdx][0], mode='r')
                     newInput = self._makeRepoDataForInputsAndOutputs([newInput], [])[0]
                     self._getCfgsForInputsAndOutputs(newInput, [])
                     inputs.insert(ppIdx, newInput[0])
+                    pairedParents = makePairedParents(output.repoData, inputs, outputs)
+                else:
+                    ppIdx += 1
 
     def _setAndVerifyParentsLists(self, inputs, outputs):
         """For each RepoData in the inputs & outputs of this Butler, establish its parents list. For new
