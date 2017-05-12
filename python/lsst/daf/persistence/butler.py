@@ -716,6 +716,10 @@ class Butler(object):
                         cfg = parent
                     else:
                         cfg = Storage.getRepositoryCfg(parent)
+                        if cfg is None:
+                            cfg = self._getOldButlerRepositoryCfg(RepositoryArgs(root=parent, mode='r'))
+                    if cfg is None:
+                        raise RuntimeError("Could not locate parent repository at {}".format(parent))
                     # create a RepoData for the parent
                     parentRepoData = RepoData()
                     # put the cfg in the parent RepoData
