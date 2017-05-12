@@ -518,58 +518,6 @@ class Butler(object):
             parents.append(Butler._getParentVal(argsAndData.repoData))
         return parents
 
-    def _addMissingParentsOfOutputs(self, inputs, outputs):
-        """Parents of outputs must be inputs available to all the other outputs, so add those to the direct
-        inputs to the Butler.
-
-        Parameters
-        ----------
-        inputs : list of ArgsAndData
-            the input args and related RepoData for each repository
-        outputs : list of ArgsAndData
-            the output args and related RepoData for each repository
-        """
-
-        # The read-order of repositories is the outputs list in ascending order and then the inputs list in
-        # ascending order.
-
-        for m in range(len(outputs)):
-            offset = 0
-            for n in range(len(outputs)):
-                parentIdx = n + offset
-                if n == m or 'r' not in outputs[parentIdx].repoArgs.mode:
-                    n += 1
-                    continue
-                actualParent = Butler._getParentVal(outputs[parentIdx].repoData) \
-                    if parentIdx < len(outputs) else None
-                expectedParent = outputs[m].repoData.cfg.parents[n] \
-                    if outputs[m].repoData.cfg.parents else None
-                if expectedParent != actualParent:
-                    raise RuntimeError("Missing output:{}, got:{}".format(expectedParent, actualParent))
-
-
-
-
-        # for argsAndData in outputs:
-        #     parents = self._getParents(argsAndData.repoData, inputs, outputs)
-        #     outputParents = argsAndData.repoData.cfg.parents
-        #     for i in len(outputParents):
-        #         if parents[i] != outputParents[i]:
-        #             # inputs
-        #             if isinstance(parent, RepositoryCfg):
-        #                 cfg = parent
-        #             else:
-        #                 cfg = Storage.getRepositoryCfg(parent)
-        #             argsAndData = ArgsAndData(RepositoryArgs(root=parents[i]))
-
-
-        # # for each output:
-        # #   parents = get parents based on inputs (without the output, if it's readable)
-        # #   if there is a parent output.parents that is not in parent.parents:
-        # #   make a repo data for it, get the cfg & insert it
-        # #   add it to inputs. Args can be just cfgroot.
-
-
     def _getCfgsForInputsAndOutputs(self, inputs, outputs):
         """Get or make a RepositoryCfg for each input & output RepositoryArgs, and put the cfg into the
         RepoData.
@@ -635,6 +583,29 @@ class Butler(object):
         if parent:
             cfg.addParents(parent)
         return cfg
+
+    def _addMissingParentsOfOutputs(self, inputs, outputs):
+        """The inputs list must contain the parents of outputs. We allow this to happen lazily by inserting
+        inputs into the inputs list according to what is found in the butler outputs list."""
+        for output in outputs:
+            if 'r' not in output.repoArgs.mode:
+                continue
+            if output.repoData.isNewRepository:
+                continue
+            repoParents = output.repoData.cfg.parents
+            if repoParents is None:
+                continue
+            butlerParents = self._getParents(output.repoData, inputs, outputs)
+
+            if len(repoParents) > len(butlerParents):
+                butlerParents.append([None for i in range(len(repoParents) - len(butlerParents))])
+            pairedParents = zip(repoParents, butlerParents)
+            for ppIdx in range(len(pairedParents)):
+                if pairedParents[ppIdx][0] != pairedParents[ppIdx][1]:
+                    newInput = RepositoryArgs(root=pairedParents[ppIdx][0], mode='r')
+                    newInput = self._makeRepoDataForInputsAndOutputs([newInput], [])[0]
+                    self._getCfgsForInputsAndOutputs(newInput, [])
+                    inputs.insert(ppIdx, newInput[0])
 
     def _setAndVerifyParentsLists(self, inputs, outputs):
         """For each RepoData in the inputs & outputs of this Butler, establish its parents list. For new
