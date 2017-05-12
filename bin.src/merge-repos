@@ -1,0 +1,40 @@
+#!/bin/env python
+
+import filecmp
+import os
+import shutil
+import sys
+
+# Usage: merge_repos destination source1 ...
+
+assert len(sys.argv) >= 3
+destination_repo = sys.argv[1]
+sources = sys.argv[2:]
+
+if not os.path.exists(destination_repo):
+    # Copy one of the sources to be the destination
+    shutil.copytree(sources.pop(), destination_repo, symlinks=True)
+
+for source_repo in sources:
+    for root, _, files in os.walk(source_repo):
+        if path != source_repo:
+            dest_dir = os.path.join(destination_repo, root)
+            if os.path.exists(dest_dir):
+                assert os.path.isdir(dest_dir)
+            else:
+                os.mkdir(dest_dir, os.stat(src_path).st_mode)
+        for f in files:
+            src_path = os.path.join(root, f)
+            dest_path = os.path.join(destination_repo, root, f)
+            if os.path.exists(dest_path):
+                if os.path.islink(src_path):
+                    assert os.path.islink(dest_path)
+                    assert os.readlink(src_path) == os.readlink(dest_path)
+                else:
+                    assert os.path.isfile(dest_path)
+                    assert filecmp.cmp(src_path, dest_path)
+            else:
+                if os.path.islink(src_path):
+                    os.link(os.readlink(src_path), dest_path)
+                else:
+                    shutil.copy2(src_path, dest_path)
