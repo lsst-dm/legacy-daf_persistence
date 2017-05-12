@@ -17,7 +17,7 @@ if not os.path.exists(destination_repo):
 
 for source_repo in sources:
     for root, _, files in os.walk(source_repo):
-        if path != source_repo:
+        if root != source_repo:
             dest_dir = os.path.join(destination_repo, root)
             if os.path.exists(dest_dir):
                 assert os.path.isdir(dest_dir)
