@@ -175,19 +175,6 @@ class RepositoryCfg(yaml.YAMLObject):
     def policy(self):
         return self._policy
 
-    def update(self, other):
-        """Update self with the values from other that are not None."""
-        if other._root is not None:
-            self._root = other._root
-        if other._mapper is not None:
-            self._mapper = other._mapper
-        if other._mapperArgs is not None:
-            self._mapperArgs = other._mapperArgs
-        if other._parents is not None:
-            self._parents = other._parents
-        if other._policy is not None:
-            self._policy = other._policy
-
     @staticmethod
     def makeFromArgs(repositoryArgs):
         cfg = RepositoryCfg(root=repositoryArgs.root,

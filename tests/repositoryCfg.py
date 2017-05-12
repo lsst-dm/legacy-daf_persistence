@@ -124,68 +124,6 @@ class TestCfgRelationship(unittest.TestCase):
                                        os.path.join(ROOT, 'repositoryCfg/c')),
                                outputs=os.path.join(ROOT, 'repositoryCfg/b'))
 
-
-class TestUpdate(unittest.TestCase):
-
-    rootDir = os.path.join(ROOT, 'repositoryCfg_TestUpdate')
-
-    def setUp(self):
-        self.tearDown()
-
-    def tearDown(self):
-        if os.path.exists(self.rootDir):
-            shutil.rmtree(self.rootDir)
-
-    def testUpdateIndividualParameter(self):
-        cfg1 = dp.RepositoryCfg(root=self.rootDir,
-                                mapper='lsst.daf.persistence.SomeMapper',
-                                mapperArgs = {},
-                                parents=[os.path.join(self.rootDir, 'a')],
-                                policy=None)
-        cfg1copy = copy.copy(cfg1)
-        newMapperArgs = {'calibRoot': os.path.join(self.rootDir, 'b')}
-        cfg2 = dp.RepositoryCfg(root=None,
-                                mapper=None,
-                                mapperArgs = newMapperArgs,
-                                parents=None,
-                                policy=None)
-        cfg1.update(cfg2)
-        cfg1copy.mapperArgs = {'calibRoot': os.path.join(self.rootDir, 'b')}
-        self.assertEqual(cfg1copy, cfg1)
-
-    def testUpdateAllParameters(self):
-        cfg1 = dp.RepositoryCfg(root=self.rootDir,
-                                mapper='lsst.daf.persistence.SomeMapper',
-                                mapperArgs = {},
-                                parents=[os.path.join(self.rootDir, 'a')],
-                                policy=None)
-        cfg1copy = copy.copy(cfg1)
-        cfg2 = dp.RepositoryCfg(root=os.path.join(self.rootDir, 'a'),
-                                mapper='lsst.daf.persistence.OtherMapper',
-                                mapperArgs = {'foo': 'bar'},
-                                parents=[os.path.join(self.rootDir, 'b')],
-                                policy={'exposures':
-                                        {'raw': {'template': 'foo.fits'}}})
-        cfg1.update(cfg2)
-        cfg1copy.mapperArgs = {'calibRoot': os.path.join(self.rootDir, 'b')}
-        self.assertEqual(cfg1, cfg2)
-
-    def testOverwriteExistingCfg(self):
-        """Test that writing a changed/updated repositoryCfg to an existing
-        location via PosixStorage raises a runtime error."""
-        cfg1 = dp.RepositoryCfg(root=self.rootDir,
-                                mapper='lsst.daf.persistence.SomeMapper',
-                                mapperArgs = {},
-                                parents=[os.path.join(self.rootDir, 'a')],
-                                policy=None)
-        dp.PosixStorage.putRepositoryCfg(cfg1)
-        cfg1reloaded = dp.PosixStorage.getRepositoryCfg(self.rootDir)
-        self.assertEqual(cfg1, cfg1reloaded)
-        cfg1.mapperArgs = {'foo': 'bar'}
-        with self.assertRaises(RuntimeError):
-            dp.PosixStorage.putRepositoryCfg(cfg1)
-
-
 class TestNestedCfg(unittest.TestCase):
 
     rootDir = os.path.join(ROOT, 'repositoryCfg_TestNestedCfg')
