@@ -368,20 +368,20 @@ class Butler(object):
         # convert the RepoArgs into RepoData
         inputs = [RepoData(args, 'input') for args in inputs]
         outputs = [RepoData(args, 'output') for args in outputs]
-        repoInfo = outputs + inputs
+        repoDataList = outputs + inputs
 
-        self._getCfgs(repoInfo)
+        self._getCfgs(repoDataList)
 
-        self._addParents(repoInfo)
+        self._addParents(repoDataList)
 
-        self._setAndVerifyParentsLists(repoInfo)
+        self._setAndVerifyParentsLists(repoDataList)
 
         self._setDefaultMapper(inputs, outputs)
 
-        self._connectParentRepoDatas(repoInfo)
+        self._connectParentRepoDatas(repoDataList)
 
         self._repos = RepoDataContainer()
-        for argsAndData in repoInfo:
+        for argsAndData in repoDataList:
             self._repos.add(argsAndData.repoData)
 
         self._repos._buildLookupLists(inputs, outputs)
@@ -389,7 +389,7 @@ class Butler(object):
         self._setRepoDataTags(inputs, outputs)
 
         # todo rewrite this more gooder.
-        for argsAndData in reversed(repoInfo):
+        for argsAndData in reversed(repoDataList):
             self._setParentRegistry(argsAndData)
             argsAndData.repoData.repo = Repository(argsAndData.repoData)
 
@@ -542,64 +542,6 @@ class Butler(object):
             parents.append(Butler._getParentVal(argsAndData.repoData))
         return parents
 
-    def _getCfgs(self, repoInfo):
-        """Get or make a RepositoryCfg for each input & output RepositoryArgs, and put the cfg into the
-        RepoData.
-        If the cfg exists, compare values to make sure it works with the args.
-        If the cfg does not exist, args must be for a writable repository.
-
-        Parameters
-        ----------
-        inputs : list of ArgsAndData
-            the input args and related RepoData for each repository
-        outputs : list of ArgsAndData
-            the output args and related RepoData for each repository
-
-        Raises
-        ------
-        RuntimeError
-            If the passed-in args indicate an existing repository but other cfg parameters in those args don't
-            match the existing repository's cfg a RuntimeError will be raised.
-        """
-        for argsAndData in repoInfo:
-            args = argsAndData.repoArgs
-            repoData = argsAndData.repoData
-            cfg = Storage.getRepositoryCfg(args.cfgRoot)
-            isV1Repository = False
-            if cfg is None:
-                cfg = self._getOldButlerRepositoryCfg(args)
-                if cfg is not None:
-                    isV1Repository = True
-            if cfg is None:
-                if 'w' not in args.mode:
-                    raise RuntimeError(
-                        "No cfg found for read-only input repository at {}".format(args.cfgRoot))
-                repoData.setCfg(cfg=RepositoryCfg.makeFromArgs(args),
-                                origin='new',
-                                root=args.cfgRoot,
-                                isV1Repository=isV1Repository)
-            else:
-                cfgMatchesArgs = True
-                if ((args.mapper is not None and cfg.mapper != args.mapper) or
-                        (args.mapperArgs is not None and cfg.mapperArgs != args.mapperArgs) or
-                        (args.policy is not None and cfg.mapperArgs != args.policy)):
-                    cfgMatchesArgs = False
-                # if it's an output repository, the args must match the existing cfg.
-                if 'w' in args.mode:
-                    if cfgMatchesArgs is False:
-                        raise RuntimeError(
-                            "Args and Cfg must match for writable repositories, cfg:{}, args:{}".format(
-                                cfg, args))
-                    repoData.setCfg(cfg=cfg, origin='existing', root=args.cfgRoot,
-                                    isV1Repository=isV1Repository)
-                # if it's an input repository, the cfg can overwrite the in-repo cfg.
-                else:
-                    if cfgMatchesArgs:
-                        repoData.setCfg(cfg=cfg, origin='existing', root=args.cfgRoot,
-                                        isV1Repository=isV1Repository)
-                    else:
-                        repoData.setCfg(cfg=cfg, origin='nested', root=None, isV1Repository=isV1Repository)
-
     @staticmethod
     def _getOldButlerRepositoryCfg(repositoryArgs):
         if Storage.isPosix(repositoryArgs.cfgRoot) is False:
@@ -613,6 +555,83 @@ class Butler(object):
         if parent:
             cfg.addParents(parent)
         return cfg
+
+    @staticmethod
+    def _getRepositoryCfg(repositoryArgs):
+        """Try to get a repository from the location described by cfgRoot.
+
+        Parameters
+        ----------
+        repositoryArgs : RepositoryArgs
+            Describes the location of a Repository.
+
+        Returned
+        --------
+        (RepositoryCfg or None, bool)
+            The RepositoryCfg, or none if one can be found, and True if the RepositoryCfg was created by
+            reading an Old Butler repository, or False if it is a New Butler Repository.
+        """
+        cfg = Storage.getRepositoryCfg(repositoryArgs.cfgRoot)
+        isOldButlerRepository = False
+        if cfg is None:
+            cfg = Butler._getOldButlerRepositoryCfg(repositoryArgs)
+            if cfg is not None:
+                isOldButlerRepository = True
+        return cfg, isOldButlerRepository
+
+    def _getCfgs(self, repoDataList):
+        """Get or make a RepositoryCfg for each RepoData, and add the cfg to the RepoData.
+        If the cfg exists, compare values to make sure it works with the args.
+        If the cfg does not exist, args must be for a writable repository.
+
+        Parameters
+        ----------
+        repoDataList : list of RepoData
+            The RepoData that are output and inputs of this Butler
+
+        Raises
+        ------
+        RuntimeError
+            If the passed-in args indicate an existing repository but other cfg parameters in those args don't
+            match the existing repository's cfg a RuntimeError will be raised.
+        """
+        def cfgMatchesArgs(args, cfg):
+            """Test if there are any values in an args that conflict with the values in a cfg"""
+            if args.mapper is not None and cfg.mapper != args.mapper:
+                return False
+            if args.mapperArgs is not None and cfg.mapperArgs != args.mapperArgs:
+                return False
+            if args.policy is not None and cfg.policy != args.policy:
+                return False
+            return True
+
+        for repoData in repoDataList:
+            cfg, isOldButlerRepository = self._getRepositoryCfg(repoData.repoArgs)
+            if cfg is None:
+                if 'w' not in repoData.repoArgs.mode:
+                    raise RuntimeError(
+                        "No cfg found for read-only input repository at {}".format(repoData.repoArgs.cfgRoot))
+                repoData.setCfg(cfg=RepositoryCfg.makeFromArgs(repoData.repoArgs),
+                                origin='new',
+                                root=repoData.repoArgs.cfgRoot,
+                                isV1Repository=isOldButlerRepository)
+            else:
+                if 'w' in repoData.repoArgs.mode:
+                    # if it's an output repository, the args must match the existing cfg.
+                    if cfgMatchesArgs(repoData.repoArgs, cfg) is False:
+                        raise RuntimeError(
+                            "Args and Cfg must match for writable repositories, cfg:{}, args:{}".format(
+                                cfg, repoData.repoArgs))
+                    repoData.setCfg(cfg=cfg, origin='existing', root=repoData.repoArgs.cfgRoot,
+                                    isV1Repository=isOldButlerRepository)
+                else:
+                    # if it's an input repository, the cfg can overwrite the in-repo cfg.
+                    if cfgMatchesArgs(repoData.repoArgs, cfg):
+                        repoData.setCfg(cfg=cfg, origin='existing', root=repoData.repoArgs.cfgRoot,
+                                        isV1Repository=isOldButlerRepository)
+                    else:
+                        repoData.setCfg(cfg=cfg, origin='nested', root=None,
+                                        isV1Repository=isOldButlerRepository)
 
     def _argsAndDataMatchesCfg(self, argsAndData, cfg):
         if argsAndData.repoData.cfg == cfg:
