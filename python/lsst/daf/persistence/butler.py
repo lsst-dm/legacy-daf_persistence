@@ -72,7 +72,7 @@ class ButlerCfg(Policy, yaml.YAMLObject):
 class RepoData(object):
     """Container object for repository data used by Butler"""
 
-    def __init__(self):
+    def __init__(self, args, role):
         self.cfg = None
         self._cfgOrigin = None
         self.cfgRoot = None
@@ -80,8 +80,17 @@ class RepoData(object):
         self.parentRepoDatas = []
         self.isV1Repository = False
         self.tags = set()
-        self._role = None
+        self.role = role
         self.parentRegistry = None
+        self._repoArgs = args
+
+    @property
+    def repoArgs(self):
+        return self._repoArgs
+
+    @property
+    def repoData(self):
+        return self
 
     def __repr__(self):
         return ("{}(id={}, cfg={!r},\n\tcfgOrigin={}\n\tcfgRoot={}," +
@@ -265,10 +274,6 @@ class RepoDataContainer(object):
         self._outputs = [argsAndData.repoData for argsAndData in outputs]
 
 
-# Container for keeping RepositoryArgs and the associated RepoData together.
-ArgsAndData = collections.namedtuple('ArgsAndData', ['repoArgs', 'repoData'])
-
-
 class Butler(object):
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
 
@@ -360,7 +365,9 @@ class Butler(object):
         inputs, outputs = self._processInputArguments(
             root=root, mapper=mapper, inputs=inputs, outputs=outputs, **mapperArgs)
 
-        inputs, outputs = self._makeRepoInfosForInputsAndOutputs(inputs, outputs)
+        # convert the RepoArgs into RepoData
+        inputs = [RepoData(args, 'input') for args in inputs]
+        outputs = [RepoData(args, 'output') for args in outputs]
         repoInfo = outputs + inputs
 
         self._getCfgs(repoInfo)
@@ -511,33 +518,6 @@ class Butler(object):
                         "Butler does not support multiple output repos if any of the outputs are readable.")
         return inputs, outputs
 
-    def _makeRepoInfo(self, repositoryArgs, role):
-        repoInfo = [ArgsAndData(args, RepoData()) for args in repositoryArgs]
-        for ri in repoInfo:
-            ri.repoData.role = role
-        return repoInfo
-
-    def _makeRepoInfosForInputsAndOutputs(self, inputs, outputs):
-        """Make a repoData for each RepositoryArgs
-
-        Parameters
-        ----------
-        inputs : list of RepositoryArgs
-            RepositoryArgs that describe input repositories
-        outputs : list of RepositoryArgs
-            RepositoryArgs that describe output repositories
-
-        Returns
-        -------
-        tuple
-            (dict of args: RepoData instances,
-             list of RepoDatas in order that that matches inputs,
-             list of RepoDatas in order that that matches outputs)
-        """
-        inputs = self._makeRepoInfo(inputs, 'input')
-        outputs = self._makeRepoInfo(outputs, 'output')
-        return inputs, outputs
-
     @staticmethod
     def _getParentVal(repoData):
         """Get the value of this repoData as it should appear in the parents
@@ -680,7 +660,7 @@ class Butler(object):
 
                 args = RepositoryArgs(cfgRoot=repoParentCfg.root, mode='r')
                 role = 'input' if argsAndData.repoData.role == 'output' else 'parent'
-                newRepoInfo = self._makeRepoInfo([args], role)[0]
+                newRepoInfo = RepoData(args, role)
                 newRepoInfo.repoData.setCfg(cfg=repoParentCfg, origin=cfgOrigin, root=args.cfgRoot,
                                             isV1Repository=isV1Repository)
                 repoInfo.insert(parentIdxInRepoInfo, newRepoInfo)
