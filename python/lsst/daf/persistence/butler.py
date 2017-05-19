@@ -362,8 +362,6 @@ class Butler(object):
             repoData.parentRegistry = parentRegistry
             repoData.repo = Repository(repoData)
 
-        self.objectCache = weakref.WeakValueDictionary()
-
     def _getParentRegistry(self, repoData):
         """Get the first found registry that matches the the passed-in repo.
 
@@ -1082,10 +1080,6 @@ class Butler(object):
     def _read(self, location):
         """Unpersist an object using data inside a butlerLocation object.
 
-        A weakref to loaded objects is cached here. If the object specified by the butlerLocaiton has been
-        loaded before and still exists then the object will not be re-read. A ref to the already-existing
-        object will be returned instead.
-
         Parameters
         ----------
         location - ButlerLocation
@@ -1093,38 +1087,13 @@ class Butler(object):
 
         Returns
         -------
-        object - an instance of the object specified by the butlerLoction.
-            The object specified by the butlerLocation will either be loaded from persistent storage or will
-            be fetched from the object cache (if it has already been read before).
+        object - an instance of the object specified by the butlerLocation.
         """
-        def hasher(butlerLocation):
-            """Hash a butler location for use as a key in the object cache.
-
-            This requires that the dataId that was used to find the location is set in the usedDataId
-            parameter. If this is not set, the dataId that was used to do the mapping is not known and we
-            can't create a complete hash for comparison of like-objects.
-            """
-            if butlerLocation.usedDataId is None:
-                return None
-            return hash((butlerLocation.storageName, id(butlerLocation.mapper), id(butlerLocation.storage),
-                         tuple(butlerLocation.locationList), repr(sorted(butlerLocation.usedDataId.items())),
-                         butlerLocation.datasetType))
-
-        locationHash = hasher(location)
-        results = self.objectCache.get(locationHash, None) if locationHash is not None else None
-        if not results:
-            self.log.debug("Starting read from %s", location)
-            results = location.repository.read(location)
-            if len(results) == 1:
-                results = results[0]
-            self.log.debug("Ending read from %s", location)
-            try:
-                self.objectCache[locationHash] = results
-            except TypeError:
-                # some object types (e.g. builtins, like list) do not support weakref, and will raise a
-                # TypeError when we try to create the weakref. This is ok, we simply will not keep those
-                # types of objects in the cache.
-                pass
+        self.log.debug("Starting read from %s", location)
+        results = location.repository.read(location)
+        if len(results) == 1:
+            results = results[0]
+        self.log.debug("Ending read from %s", location)
         return results
 
     def __reduce__(self):
