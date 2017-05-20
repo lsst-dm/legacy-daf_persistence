@@ -687,53 +687,52 @@ class Butler(object):
                 repoDataList.insert(parentIdxInRepoDataList, newRepoInfo)
             repoDataIdx += 1
 
-    def _setAndVerifyParentsLists(self, repoInfo):
-        """For each RepoData in the inputs & outputs of this Butler, establish its parents list. For new
-        repositories, set the parents in the RepositoryCfg. For exsisting output repositories verify that the
-        RepositoryCfg's parents match the parents list.
-
-        Note that this means if an existing output is being loaded & written to then the user must pass
-        exactly the same inputs to Butler init as were passed when the output was created.
+    def _setAndVerifyParentsLists(self, repoDataList):
+        """Make a list of all the input repositories of this Butler, these are the parents of the outputs.
+        For new output repositories, set the parents in the RepositoryCfg. For exsisting output repositories
+        verify that the RepositoryCfg's parents match the parents list.
 
         Parameters
         ----------
-        inputs : list of ArgsAndData
-            the input args and related RepoData for each repository
-        outputs : list of ArgsAndData
-            the output args and related RepoData for each repository
+        repoDataList : list of RepoData
+            All the RepoDatas loaded by this butler, in search order.
+
+        Raises
+        ------
+        RuntimeError
+            If an existing output repository is loaded and its parents do not match the parents of this Butler
+            an error will be raised.
         """
-        def getIOParents(ofArgsAndData, repoInfo):
-            """make a parents list for repo in `ofArgsAndData` that is comprised of inputs and readable
+        def getIOParents(ofRepoData, repoDataList):
+            """make a parents list for repo in `ofRepoData` that is comprised of inputs and readable
             outputs (not parents-of-parents) of this butler"""
             parents = []
-            for argsAndData in repoInfo:
-                if argsAndData.repoData.role == 'parent':
+            for repoData in repoDataList:
+                if repoData.role == 'parent':
                     continue
-                if argsAndData is ofArgsAndData:
+                if repoData is ofRepoData:
                     continue
-                if argsAndData.repoData.role == 'output':
-                    if 'r' in argsAndData.repoArgs.mode:
+                if repoData.role == 'output':
+                    if 'r' in repoData.repoArgs.mode:
                         raise RuntimeError("If an output is readable it must be the only output.")
                         # and if this is the only output, this should have continued in
-                        # "if argsAndData is ofArgsAndData"
+                        # "if argsAndData is ofRepoData"
                     continue
-                parents.append(self._getParentVal(argsAndData.repoData))
+                parents.append(self._getParentVal(repoData))
             return parents
 
-        for argsAndData in repoInfo:
-            if argsAndData.repoData.role != 'output':
+        for repoData in repoDataList:
+            if repoData.role != 'output':
                 continue
-            forRepoData = argsAndData.repoData
-            parents = getIOParents(argsAndData, repoInfo)
-            # if forRepoData is new, add the parent cfgs to it.
-            if forRepoData.cfgOrigin == 'new':
-                forRepoData.cfg.addParents(parents)
-            elif forRepoData.cfgOrigin == 'existing' or forRepoData.cfgOrigin == 'nested':
-                if forRepoData.cfg.parents != parents:
-                    # import pdb; pdb.set_trace()
+            parents = getIOParents(repoData, repoDataList)
+            # if repoData is new, add the parent cfgs to it.
+            if repoData.cfgOrigin == 'new':
+                repoData.cfg.addParents(parents)
+            elif repoData.cfgOrigin == 'existing' or repoData.cfgOrigin == 'nested':
+                if repoData.cfg.parents != parents:
                     raise RuntimeError(
                         "Inputs of this Butler:{} do not match parents of existing writable cfg:{}".format(
-                            parents, forRepoData.cfg.parents))
+                            parents, repoData.cfg.parents))
 
     def _setDefaultMapper(self, inputs, outputs):
         """Establish a default mapper if there is one.
