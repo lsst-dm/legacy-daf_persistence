@@ -763,7 +763,7 @@ class Butler(object):
         for repoData in needyOutputs:
             repoData.cfg.mapper = defaultMapper
 
-    def _connectParentRepoDatas(self, repoInfo):
+    def _connectParentRepoDatas(self, repoDataList):
         """For each input, look in the parents dict for each cfg parent, make a
         repoData and get the cfg for it. Add a reference from each RepoData to
         its parent RepoDatas.
@@ -790,20 +790,20 @@ class Butler(object):
         outputs : list of RepositoryArgs
             The RepositoryArgs that are the outputs of this Butler.
         """
-        for argsAndData in repoInfo:
-            for parent in argsAndData.repoData.cfg.parents:
+        for repoData in repoDataList:
+            for parent in repoData.cfg.parents:
                 parentToAdd = None
-                for otherArgsAndData in repoInfo:
+                for otherRepoData in repoDataList:
                     if isinstance(parent, RepositoryCfg):
-                        if otherArgsAndData.repoData.repoData.cfg == parent:
-                            parentToAdd = otherArgsAndData.repoData
+                        if otherRepoData.repoData.repoData.cfg == parent:
+                            parentToAdd = otherRepoData.repoData
                             break
-                    elif otherArgsAndData.repoData.cfg.root == parent:
-                        parentToAdd = otherArgsAndData.repoData
+                    elif otherRepoData.repoData.cfg.root == parent:
+                        parentToAdd = otherRepoData.repoData
                         break
                 if not parentToAdd:
                     raise RuntimeError("TODO write a good message: could not find parent")
-                argsAndData.repoData.addParentRepoData(parentToAdd)
+                repoData.addParentRepoData(parentToAdd)
 
     @staticmethod
     def _getParentRepoData(parent, repoDataList):
