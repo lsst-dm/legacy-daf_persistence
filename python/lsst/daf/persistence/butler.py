@@ -631,59 +631,59 @@ class Butler(object):
                         repoData.setCfg(cfg=cfg, origin='nested', root=None,
                                         isV1Repository=isOldButlerRepository)
 
-    def _argsAndDataMatchesCfg(self, argsAndData, cfg):
-        if argsAndData.repoData.cfg == cfg:
-            return True
-        return False
+    def _addParents(self, repoDataList):
+        """For each repoData in the input list, see if its parents are the next items in the list, and if not
+        add the parent, so that the repoDataList includes parents and is in order to operate depth-first 0..n.
 
-    def _addParents(self, repoInfo):
-        repoInfoIdx = 0
+        Parameters
+        ----------
+        repoDataList : list of RepoData
+            The RepoData for the Butler outputs + inputs.
+
+        Raises
+        ------
+        RuntimeError
+            Description
+        """
+        repoDataIdx = 0
         while True:
-            if repoInfoIdx == len(repoInfo):
+            if repoDataIdx == len(repoDataList):
                 break
-            argsAndData = repoInfo[repoInfoIdx]
-            if 'r' not in argsAndData.repoArgs.mode:
-                repoInfoIdx += 1
-                continue  # the argsAndData only needs parents if it's readable.
-            if argsAndData.repoData.isNewRepository:
-                repoInfoIdx += 1
+            repoData = repoDataList[repoDataIdx]
+            if 'r' not in repoData.repoArgs.mode:
+                repoDataIdx += 1
+                continue  # the repoData only needs parents if it's readable.
+            if repoData.isNewRepository:
+                repoDataIdx += 1
                 continue  # if it's new the parents will be the inputs of this butler.
-            if argsAndData.repoData.cfg.parents is None:
-                repoInfoIdx += 1
+            if repoData.cfg.parents is None:
+                repoDataIdx += 1
                 continue  # if there are no parents then there's nothing to do.
-
-            for repoParentIdx in range(len(argsAndData.repoData.cfg.parents)):
+            for repoParentIdx in range(len(repoData.cfg.parents)):
                 # repoParent will be a URI or a repoCfg
-                repoParent = argsAndData.repoData.cfg.parents[repoParentIdx]
-                parentIdxInRepoInfo = repoInfoIdx + repoParentIdx + 1
-                isV1Repository = False
-                cfgOrigin = None
+                repoParent = repoData.cfg.parents[repoParentIdx]
+                parentIdxInRepoDataList = repoDataIdx + repoParentIdx + 1
                 if not isinstance(repoParent, RepositoryCfg):
-                    repoParentCfg = Storage.getRepositoryCfg(repoParent)
-                    if repoParentCfg is None:
-                        repoParentCfg = self._getOldButlerRepositoryCfg(
-                            RepositoryArgs(cfgRoot=repoParent, mode='r'))
-                        if repoParentCfg:
-                            isV1Repository = True
+                    args = RepositoryArgs(cfgRoot=repoParent, mode='r')
+                    repoParentCfg, isOldButlerRepository = self._getRepositoryCfg(args)
                     if repoParentCfg is None:
                         raise RuntimeError("Could not get cfg for repo at {}.".format(repoParent))
                     else:
                         cfgOrigin = 'existing'
                 else:
+                    isOldButlerRepository = False
                     repoParentCfg = repoParent
                     cfgOrigin = 'nested'
-
-                if (parentIdxInRepoInfo < len(repoInfo) and
-                        self._argsAndDataMatchesCfg(repoInfo[parentIdxInRepoInfo], repoParentCfg)):
+                if (parentIdxInRepoDataList < len(repoDataList) and
+                        repoDataList[parentIdxInRepoDataList].cfg == repoParentCfg):
                     continue
-
                 args = RepositoryArgs(cfgRoot=repoParentCfg.root, mode='r')
-                role = 'input' if argsAndData.repoData.role == 'output' else 'parent'
+                role = 'input' if repoData.role == 'output' else 'parent'
                 newRepoInfo = RepoData(args, role)
                 newRepoInfo.repoData.setCfg(cfg=repoParentCfg, origin=cfgOrigin, root=args.cfgRoot,
-                                            isV1Repository=isV1Repository)
-                repoInfo.insert(parentIdxInRepoInfo, newRepoInfo)
-            repoInfoIdx += 1
+                                            isV1Repository=isOldButlerRepository)
+                repoDataList.insert(parentIdxInRepoDataList, newRepoInfo)
+            repoDataIdx += 1
 
     def _setAndVerifyParentsLists(self, repoInfo):
         """For each RepoData in the inputs & outputs of this Butler, establish its parents list. For new
