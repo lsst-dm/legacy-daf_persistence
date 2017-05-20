@@ -376,7 +376,7 @@ class Butler(object):
 
         self._setAndVerifyParentsLists(repoDataList)
 
-        self._setDefaultMapper(inputs, outputs)
+        self._setDefaultMapper(repoDataList)
 
         self._connectParentRepoDatas(repoDataList)
 
@@ -734,39 +734,34 @@ class Butler(object):
                         "Inputs of this Butler:{} do not match parents of existing writable cfg:{}".format(
                             parents, repoData.cfg.parents))
 
-    def _setDefaultMapper(self, inputs, outputs):
-        """Establish a default mapper if there is one.
+    def _setDefaultMapper(self, repoDataList):
+        """Establish a default mapper if there is one and assign it to outputs that do not have a mapper
+        assigned.
 
         If all inputs have the same mapper it will be used as the default mapper.
 
         Parameters
         ----------
-        inputs : list of ArgsAndData
-            the input args and related RepoData for each repository
-        outputs : list of ArgsAndData
-            the output args and related RepoData for each repository
+        repoDataList : list of RepoData
+            All the RepoDatas loaded by this butler, in search order.
 
-        Returns
-        -------
-        None
+        Raises
+        ------
+        RuntimeError
+            If a default mapper can not be established and there is an output that does not have a mapper.
         """
-        defaultMapper = None
-        for argsAndData in inputs:
-            if defaultMapper is None:
-                defaultMapper = argsAndData.repoData.cfg.mapper
-            elif defaultMapper != argsAndData.repoData.cfg.mapper:
-                defaultMapper = None
-                break
-        for argsAndData in outputs:
-            if ((argsAndData.repoData.cfgOrigin == 'new' or
-                    argsAndData.repoData.isV1Repository is True) and
-                    argsAndData.repoData.cfg.mapper is None):
-                if defaultMapper is None:
-                    raise RuntimeError(
-                        ("No default mapper could be established from inputs:{} and no mapper specified " +
-                         "for output:{}").format(inputs, argsAndData.repoData))
-                else:
-                    argsAndData.repoData.cfg.mapper = defaultMapper
+        needyOutputs = [rd for rd in repoDataList if rd.role == 'output' and rd.cfg.mapper is None]
+        if len(needyOutputs) is 0:
+            return
+        mappers = set([rd.cfg.mapper for rd in repoDataList if rd.role == 'input'])
+        if len(mappers) != 1:
+            inputs = [rd for rd in repoDataList if rd.role == 'input']
+            raise RuntimeError(
+                ("No default mapper could be established from inputs:{} and no mapper specified " +
+                 "for outputs:{}").format(inputs, needyOutputs))
+        defaultMapper = mappers.pop()
+        for repoData in needyOutputs:
+            repoData.cfg.mapper = defaultMapper
 
     def _connectParentRepoDatas(self, repoInfo):
         """For each input, look in the parents dict for each cfg parent, make a
