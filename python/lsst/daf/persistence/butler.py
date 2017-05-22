@@ -177,21 +177,19 @@ class RepoData(object):
 
 
 class RepoDataContainer(object):
-    """Container object for RepoData instances owned by a Butler instance."""
-
-    def __init__(self):
-        self._inputs = None
-        self._outputs = None
-        self._all = set()
-
-    def add(self, repoData):
-        """Add a RepoData to the container
+    """Container object for RepoData instances owned by a Butler instance.
 
         Parameters
         ----------
-        repoData - RepoData instance to add
-        """
-        self._all.add(repoData)
+        repoDataList : list of RepoData
+            repoData - RepoData instance to add
+    """
+
+    def __init__(self, repoDataList):
+        self._inputs = None
+        self._outputs = None
+        self._all = repoDataList
+        self._buildLookupLists()
 
     def inputs(self):
         """Get a list of RepoData that are used to as inputs to the Butler.
@@ -225,8 +223,6 @@ class RepoDataContainer(object):
         -------
         A list of RepoData with writable repositories, in the order to be use when searching.
         """
-        if self._all is None:
-            raise RuntimeError("The all list is not yet initialized.")
         return self._all
 
     def __repr__(self):
@@ -236,26 +232,8 @@ class RepoDataContainer(object):
             self._outputs,
             self._all)
 
-    def _buildLookupLists(self, inputs, outputs):
-        """Buld the lists of inputs, outputs, and all repo datas in lookup
-        order.
-
-        Parameters
-        ----------
-        inputs : list of RepoData
-            The input RepoDatas, in order.
-        outputs : list of RepoData
-            The output RepoDatas, in order.
-
-        Returns
-        -------
-        None
-        """
-        if self._inputs is not None or self._outputs is not None:
-            raise RuntimeError("Lookup lists are already built.")
-        self._inputs = []
-
-        alreadyAdded = set()
+    def _buildLookupLists(self):
+        """Buld the lists of inputs, outputs, and all repo datas in lookup order."""
 
         def addToList(repoData, lst):
             """Add a repoData and each of its parents (depth first) to a list"""
@@ -266,6 +244,12 @@ class RepoDataContainer(object):
             for parent in repoData.parentRepoDatas:
                 addToList(parent, lst)
 
+        if self._inputs is not None or self._outputs is not None:
+            raise RuntimeError("Lookup lists are already built.")
+        inputs = [repoData for repoData in self.all() if repoData.role == 'input']
+        outputs = [repoData for repoData in self.all() if repoData.role == 'output']
+        self._inputs = []
+        alreadyAdded = set()
         for argsAndData in outputs:
             if 'r' in argsAndData.repoArgs.mode:
                 addToList(argsAndData.repoData, self._inputs)
@@ -380,11 +364,7 @@ class Butler(object):
 
         self._connectParentRepoDatas(repoDataList)
 
-        self._repos = RepoDataContainer()
-        for argsAndData in repoDataList:
-            self._repos.add(argsAndData.repoData)
-
-        self._repos._buildLookupLists(inputs, outputs)
+        self._repos = RepoDataContainer(repoDataList)
 
         self._setRepoDataTags(inputs, outputs)
 
