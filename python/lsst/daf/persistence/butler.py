@@ -366,7 +366,7 @@ class Butler(object):
 
         self._repos = RepoDataContainer(repoDataList)
 
-        self._setRepoDataTags(inputs, outputs)
+        self._setRepoDataTags()
 
         # todo rewrite this more gooder.
         for argsAndData in reversed(repoDataList):
@@ -810,18 +810,9 @@ class Butler(object):
                 break
         return repoData
 
-    @staticmethod
-    def _setRepoDataTags(inputs, outputs):
+    def _setRepoDataTags(self):
         """Set the tags from each repoArgs into all its parent repoArgs so that they can be included in tagged
-        searches.
-
-        Parameters
-        ----------
-        inputs : list of ArgsAndData
-            the input args and related RepoData for each repository
-        outputs : list of ArgsAndData
-            the output args and related RepoData for each repository
-        """
+        searches."""
         def setTags(repoData, tags, context):
             if id(repoData) in context:
                 return
@@ -829,8 +820,7 @@ class Butler(object):
             context.add(id(repoData))
             for parentRepoData in repoData.parentRepoDatas:
                 setTags(parentRepoData, tags, context)
-        # import pdb; pdb.set_trace()
-        for argsAndData in outputs + inputs:
+        for argsAndData in self._repos.outputs() + self._repos.inputs():
             setTags(argsAndData.repoData, argsAndData.repoArgs.tags, set())
 
     def _convertV1Args(self, root, mapper, mapperArgs):
