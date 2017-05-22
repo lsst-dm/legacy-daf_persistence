@@ -93,12 +93,19 @@ class RepoData(object):
         return self
 
     def __repr__(self):
-        return ("{}(id={}, cfg={!r},\n\tcfgOrigin={}\n\tcfgRoot={}," +
-                "\n\trepo={},\n\tparentRepoDatas={}," +
-                "\n\tisV1Repository={}, \n\trole={}, " +
-                "\n\tparentRegistry={})").format(
+        return ("{}(id={},\n\t"
+                "repoArgs={}\n\t"
+                "cfg={!r},\n\t"
+                "cfgOrigin={},\n\t"
+                "cfgRoot={},\n\t" +
+                "repo={},\n\t"
+                "parentRepoDatas={},\n\t" +
+                "isV1Repository={},\n\t"
+                "role={},\n\t" +
+                "parentRegistry={})\n\t").format(
                     self.__class__.__name__,
                     id(self),
+                    self.repoArgs,
                     self.cfg,
                     self.cfgOrigin,
                     self.cfgRoot,
