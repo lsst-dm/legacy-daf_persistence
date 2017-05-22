@@ -1078,7 +1078,6 @@ class Butler(object):
 
         return bool(location)
 
-
     def _locate(self, datasetType, dataId, write):
         """Get one or more ButlerLocations and/or ButlercComposites.
 
@@ -1163,7 +1162,6 @@ class Butler(object):
                 pythonType = doImport(pythonType)
         bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
         return lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
-
 
     def get(self, datasetType, dataId=None, immediate=True, **rest):
         """Retrieves a dataset given an input collection data id.
