@@ -505,6 +505,24 @@ class Butler(object):
                 if len(outputs) > 1:
                     raise RuntimeError(
                         "Butler does not support multiple output repos if any of the outputs are readable.")
+
+        # Handle the case where the output is readable and is also passed in as one of the inputs by removing
+        # the input. This supports a legacy use case in pipe_tasks where the input is also passed as the
+        # output, to the command line parser.
+        def inputIsInOutputs(inputArgs, outputArgsList):
+            for o in outputArgsList:
+                if ('r' in o.mode and
+                        o.root == inputArgs.root and
+                        o.mapper == inputArgs.mapper and
+                        o.mapperArgs == inputArgs.mapperArgs and
+                        o.tags == inputArgs.tags and
+                        o.policy == inputArgs.policy):
+                    self.log.debug(("Input repositoryArgs {} is also listed in outputs as readable; " +
+                                    "throwing away the input.").format(inputArgs))
+                    return True
+            return False
+
+        inputs = [args for args in inputs if not inputIsInOutputs(args, outputs)]
         return inputs, outputs
 
     @staticmethod
