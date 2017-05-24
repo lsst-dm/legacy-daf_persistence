@@ -25,6 +25,7 @@ from builtins import object
 
 import os
 import shutil
+import tempfile
 import unittest
 import yaml
 
@@ -123,6 +124,30 @@ class TestCfgRelationship(unittest.TestCase):
                                        os.path.join(ROOT, 'repositoryCfg/c')),
                                outputs=os.path.join(ROOT, 'repositoryCfg/b'))
 
+    def testSymLinkInPath(self):
+        """Test that when a symlink is in an output repo path that the repoCfg
+        stored in the output repo has a parent path from the actual output
+        lcoation to the input repo."""
+        # create a repository at 'a'
+        repoADir = os.path.join(ROOT, 'repositoryCfg/a')
+        repoBDir = os.path.join(ROOT, 'repositoryCfg/b')
+        butler = dp.Butler(outputs=dp.RepositoryArgs(
+            mode='w', mapper=dpTest.EmptyTestMapper,
+            root=repoADir))
+        # create a symlink from 'b' to a temporary directory
+        tmpDir = tempfile.mkdtemp()
+        os.symlink(tmpDir, repoBDir)
+        # create an output repo at 'b' with the input repo 'a'
+        butler = dp.Butler(inputs=repoADir, outputs=repoBDir)
+        # verify a repoCfg in the tmp dir with a proper parent path from tmp
+        # to 'a' (not from 'b' to 'a')
+        cfg = dp.PosixStorage._getRepositoryCfg(tmpDir)
+        # verify that the parent link gotten via the symlink target is a path
+        # to A
+        self.assertEqual(repoADir, cfg.parents[0])
+        cfg = dp.PosixStorage._getRepositoryCfg(repoBDir)
+        # also verify that the parent gotten via the symlink is a path to A
+        self.assertEqual(repoADir, cfg.parents[0])
 
 # "fake" repository version 0
 class RepositoryCfg(yaml.YAMLObject):
