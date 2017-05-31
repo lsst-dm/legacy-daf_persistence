@@ -1,9 +1,9 @@
 // -*- lsst-c++ -*-
 
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008, 2009, 2010 LSST Corporation.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -11,17 +11,17 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
- 
+
 
 /** \file
  * \brief Implementation of Persistence class
@@ -48,7 +48,7 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "lsst/daf/persistence/LogicalLocation.h"
 #include "lsst/daf/base/Persistable.h"
 #include "lsst/pex/policy/Policy.h"
-#include "lsst/daf/persistence/Storage.h"
+#include "lsst/daf/persistence/FormatterStorage.h"
 
 namespace lsst {
 namespace daf {
@@ -66,39 +66,39 @@ Persistence::Persistence(lsst::pex::policy::Policy::Ptr policy) :
 Persistence::~Persistence(void) {
 }
 
-/** Create a Storage subclass configured for a particular access.
- * \param[in] storageType Name of Storage subclass as registered in
+/** Create a FormatterStorage subclass configured for a particular access.
+ * \param[in] storageType Name of FormatterStorage subclass as registered in
  * StorageRegistry
  * \param[in] location Location to persist to or retrieve from
  * (subclass-specific)
  * \param[in] persist True if persisting, false if retrieving
  */
-Storage::Ptr Persistence::_getStorage(std::string const& storageType,
-                                      LogicalLocation const& location,
-                                      bool persist) {
+FormatterStorage::Ptr Persistence::_getStorage(std::string const& storageType,
+                                               LogicalLocation const& location,
+                                               bool persist) {
     lsst::pex::policy::Policy::Ptr policyPtr;
     if (_policy && _policy->exists(storageType)) {
         policyPtr = _policy->getPolicy(storageType);
     }
-    return Storage::createInstance(storageType, location, persist, policyPtr);
+    return FormatterStorage::createInstance(storageType, location, persist, policyPtr);
 }
 
-/** Create a Storage subclass configured to persist to a location.
- * \param[in] storageType Name of Storage subclass as registered in
+/** Create a FormatterStorage subclass configured to persist to a location.
+ * \param[in] storageType Name of FormatterStorage subclass as registered in
  * StorageRegistry
  * \param[in] location Location to persist to (subclass-specific)
  */
-Storage::Ptr Persistence::getPersistStorage(std::string const& storageType,
+FormatterStorage::Ptr Persistence::getPersistStorage(std::string const& storageType,
                                             LogicalLocation const& location) {
     return _getStorage(storageType, location, true);
 }
 
-/** Create a Storage subclass configured to retrieve from a location.
- * \param[in] storageType Name of Storage subclass as registered in
+/** Create a FormatterStorage subclass configured to retrieve from a location.
+ * \param[in] storageType Name of FormatterStorage subclass as registered in
  * StorageRegistry
  * \param[in] location Location to retrieve from (subclass-specific)
  */
-Storage::Ptr Persistence::getRetrieveStorage(std::string const& storageType,
+FormatterStorage::Ptr Persistence::getRetrieveStorage(std::string const& storageType,
                                              LogicalLocation const& location) {
     return _getStorage(storageType, location, false);
 }
@@ -110,7 +110,7 @@ Storage::Ptr Persistence::getRetrieveStorage(std::string const& storageType,
  * correct place to put data in any of the Storages
  */
 void Persistence::persist(
-    lsst::daf::base::Persistable const& persistable, Storage::List const& storageList,
+    lsst::daf::base::Persistable const& persistable, FormatterStorage::List const& storageList,
     lsst::daf::base::PropertySet::Ptr additionalData) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
@@ -121,15 +121,15 @@ void Persistence::persist(
     // Find the appropriate Formatter.
     Formatter::Ptr f =
         Formatter::lookupFormatter(typeid(persistable), policyPtr);
-    // Use the Formatter instance to write the Persistable to each Storage
+    // Use the Formatter instance to write the Persistable to each FormatterStorage
     // in turn.  Commit the transactions (in order) when all writing is
     // complete.
-    for (Storage::List::const_iterator it = storageList.begin();
+    for (FormatterStorage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
         (*it)->startTransaction();
         f->write(&persistable, *it, additionalData);
     }
-    for (Storage::List::const_iterator it = storageList.begin();
+    for (FormatterStorage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
         (*it)->endTransaction();
     }
@@ -145,7 +145,7 @@ void Persistence::persist(
  * \return Bare pointer to new Persistable instance
  */
 lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
-    std::string const& persistableType, Storage::List const& storageList,
+    std::string const& persistableType, FormatterStorage::List const& storageList,
     lsst::daf::base::PropertySet::Ptr additionalData) {
     // Get the policies for all Formatters, if present
     std::string policyName = "Formatter";
@@ -155,10 +155,10 @@ lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
     }
     // Find the appropriate Formatter.
     Formatter::Ptr f = Formatter::lookupFormatter(persistableType, policyPtr);
-    // Use the Formatter instance to read from the first Storage; then update
-    // from each additional Storage in turn.
+    // Use the Formatter instance to read from the first FormatterStorage; then update
+    // from each additional FormatterStorage in turn.
     lsst::daf::base::Persistable* persistable = 0;
-    for (Storage::List::const_iterator it = storageList.begin();
+    for (FormatterStorage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
         (*it)->startTransaction();
         if (!persistable) {
@@ -167,7 +167,7 @@ lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
             f->update(persistable, *it, additionalData);
         }
     }
-    for (Storage::List::const_iterator it = storageList.begin();
+    for (FormatterStorage::List::const_iterator it = storageList.begin();
          it != storageList.end(); ++it) {
         (*it)->endTransaction();
     }
@@ -179,11 +179,11 @@ lsst::daf::base::Persistable* Persistence::unsafeRetrieve(
  * registered by its Formatter
  * \param[in] storageList List of storages to retrieve from (in order)
  * \param[in] additionalData Additional information needed to select the
- * correct data from any of the Storages
+ * correct data from any of the FormatterStorages
  * \return Shared pointer to new Persistable instance
  */
 lsst::daf::base::Persistable::Ptr Persistence::retrieve(
-    std::string const& persistableType, Storage::List const& storageList,
+    std::string const& persistableType, FormatterStorage::List const& storageList,
     lsst::daf::base::PropertySet::Ptr additionalData) {
     return lsst::daf::base::Persistable::Ptr(
         unsafeRetrieve(persistableType, storageList, additionalData));

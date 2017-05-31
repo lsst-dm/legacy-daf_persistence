@@ -52,7 +52,8 @@ class PosixParentSearch(unittest.TestCase):
         result. When root is not part of the path then root is not returned with the path result."""
         with open(os.path.join(PosixParentSearch.testDir, 'foo.txt'), 'w') as f:
             f.write('abc')
-        storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir)
+        storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir,
+                                          create=True)
         foundName = storage.search(storage.root, 'foo.txt', searchParents=True)
         self.assertEqual(foundName, ['foo.txt'])
 
@@ -64,7 +65,8 @@ class PosixParentSearch(unittest.TestCase):
         """Find a file with a search string that includes a FITS-style header extension."""
         with open(os.path.join(PosixParentSearch.testDir, 'foo.txt'), 'w') as f:
             f.write('abc')
-        storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir)
+        storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir,
+                                          create=True)
         foundName = storage.search(storage.root, 'foo.txt[0]', searchParents=True)
         self.assertEqual(foundName, ['foo.txt[0]'])
 
@@ -81,7 +83,8 @@ class PosixParentSearch(unittest.TestCase):
         with open(os.path.join(parentDir, 'foo.txt'), 'w') as f:
             f.write('abc')
         os.symlink('../a', os.path.join(childDir, '_parent'))
-        storage = dafPersist.PosixStorage(uri=childDir)
+        storage = dafPersist.PosixStorage(uri=childDir,
+                                          create=True)
 
         foundName = storage.search(storage.root, 'foo.txt', searchParents=True)
         self.assertEqual(storage.root, childDir)
@@ -104,7 +107,8 @@ class PosixParentSearch(unittest.TestCase):
                 f.write('abc')
         os.symlink('../a', os.path.join(parentDir, '_parent'))
         os.symlink('../b', os.path.join(childDir, '_parent'))
-        storage = dafPersist.PosixStorage(uri=childDir)
+        storage = dafPersist.PosixStorage(uri=childDir,
+                                          create=True)
 
         for name in ('foo.txt', 'bar.txt[0]'):
             foundName = storage.search(storage.root, name, searchParents=True)
@@ -126,12 +130,12 @@ class PosixParentSearch(unittest.TestCase):
         with open(os.path.join(parentDir, 'foo.txt'), 'w') as f:
             f.write('abc')
         os.symlink('../a', os.path.join(childDir, '_parent'))
-        storage = dafPersist.PosixStorage(uri=childDir)
+        storage = dafPersist.PosixStorage(uri=childDir, create=True)
         self.assertEquals(storage.search(storage.root, 'foo.txt', searchParents=True), ['_parent/foo.txt'])
         self.assertEquals(storage.search(storage.root, 'foo.txt', searchParents=False), None)
 
     def testNoResults(self):
-        storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir)
+        storage = dafPersist.PosixStorage(uri=PosixParentSearch.testDir, create=True)
         self.assertIsNone(storage.search(storage.root, 'fileThatDoesNotExist.txt', searchParents=True))
 
 

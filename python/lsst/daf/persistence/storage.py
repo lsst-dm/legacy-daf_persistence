@@ -23,22 +23,20 @@
 #
 from __future__ import absolute_import
 
-__all__ = []
-
-from future import standard_library
-standard_library.install_aliases()
 from builtins import object
-
+from future import standard_library
 import urllib.parse
-from .storage import Storage
+from . import NoRepositroyAtRoot
+standard_library.install_aliases()
 
-from lsst.utils import continueClass
 
-@continueClass
 class Storage:
     """Base class for storages"""
 
     storages = {}
+
+    def __init__(self):
+        self.repositoryCfgs = {}
 
     @staticmethod
     def registerStorageClass(scheme, cls):
@@ -73,16 +71,26 @@ class Storage:
             raise RuntimeError("Scheme '%s' already registered:%s" % (scheme, Storage.storages[scheme]))
         Storage.storages[scheme] = cls
 
-    @staticmethod
-    def getRepositoryCfg(uri):
-        """Get a RepositoryCfg from a location specified by uri."""
-        ret = None
+    def getRepositoryCfg(self, uri):
+        """Get a RepositoryCfg from a location specified by uri.
+
+        If a cfg is found then it is cached by the uri, so that multiple lookups
+        are not performed on storages that might be remote.
+
+        RepositoryCfgs are not supposed to change once they are created so this
+        should not lead to stale data.
+        """
+        cfg = self.repositoryCfgs.get(uri, None)
+        if cfg:
+            return cfg
         parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
-            ret = Storage.storages[parseRes.scheme].getRepositoryCfg(uri)
+            cfg = Storage.storages[parseRes.scheme].getRepositoryCfg(uri)
+            if cfg:
+                self.repositoryCfgs[uri] = cfg
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
-        return ret
+        return cfg
 
     @staticmethod
     def putRepositoryCfg(cfg, uri):
@@ -119,8 +127,8 @@ class Storage:
         return ret
 
     @staticmethod
-    def makeFromURI(uri):
-        '''Instantiate a storage sublcass from a URI.
+    def makeFromURI(uri, create=True):
+        '''Instantiate a StorageInterface sublcass from a URI.
 
         .. warning::
 
@@ -132,16 +140,30 @@ class Storage:
         ----------
         uri : string
             The uri to the root location of a repository.
+        create : bool, optional
+            If True The StorageInterface subclass should create a new
+            repository at the root location. If False then a new repository
+            will not be created.
 
         Returns
         -------
-        A Storage subclass instance.
+        A Storage subclass instance, or if create is False and a repository
+        does not exist at the root location then returns None.
+
+        Raises
+        ------
+        RuntimeError
+            When a StorageInterface subclass does not exist for the scheme
+            indicated by the uri.
         '''
         ret = None
         parseRes = urllib.parse.urlparse(uri)
         if parseRes.scheme in Storage.storages:
             theClass = Storage.storages[parseRes.scheme]
-            ret = theClass(uri=uri)
+            try:
+                ret = theClass(uri=uri, create=create)
+            except NoRepositroyAtRoot:
+                pass
         else:
             raise RuntimeError("No storage registered for scheme %s" % parseRes.scheme)
         return ret

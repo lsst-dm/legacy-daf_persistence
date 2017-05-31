@@ -320,6 +320,8 @@ class Butler(object):
                 'not be used with version 2 API (inputs, outputs)')
         self.datasetTypeAliasDict = {}
 
+        self.storage = Storage()
+
         # make sure inputs and outputs are lists, and if list items are a string convert it RepositoryArgs.
         inputs = listify(inputs)
         outputs = listify(outputs)
@@ -466,7 +468,7 @@ class Butler(object):
         if args.cfgRoot in self._repos.byCfgRoot:
             return
         # Get the RepositoryCfg, if it exists:
-        cfg = Storage.getRepositoryCfg(args.cfgRoot)
+        cfg = self.storage.getRepositoryCfg(args.cfgRoot)
         # Handle the case where the Repository exists and contains a RepositoryCfg file:
         if cfg:
             if not cfg.matchesArgs(args):
@@ -523,8 +525,7 @@ class Butler(object):
                 repoData = RepoData(args=args, cfg=cfg, isNewRepository=True)
                 self._repos.add(repoData)
 
-    @staticmethod
-    def _getParentsList(inputs, outputs):
+    def _getParentsList(self, inputs, outputs):
         parents = []
         # The parents of readable output repositories are handled as though they were passed to butler as
         # inputs.
@@ -533,7 +534,7 @@ class Butler(object):
         for args in outputs:
             if 'r' in args.mode and args.cfgRoot not in parents:
                 parents.append(args.cfgRoot)
-                cfg = Storage.getRepositoryCfg(args.cfgRoot)
+                cfg = self.storage.getRepositoryCfg(args.cfgRoot)
                 if cfg:
                     for parent in cfg.parents:
                         if parent not in parents:

@@ -21,8 +21,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from future import standard_library
-standard_library.install_aliases()
 from past.builtins import basestring
 import sys
 import copy
@@ -35,23 +33,40 @@ import shutil
 
 import yaml
 
-from . import (LogicalLocation, Persistence, Policy, StorageList, Registry,
-               Storage, RepositoryCfg, safeFileIo, ButlerLocation)
+from . import (LogicalLocation, Persistence, Policy, StorageList,
+               StorageInterface, Storage, safeFileIo, ButlerLocation,
+               NoRepositroyAtRoot)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
+from future import standard_library
+standard_library.install_aliases()
 
 
-class PosixStorage(Storage):
+class PosixStorage(StorageInterface):
+    """Defines the interface for a storage location on the local filesystem.
 
-    def __init__(self, uri):
-        """Initializer
+    Parameters
+    ----------
+    uri : string
+        URI or path that is used as the storage location.
+    create : bool
+        If True a new repository will be created at the root location if it
+        does not exist. If False then a new repository will not be created.
 
-        :return:
-        """
+    Raises
+    ------
+    NoRepositroyAtRoot
+        If create is False and a repository does not exist at the root
+        specified by uri then NoRepositroyAtRoot is raised.
+    """
+
+    def __init__(self, uri, create):
         self.log = Log.getLogger("daf.persistence.butler")
         self.root = self._pathFromURI(uri)
         if self.root and not os.path.exists(self.root):
+            if not create:
+                raise NoRepositroyAtRoot("No repository at {}".format(uri))
             safeMakeDir(self.root)
 
         # Always use an empty Persistence policy until we can get rid of it
@@ -488,7 +503,7 @@ class PosixStorage(Storage):
         shutil.copy(os.path.join(self.root, fromLocation), os.path.join(self.root, toLocation))
 
     def getLocalFile(self, path):
-        """Get the path to a local copy of the file, downloading it to a
+        """Get a handle to a local copy of the file, downloading it to a
         temporary if needed.
 
         Parameters
@@ -497,14 +512,19 @@ class PosixStorage(Storage):
 
         Returns
         -------
-        A path to a local copy of the file. May be the original file (if
-        storage is local).
+        A handle to a local copy of the file. If storage is remote it will be
+        a temporary file. If storage is local it may be the original file or
+        a temporary file. The file name can be gotten via the 'name' property
+        of the returned object.
         """
         p = os.path.join(self.root, path)
-        if os.path.exists(p):
-            return p
-        else:
-            return None
+        try:
+            return open(p)
+        except IOError as e:
+            if e.errno == 2:  # 'No such file or directory'
+                return None
+            else:
+                raise e
 
     def instanceSearch(self, path):
         """Search for the given path in this storage instance.
