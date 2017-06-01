@@ -139,7 +139,14 @@ class TestGetLocalFile(unittest.TestCase):
         f.close()
         del f
         f = storage.getLocalFile('foo.txt')
-        self.assertIsInstance(f, file)
+        try:
+            fileType = file
+        except NameError:
+            from io import IOBase
+            fileType = IOBase
+
+        isinstance(f, fileType)
+        self.assertIsInstance(f, fileType)
         self.assertEqual(f.read(), 'foobarbaz')
 
 
