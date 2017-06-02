@@ -44,14 +44,18 @@ class ButlerProxyTestCase(unittest.TestCase):
     inputDir = os.path.join(ROOT, 'root')
     outputDir = os.path.join(ROOT, 'ButlerProxyTestCase')
 
+    def removeTestDir(self):
+        if os.path.exists(self.outputDir):
+            shutil.rmtree(self.outputDir)
+
     def setUp(self):
-        self.tearDown()
+        self.removeTestDir()
         self.butler = dafPersist.Butler(self.inputDir,
                                         outPath=os.path.join(self.outputDir, "proxyOut"))
 
     def tearDown(self):
-        if os.path.exists(self.outputDir):
-            shutil.rmtree(self.outputDir)
+        del self.butler
+        self.removeTestDir()
 
     def testCheckProxy(self):
         """Attempt to cycle a DateTime object through the butler
@@ -98,12 +102,14 @@ class ButlerProxyTestCase(unittest.TestCase):
         self.assertIsInstance(dt, dafPersist.readProxy.ReadProxy)
         self.assertFalse(isValidDateTime(dt))
 
+
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()
