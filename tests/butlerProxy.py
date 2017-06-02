@@ -41,16 +41,17 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 class ButlerProxyTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
-    def setUp(self):
-        if os.path.exists(os.path.join(ROOT, 'root/proxyOut')):
-            shutil.rmtree(os.path.join(ROOT, 'root/proxyOut'))
+    inputDir = os.path.join(ROOT, 'root')
+    outputDir = os.path.join(ROOT, 'ButlerProxyTestCase')
 
-        self.butler = dafPersist.Butler(os.path.join(ROOT, "root"), outPath="proxyOut")
+    def setUp(self):
+        self.tearDown()
+        self.butler = dafPersist.Butler(self.inputDir,
+                                        outPath=os.path.join(self.outputDir, "proxyOut"))
 
     def tearDown(self):
-        del self.butler
-        if os.path.exists(os.path.join(ROOT, 'root/out')):
-            shutil.rmtree(os.path.join(ROOT, 'root/out'))
+        if os.path.exists(self.outputDir):
+            shutil.rmtree(self.outputDir)
 
     def testCheckProxy(self):
         """Attempt to cycle a DateTime object through the butler
