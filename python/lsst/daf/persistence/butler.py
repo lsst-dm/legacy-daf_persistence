@@ -434,10 +434,7 @@ class Butler(object):
           `inputs` and `outputs` ar New Butler init api.
            Old Butler and New Butler init API may not be mixed, Butler may be initialized with only the Old
            arguments or the New arguments.
-        * Verify that if there is a readable output that there is exactly one output. This restriction is in
-          place becuase all readable repositories must be parents of writable repositories, and for
-          consistency the DAG of readable repositories must always be the same. Keeping the list of parents
-          becomes very complicated in the presence of readable output repositories.
+        * Verify that if there is a readable output that there is exactly one output.
         * Make a copy of inputs & outputs so they may be modified without changing the passed-in args.
         * Convert any input/output values that are URI strings to RepositoryArgs.
         * Listify inputs & outputs.
