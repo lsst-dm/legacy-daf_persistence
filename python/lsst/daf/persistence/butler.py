@@ -231,8 +231,6 @@ class RepoData(object):
         return parents
 
     def addParentRepoData(self, parentRepoData):
-        if parentRepoData is None:
-            raise RuntimeError("parentRepoData should be an instance.")
         self.parentRepoDatas.append(parentRepoData)
 
     def addTags(self, tags):
@@ -863,8 +861,9 @@ class Butler(object):
                     elif otherRepoData.repoData.cfg.root == parent:
                         parentToAdd = otherRepoData.repoData
                         break
-                if not parentToAdd:
-                    raise RuntimeError("TODO write a good message: could not find parent")
+                if parentToAdd is None:
+                    raise RuntimeError(
+                        "Could not find a parent matching {} to add to {}".format(parent, repoData))
                 repoData.addParentRepoData(parentToAdd)
 
     @staticmethod
