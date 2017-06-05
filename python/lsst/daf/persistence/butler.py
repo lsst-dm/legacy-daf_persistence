@@ -429,10 +429,9 @@ class Butler(object):
 
         self._setRepoDataTags()
 
-        # todo rewrite this more gooder.
-        for argsAndData in reversed(repoDataList):
-            self._setParentRegistry(argsAndData)
-            argsAndData.repoData.repo = Repository(argsAndData.repoData)
+        for repoData in reversed(repoDataList):
+            self._setParentRegistry(repoData)
+            repoData.repo = Repository(repoData)
 
     def _setParentRegistry(self, argsAndData):
         """Get the first found registry that matches the the passed-in repo.
