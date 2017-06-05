@@ -70,7 +70,63 @@ class ButlerCfg(Policy, yaml.YAMLObject):
 
 
 class RepoData(object):
-    """Container object for repository data used by Butler"""
+    """Container object for repository data used by Butler
+
+    Parameters
+    ----------
+    args : RepositoryArgs
+        The arguments that are used to find or create the RepositoryCfg.
+    role : string
+        "input", "output", or "parent", indicating why Butler loaded this repository.
+        * input: the Repository was passed as a Butler input.
+        * output: the Repository was passed as a Butler output.
+        * parent: the Repository was specifed in the RepositoryCfg parents list of a readable repository.
+
+    Attributes
+    ----------
+    cfg: RepositoryCfg
+        The configuration for the Repository.
+
+    _cfgOrigin : string
+        "new", "existing", or "nested". Indicates the origin of the repository and its RepositoryCfg:
+        * new: it was created by this instance of Butler, and this instance of Butler will generate the
+          RepositoryCfg file.
+        * existing: it was found (via the root or cfgRoot argument)
+        * nested: the full RepositoryCfg was nested in another RepositoryCfg's parents list (this can happen
+          if parameters of an input specified by RepositoryArgs or dict does not entirely match an existing
+          RepositoryCfg).
+
+    cfgRoot : string
+        Path or URI to the locaiton of the RepositoryCfg file.
+
+    repo : lsst.daf.persistence.Repository
+        The Repository class instance.
+
+    parentRepoDatas : list of RepoData
+        The are parents of this Repository, as indicated this Repository's RepositoryCfg. If this is a new
+        Repository then these are the inputs to this Butler (and will be saved in the RepositoryCfg). These
+        RepoData objects are not owned by this RepoData, these are references to peer RepoData objects in the
+        Butler's RepoDataContainer.
+
+    isV1Repository : bool
+        True if this is an Old Butler repository. In this case the repository does not have a RepositoryCfg
+        file. It may have a _mapper file and may have a _parent symlink. It will never be treated as a "new"
+        repository, i.e. even though there is not a RepositoryCfg file, one will not be generated.
+        If False, this is a New Butler repository and is specified by RepositoryCfg file.
+
+    tags : set
+        Thes are values that may be used to restrict the search of input repositories. Details are available
+        in the RepositoryArgs and DataId classes.
+
+    role : string
+        "input", "output", or "parent", indicating why Butler loaded this repository.
+        * input: the Repository was passed as a Butler input.
+        * output: the Repository was passed as a Butler output.
+        * parent: the Repository was specifed in the RepositoryCfg parents list of a readable repository.
+
+    _repoArgs : RepositoryArgs
+        Contains the arguments that were used to specify this Repository.
+    """
 
     def __init__(self, args, role):
         self.cfg = None
