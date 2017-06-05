@@ -642,7 +642,8 @@ class Butler(object):
 
     def _getCfgs(self, repoDataList):
         """Get or make a RepositoryCfg for each RepoData, and add the cfg to the RepoData.
-        If the cfg exists, compare values to make sure it works with the args.
+        If the cfg exists, compare values. If values match then use the cfg as an "existing" cfg. If the
+        values do not match, use the cfg as a "nested" cfg.
         If the cfg does not exist, args must be for a writable repository.
 
         Parameters
