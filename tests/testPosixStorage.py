@@ -29,7 +29,15 @@ from lsst.utils import getPackageDir
 import lsst.utils.tests
 import shutil
 
+try:
+    FileType = file
+except NameError:
+    from io import IOBase
+    FileType = IOBase
+
+
 packageDir = os.path.join(getPackageDir('daf_persistence'))
+
 
 def setup_module(module):
     lsst.utils.tests.init()
@@ -139,7 +147,7 @@ class TestGetLocalFile(unittest.TestCase):
         f.close()
         del f
         f = storage.getLocalFile('foo.txt')
-        self.assertIsInstance(f, file)
+        self.assertIsInstance(f, FileType)
         self.assertEqual(f.read(), 'foobarbaz')
 
 
