@@ -822,31 +822,18 @@ class Butler(object):
             repoData.cfg.mapper = defaultMapper
 
     def _connectParentRepoDatas(self, repoDataList):
-        """For each input, look in the parents dict for each cfg parent, make a
-        repoData and get the cfg for it. Add a reference from each RepoData to
-        its parent RepoDatas.
-
-        All the outputs' parents should have been made already, because they
-        have to explicitly be inputs, this is verified in
-        _setAndVerifyParentsLists.
+        """For each RepoData in repoDataList, find its parent in the repoDataList and cache a reference to it.
 
         Parameters
         ----------
-        inputs : list of ArgsAndData
-            the input args and related RepoData for each repository
-        outputs : list of ArgsAndData
-            the output args and related RepoData for each repository
+        repoDataList : list of RepoData
+            All the RepoDatas loaded by this butler, in search order.
 
-        Returns
-        -------
-        A list (in no particular order) of the new parent repo datas.
-
-        Deleted Parameters
-        ------------------
-        inputs : list of RepositoryArgs
-            The RepositoryArgs that are the inputs to this Butler.
-        outputs : list of RepositoryArgs
-            The RepositoryArgs that are the outputs of this Butler.
+        Raises
+        ------
+        RuntimeError
+            When a parent is listed in the parents list but not found in the repoDataList. This is not
+            expected to ever happen and would indicate an internal Butler error.
         """
         for repoData in repoDataList:
             for parent in repoData.cfg.parents:
