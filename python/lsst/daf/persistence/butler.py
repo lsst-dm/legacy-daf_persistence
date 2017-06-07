@@ -614,8 +614,7 @@ class Butler(object):
             cfg.addParents(parent)
         return cfg
 
-    @staticmethod
-    def _getRepositoryCfg(repositoryArgs):
+    def _getRepositoryCfg(self, repositoryArgs):
         """Try to get a repository from the location described by cfgRoot.
 
         Parameters
@@ -629,7 +628,7 @@ class Butler(object):
             The RepositoryCfg, or none if one can be found, and True if the RepositoryCfg was created by
             reading an Old Butler repository, or False if it is a New Butler Repository.
         """
-        cfg = Storage.getRepositoryCfg(repositoryArgs.cfgRoot)
+        cfg = self.storage.getRepositoryCfg(repositoryArgs.cfgRoot)
         isOldButlerRepository = False
         if cfg is None:
             cfg = Butler._getOldButlerRepositoryCfg(repositoryArgs)
