@@ -362,8 +362,8 @@ class Butler(object):
 
     Initialization:
 
-    The preferred method of initialization is to pass in a RepositoryArgs instance, or a list of
-    RepositoryArgs to inputs and/or outputs.
+    The preferred method of initialization is to use the `inputs` and `outputs` __init__ paremeters. These
+    are described in the parameters section, below.
 
     For backward compatibility: this initialization method signature can take a posix root path, and
     optionally a mapper class instance or class type that will be instantiated using the mapperArgs input
@@ -389,14 +389,113 @@ class Butler(object):
                   multiple-repository support.
         Provides arguments to be passed to the mapper if the mapper input arg is a class type to be
         instantiated by Butler.
-    inputs - RepositoryArgs or string
+    inputs - RepositoryArgs, dict, or string
         Can be a single item or a list. Provides arguments to load an existing repository (or repositories).
         String is assumed to be a URI and is used as the cfgRoot (URI to the location of the cfg file). (Local
-        file system URI does not have to start with 'file://' and in this way can be a relative path).
-    outputs - RepositoryArg or string
-        Can be a single item or a list. Provides arguments to load one or more existing repositories or create
-        new ones. String is assumed to be a URI and as used as the repository root.
-    """
+        file system URI does not have to start with 'file://' and in this way can be a relative path). The
+        `RepositoryArgs` class can be used to provide more parameters with which to initialize a repository
+        (such as `mapper`, `mapperArgs`, `tags`, etc. See the `RepositoryArgs` documentation for more
+        details). A dict may be used as shorthand for a `RepositoryArgs` class instance. The dict keys must
+        match paramters to the `RepositoryArgs.__init__` function.
+    outputs - RepositoryArgs, dict, or string
+        Provides arguments to load one or more existing repositories or create new ones. The different types
+        are handled the same as for `inputs`.
+
+    The Butler init sequence loads all of the input and output repositories.
+    This creates the object hierarchy to read from and write to them. Each
+    repository can have 0 or more parents, which also get loaded as inputs.
+    This becomes a DAG of repositories. Ultimately, Butler creates a list of
+    these Repositories in the order that they are used.
+
+    Initialization Sequence
+    =======================
+
+    During initilization Butler creates a Repository class instance & support structure for each object
+    passed to `inputs` and `outputs` as well as the parent repositories recorded in the `RepositoryCfg` of
+    each existing readable repository.
+
+    This process is complex. It is explained below to shed some light on the intent of each step.
+
+    1. Input Argument Standardization
+    ---------------------------------
+
+    In `Butler._processInputArguments` the input arguments are verified to be legal (and a RuntimeError is
+    raised if not), and they are converted into an expected format that is used for the rest of the Butler
+    init sequence. See the docstring for `_processInputArguments`.
+
+    2. Create RepoData Objects
+    --------------------------
+
+    Butler uses an object, called `RepoData`, to keep track of information about each repository; each
+    repository is contained in a single `RepoData`. The attributes are explained in its docstring.
+
+    After `_processInputArguments`, a RepoData is instantiated and put in a list for each repository in
+    `outputs` and `inputs`. This list of RepoData, the `repoDataList`, now represents all the output and input
+    repositories (but not parent repositories) that this Butler instance will use.
+
+    3. Get `RepositoryCfg`s
+    -----------------------
+
+    `Butler._getCfgs` gets the `RepositoryCfg` for each repository the `repoDataList`. The behavior is
+    described in the docstring.
+
+    4. Add Parents
+    --------------
+
+    `Butler._addParents` then considers the the parents list in the `RepositoryCfg` of each `RepoData` in the
+    `repoDataList` and inserts new `RepoData` objects for each parent not represented in the proper location
+    in the `repoDataList`. Ultimately a flat list is built to represent the DAG of readable repositories
+    represented in depth-first order.
+
+    5. Set and Verify Parents of Outputs
+    ------------------------------------
+
+    To be able to load parent repositories when output repositories are used as inputs, the input repositories
+    are recorded as parents in the `RepositoryCfg` file of new output repositories. When an output repository
+    already exists, for consistency the Butler's inputs must match the list of parents specified the already-
+    existing output repository's `RepositoryCfg` file.
+
+    In `Butler._setAndVerifyParentsLists`, the list of parents is recorded in the `RepositoryCfg` of new
+    repositories. For existing repositories the list of parents is compared with the `RepositoryCfg`'s parents
+    list, and if they do not match a `RuntimeError` is raised.
+
+    6. Set the Default Mapper
+    -------------------------
+
+    If all the input repositories use the same mapper then we can assume that mapper to be the
+    "default mapper". If there are new output repositories whose `RepositoryArgs` do not specify a mapper and
+    there is a default mapper then the new output repository will be set to use that default mapper.
+
+    This is handled in `Butler._setDefaultMapper`.
+
+    7. Cache References to Parent RepoDatas
+    ---------------------------------------
+
+    In `Butler._connectParentRepoDatas`, in each `RepoData` in `repoDataList`, a list of `RepoData` object
+    references is  built that matches the parents specified in that `RepoData`'s `RepositoryCfg`.
+
+    This list is used later to find things in that repository's parents, without considering peer repository's
+    parents. (e.g. finding the registry of a parent)
+
+    8. Set Tags
+    -----------
+
+    Tags are described at https://ldm-463.lsst.io/v/draft/#tagging
+
+    In `Butler._setRepoDataTags`, for each each `RepoData`, the tags specified by its `RepositoryArgs` are
+    recorded in a set, and added to the tags set in each of its parents, for ease of lookup when mapping.
+
+    9. Find Parent Registry and Instantiate RepoData
+    ------------------------------------------------
+
+    At this point there is enough information to instantiate the `Repository` instances. There is one final
+    step before instantiating the Repository, which is to try to get a parent registry that can be used by the
+    child repository. The criteria for "can be used" is spelled out in `Butler._setParentRegistry`. However,
+    to get the registry from the parent, the parent must be instantiated. The `repoDataList`, in depth-first
+    search order, is built so that the most-dependent repositories are first, and the least dependent
+    repositories are last. So the `repoDataList` is reversed and the Repositories are instantiated in that
+    order; for each RepoData a parent registry is searched for, and then the Repository is instantiated with
+    whatever registry could be found."""
 
     def __init__(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
@@ -481,13 +580,17 @@ class Butler(object):
 
     def _processInputArguments(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
         """Process, verify, and standardize the input arguments.
-
         * Inputs can not be for Old Butler (root, mapper, mapperArgs) AND New Butler (inputs, outputs)
           `root`, `mapper`, and `mapperArgs` are Old Butler init api.
           `inputs` and `outputs` ar New Butler init api.
            Old Butler and New Butler init API may not be mixed, Butler may be initialized with only the Old
            arguments or the New arguments.
-        * Verify that if there is a readable output that there is exactly one output.
+        * Verify that if there is a readable output that there is exactly one output. (This restriction is in
+          place becuase all readable repositories must be parents of writable   repositories, and for
+          consistency the DAG of readable repositories must always be the same. Keeping the list   of parents
+          becomes very complicated in the presence of multiple readable output repositories. It is better to
+          only write to output repositories, and then create a new Butler instance and use the outputs as
+          inputs, and write to new output repositories.)
         * Make a copy of inputs & outputs so they may be modified without changing the passed-in args.
         * Convert any input/output values that are URI strings to RepositoryArgs.
         * Listify inputs & outputs.
