@@ -746,7 +746,7 @@ class Butler(object):
                     break
         return keys
 
-    def queryMetadata(self, datasetType, format=None, dataId={}, **rest):
+    def queryMetadata(self, datasetType, format, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
         input collection data id.
 
@@ -754,10 +754,8 @@ class Butler(object):
         ----------
         datasetType - str
             The type of dataset to inquire about.
-        key - str
-            A key giving the level of granularity of the inquiry.
         format - str, tuple
-            An optional key or tuple of keys to be returned.
+            Key or tuple of keys to be returned.
         dataId - DataId, dict
             The partial data id.
         **rest -
@@ -765,18 +763,14 @@ class Butler(object):
 
         Returns
         -------
-        A list of valid values or tuples of valid values as specified by the format (defaulting to the same as
-        the key) at the key's level of granularity.
+        A list of valid values or tuples of valid values as specified by the
+        format.
         """
 
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
-
-        if format is None:
-            format = (key,)
-        else:
-            format = sequencify(format)
+        format = sequencify(format)
 
         tuples = None
         for repoData in self._repos.inputs():
