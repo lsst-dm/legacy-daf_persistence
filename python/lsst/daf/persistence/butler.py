@@ -220,7 +220,8 @@ class RepoData(object):
         list of RepoData
             A list of the parents & grandparents etc of a given repo data, in depth-first search order.
         """
-        context = context if context is not None else set()
+        if context is None:
+            context = set()
         parents = []
         if id(self) in context:
             return parents
