@@ -299,7 +299,7 @@ class RepoDataContainer(object):
 
         def addToList(repoData, lst):
             """Add a repoData and each of its parents (depth first) to a list"""
-            if (id(repoData)) in alreadyAdded:
+            if id(repoData) in alreadyAdded:
                 return
             lst.append(repoData)
             alreadyAdded.add(id(repoData))
