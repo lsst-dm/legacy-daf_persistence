@@ -784,10 +784,12 @@ class TestParentRepository(unittest.TestCase):
 
     def setUp(self):
         self.testDir = os.path.join(ROOT, 'TestParentRepository')
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def tearDown(self):
         if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
+            shutil.rmtree(self.testDir, True)
 
     def test(self):
 
