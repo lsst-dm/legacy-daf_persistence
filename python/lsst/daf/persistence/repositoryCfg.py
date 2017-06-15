@@ -54,18 +54,12 @@ class RepositoryCfg(yaml.YAMLObject):
     """
     yaml_tag = u"!RepositoryCfg_v1"
 
-    def __init__(self, root, mapper, mapperArgs, parents, policy, deserializing=False):
+    def __init__(self, root, mapper, mapperArgs, parents, policy):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
-        #  Where possible we mangle the parents so that they are relative to root, for example if the root and
-        #  the parents are both in the same PosixStorage. The parents are stored in mangled form; when
-        #  deserializing the parents we do not re-mangle them.
-        if deserializing:
-            self._parents = parents
-        else:
-            self._parents = None
-            self.addParents(iterify(parents))
+        self._parents = None
+        self.addParents(iterify(parents))
         self._policy = policy
 
     @staticmethod
@@ -88,7 +82,11 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=d['_parents'], policy=d.get('_policy', None), deserializing=True)
+                            parents=None, policy=d.get('_policy', None))
+        #  Where possible we mangle the parents so that they are relative to root, for example if the root and
+        #  the parents are both in the same PosixStorage. The parents are serialized in mangled form; when
+        #  deserializing the parents we do not re-mangle them.
+        cfg._parents = d['_parents']
         return cfg
 
     def __eq__(self, other):
