@@ -61,6 +61,7 @@ class RepositoryCfg(yaml.YAMLObject):
         self._parents = None
         self.addParents(iterify(parents))
         self._policy = policy
+        self._dirty = True  # if _dirty, the parameters have been changed since the cfg was read or written.
 
     @staticmethod
     def v1Constructor(loader, node):
@@ -87,6 +88,7 @@ class RepositoryCfg(yaml.YAMLObject):
         #  the parents are both in the same PosixStorage. The parents are serialized in mangled form; when
         #  deserializing the parents we do not re-mangle them.
         cfg._parents = d['_parents']
+        cfg._dirty = False
         return cfg
 
     def __eq__(self, other):
@@ -118,6 +120,7 @@ class RepositoryCfg(yaml.YAMLObject):
     def mapper(self, mapper):
         if self._mapper is not None:
             raise RuntimeError("Should not set mapper over previous not-None value.")
+        self.dirty = True
         self._mapper = mapper
 
     @property
@@ -126,6 +129,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @mapperArgs.setter
     def mapperArgs(self, newDict):
+        self.dirty = True
         self._mapperArgs = newDict
 
     @property
@@ -154,6 +158,7 @@ class RepositoryCfg(yaml.YAMLObject):
             repository. If RepositoryCfg, newParents should be a RepositoryCfg
             that describes the parent repository in part or whole.
         """
+        self.dirty = True
         newParents = listify(newParents)
         if len(newParents) > 0 and self._parents is None:
             self._parents = []
@@ -172,6 +177,14 @@ class RepositoryCfg(yaml.YAMLObject):
     @property
     def policy(self):
         return self._policy
+
+    @property
+    def dirty(self):
+        return self._dirty
+
+    @dirty.setter
+    def dirty(self, val):
+        self._dirty = val
 
     @staticmethod
     def makeFromArgs(repositoryArgs):
