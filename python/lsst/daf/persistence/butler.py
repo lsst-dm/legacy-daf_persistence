@@ -893,6 +893,13 @@ class Butler(object):
                 repoData.cfg.addParents(parents)
             elif repoData.cfgOrigin == 'existing' or repoData.cfgOrigin == 'nested':
                 if repoData.cfg.parents != parents:
+                    # if the mismatch is because of new parents at the end of the list, which is to say that
+                    # if all(x==y for (x, y) in izip(a, b)) and len(a) < len(b)
+                    # where a is repoData.cfg.parents and b is parents:
+                    # then we need to keep track of the additional parents, and add them to the cfg.
+                    # this can be deferred until initing the repo, or maybe should be done right here?
+                    # note that another process may have already updated the persisted cfg. If it's not the
+                    # same as repoData.cfg.parents, then it must be exactly like parents.
                     raise RuntimeError(
                         "Inputs of this Butler:{} do not match parents of existing writable cfg:{}".format(
                             parents, repoData.cfg.parents))
