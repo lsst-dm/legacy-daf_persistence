@@ -51,6 +51,10 @@ def setFileMode(filename):
     os.chmod(filename, (~umask & 0o666))
 
 
+class FileForWriteOnceCompareSameFailure(RuntimeError):
+    pass
+
+
 @contextmanager
 def FileForWriteOnceCompareSame(name):
     """Context manager to get a file that can be written only once and all other writes will succeed only if
@@ -88,8 +92,8 @@ def FileForWriteOnceCompareSame(name):
                 return
             else:
                 # if the files do not match then the calling code was trying to write a non-matching file over
-                # the previous file, maybe it's a race condition? Iny any event, raise a runtime error.
-                raise RuntimeError("Written file does not match existing file.")
+                # the previous file, maybe it's a race condition? In any event, raise a runtime error.
+                raise FileForWriteOnceCompareSameFailure("Written file does not match existing file.")
 
 
 @contextmanager

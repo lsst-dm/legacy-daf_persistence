@@ -30,6 +30,7 @@ import os
 import urllib.parse
 import glob
 import shutil
+import fcntl
 
 import yaml
 
@@ -41,7 +42,6 @@ import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
 from future import standard_library
 standard_library.install_aliases()
-
 
 class PosixStorage(StorageInterface):
     """Defines the interface for a storage location on the local filesystem.
@@ -162,11 +162,7 @@ class PosixStorage(StorageInterface):
         -------
         A RepositoryCfg instance or None
         """
-        repositoryCfg = PosixStorage._getRepositoryCfg(uri)
-        if repositoryCfg is not None:
-            return repositoryCfg
-
-        return repositoryCfg
+        return PosixStorage._getRepositoryCfg(uri)
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
@@ -189,10 +185,17 @@ class PosixStorage(StorageInterface):
         -------
         None
         """
-        if loc is None or cfg.root == loc:
-            cfg = copy.copy(cfg)
+        def setRoot(cfg, loc):
+            loc = os.path.split(loc)[0]  # remove the `repoistoryCfg.yaml` file name
+            if loc is None or cfg.root == loc:
+                cfg = copy.copy(cfg)
+                loc = cfg.root
+                cfg.root = None
+            return cfg
+
+        log = Log.getLogger("daf.persistence.butler")
+        if loc is None:
             loc = cfg.root
-            cfg.root = None
         # This class supports schema 'file' and also treats no schema as 'file'.
         # Split the URI and take only the path; remove the schema fom loc if it's there.
         parseRes = urllib.parse.urlparse(loc)
@@ -200,8 +203,26 @@ class PosixStorage(StorageInterface):
         if not os.path.exists(loc):
             os.makedirs(loc)
         loc = os.path.join(loc, 'repositoryCfg.yaml')
-        with safeFileIo.FileForWriteOnceCompareSame(loc) as f:
-            yaml.dump(cfg, f)
+        try:
+            with safeFileIo.FileForWriteOnceCompareSame(loc) as f:
+                cfgToWrite = setRoot(cfg, loc)
+                yaml.dump(cfgToWrite, f)
+        except safeFileIo.FileForWriteOnceCompareSameFailure:
+            with open(loc, 'r') as fileForRead:
+                log.debug("Acquiring blocking exclusive lock on {}", loc)
+                fcntl.flock(fileForRead, fcntl.LOCK_EX)
+                # todo at this point another process may have changed the cfg from when WOCS failed and when
+                # the lock was aquired. The existing file may match exactly now, which I don't think `extend`
+                # accommodates currently.
+                existingCfg = PosixStorage.getRepositoryCfg(parseRes.path)
+                try:
+                    existingCfg.extend(cfg)
+                except RuntimeError as e:  # todo probably want a RuntimeError subclass
+                    raise RuntimeError("Can not extend existing repository cfg becuase: {}".format(e))
+                with open(loc, 'w') as fileForWrite:
+                    cfg = setRoot(cfg, loc)
+                    yaml.dump(cfg, fileForWrite)
+                log.debug("Releasing blocking exclusive lock on {}", loc)
 
     @staticmethod
     def getMapperClass(root):

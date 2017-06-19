@@ -43,3 +43,11 @@ class MultipleResults(RuntimeError):
             message += ' ' + str(location)
         super(MultipleResults, self).__init__(message)
         self.locations = locations
+
+
+class ParentsMismatch(RuntimeError):
+    """Raised when issues arise related to the list of parents in a RepositoryCfg not matching the expected
+    value.
+    """
+    def __init__(self, message):
+        super(ParentsMismatch, self).__init__(message)

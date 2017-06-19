@@ -116,13 +116,18 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(len(butler._repos.outputs()), 1)
         self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
 
-        # can't add a new parent to an existing output
+        # add a new parent to an existing output
         butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
                                                      mapper=dpTest.EmptyTestMapper,
                                                      root=os.path.join(ROOT, 'repositoryCfg/c')))
+        butler = dp.Butler(inputs=(os.path.join(ROOT, 'repositoryCfg/a'),
+                                   os.path.join(ROOT, 'repositoryCfg/c')),
+                           outputs=os.path.join(ROOT, 'repositoryCfg/b'))
+
+        # should raise if the input order gets reversed:
         with self.assertRaises(RuntimeError):
-            butler = dp.Butler(inputs=(os.path.join(ROOT, 'repositoryCfg/a'),
-                                       os.path.join(ROOT, 'repositoryCfg/c')),
+            butler = dp.Butler(inputs=(os.path.join(ROOT, 'repositoryCfg/c'),
+                                       os.path.join(ROOT, 'repositoryCfg/a')),
                                outputs=os.path.join(ROOT, 'repositoryCfg/b'))
 
     def testSymLinkInPath(self):
@@ -224,6 +229,20 @@ class TestCfgFileVersion(unittest.TestCase):
                    _root: 'foo/bar'""")
         f.close()
         cfg = dp.PosixStorage.getRepositoryCfg(os.path.join(ROOT, 'repositoryCfg'))
+
+
+class TestExtendParents(unittest.TestCase):
+    """Test for the RepositoryCfg.extendParents function.
+    """
+
+    def test(self):
+        cfg = dp.RepositoryCfg(root='.', mapper='my.mapper.class', mapperArgs=None,
+                               parents=['bar', 'baz'], policy=None)
+        cfg.extendParents(['bar', 'baz', 'qux'])
+        with self.assertRaises(dp.ParentsMismatch):
+            cfg.extendParents(['bar', 'baz', 'corge'])
+
+    # todo include a repositoryCfg in parents lists in this test
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

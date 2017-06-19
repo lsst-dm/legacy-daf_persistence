@@ -28,7 +28,7 @@ import copy
 import os
 import yaml
 
-from . import listify, iterify, doImport, Storage
+from . import listify, iterify, doImport, Storage, ParentsMismatch
 from past.builtins import basestring
 
 
@@ -97,10 +97,91 @@ class RepositoryCfg(yaml.YAMLObject):
         return self.root == other.root and \
             self.mapper == other.mapper and \
             self.mapperArgs == other.mapperArgs and \
-            self.parents == other.parents
+            self.parents == other.parents and \
+            self.policy == other.policy
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def extend(self, other):
+        """Extend this RepositoryCfg with extendable values from the other RepositoryCfg.
+
+        Currently the only extendable value is parents; see `extendParents` for more detials about extending
+        the parents list.
+
+        Parameters
+        ----------
+        other : RepositoryCfg
+            A RepositoryCfg instance to update values from.
+
+        Raises
+        ------
+        RuntimeError
+            If non-extendable parameters do not match a RuntimeError will be raised.
+            (If this RepositoryCfg's parents can not be extended with the parents of the other repository,
+            extendParents will raise).
+        """
+        if (self.root != other.root or
+                self.mapper != other.mapper or
+                self.mapperArgs != other.mapperArgs or
+                self.policy != other.policy):
+            raise RuntimeError("{} can not be extended with cfg:{}".format(self, other))
+        self.extendParents(other.parents)
+
+    def _extendsParents(self, newParents):
+        """Query if a list of parents starts with the same list of parents as this RepositoryCfg's parents,
+        with new parents at the end.
+
+        Parameters
+        ----------
+        newParents : list of string and/or RepositoryCfg
+            A list of parents that contains all the parents that would be in this RepositoryCfg.
+            This must include parents that may already be in this RepositoryCfg's parents list. Paths must be
+            in absolute form (not relative).
+
+        Returns
+        -------
+        bool
+            True if the beginning of the new list matches this RepositoryCfg's parents list, False if not.
+        """
+        doesExtendParents = False
+        return doesExtendParents
+
+    def extendParents(self, newParents):
+        """Determine if a parents list matches our parents list, with extra items at the end. If a list of
+        parents does not match but the mismatch is because of new parents at the end of the list, then they
+        can be added to the cfg.
+
+
+
+        Parameters
+        ----------
+        parents : list of string
+            A list of parents that contains all the parents that are to be recorded into this RepositoryCfg.
+            This must include parents that may already be in this RepositoryCfg's parents list
+
+        Raises
+        ------
+        ParentsListMismatch
+            Description
+        """
+        newParents = self._normalizeParents(self.root, newParents)
+        doRaise = False
+        if self._parents != newParents:
+            if all(x == y for (x, y) in zip(self._parents, newParents)):
+                if len(self._parents) < len(newParents):
+                    self._parents = newParents
+                    self.dirty = True
+                elif len(self._parents) == len(newParents):
+                    pass
+                else:
+                    doRaise = True
+            else:
+                doRaise = True
+        if doRaise:
+            raise ParentsMismatch(("The beginning of the passed-in parents list: {} does not match the " +
+                                  "existing parents list in this RepositoryCfg: {}").format(
+                                  newParents, self._parents))
 
     @property
     def root(self):
@@ -136,17 +217,45 @@ class RepositoryCfg(yaml.YAMLObject):
     def parents(self):
         if self._parents is None:
             return []
+        return self._denormalizeParents(self.root, self._parents)
 
-        def getAbs(parent):
+    @staticmethod
+    def _normalizeParents(root, newParents):
+        """Eliminate symlinks in newParents and get the relative path (if one exists) from root to each parent
+        root.
+
+        Parameters
+        ----------
+        newParents : string or RepoistoryCfg instance
+            Same as in `addParents`.
+
+        Returns
+        -------
+        list of strings and RepositoryCfg instances.
+            Normalized list of parents
+        """
+        newParents = iterify(newParents)
+        for i in range(len(newParents)):
+            if isinstance(newParents[i], RepositoryCfg):
+                newParents[i] = copy.copy(newParents[i])
+                parentRoot = newParents[i].root
+                newParents[i].root = None
+                newParents[i].root = Storage.relativePath(root, parentRoot)
+            else:
+                newParents[i] = Storage.relativePath(root, newParents[i])
+        return newParents
+
+    @staticmethod
+    def _denormalizeParents(root, parents):
+        def getAbs(root, parent):
             if isinstance(parent, RepositoryCfg):
                 parentRoot = parent.root
                 parent.root = None
-                parent.root = Storage.absolutePath(self.root, parentRoot)
+                parent.root = Storage.absolutePath(root, parentRoot)
             else:
-                parent = Storage.absolutePath(self.root, parent)
+                parent = Storage.absolutePath(root, parent)
             return parent
-
-        return [getAbs(p) for p in self._parents]
+        return [getAbs(root, parent) for parent in parents]
 
     def addParents(self, newParents):
         """Add a parent or list of parents to this RepositoryCfg
@@ -158,20 +267,12 @@ class RepositoryCfg(yaml.YAMLObject):
             repository. If RepositoryCfg, newParents should be a RepositoryCfg
             that describes the parent repository in part or whole.
         """
-        self.dirty = True
-        newParents = listify(newParents)
         if len(newParents) > 0 and self._parents is None:
             self._parents = []
+        newParents = self._normalizeParents(self.root, newParents)
         for newParent in newParents:
-            if isinstance(newParent, RepositoryCfg):
-                newParent = copy.copy(newParent)
-                parentRoot = newParent.root
-                newParent.root = None
-                newParent.root = Storage.relativePath(self.root,
-                                                      parentRoot)
-            else:
-                newParent = Storage.relativePath(self.root, newParent)
             if newParent not in self._parents:
+                self.dirty = True
                 self._parents.append(newParent)
 
     @property
