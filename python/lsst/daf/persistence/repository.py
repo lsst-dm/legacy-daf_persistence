@@ -134,11 +134,6 @@ class Repository(object):
         self._storage = Storage.makeFromURI(repoData.cfg.root)
         if repoData.cfg.dirty and not repoData.isV1Repository:
             self._storage.putRepositoryCfg(repoData.cfg, repoData.cfgRoot)
-            repoData.cfg.dirty = False  # todo I'd like to have the cfg write itself
-            # given a storage, or maybe use a formatter in the storage to write
-            # the cfg & reset te flag, or something.
-            # I guess it's a new paradigm that an object knows if it's dirty or
-            # not.
         self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
         self._initMapper(repoData)
 

@@ -25,10 +25,8 @@
 # -*- python -*-
 
 import copy
-import os
 import yaml
-
-from . import listify, iterify, doImport, Storage, ParentsMismatch
+from . import iterify, doImport, Storage, ParentsMismatch
 from past.builtins import basestring
 
 
@@ -329,5 +327,6 @@ class RepositoryCfg(yaml.YAMLObject):
             self._mapperArgs,
             self._parents,
             self._policy)
+
 
 yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)

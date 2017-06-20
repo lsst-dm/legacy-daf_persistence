@@ -147,11 +147,11 @@ class TestCfgRelationship(unittest.TestCase):
         butler = dp.Butler(inputs=repoADir, outputs=repoBDir)
         # verify a repoCfg in the tmp dir with a proper parent path from tmp
         # to 'a' (not from 'b' to 'a')
-        cfg = dp.PosixStorage._getRepositoryCfg(tmpDir)
+        cfg = dp.PosixStorage.getRepositoryCfg(tmpDir)
         # verify that the parent link gotten via the symlink target is a path
         # to A
         self.assertEqual(repoADir, cfg.parents[0])
-        cfg = dp.PosixStorage._getRepositoryCfg(repoBDir)
+        cfg = dp.PosixStorage.getRepositoryCfg(repoBDir)
         # also verify that the parent gotten via the symlink is a path to A
         self.assertEqual(repoADir, cfg.parents[0])
 

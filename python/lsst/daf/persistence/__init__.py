@@ -48,6 +48,7 @@ from .butlerSubset import *
 from .access import *
 from .repositoryCfg import *
 from .posixStorage import *
+from .fmtPosixRepositoryCfg import *
 from .mapper import *
 from .repositoryMapper import *
 from .repository import *
