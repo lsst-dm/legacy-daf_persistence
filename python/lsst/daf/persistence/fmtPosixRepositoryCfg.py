@@ -23,6 +23,7 @@
 #
 
 import copy
+import errno
 import fcntl
 import yaml
 import os
@@ -56,37 +57,35 @@ class RepositoryCfgPosixFormatter():
                 cfg.root = None
             return cfg
 
-        loc = butlerLocation.storage.root
-
-        log = Log.getLogger("daf.persistence.butler")
-        if loc is None:
-            loc = cfg.root
         # This class supports schema 'file' and also treats no schema as 'file'.
-        # Split the URI and take only the path; remove the schema fom loc if it's there.
-        parseRes = urllib.parse.urlparse(loc)
-        loc = parseRes.path
-        if not os.path.exists(loc):
-            os.makedirs(loc)
-        loc = os.path.join(loc, butlerLocation.getLocations()[0])
+        # Split the URI and take only the path; remove the schema from loc if it's there.
+        loc = butlerLocation.storage.root
+        parseRes = urllib.parse.urlparse(loc if loc is not None else cfg.root)
+        loc = os.path.join(parseRes.path, butlerLocation.getLocations()[0])
         try:
-            with safeFileIo.FileForWriteOnceCompareSame(loc) as f:
+            with safeFileIo.SafeLockedFileForRead(loc) as f:
+                existingCfg = RepositoryCfgPosixFormatter._read(f, parseRes.path)
+                if existingCfg == cfg:
+                    cfg.dirty = False
+                    return
+        except IOError as e:
+            if e.errno != errno.ENOENT:  # ENOENT is 'No such file or directory'
+                raise e
+        with safeFileIo.SafeLockedFileForWrite(loc) as f:
+            existingCfg = RepositoryCfgPosixFormatter._read(f, parseRes.path)
+            if existingCfg is None:
                 cfgToWrite = setRoot(cfg, loc)
-                yaml.dump(cfgToWrite, f)
-                cfg.dirty = False
-        except safeFileIo.FileForWriteOnceCompareSameFailure:
-            with open(loc, 'r') as fileForRead:
-                log.debug("Acquiring blocking exclusive lock on {}", loc)
-                fcntl.flock(fileForRead, fcntl.LOCK_EX)
-                existingCfg = RepositoryCfgPosixFormatter._read(fileForRead, parseRes.path)
+            else:
+                if existingCfg == cfg:
+                    cfg.dirty = False
+                    return
                 try:
                     existingCfg.extend(cfg)
+                    cfgToWrite = setRoot(existingCfg, loc)
                 except ParentsMismatch as e:
                     raise RuntimeError("Can not extend existing repository cfg because: {}".format(e))
-                with open(loc, 'w') as fileForWrite:
-                    cfgToWrite = setRoot(cfg, loc)
-                    yaml.dump(cfg, fileForWrite)
-                    cfg.dirty = False
-                log.debug("Releasing blocking exclusive lock on {}", loc)
+            yaml.dump(cfgToWrite, f)
+            cfg.dirty = False
 
     @classmethod
     def _read(cls, fileObject, uri):
@@ -102,8 +101,9 @@ class RepositoryCfgPosixFormatter():
         A RepositoryCfg instance or None
         """
         repositoryCfg = yaml.load(fileObject)
-        if repositoryCfg.root is None:
-            repositoryCfg.root = uri
+        if repositoryCfg is not None:
+            if repositoryCfg.root is None:
+                repositoryCfg.root = uri
         return repositoryCfg
 
     @classmethod
@@ -111,13 +111,12 @@ class RepositoryCfgPosixFormatter():
         repositoryCfg = None
         loc = butlerLocation.storage.root
         fileLoc = os.path.join(loc, butlerLocation.getLocations()[0])
-        if os.path.exists(fileLoc):
-            log = Log.getLogger("daf.persistence.butler")
-            with open(fileLoc, 'r') as fileForRead:
-                log.debug("Acquiring blocking shared lock on {}", loc)
-                fcntl.flock(fileForRead, fcntl.LOCK_SH)
-                repositoryCfg = RepositoryCfgPosixFormatter._read(fileForRead, loc)
-                log.debug("Releasing blocking exclusive lock on {}", loc)
+        try:
+            with safeFileIo.SafeLockedFileForRead(fileLoc) as f:
+                repositoryCfg = RepositoryCfgPosixFormatter._read(f, loc)
+        except IOError as e:
+            if e.errno != errno.ENOENT:  # ENOENT is 'No such file or directory'
+                raise e
         return repositoryCfg
 
 
