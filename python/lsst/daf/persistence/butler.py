@@ -817,6 +817,22 @@ class Butler(object):
         for repoData in self._repos.inputs():
             if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
                 location = repoData.repo.map(datasetType, dataId)
+                #
+                # Fake up the ButlerComposite's lack of getStorage;  DM-11033
+                #
+                if isinstance(location, ButlerComposite):
+                    from sqlite3 import OperationalError
+
+                    for _datasetType in reversed(location.componentInfo.keys()):
+                        try:
+                            location = self.datasetExists(_datasetType, dataId)
+                            break
+                        except OperationalError:
+                            pass
+
+                    if location:
+                        break
+
                 if location and location.repository.exists(location):
                     break
                 else:
