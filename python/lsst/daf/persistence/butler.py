@@ -1245,17 +1245,23 @@ class Butler(object):
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
+        location = self._locate(datasetType, dataId, write=False)
+        if location is None:
+            return False
 
-        location = None
-        for repoData in self._repos.inputs():
-            if not dataId.tag or len(dataId.tag.intersection(repoData.tags)) > 0:
-                location = repoData.repo.map(datasetType, dataId)
-                if location and location.repository.exists(location):
-                    break
+        exists = None
+        if isinstance(location, ButlerComposite):
+            for name, componentInfo in location.componentInfo.items():
+                if componentInfo.subset:
+                    subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
+                    exists = all([obj.datasetExists() for obj in subset])
                 else:
-                    location = None
-
-        return bool(location)
+                    exists = self.datasetExists(componentInfo.datasetType, location.dataId)
+                if exists is False:
+                    break
+        else:
+            exists = location.repository.exists(location)
+        return exists
 
     def _locate(self, datasetType, dataId, write):
         """Get one or more ButlerLocations and/or ButlercComposites.
