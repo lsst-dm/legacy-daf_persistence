@@ -147,13 +147,8 @@ def SafeFilename(name):
 @contextmanager
 def SafeLockedFileForRead(name):
     """Context manager for reading a file that may be locked with an exclusive lock via
-    SafeLockedFileForWrite.
-
-    This first tries to acquire the lock without blocking. If that fails then it will take a blocking lock
-    on the file. However, because SafeLockedFileForWrite uses a temporary file and then replaces the old file
-    with the temporary file, the fd that the blocking lock is against may no longer be valid when it unblocks.
-    To work around that, this will close the (possibly) old file and try again from the beginning by trying to
-    acquire the lock without blocking.
+    SafeLockedFileForWrite. This will first aquire a shared lock before returning the file. When the file is
+    closed the shared lock will be unlokced.
 
     Parameters
     ----------
@@ -167,32 +162,63 @@ def SafeLockedFileForRead(name):
     """
     log = Log.getLogger("daf.persistence.butler")
     try:
-        while True:
-            try:
-                with open(name, 'r') as f:
-                    log.debug("Acquiring non-blocking shared lock on {}", name)
-                    fcntl.flock(f, fcntl.LOCK_SH | fcntl.LOCK_NB)
-                    yield f
-                    break
-            except IOError as e:
-                if e.errno == errno.EAGAIN:
-                    with open(name, 'r') as f:
-                        log.debug("Acquiring blocking shared lock on {}", name)
-                        fcntl.flock(f, fcntl.LOCK_SH)
-                else:
-                    raise e
+        with open(name, 'r') as f:
+            log.debug("Acquiring shared lock on {}".format(name))
+            fcntl.flock(f, fcntl.LOCK_SH)
+            log.debug("Acquired shared lock on {}".format(name))
+            yield f
     finally:
-        log.trace("Releasing blocking shared lock on {}", name)
+        log.debug("Releasing shared lock on {}".format(name))
 
 
-class _RWFile:
-    """File-like object that is used to contain readable and writable files to be yielded by
-    SafeLockedFileForWrite
+class SafeLockedFileForWrite:
+    """File-like object that is used to create a file if needed, lock it with an exclusive lock, and contain
+    file descriptors to readable and writable versions of the file.
+
+    This will only open a file descriptor in 'write' mode if a write operation is performed. If no write
+    operation is performed, the existing file (if there is one) will not be overwritten.
+
+    Contains __enter__ and __exit__ functions so this can be used by a context manager.
     """
-    def __init__(self, readable, writable):
-        self.readable = readable
-        self.writeable = writable
-        self.dirty = False
+    def __init__(self, name):
+        self.log = Log.getLogger("daf.persistence.butler")
+        self.name = name
+        self._readable = None
+        self._writeable = None
+        safeMakeDir(os.path.split(name)[0])
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    def open(self):
+        self._fileHandle = open(self.name, 'a')
+        self.log.debug("Acquiring exclusive lock on {}".format(self.name))
+        fcntl.flock(self._fileHandle, fcntl.LOCK_EX)
+        self.log.debug("Acquired exclusive lock on {}".format(self.name))
+
+    def close(self):
+        self.log.debug("Releasing exclusive lock on {}".format(self.name))
+        if self._writeable is not None:
+            self._writeable.close()
+        if self._readable is not None:
+            self._readable.close()
+        self._fileHandle.close()
+
+    @property
+    def readable(self):
+        if self._readable is None:
+            self._readable = open(self.name, 'r')
+        return self._readable
+
+    @property
+    def writeable(self):
+        if self._writeable is None:
+            self._writeable = open(self.name, 'w')
+        return self._writeable
 
     def read(self, size=None):
         if size is not None:
@@ -201,38 +227,3 @@ class _RWFile:
 
     def write(self, str):
         self.writeable.write(str)
-        self.dirty = True
-
-
-@contextmanager
-def SafeLockedFileForWrite(name):
-    """Context manager to write a file in a manner that prevents other files from reading the old file while
-    the new one is being written. It opens the named file (creating it if needed) and locks it. It then
-    returns a file-like object that reads from the named file and writes to a temporary file. This allows a
-    file to atomically be opened, inspected, and changed if needed. After the user is done, if a write
-    operation has been performed we move the temporary file into the desired place and close the fd.
-
-    Parameters
-    ----------
-    name : string
-        The file name to be opened, may include path.
-
-    Yields
-    ------
-    file-like object
-        The file to be read from and written to.
-    """
-    log = Log.getLogger("daf.persistence.butler")
-    safeMakeDir(os.path.split(name)[0])
-    try:
-        with open(name, 'a+') as writeFile:
-            log.debug("Acquiring blocking exclusive lock on {}", name)
-            fcntl.flock(writeFile, fcntl.LOCK_EX)
-            with open(name, 'r') as readFile:
-                with SafeFile(name) as safeFile:
-                    rwFile = _RWFile(readFile, safeFile)
-                    yield rwFile
-                    if rwFile.dirty is False:
-                        raise DoNotWrite
-    finally:
-        log.debug("Released blocking exclusive lock on {}", name)

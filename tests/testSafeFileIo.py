@@ -24,12 +24,14 @@
 
 import os
 import unittest
-import lsst.daf.persistence as dp
-from lsst.utils import getPackageDir
-import lsst.utils.tests
 import multiprocessing
 import shutil
 import time
+
+import lsst.daf.persistence as dp
+from lsst.utils import getPackageDir
+import lsst.utils.tests
+from lsst.log import Log
 
 packageDir = os.path.join(getPackageDir('daf_persistence'))
 
@@ -92,6 +94,46 @@ class TestFileLocking(unittest.TestCase):
         # open the file for read and test that it still contains the original test contents
         with dp.safeFileIo.SafeLockedFileForRead(fileName) as f:
             self.assertEqual(f.read(), "some test string")
+
+
+class TestOneThousandWriters(unittest.TestCase):
+    """Test for efficient file updating with shared & exclusive locks by serializing a RepositoryCfg to a
+    location 1000 times. When this was tested on a 2.8 GHz Intel Core i7 macbook pro it took about 1.3 seconds
+    to run. When the squash performance monitoring framework is done, this test could be monitored in that
+    system."""
+
+    testDir = os.path.join(packageDir, 'tests', 'TestOneThousandWriters')
+
+    def setUp(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    @staticmethod
+    def writeCfg(cfg, go):
+        while go is False:
+            pass
+        dp.PosixStorage.putRepositoryCfg(cfg)
+
+    def testWriteCfg(self):
+        numWriters = 1000
+        startTime = time.time()
+        go = multiprocessing.Value('b', False)
+        cfg = dp.RepositoryCfg(root=os.path.join(TestOneThousandWriters.testDir), mapper='bar', mapperArgs={},
+                               parents=None, policy=None)
+        procs = [multiprocessing.Process(target=TestOneThousandWriters.writeCfg, args=(cfg, go))
+                 for x in range(numWriters)]
+        for proc in procs:
+            proc.start()
+        go = True
+        for proc in procs:
+            proc.join()
+        endTime = time.time()
+        log = Log.getLogger("daf.persistence")
+        log.trace("TestOneThousandWriters took {} seconds.".format(endTime-startTime))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
