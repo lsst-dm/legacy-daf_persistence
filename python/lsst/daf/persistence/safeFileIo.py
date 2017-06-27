@@ -64,7 +64,7 @@ class FileForWriteOnceCompareSameFailure(RuntimeError):
 @contextmanager
 def FileForWriteOnceCompareSame(name):
     """Context manager to get a file that can be written only once and all other writes will succeed only if
-    they match the inital write.
+    they match the initial write.
 
     The context manager provides a temporary file object. After the user is done, the temporary file becomes
     the permanent file if the file at name does not already exist. If the file at name does exist the
@@ -147,8 +147,8 @@ def SafeFilename(name):
 @contextmanager
 def SafeLockedFileForRead(name):
     """Context manager for reading a file that may be locked with an exclusive lock via
-    SafeLockedFileForWrite. This will first aquire a shared lock before returning the file. When the file is
-    closed the shared lock will be unlokced.
+    SafeLockedFileForWrite. This will first acquire a shared lock before returning the file. When the file is
+    closed the shared lock will be unlocked.
 
     Parameters
     ----------
