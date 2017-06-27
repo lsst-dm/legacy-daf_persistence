@@ -365,6 +365,8 @@ class TestMultipleOutputsPut(unittest.TestCase):
         2. does a single put
         3. verifies that all repos received the put
     """
+    def setUp(self):
+        self.tearDown()
 
     def tearDown(self):
         if os.path.exists(os.path.join(ROOT, 'TestMultipleOutputsPut')):
@@ -440,6 +442,9 @@ class TestMultipleInputs(unittest.TestCase):
 class TestTagging(unittest.TestCase):
     """A test case for the tagging of repository classes.
     """
+
+    def setUp(self):
+        self.tearDown()
 
     def tearDown(self):
         if os.path.exists(os.path.join(ROOT, 'TestTagging')):
@@ -674,7 +679,7 @@ class TestMovedRepositoryCfg(unittest.TestCase):
         os.rename(os.path.join(ROOT, 'TestMovedRepositoryCfg/a/repositoryCfg.yaml'),
                   os.path.join(ROOT, 'TestMovedRepositoryCfg/b/repositoryCfg.yaml'))
         butler = dp.Butler(inputs=os.path.join(ROOT, 'TestMovedRepositoryCfg/b'))
-        self.assertEqual(list(butler._repos.all().values())[0].cfg,
+        self.assertEqual(list(butler._repos.inputs())[0].cfg,
                          dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMovedRepositoryCfg/b'),
                                           mapper=MapperForTestWriting,
                                           mapperArgs=None,
@@ -804,6 +809,7 @@ class TestParentRepository(unittest.TestCase):
         def makeRegistry(location, name):
             conn = sqlite3.connect(location)
             conn.execute("CREATE TABLE {name} (real)".format(name=name))
+            conn.commit()
             conn.close()
 
         repoADir = os.path.join(self.testDir, 'repoA')

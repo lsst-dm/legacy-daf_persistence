@@ -25,9 +25,15 @@ Utilities for safe file IO
 """
 from contextlib import contextmanager
 import errno
+import fcntl
 import filecmp
 import os
 import tempfile
+from lsst.log import Log
+
+
+class DoNotWrite(RuntimeError):
+    pass
 
 
 def safeMakeDir(directory):
@@ -51,10 +57,14 @@ def setFileMode(filename):
     os.chmod(filename, (~umask & 0o666))
 
 
+class FileForWriteOnceCompareSameFailure(RuntimeError):
+    pass
+
+
 @contextmanager
 def FileForWriteOnceCompareSame(name):
     """Context manager to get a file that can be written only once and all other writes will succeed only if
-    they match the inital write.
+    they match the initial write.
 
     The context manager provides a temporary file object. After the user is done, the temporary file becomes
     the permanent file if the file at name does not already exist. If the file at name does exist the
@@ -88,8 +98,8 @@ def FileForWriteOnceCompareSame(name):
                 return
             else:
                 # if the files do not match then the calling code was trying to write a non-matching file over
-                # the previous file, maybe it's a race condition? Iny any event, raise a runtime error.
-                raise RuntimeError("Written file does not match existing file.")
+                # the previous file, maybe it's a race condition? In any event, raise a runtime error.
+                raise FileForWriteOnceCompareSameFailure("Written file does not match existing file.")
 
 
 @contextmanager
@@ -102,12 +112,16 @@ def SafeFile(name):
     """
     outDir, outName = os.path.split(name)
     safeMakeDir(outDir)
+    doWrite = True
     with tempfile.NamedTemporaryFile(mode="w", dir=outDir, prefix=outName, delete=False) as temp:
         try:
             yield temp
+        except DoNotWrite:
+            doWrite = False
         finally:
-            os.rename(temp.name, name)
-            setFileMode(name)
+            if doWrite:
+                os.rename(temp.name, name)
+                setFileMode(name)
 
 
 @contextmanager
@@ -128,3 +142,88 @@ def SafeFilename(name):
     finally:
         os.rename(tempName, name)
         setFileMode(name)
+
+
+@contextmanager
+def SafeLockedFileForRead(name):
+    """Context manager for reading a file that may be locked with an exclusive lock via
+    SafeLockedFileForWrite. This will first acquire a shared lock before returning the file. When the file is
+    closed the shared lock will be unlocked.
+
+    Parameters
+    ----------
+    name : string
+        The file name to be opened, may include path.
+
+    Yields
+    ------
+    file object
+        The file to be read from.
+    """
+    log = Log.getLogger("daf.persistence.butler")
+    try:
+        with open(name, 'r') as f:
+            log.debug("Acquiring shared lock on {}".format(name))
+            fcntl.flock(f, fcntl.LOCK_SH)
+            log.debug("Acquired shared lock on {}".format(name))
+            yield f
+    finally:
+        log.debug("Releasing shared lock on {}".format(name))
+
+
+class SafeLockedFileForWrite:
+    """File-like object that is used to create a file if needed, lock it with an exclusive lock, and contain
+    file descriptors to readable and writable versions of the file.
+
+    This will only open a file descriptor in 'write' mode if a write operation is performed. If no write
+    operation is performed, the existing file (if there is one) will not be overwritten.
+
+    Contains __enter__ and __exit__ functions so this can be used by a context manager.
+    """
+    def __init__(self, name):
+        self.log = Log.getLogger("daf.persistence.butler")
+        self.name = name
+        self._readable = None
+        self._writeable = None
+        safeMakeDir(os.path.split(name)[0])
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    def open(self):
+        self._fileHandle = open(self.name, 'a')
+        self.log.debug("Acquiring exclusive lock on {}".format(self.name))
+        fcntl.flock(self._fileHandle, fcntl.LOCK_EX)
+        self.log.debug("Acquired exclusive lock on {}".format(self.name))
+
+    def close(self):
+        self.log.debug("Releasing exclusive lock on {}".format(self.name))
+        if self._writeable is not None:
+            self._writeable.close()
+        if self._readable is not None:
+            self._readable.close()
+        self._fileHandle.close()
+
+    @property
+    def readable(self):
+        if self._readable is None:
+            self._readable = open(self.name, 'r')
+        return self._readable
+
+    @property
+    def writeable(self):
+        if self._writeable is None:
+            self._writeable = open(self.name, 'w')
+        return self._writeable
+
+    def read(self, size=None):
+        if size is not None:
+            return self.readable.read(size)
+        return self.readable.read()
+
+    def write(self, str):
+        self.writeable.write(str)

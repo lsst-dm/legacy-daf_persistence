@@ -52,6 +52,57 @@ class StorageInterface:
         """initialzer"""
         pass
 
+    formatters = {}
+
+    @classmethod
+    def registerFormatter(cls, formatable, formatter):
+        """Register a formatter for a storageInterface subclass
+
+        Parameters
+        ----------
+        cls : StorageInterface subclass
+            The type of StorageInterface the formatter is being registered for.
+        formatable : class object
+            The class object whose instances can be formatted by the formatter.
+        formatter : Formatter class
+            The formatter class that can be used by the StorageInterface instance to read and write the object
+            to the storage.
+
+        Raises
+        ------
+        RuntimeError
+            For each object type and StorageInterface subclass a formatter should only be registered once. If
+            a second registration occurs a RuntimeError is raised.
+        """
+        classFormatters = StorageInterface.formatters.setdefault(cls, {})
+        if formatable in classFormatters:
+            raise RuntimeError(("Registration of second formatter {} for formattable class {} in " +
+                                " storageInterface {}").format(formatter, formatable, cls))
+        classFormatters[formatable] = formatter
+
+    @classmethod
+    def _getFormatter(cls, objType):
+        """Search in the registered formatters for the formatter for obj.
+
+        Will attempt to find formatters registered for the objec type, and then
+        for base classes of the object in resolution order.
+
+        Parameters
+        ----------
+        objType : class type
+            The type of class to find a formatter for.
+
+        Returns
+        -------
+        formatter class object
+            The formatter class object to instantiate & use to read/write the object from/into the
+            storageInterface.
+        """
+        classFormatters = StorageInterface.formatters.get(cls, None)
+        if classFormatters is None:
+            return None
+        return classFormatters.get(objType, None)
+
     @abstractmethod
     def write(self, butlerLocation, obj):
         """Writes an object to a location and persistence format specified by ButlerLocation

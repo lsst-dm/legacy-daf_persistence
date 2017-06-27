@@ -30,18 +30,18 @@ import os
 import urllib.parse
 import glob
 import shutil
+import fcntl
 
 import yaml
 
 from . import (LogicalLocation, Persistence, Policy, StorageList,
-               StorageInterface, Storage, safeFileIo, ButlerLocation,
-               NoRepositroyAtRoot)
+               StorageInterface, Storage, ButlerLocation,
+               NoRepositroyAtRoot, RepositoryCfg)
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
 from future import standard_library
 standard_library.install_aliases()
-
 
 class PosixStorage(StorageInterface):
     """Defines the interface for a storage location on the local filesystem.
@@ -127,29 +127,6 @@ class PosixStorage(StorageInterface):
         return os.path.normpath(os.path.join(fromPath, relativePath))
 
     @staticmethod
-    def _getRepositoryCfg(uri):
-        """Get a persisted RepositoryCfg
-
-        Parameters
-        ----------
-        uri : URI or path to a RepositoryCfg
-            Description
-
-        Returns
-        -------
-        A RepositoryCfg instance or None
-        """
-        repositoryCfg = None
-        parseRes = urllib.parse.urlparse(uri)
-        loc = os.path.join(parseRes.path, 'repositoryCfg.yaml')
-        if os.path.exists(loc):
-            with open(loc, 'r') as f:
-                repositoryCfg = yaml.load(f)
-            if repositoryCfg.root is None:
-                repositoryCfg.root = uri
-        return repositoryCfg
-
-    @staticmethod
     def getRepositoryCfg(uri):
         """Get a persisted RepositoryCfg
 
@@ -162,46 +139,31 @@ class PosixStorage(StorageInterface):
         -------
         A RepositoryCfg instance or None
         """
-        repositoryCfg = PosixStorage._getRepositoryCfg(uri)
-        if repositoryCfg is not None:
-            return repositoryCfg
-
-        return repositoryCfg
+        storage = Storage.makeFromURI(uri)
+        formatter = storage._getFormatter(RepositoryCfg)
+        return formatter.read(ButlerLocation(pythonType=None,
+                                             cppType=None,
+                                             storageName=None,
+                                             locationList='repositoryCfg.yaml',
+                                             dataId={},
+                                             mapper=None,
+                                             storage=storage,
+                                             usedDataId=None,
+                                             datasetType=None))
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
-        """Serialize a RepositoryCfg to a location.
-
-        When loc == cfg.root, the RepositoryCfg is to be writtenat the root
-        location of the repository. In that case, root is not written, it is
-        implicit in the location of the cfg. This allows the cfg to move from
-        machine to machine without modification.
-
-        Parameters
-        ----------
-        cfg : RepositoryCfg instance
-            The RepositoryCfg to be serailized.
-        loc : None, optional
-            The location to write the RepositoryCfg. If loc is None, the
-            location will be read from the root parameter of loc.
-
-        Returns
-        -------
-        None
-        """
-        if loc is None or cfg.root == loc:
-            cfg = copy.copy(cfg)
-            loc = cfg.root
-            cfg.root = None
-        # This class supports schema 'file' and also treats no schema as 'file'.
-        # Split the URI and take only the path; remove the schema fom loc if it's there.
-        parseRes = urllib.parse.urlparse(loc)
-        loc = parseRes.path
-        if not os.path.exists(loc):
-            os.makedirs(loc)
-        loc = os.path.join(loc, 'repositoryCfg.yaml')
-        with safeFileIo.FileForWriteOnceCompareSame(loc) as f:
-            yaml.dump(cfg, f)
+        storage = Storage.makeFromURI(cfg.root if loc is None else loc, create=True)
+        formatter = storage._getFormatter(type(cfg))
+        formatter.write(cfg, ButlerLocation(pythonType=None,
+                                            cppType=None,
+                                            storageName=None,
+                                            locationList='repositoryCfg.yaml',
+                                            dataId={},
+                                            mapper=None,
+                                            storage=storage,
+                                            usedDataId=None,
+                                            datasetType=None))
 
     @staticmethod
     def getMapperClass(root):
@@ -224,7 +186,7 @@ class PosixStorage(StorageInterface):
         if not (root):
             return None
 
-        cfg = PosixStorage._getRepositoryCfg(root)
+        cfg = PosixStorage.getRepositoryCfg(root)
         if cfg is not None:
             return cfg.mapper
 
@@ -642,7 +604,6 @@ class PosixStorage(StorageInterface):
             True if the storage exists, false if not
         """
         return os.path.exists(PosixStorage._pathFromURI(uri))
-
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)

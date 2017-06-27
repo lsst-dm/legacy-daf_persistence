@@ -23,6 +23,7 @@
 #
 from builtins import object
 
+import copy
 import os
 import shutil
 import tempfile
@@ -115,13 +116,18 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(len(butler._repos.outputs()), 1)
         self.assertEqual(butler._repos.outputs()[0].cfg.root, os.path.join(ROOT, 'repositoryCfg/b'))
 
-        # can't add a new parent to an existing output
+        # add a new parent to an existing output
         butler = dp.Butler(outputs=dp.RepositoryArgs(mode='w',
                                                      mapper=dpTest.EmptyTestMapper,
                                                      root=os.path.join(ROOT, 'repositoryCfg/c')))
+        butler = dp.Butler(inputs=(os.path.join(ROOT, 'repositoryCfg/a'),
+                                   os.path.join(ROOT, 'repositoryCfg/c')),
+                           outputs=os.path.join(ROOT, 'repositoryCfg/b'))
+
+        # should raise if the input order gets reversed:
         with self.assertRaises(RuntimeError):
-            butler = dp.Butler(inputs=(os.path.join(ROOT, 'repositoryCfg/a'),
-                                       os.path.join(ROOT, 'repositoryCfg/c')),
+            butler = dp.Butler(inputs=(os.path.join(ROOT, 'repositoryCfg/c'),
+                                       os.path.join(ROOT, 'repositoryCfg/a')),
                                outputs=os.path.join(ROOT, 'repositoryCfg/b'))
 
     def testSymLinkInPath(self):
@@ -141,11 +147,11 @@ class TestCfgRelationship(unittest.TestCase):
         butler = dp.Butler(inputs=repoADir, outputs=repoBDir)
         # verify a repoCfg in the tmp dir with a proper parent path from tmp
         # to 'a' (not from 'b' to 'a')
-        cfg = dp.PosixStorage._getRepositoryCfg(tmpDir)
+        cfg = dp.PosixStorage.getRepositoryCfg(tmpDir)
         # verify that the parent link gotten via the symlink target is a path
         # to A
         self.assertEqual(repoADir, cfg.parents[0])
-        cfg = dp.PosixStorage._getRepositoryCfg(repoBDir)
+        cfg = dp.PosixStorage.getRepositoryCfg(repoBDir)
         # also verify that the parent gotten via the symlink is a path to A
         self.assertEqual(repoADir, cfg.parents[0])
 
@@ -159,6 +165,33 @@ class TestCfgRelationship(unittest.TestCase):
         self.assertEqual(0, len(storage.repositoryCfgs))
         cfg = storage.getRepositoryCfg(os.path.join(ROOT, 'repositoryCfg/a'))
         self.assertEqual(cfg, storage.repositoryCfgs[os.path.join(ROOT, 'repositoryCfg/a')])
+
+class TestNestedCfg(unittest.TestCase):
+
+    rootDir = os.path.join(ROOT, 'repositoryCfg_TestNestedCfg')
+
+    def setUp(self):
+        self.tearDown()
+
+    def tearDown(self):
+        if os.path.exists(self.rootDir):
+            shutil.rmtree(self.rootDir)
+
+    def test(self):
+        parentCfg = dp.RepositoryCfg(root=os.path.join(self.rootDir, 'parent'),
+                                     mapper='lsst.daf.persistence.SomeMapper',
+                                     mapperArgs = {},
+                                     parents=None,
+                                     policy=None)
+        cfg = dp.RepositoryCfg(root=self.rootDir,
+                               mapper='lsst.daf.persistence.SomeMapper',
+                               mapperArgs = {},
+                               parents=[parentCfg],
+                               policy=None)
+        dp.PosixStorage.putRepositoryCfg(cfg)
+        reloadedCfg = dp.PosixStorage.getRepositoryCfg(self.rootDir)
+        self.assertEqual(cfg, reloadedCfg)
+        self.assertEqual(cfg.parents[0], parentCfg)
 
 
 # "fake" repository version 0
@@ -196,6 +229,20 @@ class TestCfgFileVersion(unittest.TestCase):
                    _root: 'foo/bar'""")
         f.close()
         cfg = dp.PosixStorage.getRepositoryCfg(os.path.join(ROOT, 'repositoryCfg'))
+
+
+class TestExtendParents(unittest.TestCase):
+    """Test for the RepositoryCfg.extendParents function.
+    """
+
+    def test(self):
+        cfg = dp.RepositoryCfg(root='.', mapper='my.mapper.class', mapperArgs=None,
+                               parents=['bar', 'baz'], policy=None)
+        cfg.extendParents(['bar', 'baz', 'qux'])
+        with self.assertRaises(dp.ParentsMismatch):
+            cfg.extendParents(['bar', 'baz', 'corge'])
+
+    # todo include a repositoryCfg in parents lists in this test
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
