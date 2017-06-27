@@ -103,7 +103,7 @@ class RepoData(object):
         The Repository class instance.
 
     parentRepoDatas : list of RepoData
-        The are parents of this Repository, as indicated this Repository's RepositoryCfg. If this is a new
+        The parents of this Repository, as indicated this Repository's RepositoryCfg. If this is a new
         Repository then these are the inputs to this Butler (and will be saved in the RepositoryCfg). These
         RepoData objects are not owned by this RepoData, these are references to peer RepoData objects in the
         Butler's RepoDataContainer.
@@ -149,16 +149,16 @@ class RepoData(object):
         return self
 
     def __repr__(self):
-        return ("{}(id={},\n\t"
-                "repoArgs={}\n\t"
-                "cfg={!r},\n\t"
-                "cfgOrigin={},\n\t"
-                "cfgRoot={},\n\t" +
-                "repo={},\n\t"
-                "parentRepoDatas={},\n\t" +
-                "isV1Repository={},\n\t"
-                "role={},\n\t" +
-                "parentRegistry={})\n\t").format(
+        return ("{}(id={},"
+                "repoArgs={}"
+                "cfg={!r},"
+                "cfgOrigin={},"
+                "cfgRoot={}," +
+                "repo={},"
+                "parentRepoDatas={}," +
+                "isV1Repository={},"
+                "role={}," +
+                "parentRegistry={})").format(
                     self.__class__.__name__,
                     id(self),
                     self.repoArgs,
@@ -214,6 +214,15 @@ class RepoData(object):
 
     def getParentRepoDatas(self, context=None):
         """Get the parents & grandparents etc of this repo data, in depth-first search order.
+
+        Duplicate entries will be removed in cases where the same parent appears more than once in the parent
+        graph.
+
+        Parameters
+        ----------
+        context : set, optional
+            Users should typically omit context and accept the default argument. Context is used to keep a set
+            of known RepoDatas when calling this function recursively, for duplicate elimination.
 
         Returns
         -------
@@ -312,12 +321,12 @@ class RepoDataContainer(object):
         outputs = [repoData for repoData in self.all() if repoData.role == 'output']
         self._inputs = []
         alreadyAdded = set()
-        for argsAndData in outputs:
-            if 'r' in argsAndData.repoArgs.mode:
-                addToList(argsAndData.repoData, self._inputs)
-        for argsAndData in inputs:
-            addToList(argsAndData.repoData, self._inputs)
-        self._outputs = [argsAndData.repoData for argsAndData in outputs]
+        for repoData in outputs:
+            if 'r' in repoData.repoArgs.mode:
+                addToList(repoData.repoData, self._inputs)
+        for repoData in inputs:
+            addToList(repoData.repoData, self._inputs)
+        self._outputs = [repoData.repoData for repoData in outputs]
 
 
 class Butler(object):
@@ -374,23 +383,23 @@ class Butler(object):
 
     Parameters
     ----------
-    root - string
+    root : string
         .. note:: Deprecated in 12_0
                   `root` will be removed in TBD, it is replaced by `inputs` and `outputs` for
                   multiple-repository support.
         A file system path. Will only work with a PosixRepository.
-    mapper - string or instance
+    mapper : string or instance
         .. note:: Deprecated in 12_0
                   `mapper` will be removed in TBD, it is replaced by `inputs` and `outputs` for
                   multiple-repository support.
         Provides a mapper to be used with Butler.
-    mapperArgs - dict
+    mapperArgs : dict
         .. note:: Deprecated in 12_0
                   `mapperArgs` will be removed in TBD, it is replaced by `inputs` and `outputs` for
                   multiple-repository support.
         Provides arguments to be passed to the mapper if the mapper input argument is a class type to be
         instantiated by Butler.
-    inputs - RepositoryArgs, dict, or string
+    inputs : RepositoryArgs, dict, or string
         Can be a single item or a list. Provides arguments to load an existing repository (or repositories).
         String is assumed to be a URI and is used as the cfgRoot (URI to the location of the cfg file). (Local
         file system URI does not have to start with 'file://' and in this way can be a relative path). The
@@ -398,7 +407,7 @@ class Butler(object):
         (such as `mapper`, `mapperArgs`, `tags`, etc. See the `RepositoryArgs` documentation for more
         details). A dict may be used as shorthand for a `RepositoryArgs` class instance. The dict keys must
         match parameters to the `RepositoryArgs.__init__` function.
-    outputs - RepositoryArgs, dict, or string
+    outputs : RepositoryArgs, dict, or string
         Provides arguments to load one or more existing repositories or create new ones. The different types
         are handled the same as for `inputs`.
 
@@ -443,7 +452,7 @@ class Butler(object):
     4. Add Parents
     --------------
 
-    `Butler._addParents` then considers the the parents list in the `RepositoryCfg` of each `RepoData` in the
+    `Butler._addParents` then considers the parents list in the `RepositoryCfg` of each `RepoData` in the
     `repoDataList` and inserts new `RepoData` objects for each parent not represented in the proper location
     in the `repoDataList`. Ultimately a flat list is built to represent the DAG of readable repositories
     represented in depth-first order.
@@ -483,8 +492,8 @@ class Butler(object):
 
     Tags are described at https://ldm-463.lsst.io/v/draft/#tagging
 
-    In `Butler._setRepoDataTags`, for each each `RepoData`, the tags specified by its `RepositoryArgs` are
-    recorded in a set, and added to the tags set in each of its parents, for ease of lookup when mapping.
+    In `Butler._setRepoDataTags`, for each `RepoData`, the tags specified by its `RepositoryArgs` are recorded
+    in a set, and added to the tags set in each of its parents, for ease of lookup when mapping.
 
     9. Find Parent Registry and Instantiate RepoData
     ------------------------------------------------
@@ -533,30 +542,31 @@ class Butler(object):
             self._setParentRegistry(repoData)
             repoData.repo = Repository(repoData)
 
-    def _setParentRegistry(self, argsAndData):
-        """Get the first found registry that matches the the passed-in repo.
-
-        "Matches" means the mapper in the passed-in repo is the same type as
-        the mapper in the parent.
-
-        Parameters
-        ----------
-        repoData : RepoData
-            The RepoData for the repository for which we are searching for a
-            parent registry.
-
-        Returns
-        -------
-        Registry or None
-            A registry from a parent if one can be found, or None.
-
-        Raises
-        ------
-        RuntimeError
-            Indicates a butler init order problem, all parents should be initialized before child
-            repositories, so this function should be able to get any parent of any child repo.
+    def _setParentRegistry(self, repoData):
+        """Try to get a parent registry that can be used by this repository. To be usable the repository must
+        "match", meaning the mapper in the passed-in repo is the same type as the mapper in the parent.
         """
+
         def getParentRegsitry(repoData, context):
+            """Get the first found registry that matches the the passed-in repo.
+
+            Parameters
+            ----------
+            repoData : RepoData
+                The RepoData for the repository for which we are searching for a
+                parent registry.
+
+            Returns
+            -------
+            Registry or None
+                A registry from a parent if one can be found, or None.
+
+            Raises
+            ------
+            RuntimeError
+                Indicates a butler init order problem, all parents should be initialized before child
+                repositories, so this function should be able to get any parent of any child repo.
+            """
             if id(self) in context:
                 return None
             else:
@@ -577,7 +587,7 @@ class Butler(object):
                                 return parentRegistry
             return None
 
-        argsAndData.repoData.parentRegistry = getParentRegsitry(argsAndData.repoData, set())
+        repoData.repoData.parentRegistry = getParentRegsitry(repoData.repoData, set())
 
     def _processInputArguments(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
         """Process, verify, and standardize the input arguments.
@@ -621,7 +631,7 @@ class Butler(object):
         if isV1Args:
             inputs, outputs = self._convertV1Args(root=root,
                                                   mapper=mapper,
-                                                  mapperArgs=mapperArgs if mapperArgs else None)
+                                                  mapperArgs=mapperArgs or None)
         elif root or mapper or mapperArgs:
             raise RuntimeError(
                 'Butler version 1 API (root, mapper, **mapperArgs) may ' +
@@ -660,7 +670,7 @@ class Butler(object):
         for o in outputs:
             if 'r' in o.mode:
                 if len(outputs) > 1:
-                    raise RuntimeError("Butler does not support multiple output repositories if any of the" +
+                    raise RuntimeError("Butler does not support multiple output repositories if any of the "
                                        "outputs are readable.")
 
         # Handle the case where the output is readable and is also passed in as one of the inputs by removing
@@ -692,23 +702,23 @@ class Butler(object):
             return repoData.cfg.root
 
     @staticmethod
-    def _getParents(ofArgsAndData, repoInfo):
-        """Create a parents list of argsAndData from inputs and (readable) outputs."""
+    def _getParents(ofRepoData, repoInfo):
+        """Create a parents list of repoData from inputs and (readable) outputs."""
         parents = []
-        # get the parents list of argsAndData:
-        for argsAndData in repoInfo:
-            if argsAndData is ofArgsAndData:
+        # get the parents list of repoData:
+        for repoData in repoInfo:
+            if repoData is ofRepoData:
                 continue
-            if 'r' not in argsAndData.repoArgs.mode:
+            if 'r' not in repoData.repoArgs.mode:
                 continue
-            parents.append(Butler._getParentVal(argsAndData.repoData))
+            parents.append(Butler._getParentVal(repoData))
         return parents
 
     @staticmethod
     def _getOldButlerRepositoryCfg(repositoryArgs):
-        if Storage.isPosix(repositoryArgs.cfgRoot) is False:
+        if not Storage.isPosix(repositoryArgs.cfgRoot):
             return None
-        if PosixStorage.v1RepoExists(repositoryArgs.cfgRoot) is False:
+        if not PosixStorage.v1RepoExists(repositoryArgs.cfgRoot):
             return None
         if not repositoryArgs.mapper:
             repositoryArgs.mapper = PosixStorage.getMapperClass(repositoryArgs.cfgRoot)
@@ -729,7 +739,7 @@ class Butler(object):
         Returned
         --------
         (RepositoryCfg or None, bool)
-            The RepositoryCfg, or none if one can be found, and True if the RepositoryCfg was created by
+            The RepositoryCfg, or None if one cannot be found, and True if the RepositoryCfg was created by
             reading an Old Butler repository, or False if it is a New Butler Repository.
         """
         cfg = self.storage.getRepositoryCfg(repositoryArgs.cfgRoot)
@@ -781,7 +791,7 @@ class Butler(object):
             else:
                 if 'w' in repoData.repoArgs.mode:
                     # if it's an output repository, the RepositoryArgs must match the existing cfg.
-                    if cfgMatchesArgs(repoData.repoArgs, cfg) is False:
+                    if not cfgMatchesArgs(repoData.repoArgs, cfg):
                         raise RuntimeError(("The RepositoryArgs and RepositoryCfg must match for writable " +
                                             "repositories, RepositoryCfg:{}, RepositoryArgs:{}").format(
                                                 cfg, repoData.repoArgs))
@@ -808,7 +818,7 @@ class Butler(object):
         Raises
         ------
         RuntimeError
-            Description
+            Raised if a RepositoryCfg can not be found at a location where a parent repository should be.
         """
         repoDataIdx = 0
         while True:
@@ -824,9 +834,7 @@ class Butler(object):
             if repoData.cfg.parents is None:
                 repoDataIdx += 1
                 continue  # if there are no parents then there's nothing to do.
-            for repoParentIdx in range(len(repoData.cfg.parents)):
-                # repoParent will be a URI or a repoCfg
-                repoParent = repoData.cfg.parents[repoParentIdx]
+            for repoParentIdx, repoParent in enumerate(repoData.cfg.parents):
                 parentIdxInRepoDataList = repoDataIdx + repoParentIdx + 1
                 if not isinstance(repoParent, RepositoryCfg):
                     args = RepositoryArgs(cfgRoot=repoParent, mode='r')
@@ -879,7 +887,7 @@ class Butler(object):
                     if 'r' in repoData.repoArgs.mode:
                         raise RuntimeError("If an output is readable it must be the only output.")
                         # and if this is the only output, this should have continued in
-                        # "if argsAndData is ofRepoData"
+                        # "if repoData is ofRepoData"
                     continue
                 parents.append(self._getParentVal(repoData))
             return parents
@@ -891,7 +899,7 @@ class Butler(object):
             # if repoData is new, add the parent RepositoryCfgs to it.
             if repoData.cfgOrigin == 'new':
                 repoData.cfg.addParents(parents)
-            elif repoData.cfgOrigin == 'existing' or repoData.cfgOrigin == 'nested':
+            elif repoData.cfgOrigin in ('existing', 'nested'):
                 if repoData.cfg.parents != parents:
                     try:
                         repoData.cfg.extendParents(parents)
@@ -996,8 +1004,8 @@ class Butler(object):
             context.add(id(repoData))
             for parentRepoData in repoData.parentRepoDatas:
                 setTags(parentRepoData, tags, context)
-        for argsAndData in self._repos.outputs() + self._repos.inputs():
-            setTags(argsAndData.repoData, argsAndData.repoArgs.tags, set())
+        for repoData in self._repos.outputs() + self._repos.inputs():
+            setTags(repoData.repoData, repoData.repoArgs.tags, set())
 
     def _convertV1Args(self, root, mapper, mapperArgs):
         """Convert Old Butler RepositoryArgs (root, mapper, mapperArgs) to New Butler RepositoryArgs

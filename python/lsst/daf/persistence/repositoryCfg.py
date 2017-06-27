@@ -59,7 +59,7 @@ class RepositoryCfg(yaml.YAMLObject):
         self._parents = None
         self.addParents(iterify(parents))
         self._policy = policy
-        self._dirty = True  # if _dirty, the parameters have been changed since the cfg was read or written.
+        self.dirty = True  # if dirty, the parameters have been changed since the cfg was read or written.
 
     @staticmethod
     def v1Constructor(loader, node):
@@ -86,7 +86,7 @@ class RepositoryCfg(yaml.YAMLObject):
         #  the parents are both in the same PosixStorage. The parents are serialized in mangled form; when
         #  deserializing the parents we do not re-mangle them.
         cfg._parents = d['_parents']
-        cfg._dirty = False
+        cfg.dirty = False
         return cfg
 
     def __eq__(self, other):
@@ -150,11 +150,9 @@ class RepositoryCfg(yaml.YAMLObject):
         parents does not match but the mismatch is because of new parents at the end of the list, then they
         can be added to the cfg.
 
-
-
         Parameters
         ----------
-        parents : list of string
+        newParents : list of string
             A list of parents that contains all the parents that are to be recorded into this RepositoryCfg.
             This must include parents that may already be in this RepositoryCfg's parents list
 
@@ -224,7 +222,7 @@ class RepositoryCfg(yaml.YAMLObject):
 
         Parameters
         ----------
-        newParents : string or RepoistoryCfg instance
+        newParents : list containing strings and RepoistoryCfg instances
             Same as in `addParents`.
 
         Returns
@@ -276,14 +274,6 @@ class RepositoryCfg(yaml.YAMLObject):
     @property
     def policy(self):
         return self._policy
-
-    @property
-    def dirty(self):
-        return self._dirty
-
-    @dirty.setter
-    def dirty(self, val):
-        self._dirty = val
 
     @staticmethod
     def makeFromArgs(repositoryArgs):
