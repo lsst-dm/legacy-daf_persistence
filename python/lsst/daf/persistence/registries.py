@@ -42,6 +42,10 @@ import os
 import astropy.io.fits
 import re
 import yaml
+import sqlalchemy
+import sqlalchemy.ext
+import sqlalchemy.ext.automap
+import sqlalchemy.orm
 
 try:
     import sqlite3
@@ -337,6 +341,22 @@ class SqlRegistry(Registry):
         if not self.conn:
             return None
 
+        if self.session:
+            _lookups = [sqlalchemy.distinct(getattr(self.base.classes.get(c), p))
+                        for p in lookupProperties
+                        for c in reference]
+            _filterby = [getattr(self.base.classes.get(c), p) for p in dataId.keys() for c in reference]
+            query = self.session.query(*_lookups)
+            for k, v in dataId.items():
+                query.filter()
+
+
+            for r in query.all():
+                print r
+            import pdb; pdb.set_trace()
+            # query = query.join(reference)
+            # results = query.filter()
+
         # input variable sanitization:
         reference = sequencify(reference)
         lookupProperties = sequencify(lookupProperties)
@@ -407,9 +427,19 @@ class SqliteRegistry(SqlRegistry):
         location : `str`
             Path to SQLite3 file
         """
+
+        self.location = location
         if os.path.exists(location):
             conn = sqlite3.connect(location)
             conn.text_factory = str
+
+            engine = sqlalchemy.create_engine('sqlite:///{}'.format(location))
+            self.base = sqlalchemy.ext.automap.automap_base()
+            self.base.prepare(engine, reflect=True)
+            if self.base.classes.keys():
+                self.session = sqlalchemy.orm.Session(engine)
+            else:
+                self.session = None
         else:
             conn = None
         SqlRegistry.__init__(self, conn)
