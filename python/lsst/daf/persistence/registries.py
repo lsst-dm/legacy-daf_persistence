@@ -341,14 +341,19 @@ class SqlRegistry(Registry):
         if not self.conn:
             return None
 
-        if self.session:
-            _lookups = [sqlalchemy.distinct(getattr(self.base.classes.get(c), p))
-                        for p in lookupProperties
-                        for c in reference]
-            _filterby = [getattr(self.base.classes.get(c), p) for p in dataId.keys() for c in reference]
-            query = self.session.query(*_lookups)
-            for k, v in dataId.items():
-                query.filter()
+        if self.metadata:
+            reference.append('raw_visit')
+            tbl = self.metadata.tables.get(reference[0])
+            tbls = [self.metadata.tables.get(r) for r in reference]
+            sel_list = [sqlalchemy.distinct(tbl.c.get(p)) for p in lookupProperties]
+            sel = sqlalchemy.select(sel_list).select_from(tbl.join(tbls))#.where(
+                #sqlalchemy.and_(*[tbl.c.get(k) == v for k, v in dataId.items()]))
+            print str(sel)
+            rp = self.connection.execute(sel)
+            results = rp.fetchall()
+            print str(sel)
+            print(results)
+            import pdb; pdb.set_trace()
 
 
             for r in query.all():
@@ -429,17 +434,17 @@ class SqliteRegistry(SqlRegistry):
         """
 
         self.location = location
+        self.metadata = None
         if os.path.exists(location):
             conn = sqlite3.connect(location)
             conn.text_factory = str
 
-            engine = sqlalchemy.create_engine('sqlite:///{}'.format(location))
-            self.base = sqlalchemy.ext.automap.automap_base()
-            self.base.prepare(engine, reflect=True)
-            if self.base.classes.keys():
-                self.session = sqlalchemy.orm.Session(engine)
-            else:
-                self.session = None
+            self.metadata = sqlalchemy.MetaData()
+            self.engine = sqlalchemy.create_engine('sqlite:///{}'.format(location))
+            self.connection = self.engine.connect()
+            self.metadata.reflect(bind=self.engine)
+
+
         else:
             conn = None
         SqlRegistry.__init__(self, conn)
