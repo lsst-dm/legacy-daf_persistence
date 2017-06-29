@@ -341,30 +341,33 @@ class SqlRegistry(Registry):
         if not self.conn:
             return None
 
-        if self.metadata:
-            reference.append('raw_visit')
-            tbl = self.metadata.tables.get(reference[0])
-            tbls = [self.metadata.tables.get(r) for r in reference]
-            sel_list = [sqlalchemy.distinct(tbl.c.get(p)) for p in lookupProperties]
-            sel = sqlalchemy.select(sel_list).select_from(tbl.join(tbls))#.where(
-                #sqlalchemy.and_(*[tbl.c.get(k) == v for k, v in dataId.items()]))
-            print str(sel)
-            rp = self.connection.execute(sel)
-            results = rp.fetchall()
-            print str(sel)
-            print(results)
-            import pdb; pdb.set_trace()
+        # if self.metadata:
+        #     reference.append('raw_visit')
+        #     tbl = self.metadata.tables.get(reference[0])
+        #     tbls = [self.metadata.tables.get(r) for r in reference]
+        #     sel_list = [sqlalchemy.distinct(tbl.c.get(p)) for p in lookupProperties]
+        #     sel = sqlalchemy.select(sel_list).select_from(tbl.join(tbls))#.where(
+        #         #sqlalchemy.and_(*[tbl.c.get(k) == v for k, v in dataId.items()]))
+        #     print str(sel)
+        #     rp = self.connection.execute(sel)
+        #     results = rp.fetchall()
+        #     print str(sel)
+        #     print(results)
+        #     import pdb; pdb.set_trace()
 
 
-            for r in query.all():
-                print r
-            import pdb; pdb.set_trace()
+        #     for r in query.all():
+        #         print r
+        #     import pdb; pdb.set_trace()
             # query = query.join(reference)
             # results = query.filter()
 
         # input variable sanitization:
         reference = sequencify(reference)
         lookupProperties = sequencify(lookupProperties)
+
+        if len(reference) > 1:
+            import pdb; pdb.set_trace()
 
         cmd = "SELECT DISTINCT "
         cmd += ", ".join(lookupProperties)
