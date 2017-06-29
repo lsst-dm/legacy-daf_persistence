@@ -1249,7 +1249,8 @@ class Butler(object):
         if location is None:
             return False
 
-        exists = None
+        # If the location is a ButlerComposite (as opposed to a ButlerLocation), verify the component objects
+        # exist.
         if isinstance(location, ButlerComposite):
             for name, componentInfo in location.componentInfo.items():
                 if componentInfo.subset:
