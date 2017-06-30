@@ -342,16 +342,29 @@ class SqlRegistry(Registry):
             return None
 
         if self.metadata:
-            reference.append('raw_visit')
             tbls = [self.metadata.tables.get(r) for r in sequencify(reference)]
-            try:
-                joined_tbls = sqlalchemy.join(*tbls) if len(tbls) > 1 else tbls[0]
-                import pdb; pdb.set_trace()
-            except:
-                joined_tbls = tbls[0]
-            sel_list = [sqlalchemy.distinct(joined_tbls.c.get(p)) for p in sequencify(lookupProperties)]
-            sel = sqlalchemy.select(sel_list).select_from(joined_tbls).where(
-                sqlalchemy.and_(*[joined_tbls.c.get(k) == v for k, v in dataId.items()]))
+
+            joined_tbls = sqlalchemy.join(*tbls) if len(tbls) > 1 else tbls[0]
+
+            properties = []
+            for p in lookupProperties:
+                for k in joined_tbls.c.keys():
+                    kprop = k.split('_')[-1]
+                    if kprop == p:
+                        properties.append(k)
+                        break
+
+            sel_list = [joined_tbls.c.get(p) for p in properties]
+            sel = sqlalchemy.select(sel_list).distinct()
+
+            for k, v in dataId.items():
+                if hasattr(k, '__iter__') and not isinstance(k, basestring):
+                    if len(k) != 2:
+                        raise RuntimeError("Wrong number of keys for range:%s" % (k,))
+                    sel = sel.where(sqlalchemy.between(v, joined_tbls.c.get(k[0]), joined_tbls.c.get(k[1])))
+                else:
+                    sel = sel.where(joined_tbls.c.get(k) == v)
+
             rp = self.connection.execute(sel)
             return rp.fetchall()
 
@@ -362,6 +375,7 @@ class SqlRegistry(Registry):
         if len(reference) > 1:
             import pdb; pdb.set_trace()
 
+        import pdb; pdb.set_trace()
         cmd = "SELECT DISTINCT "
         cmd += ", ".join(lookupProperties)
         cmd += " FROM " + " NATURAL JOIN ".join(reference)
