@@ -318,6 +318,7 @@ class SqlRegistry(Registry):
         """
         Registry.__init__(self)
         self.conn = conn
+        self.metadata = None
 
     def lookup(self, lookupProperties, reference, dataId, **kwargs):
         """Perform a lookup in the registry.
@@ -415,6 +416,35 @@ class SqlRegistry(Registry):
         if not self.conn:
             return None
 
+        if self.metadata:
+            tbls = [self.metadata.tables.get(r) for r in sequencify(joinClause)]
+
+            joined_tbls = sqlalchemy.join(*tbls) if len(tbls) > 1 else tbls[0]
+
+            properties = []
+            for p in returnFields:
+                for k in joined_tbls.c.keys():
+                    kprop = k.split('_')[-1]
+                    if kprop == p:
+                        properties.append(k)
+                        break
+
+            sel_list = [joined_tbls.c.get(p) for p in properties]
+            sel = sqlalchemy.select(sel_list).distinct()
+
+            for k, v in whereFields.items():
+                if hasattr(k, '__iter__') and not isinstance(k, basestring):
+                    if len(k) != 2:
+                        raise RuntimeError("Wrong number of keys for range:%s" % (k,))
+                    sel = sel.where(sqlalchemy.between(v, joined_tbls.c.get(k[0]), joined_tbls.c.get(k[1])))
+                else:
+                    sel = sel.where(joined_tbls.c.get(k) == v)
+
+            rp = self.connection.execute(sel)
+            return rp.fetchall()
+
+
+
         if len(joinClause) > 1:
             import pdb; pdb.set_trace()
 
@@ -446,22 +476,16 @@ class SqliteRegistry(SqlRegistry):
         location : `str`
             Path to SQLite3 file
         """
-
+        SqlRegistry.__init__(self, None)
         self.location = location
-        self.metadata = None
         if os.path.exists(location):
-            conn = sqlite3.connect(location)
-            conn.text_factory = str
+            self.conn = sqlite3.connect(location)
+            self.conn.text_factory = str
 
             self.metadata = sqlalchemy.MetaData()
             self.engine = sqlalchemy.create_engine('sqlite:///{}'.format(location))
             self.connection = self.engine.connect()
             self.metadata.reflect(bind=self.engine)
-
-
-        else:
-            conn = None
-        SqlRegistry.__init__(self, conn)
 
 
 class PgsqlRegistry(SqlRegistry):
