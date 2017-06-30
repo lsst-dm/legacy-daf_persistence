@@ -119,7 +119,19 @@ class TestOneThousandWriters(unittest.TestCase):
         dp.PosixStorage.putRepositoryCfg(cfg)
 
     def testWriteCfg(self):
+        # The number of writers to use can result in too many open files
+        # We calculate this as the 80% of the maximum allowed number for this
+        # process, or 1000, whichever is smaller.
         numWriters = 1000
+        try:
+            import resource
+            limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+            allowedOpen = int(limit[0] * 0.8)
+            if allowedOpen < numWriters:
+                numWriters = allowedOpen
+        except:
+            # Use the default number if we had trouble obtaining resources
+            pass
         startTime = time.time()
         go = multiprocessing.Value('b', False)
         cfg = dp.RepositoryCfg(root=os.path.join(TestOneThousandWriters.testDir), mapper='bar', mapperArgs={},
