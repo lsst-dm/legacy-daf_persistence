@@ -1,5 +1,3 @@
-#!/usr/bin/env python -*- coding: UTF-8 -*-
-
 #
 # LSST Data Management System
 # Copyright 2016 LSST Corporation.
