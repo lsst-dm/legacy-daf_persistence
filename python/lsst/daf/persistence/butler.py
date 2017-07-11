@@ -1376,18 +1376,6 @@ class Butler(object):
             raise NoResults("No locations for get:", datasetType, dataId)
         self.log.debug("Get type=%s keys=%s from %s", datasetType, dataId, str(location))
 
-        if isinstance(location, ButlerComposite):
-            for name, componentInfo in location.componentInfo.items():
-                if componentInfo.subset:
-                    subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
-                    componentInfo.obj = [obj.get() for obj in subset]
-                else:
-                    obj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
-                    componentInfo.obj = obj
-                assembler = location.assembler or genericAssembler
-            obj = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
-            return obj
-
         if hasattr(location, 'bypass'):
             # this type loader block should get moved into a helper someplace, and duplications removed.
             callback = lambda : location.bypass
@@ -1511,21 +1499,35 @@ class Butler(object):
         return ButlerDataRef(subset, subset.cache[0])
 
     def _read(self, location):
-        """Unpersist an object using data inside a butlerLocation object.
+        """Unpersist an object using data inside a ButlerLocation or ButlerComposite object.
 
         Parameters
         ----------
-        location - ButlerLocation
-            A butlerLocation instance populated with data needed to read the object.
+        location : ButlerLocation or ButlerComposite
+            A ButlerLocation or ButlerComposite instance populated with data needed to read the object.
 
         Returns
         -------
-        object - an instance of the object specified by the butlerLocation.
+        object
+            An instance of the object specified by the location.
         """
         self.log.debug("Starting read from %s", location)
-        results = location.repository.read(location)
-        if len(results) == 1:
-            results = results[0]
+
+        if isinstance(location, ButlerComposite):
+            for name, componentInfo in location.componentInfo.items():
+                if componentInfo.subset:
+                    subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
+                    componentInfo.obj = [obj.get() for obj in subset]
+                else:
+                    obj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
+                    componentInfo.obj = obj
+                assembler = location.assembler or genericAssembler
+            results = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
+            return results
+        else:
+            results = location.repository.read(location)
+            if len(results) == 1:
+                results = results[0]
         self.log.debug("Ending read from %s", location)
         return results
 
