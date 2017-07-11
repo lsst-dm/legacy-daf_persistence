@@ -1316,14 +1316,23 @@ class Butler(object):
             if location:
                 if not write:
                     # If there is a bypass function for this dataset type, we can't test to see if the object
-                    # exists in storage. Just return the location.
+                    # exists in storage, because the bypass function may not actually use the location
+                    # according to the template. Instead, execute the bypass function and include its results
+                    # in the bypass attribute of the location. The bypass function may fail for any reason,
+                    # the most common case being that a file does not exist. If it raises an exception we
+                    # ignore its existance and proceed as though it does not exist.
                     if hasattr(location.mapper, "bypass_" + location.datasetType):
-                        location.bypass = self._getBypassFunc(location, dataId)()
-                        return location
+                        bypass = self._getBypassFunc(location, dataId)
+                        try:
+                            bypass = bypass()
+                            location.bypass = bypass
+                        except:
+                            pass
                     # If a location was found but the location does not exist, keep looking in input
                     # repositories (the registry may have had enough data for a lookup even thought the object
                     # exists in a different repository.)
-                    if isinstance(location, ButlerComposite) or location.repository.exists(location):
+                    if (isinstance(location, ButlerComposite) or hasattr(location, 'bypass') or
+                            location.repository.exists(location)):
                         return location
                 else:
                     try:
