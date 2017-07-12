@@ -1316,20 +1316,23 @@ class Butler(object):
             if location:
                 if not write:
                     # If there is a bypass function for this dataset type, we can't test to see if the object
-                    # exists in storage. Just return the location.
+                    # exists in storage, because the bypass function may not actually use the location
+                    # according to the template. Instead, execute the bypass function and include its results
+                    # in the bypass attribute of the location. The bypass function may fail for any reason,
+                    # the most common case being that a file does not exist. If it raises an exception we
+                    # ignore its existance and proceed as though it does not exist.
                     if hasattr(location.mapper, "bypass_" + location.datasetType):
+                        bypass = self._getBypassFunc(location, dataId)
                         try:
-                            # The dataset for the location may or may not exist
-                            # and may or may not be needed. Right now the only
-                            # way to know is to call the bypass function.
-                            location.bypass = self._getBypassFunc(location, dataId)()
-                            return location
+                            bypass = bypass()
+                            location.bypass = bypass
                         except:
-                            continue
+                            pass
                     # If a location was found but the location does not exist, keep looking in input
                     # repositories (the registry may have had enough data for a lookup even thought the object
                     # exists in a different repository.)
-                    if isinstance(location, ButlerComposite) or location.repository.exists(location):
+                    if (isinstance(location, ButlerComposite) or hasattr(location, 'bypass') or
+                            location.repository.exists(location)):
                         return location
                 else:
                     try:
@@ -1375,18 +1378,6 @@ class Butler(object):
         if location is None:
             raise NoResults("No locations for get:", datasetType, dataId)
         self.log.debug("Get type=%s keys=%s from %s", datasetType, dataId, str(location))
-
-        if isinstance(location, ButlerComposite):
-            for name, componentInfo in location.componentInfo.items():
-                if componentInfo.subset:
-                    subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
-                    componentInfo.obj = [obj.get() for obj in subset]
-                else:
-                    obj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
-                    componentInfo.obj = obj
-                assembler = location.assembler or genericAssembler
-            obj = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
-            return obj
 
         if hasattr(location, 'bypass'):
             # this type loader block should get moved into a helper someplace, and duplications removed.
@@ -1511,21 +1502,35 @@ class Butler(object):
         return ButlerDataRef(subset, subset.cache[0])
 
     def _read(self, location):
-        """Unpersist an object using data inside a butlerLocation object.
+        """Unpersist an object using data inside a ButlerLocation or ButlerComposite object.
 
         Parameters
         ----------
-        location - ButlerLocation
-            A butlerLocation instance populated with data needed to read the object.
+        location : ButlerLocation or ButlerComposite
+            A ButlerLocation or ButlerComposite instance populated with data needed to read the object.
 
         Returns
         -------
-        object - an instance of the object specified by the butlerLocation.
+        object
+            An instance of the object specified by the location.
         """
         self.log.debug("Starting read from %s", location)
-        results = location.repository.read(location)
-        if len(results) == 1:
-            results = results[0]
+
+        if isinstance(location, ButlerComposite):
+            for name, componentInfo in location.componentInfo.items():
+                if componentInfo.subset:
+                    subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
+                    componentInfo.obj = [obj.get() for obj in subset]
+                else:
+                    obj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
+                    componentInfo.obj = obj
+                assembler = location.assembler or genericAssembler
+            results = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
+            return results
+        else:
+            results = location.repository.read(location)
+            if len(results) == 1:
+                results = results[0]
         self.log.debug("Ending read from %s", location)
         return results
 

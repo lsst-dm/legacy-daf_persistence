@@ -153,6 +153,9 @@ class ButlerComposite(object):
     def getRepository(self):
         return self.repository
 
+    def getPythonType(self):
+        return self.python
+
 
 class ButlerLocation(yaml.YAMLObject):
     """ButlerLocation is a struct-like class that holds information needed to
