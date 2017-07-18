@@ -837,7 +837,7 @@ class Butler(object):
             for repoParentIdx, repoParent in enumerate(repoData.cfg.parents):
                 parentIdxInRepoDataList = repoDataIdx + repoParentIdx + 1
                 if not isinstance(repoParent, RepositoryCfg):
-                    args = RepositoryArgs(cfgRoot=repoParent, mode='r')
+                    args = RepositoryArgs(cfgRoot=repoParent, mode='r', mapperArgs=repoData.cfg.mapperArgs)
                     repoParentCfg, isOldButlerRepository = self._getRepositoryCfg(args)
                     if repoParentCfg is None:
                         raise RuntimeError("Could not get cfg for repo at {}.".format(repoParent))
@@ -850,7 +850,11 @@ class Butler(object):
                 if (parentIdxInRepoDataList < len(repoDataList) and
                         repoDataList[parentIdxInRepoDataList].cfg == repoParentCfg):
                     continue
-                args = RepositoryArgs(cfgRoot=repoParentCfg.root, mode='r')
+
+                mapperArgs = repoData.repoArgs.mapperArgs
+                assert mapperArgs == repoData.cfg.mapperArgs
+
+                args = RepositoryArgs(cfgRoot=repoParentCfg.root, mode='r', mapperArgs=mapperArgs)
                 role = 'input' if repoData.role == 'output' else 'parent'
                 newRepoInfo = RepoData(args, role)
                 newRepoInfo.repoData.setCfg(cfg=repoParentCfg, origin=cfgOrigin, root=args.cfgRoot,

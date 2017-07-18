@@ -63,7 +63,7 @@ class RepositoryArgs(object):
         repositories may be 'r' or 'rw', 'r' for an output repository will raise a RuntimeError during Butler
         init.
     """
-    def __init__(self, cfgRoot=None, root=None, mapper=None, mapperArgs=None, tags=None,
+    def __init__(self, cfgRoot=None, root=None, mapper=None, mapperArgs={}, tags=None,
                  mode=None, policy=None):
         try:
             #  is cfgRoot a dict? try dict init:
@@ -76,6 +76,9 @@ class RepositoryArgs(object):
             self.tags = set(listify(tags))
             self.mode = mode
             self.policy = Policy(policy) if policy is not None else None
+
+        if mapperArgs is None:
+            mapperArgs = {}
 
     def __repr__(self):
         return "%s(root=%r, cfgRoot=%r, mapper=%r, mapperArgs=%r, tags=%s, mode=%r, policy=%s)" % (
@@ -158,6 +161,8 @@ class Repository(object):
         # now if mapper is a class type (not instance), instantiate it:
         if inspect.isclass(mapper):
             mapperArgs = copy.copy(repoData.cfg.mapperArgs)
+            if mapperArgs is None:
+                mapperArgs = repoData.repoArgs.mapperArgs
             if mapperArgs is None:
                 mapperArgs = {}
             if 'root' not in mapperArgs:
