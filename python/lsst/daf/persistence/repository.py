@@ -132,7 +132,7 @@ class Repository(object):
             Object that contains the parameters with which to init the Repository.
         """
         self._storage = Storage.makeFromURI(repoData.cfg.root)
-        if repoData.cfg.dirty and not repoData.isV1Repository:
+        if repoData.cfg.dirty and not repoData.isV1Repository and repoData.cfgOrigin != 'nested':
             self._storage.putRepositoryCfg(repoData.cfg, repoData.cfgRoot)
         self._mapperArgs = repoData.cfg.mapperArgs  # keep for reference in matchesArgs
         self._initMapper(repoData)

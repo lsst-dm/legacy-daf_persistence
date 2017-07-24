@@ -696,6 +696,8 @@ class Butler(object):
     def _getParentVal(repoData):
         """Get the value of this repoData as it should appear in the parents
         list of other repositories"""
+        if repoData.isV1Repository:
+            return repoData.cfg
         if repoData.cfgOrigin == 'nested':
             return repoData.cfg
         else:
@@ -725,7 +727,9 @@ class Butler(object):
         cfg = RepositoryCfg.makeFromArgs(repositoryArgs)
         parent = PosixStorage.getParentSymlinkPath(repositoryArgs.cfgRoot)
         if parent:
-            cfg.addParents(parent)
+            parent = Butler._getOldButlerRepositoryCfg(RepositoryArgs(cfgRoot=parent,
+                                                                      mode='r'))
+            cfg.addParents([parent])
         return cfg
 
     def _getRepositoryCfg(self, repositoryArgs):
@@ -733,8 +737,9 @@ class Butler(object):
 
         Parameters
         ----------
-        repositoryArgs : RepositoryArgs
-            Describes the location of a Repository.
+        repositoryArgs : RepositoryArgs, dict, or string
+            Provides arguments to load an existing repository (or repositories). String is assumed to be a URI
+            and is used as the cfgRoot (URI to the location of the cfg file).
 
         Returned
         --------
@@ -742,6 +747,9 @@ class Butler(object):
             The RepositoryCfg, or None if one cannot be found, and True if the RepositoryCfg was created by
             reading an Old Butler repository, or False if it is a New Butler Repository.
         """
+        if not isinstance(repositoryArgs, RepositoryArgs):
+            repositoryArgs = RepositoryArgs(cfgRoot=repositoryArgs, mode='r')
+
         cfg = self.storage.getRepositoryCfg(repositoryArgs.cfgRoot)
         isOldButlerRepository = False
         if cfg is None:
@@ -836,20 +844,20 @@ class Butler(object):
                 continue  # if there are no parents then there's nothing to do.
             for repoParentIdx, repoParent in enumerate(repoData.cfg.parents):
                 parentIdxInRepoDataList = repoDataIdx + repoParentIdx + 1
+                isOldButlerRepository = False
                 if not isinstance(repoParent, RepositoryCfg):
-                    args = RepositoryArgs(cfgRoot=repoParent, mode='r')
-                    repoParentCfg, isOldButlerRepository = self._getRepositoryCfg(args)
-                    if repoParentCfg is None:
-                        raise RuntimeError("Could not get cfg for repo at {}.".format(repoParent))
-                    else:
+                    repoParentCfg, isOldButlerRepository = self._getRepositoryCfg(repoParent)
+                    if repoParentCfg is not None:
                         cfgOrigin = 'existing'
                 else:
-                    isOldButlerRepository = False
                     repoParentCfg = repoParent
                     cfgOrigin = 'nested'
                 if (parentIdxInRepoDataList < len(repoDataList) and
                         repoDataList[parentIdxInRepoDataList].cfg == repoParentCfg):
                     continue
+                # probably the tags from the parent should get copied in here too?
+                # could move args & role directly into the RepoData init call, if it would make it more clear
+                # that they are only being generated for the sake of the RepoData?
                 args = RepositoryArgs(cfgRoot=repoParentCfg.root, mode='r')
                 role = 'input' if repoData.role == 'output' else 'parent'
                 newRepoInfo = RepoData(args, role)
