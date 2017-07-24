@@ -840,6 +840,59 @@ class TestParentRepository(unittest.TestCase):
         tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         self.assertEqual(tables, [('repoB', )])
 
+class TestOldButlerParent(unittest.TestCase):
+    """A test to verify that when a parent is an old butler repo that it still gets loaded correctly,
+    including mapperArgs and tagging."""
+
+    def setUp(self):
+        """Remove testDir from any previous runs and create an OldButler repo at 'repoA'"""
+        self.testDir = os.path.join(ROOT, 'TestOldButlerParent')
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+        self.repoADir = os.path.join(self.testDir, 'repoA')
+        os.makedirs(self.repoADir)
+        with open(os.path.join(self.repoADir, '_mapper'), 'w') as mapperFile:
+            mapperFile.write('lsst.daf.persistence.test.EmptyTestMapper')
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir, True)
+
+    def testOldButlerCfgRecordedInOutputs(self):
+        """Verify that when an Old Butler is used as an input with parameters such as mapperArgs, that those
+        parameters get recalled correctly (in the RepositoryCfg nested in the parents list of the output repo)
+        """
+        repoBDir = os.path.join(self.testDir, 'repoB')
+        # create a 'repoB' with the Old Butler 'repoA' as a parent, specify mapperArgs for 'repoA', and
+        # verify that the mapperArgs got passed to the repoA mapper.
+        butler = dp.Butler(inputs={'root': self.repoADir,
+                                   'mapperArgs': {'foo': 1}},
+                           outputs={'root': repoBDir,
+                                    'mapperArgs': {'foo': 1},
+                                    'mode': 'rw'})
+        self.assertEqual(butler._repos.inputs()[0].repo._mapper.kwargs, {'foo': 1})
+        # init a Butler again, with exactly the same configuration as before.
+        butler = dp.Butler(inputs={'root': self.repoADir,
+                                   'mapperArgs': {'foo': 1}},
+                           outputs={'root': repoBDir,
+                                    'mapperArgs': {'foo': 1},
+                                    'mode': 'rw'})
+        self.assertEqual(butler._repos.inputs()[0].repo._mapper.kwargs, {'foo': 1})
+        # try initializing the butler again with the 'repoB' output, but do not specify the mapperArgs in the
+        # repoA args. this should raise a runtime error because the input speficied this way does not match
+        # the cfg recorded in 'repoB'.
+        with self.assertRaises(RuntimeError):
+            butler = dp.Butler(inputs=self.repoADir,
+                               outputs=repoBDir)
+        # initializing the butler, but only specifiying the root of 'repoB' (the rest of the cfg will be
+        # loaded from its `repositoryCfg` file), but fully specify the input as required.
+        butler = dp.Butler(inputs={'root': self.repoADir,
+                                   'mapperArgs': {'foo': 1}},
+                           outputs=repoBDir)
+        self.assertEqual(butler._repos.inputs()[0].repo._mapper.kwargs, {'foo': 1})
+        # use 'repoB' as an input, and verify that 'repoA' is loaded, including the mapperArgs.
+        butler = dp.Butler(inputs=repoBDir)
+        self.assertEqual(butler._repos.inputs()[1].repo._mapper.kwargs, {'foo': 1})
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
