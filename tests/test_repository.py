@@ -249,12 +249,6 @@ class TestBasics(unittest.TestCase):
 ##############################################################################################################
 
 
-class AlternateMapper(object):
-
-    def __init__(self):
-        pass
-
-
 class TestWriting(unittest.TestCase):
     """A test case for the repository classes.
 
@@ -624,7 +618,7 @@ class TestMapperInference(unittest.TestCase):
                                     parents=None,
                                     policy=None)
         repoBCfg = dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMapperInference/repoB'),
-                                    mapper=AlternateMapper,
+                                    mapper='lsst.daf.persistence.test.EmptyTestMapper',
                                     mapperArgs=None,
                                     parents=None,
                                     policy=None)
