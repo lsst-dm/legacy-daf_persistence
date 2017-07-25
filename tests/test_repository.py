@@ -842,7 +842,7 @@ class TestParentRepository(unittest.TestCase):
 
 class TestOldButlerParent(unittest.TestCase):
     """A test to verify that when a parent is an old butler repo that it still gets loaded correctly,
-    including mapperArgs and tagging."""
+    including mapperArgs."""
 
     def setUp(self):
         """Remove testDir from any previous runs and create an OldButler repo at 'repoA'"""
@@ -893,6 +893,81 @@ class TestOldButlerParent(unittest.TestCase):
         # use 'repoB' as an input, and verify that 'repoA' is loaded, including the mapperArgs.
         butler = dp.Butler(inputs=repoBDir)
         self.assertEqual(butler._repos.inputs()[1].repo._mapper.kwargs, {'foo': 1})
+
+
+class TestOldButlerParentTagging(unittest.TestCase):
+    """A test to verify that when a parent is an old butler repo that its tagging gets loaded correctly"""
+
+    def setUp(self):
+        """Remove testDir from any previous runs and create an OldButler repo at repoA and an Old Butler repoB
+        with a _parent symlink to repoA.
+        """
+        self.testDir = os.path.join(ROOT, 'TestOldButlerParentTagging')
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+        self.repoADir = os.path.join(self.testDir, 'repoA')
+        os.makedirs(self.repoADir)
+        with open(os.path.join(self.repoADir, '_mapper'), 'w') as mapperFile:
+            mapperFile.write('lsst.daf.persistence.test.MapperForTestWriting')
+        self.repoBDir = os.path.join(self.testDir, 'repoB')
+        os.makedirs(self.repoBDir)
+        os.symlink(self.repoADir, os.path.join(self.repoBDir, '_parent'))
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir, True)
+
+    def test(self):
+        """Verify that the tags on a repository with an Old Butler repository parent are applied to that
+        parent
+        """
+        # put objA in repoA:
+        objA = tstObj('a')
+        butler = dp.Butler(outputs=self.repoADir)
+        butler.put(objA, 'foo', {'bar': 1})
+        del butler
+
+        # create repoB and put objB in it:
+        objB = tstObj('b')
+        butler = dp.Butler(inputs=self.repoADir, outputs=self.repoBDir)
+        butler.put(objB, 'foo', {'bar': 2})
+        del butler
+
+        # verify that repoB can be used as an input, and objA and objB can be gotten from it:
+        butler = dp.Butler(inputs=self.repoBDir)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1})), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2})), objB)
+        del butler
+
+        # apply a tag and verify that repoB can still be used as an input, and both objA (in repoA) and objB
+        # can be gotten from it:
+        butler = dp.Butler(inputs={'root': self.repoBDir, 'tags': 'baz'})
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1}, tag='baz')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2}, tag='baz')), objB)
+        del butler
+
+        # create a New Butler repoC and put objC in it:
+        objC = tstObj('c')
+        repoCDir = os.path.join(self.testDir, 'repoC')
+        butler = dp.Butler(inputs=self.repoBDir, outputs=repoCDir)
+        butler.put(objC, 'foo', {'bar': 3})
+        del butler
+
+        # verify that repoC can be used as an input, and objA, objB, and objC can be gotten from it:
+        butler = dp.Butler(inputs=repoCDir)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1})), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2})), objB)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 3})), objC)
+        del butler
+
+        # apply a tag and verify that repoC can be used as an input, and objA, objB, and objC can be gotten
+        # from it:
+        butler = dp.Butler(inputs={'root': repoCDir, 'tags': 'baz'})
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1}, tag='baz')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2}, tag='baz')), objB)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 3}, tag='baz')), objC)
+        del butler
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
