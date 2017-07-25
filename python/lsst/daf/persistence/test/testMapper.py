@@ -21,7 +21,12 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+import os
+
+from .. import ButlerLocation
 from .. import Mapper
+from .. import Storage
+from . import TestObject
 
 
 class EmptyTestMapper(Mapper):
@@ -30,3 +35,23 @@ class EmptyTestMapper(Mapper):
     def __init__(self, root=None, parentRegistry=None, repositoryCfg=None, **kwargs):
         self.kwargs = kwargs
         pass
+
+
+class MapperForTestWriting(Mapper):
+
+    def __init__(self, root, **kwargs):
+        self.root = root
+        self.storage = Storage.makeFromURI(self.root)
+
+    def map_foo(self, dataId, write):
+        python = TestObject
+        persistable = None
+        storage = 'PickleStorage'
+        fileName = 'filename'
+        for key, value in dataId.items():
+            fileName += '_' + key + str(value)
+        fileName += '.txt'
+        path = os.path.join(self.root, fileName)
+        if not write and not os.path.exists(path):
+            return None
+        return ButlerLocation(python, persistable, storage, path, dataId, self, self.storage)
