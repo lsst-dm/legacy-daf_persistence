@@ -35,6 +35,7 @@ import unittest
 import lsst.daf.persistence as dp
 # can't use name TestObject, becuase it messes Pytest up. Alias it to tstObj
 from lsst.daf.persistence.test import TestObject as tstObj
+from lsst.daf.persistence.test import MapperForTestWriting
 import lsst.utils.tests
 
 # Define the root of the tests relative to this file
@@ -246,26 +247,6 @@ class TestBasics(unittest.TestCase):
 ##############################################################################################################
 ##############################################################################################################
 ##############################################################################################################
-
-class MapperForTestWriting(dp.Mapper):
-
-    def __init__(self, root, **kwargs):
-        self.root = root
-        self.storage = dp.Storage.makeFromURI(self.root)
-
-    def map_foo(self, dataId, write):
-        python = tstObj
-        persistable = None
-        storage = 'PickleStorage'
-        fileName = 'filename'
-        for key, value in dataId.items():
-            fileName += '_' + key + str(value)
-        fileName += '.txt'
-        path = os.path.join(self.root, fileName)
-        if not write and not os.path.exists(path):
-            return None
-        return dp.ButlerLocation(python, persistable, storage, path, dataId,
-                                 self, self.storage)
 
 
 class AlternateMapper(object):
