@@ -727,9 +727,9 @@ class Butler(object):
         cfg = RepositoryCfg.makeFromArgs(repositoryArgs)
         parent = PosixStorage.getParentSymlinkPath(repositoryArgs.cfgRoot)
         if parent:
-            parent = Butler._getOldButlerRepositoryCfg(RepositoryArgs(cfgRoot=parent,
-                                                                      mode='r'))
-            cfg.addParents([parent])
+            parent = Butler._getOldButlerRepositoryCfg(RepositoryArgs(cfgRoot=parent, mode='r'))
+            if parent is not None:
+                cfg.addParents([parent])
         return cfg
 
     def _getRepositoryCfg(self, repositoryArgs):
