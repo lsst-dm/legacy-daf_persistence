@@ -48,7 +48,7 @@ class MapperForTestWriting(Mapper):
         persistable = None
         storage = 'PickleStorage'
         fileName = 'filename'
-        for key, value in dataId.items():
+        for key, value in sorted(dataId.items()):
             fileName += '_' + key + str(value)
         fileName += '.txt'
         path = os.path.join(self.root, fileName)
