@@ -35,6 +35,7 @@ import unittest
 import lsst.daf.persistence as dp
 # can't use name TestObject, becuase it messes Pytest up. Alias it to tstObj
 from lsst.daf.persistence.test import TestObject as tstObj
+from lsst.daf.persistence.test import MapperForTestWriting
 import lsst.utils.tests
 
 # Define the root of the tests relative to this file
@@ -246,32 +247,6 @@ class TestBasics(unittest.TestCase):
 ##############################################################################################################
 ##############################################################################################################
 ##############################################################################################################
-
-class MapperForTestWriting(dp.Mapper):
-
-    def __init__(self, root, **kwargs):
-        self.root = root
-        self.storage = dp.Storage.makeFromURI(self.root)
-
-    def map_foo(self, dataId, write):
-        python = tstObj
-        persistable = None
-        storage = 'PickleStorage'
-        fileName = 'filename'
-        for key, value in dataId.items():
-            fileName += '_' + key + str(value)
-        fileName += '.txt'
-        path = os.path.join(self.root, fileName)
-        if not write and not os.path.exists(path):
-            return None
-        return dp.ButlerLocation(python, persistable, storage, path, dataId,
-                                 self, self.storage)
-
-
-class AlternateMapper(object):
-
-    def __init__(self):
-        pass
 
 
 class TestWriting(unittest.TestCase):
@@ -643,7 +618,7 @@ class TestMapperInference(unittest.TestCase):
                                     parents=None,
                                     policy=None)
         repoBCfg = dp.RepositoryCfg(root=os.path.join(ROOT, 'TestMapperInference/repoB'),
-                                    mapper=AlternateMapper,
+                                    mapper='lsst.daf.persistence.test.EmptyTestMapper',
                                     mapperArgs=None,
                                     parents=None,
                                     policy=None)
@@ -839,6 +814,134 @@ class TestParentRepository(unittest.TestCase):
         self.assertIsInstance(registry, dp.SqliteRegistry)
         tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         self.assertEqual(tables, [('repoB', )])
+
+class TestOldButlerParent(unittest.TestCase):
+    """A test to verify that when a parent is an old butler repo that it still gets loaded correctly,
+    including mapperArgs."""
+
+    def setUp(self):
+        """Remove testDir from any previous runs and create an OldButler repo at 'repoA'"""
+        self.testDir = os.path.join(ROOT, 'TestOldButlerParent')
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+        self.repoADir = os.path.join(self.testDir, 'repoA')
+        os.makedirs(self.repoADir)
+        with open(os.path.join(self.repoADir, '_mapper'), 'w') as mapperFile:
+            mapperFile.write('lsst.daf.persistence.test.EmptyTestMapper')
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir, True)
+
+    def testOldButlerCfgRecordedInOutputs(self):
+        """Verify that when an Old Butler is used as an input with parameters such as mapperArgs, that those
+        parameters get recalled correctly (in the RepositoryCfg nested in the parents list of the output repo)
+        """
+        repoBDir = os.path.join(self.testDir, 'repoB')
+        # create a 'repoB' with the Old Butler 'repoA' as a parent, specify mapperArgs for 'repoA', and
+        # verify that the mapperArgs got passed to the repoA mapper.
+        butler = dp.Butler(inputs={'root': self.repoADir,
+                                   'mapperArgs': {'foo': 1}},
+                           outputs={'root': repoBDir,
+                                    'mapperArgs': {'foo': 1},
+                                    'mode': 'rw'})
+        self.assertEqual(butler._repos.inputs()[0].repo._mapper.kwargs, {'foo': 1})
+        # init a Butler again, with exactly the same configuration as before.
+        butler = dp.Butler(inputs={'root': self.repoADir,
+                                   'mapperArgs': {'foo': 1}},
+                           outputs={'root': repoBDir,
+                                    'mapperArgs': {'foo': 1},
+                                    'mode': 'rw'})
+        self.assertEqual(butler._repos.inputs()[0].repo._mapper.kwargs, {'foo': 1})
+        # try initializing the butler again with the 'repoB' output, but do not specify the mapperArgs in the
+        # repoA args. this should raise a runtime error because the input speficied this way does not match
+        # the cfg recorded in 'repoB'.
+        with self.assertRaises(RuntimeError):
+            butler = dp.Butler(inputs=self.repoADir,
+                               outputs=repoBDir)
+        # initializing the butler, but only specifiying the root of 'repoB' (the rest of the cfg will be
+        # loaded from its `repositoryCfg` file), but fully specify the input as required.
+        butler = dp.Butler(inputs={'root': self.repoADir,
+                                   'mapperArgs': {'foo': 1}},
+                           outputs=repoBDir)
+        self.assertEqual(butler._repos.inputs()[0].repo._mapper.kwargs, {'foo': 1})
+        # use 'repoB' as an input, and verify that 'repoA' is loaded, including the mapperArgs.
+        butler = dp.Butler(inputs=repoBDir)
+        self.assertEqual(butler._repos.inputs()[1].repo._mapper.kwargs, {'foo': 1})
+
+
+class TestOldButlerParentTagging(unittest.TestCase):
+    """A test to verify that when a parent is an old butler repo that its tagging gets loaded correctly"""
+
+    def setUp(self):
+        """Remove testDir from any previous runs and create an OldButler repo at repoA and an Old Butler repoB
+        with a _parent symlink to repoA.
+        """
+        self.testDir = os.path.join(ROOT, 'TestOldButlerParentTagging')
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+        self.repoADir = os.path.join(self.testDir, 'repoA')
+        os.makedirs(self.repoADir)
+        with open(os.path.join(self.repoADir, '_mapper'), 'w') as mapperFile:
+            mapperFile.write('lsst.daf.persistence.test.MapperForTestWriting')
+        self.repoBDir = os.path.join(self.testDir, 'repoB')
+        os.makedirs(self.repoBDir)
+        os.symlink(self.repoADir, os.path.join(self.repoBDir, '_parent'))
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir, True)
+
+    def test(self):
+        """Verify that the tags on a repository with an Old Butler repository parent are applied to that
+        parent
+        """
+        # put objA in repoA:
+        objA = tstObj('a')
+        butler = dp.Butler(outputs=self.repoADir)
+        butler.put(objA, 'foo', {'bar': 1})
+        del butler
+
+        # create repoB and put objB in it:
+        objB = tstObj('b')
+        butler = dp.Butler(inputs=self.repoADir, outputs=self.repoBDir)
+        butler.put(objB, 'foo', {'bar': 2})
+        del butler
+
+        # verify that repoB can be used as an input, and objA and objB can be gotten from it:
+        butler = dp.Butler(inputs=self.repoBDir)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1})), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2})), objB)
+        del butler
+
+        # apply a tag and verify that repoB can still be used as an input, and both objA (in repoA) and objB
+        # can be gotten from it:
+        butler = dp.Butler(inputs={'root': self.repoBDir, 'tags': 'baz'})
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1}, tag='baz')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2}, tag='baz')), objB)
+        del butler
+
+        # create a New Butler repoC and put objC in it:
+        objC = tstObj('c')
+        repoCDir = os.path.join(self.testDir, 'repoC')
+        butler = dp.Butler(inputs=self.repoBDir, outputs=repoCDir)
+        butler.put(objC, 'foo', {'bar': 3})
+        del butler
+
+        # verify that repoC can be used as an input, and objA, objB, and objC can be gotten from it:
+        butler = dp.Butler(inputs=repoCDir)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1})), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2})), objB)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 3})), objC)
+        del butler
+
+        # apply a tag and verify that repoC can be used as an input, and objA, objB, and objC can be gotten
+        # from it:
+        butler = dp.Butler(inputs={'root': repoCDir, 'tags': 'baz'})
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 1}, tag='baz')), objA)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 2}, tag='baz')), objB)
+        self.assertEqual(butler.get('foo', dp.DataId({'bar': 3}, tag='baz')), objC)
+        del butler
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
