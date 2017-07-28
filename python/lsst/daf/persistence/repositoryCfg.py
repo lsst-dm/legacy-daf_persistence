@@ -56,7 +56,7 @@ class RepositoryCfg(yaml.YAMLObject):
         self._root = root
         self._mapper = mapper
         self._mapperArgs = mapperArgs
-        self._parents = None
+        self._parents = []
         self.addParents(iterify(parents))
         self._policy = policy
         self.dirty = True  # if dirty, the parameters have been changed since the cfg was read or written.
@@ -81,11 +81,13 @@ class RepositoryCfg(yaml.YAMLObject):
         """
         d = loader.construct_mapping(node)
         cfg = RepositoryCfg(root=d['_root'], mapper=d['_mapper'], mapperArgs=d['_mapperArgs'],
-                            parents=None, policy=d.get('_policy', None))
+                            parents=[], policy=d.get('_policy', None))
         #  Where possible we mangle the parents so that they are relative to root, for example if the root and
         #  the parents are both in the same PosixStorage. The parents are serialized in mangled form; when
         #  deserializing the parents we do not re-mangle them.
         cfg._parents = d['_parents']
+        if cfg._parents is None:
+            cfg._parents = []
         cfg.dirty = False
         return cfg
 
@@ -211,8 +213,6 @@ class RepositoryCfg(yaml.YAMLObject):
 
     @property
     def parents(self):
-        if self._parents is None:
-            return []
         return self._denormalizeParents(self.root, self._parents)
 
     @staticmethod
@@ -263,8 +263,6 @@ class RepositoryCfg(yaml.YAMLObject):
             repository. If RepositoryCfg, newParents should be a RepositoryCfg
             that describes the parent repository in part or whole.
         """
-        if len(newParents) > 0 and self._parents is None:
-            self._parents = []
         newParents = self._normalizeParents(self.root, newParents)
         for newParent in newParents:
             if newParent not in self._parents:

@@ -59,7 +59,7 @@ class ParentMapper(dp.Mapper):
         python = 'astropy.io.fits.HDUList'
         persistable = None
         storage = 'PickleStorage'
-        path = os.path.join(self.root, 'data/input/raw')
+        path = os.path.join(self.root, 'raw')
         path = os.path.join(path, 'raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz')
         if os.path.exists(path):
             return dp.ButlerLocation(python, persistable, storage, path,
@@ -95,7 +95,7 @@ class ParentMapper(dp.Mapper):
         return {'filter': str, 'visit': int}
 
     def map_str(self, dataId, write):
-        path = os.path.join(self.root, 'data/input/raw')
+        path = os.path.join(self.root, 'raw')
         path = os.path.join(path, 'raw_v' + str(dataId['str']) + '_f' + dataId['filter'] + '.fits.gz')
         if os.path.exists(path):
             return dp.ButlerLocation(str, None, 'PickleStorage', path, dataId,
@@ -113,7 +113,7 @@ class ChildrenMapper(dp.Mapper):
         python = 'astropy.io.fits.HDUList'
         persistable = None
         storage = 'FitsStorage'
-        path = os.path.join(self.root, 'data/input/raw')
+        path = os.path.join(self.root, 'raw')
         path = os.path.join(path, 'raw_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz')
         if write or os.path.exists(path):
             return dp.ButlerLocation(python, persistable, storage, path,
@@ -141,7 +141,7 @@ class TestBasics(unittest.TestCase):
     def setUp(self):
         self.tearDown()
 
-        inputRepoArgs = dp.RepositoryArgs(root=os.path.join(ROOT, 'butlerAlias'),
+        inputRepoArgs = dp.RepositoryArgs(root=os.path.join(ROOT, 'butlerAlias', 'data', 'input'),
                                           mapper=ParentMapper,
                                           tags='baArgs')
         # mode of output repos is write-only by default

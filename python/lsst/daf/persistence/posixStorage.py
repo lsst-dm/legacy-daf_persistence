@@ -433,8 +433,9 @@ class PosixStorage(StorageInterface):
     def v1RepoExists(root):
         """Test if a Version 1 Repository exists.
 
-        Version 1 Repositories only exist in posix storages and do not have a RepositoryCfg file.
-        To "exist" the folder at root must exist and contain files or folders.
+        Version 1 Repositories only exist in posix storages, do not have a
+        RepositoryCfg file, and contain either a registry.sqlite3 file, a
+        _mapper file, or a _parent link.
 
         Parameters
         ----------
@@ -446,7 +447,11 @@ class PosixStorage(StorageInterface):
         bool
             True if the repository at root exists, else False.
         """
-        return os.path.exists(root) and bool(os.listdir(root))
+        return os.path.exists(root) and (
+                os.path.exists(os.path.join(root, "registry.sqlite3")) or
+                os.path.exists(os.path.join(root, "_mapper")) or
+                os.path.exists(os.path.join(root, "_parent"))
+                )
 
     def copyFile(self, fromLocation, toLocation):
         """Copy a file from one location to another on the local filesystem.
