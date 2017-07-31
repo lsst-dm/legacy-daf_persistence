@@ -25,20 +25,25 @@ import pickle
 import unittest
 import lsst.utils.tests
 import os
+import shutil
 
 import lsst.daf.persistence as dafPersist
+
+# Define the root of the tests relative to this file
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class MinMapper(dafPersist.Mapper):
 
     def __init__(self, root, parentRegistry, repositoryCfg):
+        self.root = root
         pass
 
     def map_x(self, dataId, write):
-        path = "foo%(ccd)d.pickle" % dataId
+        path = os.path.join(self.root, "foo%(ccd)d.pickle" % dataId)
         return dafPersist.ButlerLocation(
             None, None, "PickleStorage", path, {},
-            self, dafPersist.Storage.makeFromURI(os.getcwd()))
+            self, dafPersist.Storage.makeFromURI(self.root))
 
 
 class ButlerPickleTestCase(unittest.TestCase):
@@ -47,12 +52,18 @@ class ButlerPickleTestCase(unittest.TestCase):
     localTypeName = "@myPreferredType"
     localTypeNameIsAliasOf = "x"
 
+    testDir = os.path.join(ROOT, 'ButlerPickleTestCase')
+
     def setUp(self):
-        self.butler = dafPersist.Butler(root='.', mapper=MinMapper)
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+        self.butler = dafPersist.Butler(root=self.testDir, mapper=MinMapper)
         self.butler.defineAlias(self.localTypeName, self.localTypeNameIsAliasOf)
 
     def tearDown(self):
         del self.butler
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def checkIO(self, butler, bbox, ccd):
         butler.put(bbox, self.localTypeName, ccd=ccd)
