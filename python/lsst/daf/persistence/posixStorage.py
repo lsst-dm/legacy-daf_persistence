@@ -38,6 +38,9 @@ import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
 
 
+__all__ = ["PosixStorage"]
+
+
 class PosixStorage(StorageInterface):
     """Defines the interface for a storage location on the local filesystem.
 
@@ -64,9 +67,13 @@ class PosixStorage(StorageInterface):
                 raise NoRepositroyAtRoot("No repository at {}".format(uri))
             safeMakeDir(self.root)
 
+        self.persistence = self.getPersistence()
+
+    @staticmethod
+    def getPersistence():
         # Always use an empty Persistence policy until we can get rid of it
         persistencePolicy = pexPolicy.Policy()
-        self.persistence = Persistence.getPersistence(persistencePolicy)
+        return Persistence.getPersistence(persistencePolicy)
 
     def __repr__(self):
         return 'PosixStorage(root=%s)' % self.root
@@ -250,16 +257,6 @@ class PosixStorage(StorageInterface):
         """
         self.log.debug("Put location=%s obj=%s", butlerLocation, obj)
 
-        additionalData = butlerLocation.getAdditionalData()
-        storageName = butlerLocation.getStorageName()
-        locations = butlerLocation.getLocations()
-
-        pythonType = butlerLocation.getPythonType()
-        if pythonType is not None:
-            if isinstance(pythonType, basestring):
-                # import this pythonType dynamically
-                pythonType = doImport(pythonType)
-
         writeFormatter = self._getWriteFormatter(butlerLocation.getStorageName())
         if not writeFormatter:
             writeFormatter = self._getWriteFormatter(butlerLocation.getPythonType())
@@ -267,49 +264,7 @@ class PosixStorage(StorageInterface):
             writeFormatter(butlerLocation, obj)
             return
 
-        # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
-        # implications; write now I'm worried that any python type that can be written to disk and has a
-        # method called 'put' will be called here (even if it's e.g. destined for FitsStorage).
-        # We might want a somewhat more specific API.
-        if hasattr(pythonType, 'butlerWrite'):
-            pythonType.butlerWrite(obj, butlerLocation=butlerLocation)
-            return
-
-        with SafeFilename(os.path.join(self.root, locations[0])) as locationString:
-            logLoc = LogicalLocation(locationString, additionalData)
-
-            if storageName == "PickleStorage":
-                with open(logLoc.locString(), "wb") as outfile:
-                    pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
-                return
-
-            if storageName == "ConfigStorage":
-                obj.save(logLoc.locString())
-                return
-
-            if storageName == "FitsCatalogStorage":
-                if additionalData.exists("flags"):
-                    kwds = dict(flags=additionalData.getInt("flags"))
-                else:
-                    kwds = {}
-                obj.writeFits(logLoc.locString(), **kwds)
-                return
-
-            # Create a list of Storages for the item.
-            storageList = StorageList()
-            storage = self.persistence.getPersistStorage(storageName, logLoc)
-            storageList.append(storage)
-
-            if storageName == 'FitsStorage':
-                self.persistence.persist(obj, storageList, additionalData)
-                return
-
-            # Persist the item.
-            if hasattr(obj, '__deref__'):
-                # We have a smart pointer, so dereference it.
-                self.persistence.persist(obj.__deref__(), storageList, additionalData)
-            else:
-                self.persistence.persist(obj, storageList, additionalData)
+        raise(RuntimeError("No formatter for location:{}".format(butlerLocation)))
 
     def read(self, butlerLocation):
         """Read from a butlerLocation.
@@ -324,15 +279,6 @@ class PosixStorage(StorageInterface):
         A list of objects as described by the butler location. One item for
         each location in butlerLocation.getLocations()
         """
-        additionalData = butlerLocation.getAdditionalData()
-        # Create a list of Storages for the item.
-        storageName = butlerLocation.getStorageName()
-        results = []
-        locations = butlerLocation.getLocations()
-        pythonType = butlerLocation.getPythonType()
-        if pythonType is not None:
-            if isinstance(pythonType, basestring):
-                pythonType = doImport(pythonType)
 
         readFormatter = self._getReadFormatter(butlerLocation.getStorageName())
         if not readFormatter:
@@ -340,55 +286,7 @@ class PosixStorage(StorageInterface):
         if readFormatter:
             return readFormatter(butlerLocation)
 
-        # see note re. discomfort with the name 'butlerWrite' in the write method, above.
-        # Same applies to butlerRead.
-        if hasattr(pythonType, 'butlerRead'):
-            results = pythonType.butlerRead(butlerLocation=butlerLocation)
-            return results
-
-        for locationString in locations:
-            locationString = os.path.join(self.root, locationString)
-
-            logLoc = LogicalLocation(locationString, additionalData)
-
-            if storageName == "PafStorage":
-                finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
-            elif storageName == "YamlStorage":
-                finalItem = Policy(filePath=logLoc.locString())
-            elif storageName == "PickleStorage":
-                if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError("No such pickle file: " + logLoc.locString())
-                with open(logLoc.locString(), "rb") as infile:
-                    # py3: We have to specify encoding since some files were written
-                    # by python2, and 'latin1' manages that conversion safely. See:
-                    # http://stackoverflow.com/questions/28218466/unpickling-a-python-2-object-with-python-3/28218598#28218598
-                    if sys.version_info.major >= 3:
-                        finalItem = pickle.load(infile, encoding="latin1")
-                    else:
-                        finalItem = pickle.load(infile)
-            elif storageName == "FitsCatalogStorage":
-                if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
-                kwds = {}
-                if additionalData.exists("hdu"):
-                    kwds["hdu"] = additionalData.getInt("hdu")
-                if additionalData.exists("flags"):
-                    kwds["flags"] = additionalData.getInt("flags")
-                finalItem = pythonType.readFits(logLoc.locString(), **kwds)
-            elif storageName == "ConfigStorage":
-                if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError("No such config file: " + logLoc.locString())
-                finalItem = pythonType()
-                finalItem.load(logLoc.locString())
-            else:
-                storageList = StorageList()
-                storage = self.persistence.getRetrieveStorage(storageName, logLoc)
-                storageList.append(storage)
-                finalItem = self.persistence.unsafeRetrieve(
-                    butlerLocation.getCppType(), storageList, additionalData)
-            results.append(finalItem)
-
-        return results
+        raise(RuntimeError("No formatter for location:{}".format(butlerLocation)))
 
     def butlerLocationExists(self, location):
         """Implementaion of PosixStorage.exists for ButlerLocation objects."""
@@ -613,6 +511,293 @@ class PosixStorage(StorageInterface):
         """
         return os.path.exists(PosixStorage._pathFromURI(uri))
 
+
+def readConfigStorage(butlerLocation):
+    """Read from a butlerLocation.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    results = []
+    for locationString in butlerLocation.getLocations():
+        locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
+        logLoc = LogicalLocation(locStringWithRoot, butlerLocation.getAdditionalData())
+        if not os.path.exists(logLoc.locString()):
+            raise RuntimeError("No such config file: " + logLoc.locString())
+        pythonType = butlerLocation.getPythonType()
+        if pythonType is not None:
+            if isinstance(pythonType, basestring):
+                pythonType = doImport(pythonType)
+        finalItem = pythonType()
+        finalItem.load(logLoc.locString())
+        results.append(finalItem)
+    return results
+
+
+def writeConfigStorage(butlerLocation, obj):
+    """Writes an object to a location and persistence format specified by
+    ButlerLocation
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object to be written.
+    obj : object instance
+        The object to be written.
+    """
+    filename = os.path.join(butlerLocation.getStorage().root, butlerLocation.getLocations()[0])
+    with SafeFilename(filename) as locationString:
+        logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
+        obj.save(logLoc.locString())
+
+
+def readFitsStorage(butlerLocation):
+    """Read from a butlerLocation.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    results = []
+    for locationString in butlerLocation.getLocations():
+        locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
+        logLoc = LogicalLocation(locStringWithRoot, butlerLocation.getAdditionalData())
+        storageList = StorageList()
+        storage = PosixStorage.getPersistence().getRetrieveStorage(butlerLocation.getStorageName(),
+                                                                   logLoc)
+        storageList.append(storage)
+        finalItem = PosixStorage.getPersistence().unsafeRetrieve(
+            butlerLocation.getCppType(), storageList, butlerLocation.getAdditionalData())
+        results.append(finalItem)
+    return results
+
+
+def writeFitsStorage(butlerLocation, obj):
+    """Writes an object to a location and persistence format specified by
+    ButlerLocation
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object to be written.
+    obj : object instance
+        The object to be written.
+    """
+    location = butlerLocation.getLocations()[0]
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, location)) as locationString:
+        logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
+        # Create a list of Storages for the item.
+        storageList = StorageList()
+        storage = PosixStorage.getPersistence().getPersistStorage(butlerLocation.getStorageName(), logLoc)
+        storageList.append(storage)
+        persistence = PosixStorage.getPersistence()
+        if hasattr(obj, '__deref__'):
+            # We have a smart pointer, so dereference it.
+            persistence.persist(obj.__deref__(), storageList, butlerLocation.getAdditionalData())
+        else:
+            persistence.persist(obj, storageList, butlerLocation.getAdditionalData())
+
+
+def readPickleStorage(butlerLocation):
+    """Read from a butlerLocation.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    # Create a list of Storages for the item.
+    results = []
+    additionalData = butlerLocation.getAdditionalData()
+    for locationString in butlerLocation.getLocations():
+        locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
+        logLoc = LogicalLocation(locStringWithRoot, additionalData)
+        if not os.path.exists(logLoc.locString()):
+            raise RuntimeError("No such pickle file: " + logLoc.locString())
+        with open(logLoc.locString(), "rb") as infile:
+            # py3: We have to specify encoding since some files were written
+            # by python2, and 'latin1' manages that conversion safely. See:
+            # http://stackoverflow.com/questions/28218466/unpickling-a-python-2-object-with-python-3/28218598#28218598
+            if sys.version_info.major >= 3:
+                finalItem = pickle.load(infile, encoding="latin1")
+            else:
+                finalItem = pickle.load(infile)
+        results.append(finalItem)
+    return results
+
+
+def writePickleStorage(butlerLocation, obj):
+    """Writes an object to a location and persistence format specified by
+    ButlerLocation
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object to be written.
+    obj : object instance
+        The object to be written.
+    """
+    additionalData = butlerLocation.getAdditionalData()
+    locations = butlerLocation.getLocations()
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        with open(logLoc.locString(), "wb") as outfile:
+            pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
+
+
+def readFitsCatalogStorage(butlerLocation):
+    """Read from a butlerLocation.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    pythonType = butlerLocation.getPythonType()
+    if pythonType is not None:
+        if isinstance(pythonType, basestring):
+            pythonType = doImport(pythonType)
+    results = []
+    additionalData = butlerLocation.getAdditionalData()
+    for locationString in butlerLocation.getLocations():
+        locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
+        logLoc = LogicalLocation(locStringWithRoot, additionalData)
+        if not os.path.exists(logLoc.locString()):
+            raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
+        INT_MIN = -(1 << 31)
+        hdu = additionalData.getInt("hdu", INT_MIN)
+        flags = additionalData.getInt("flags", 0)
+        finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
+        results.append(finalItem)
+    return results
+
+
+def writeFitsCatalogStorage(butlerLocation, obj):
+    """Writes an object to a location and persistence format specified by
+    ButlerLocation
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object to be written.
+    obj : object instance
+        The object to be written.
+    """
+    additionalData = butlerLocation.getAdditionalData()
+    locations = butlerLocation.getLocations()
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        flags = additionalData.getInt("flags", 0)
+        obj.writeFits(logLoc.locString(), flags=flags)
+        return
+
+
+def readPafStorage(butlerLocation):
+    """Read from a butlerLocation.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    results = []
+    for locationString in butlerLocation.getLocations():
+        logLoc = LogicalLocation(butlerLocation.getStorage().locationWithRoot(locationString),
+                                 butlerLocation.getAdditionalData())
+        finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
+        results.append(finalItem)
+    return results
+
+
+def readYamlStorage(butlerLocation):
+    """Read from a butlerLocation.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    results = []
+    for locationString in butlerLocation.getLocations():
+        logLoc = LogicalLocation(butlerLocation.getStorage().locationWithRoot(locationString),
+                                 butlerLocation.getAdditionalData())
+        finalItem = Policy(filePath=logLoc.locString())
+        results.append(finalItem)
+    return results
+
+
+def readBoostStorage(butlerLocation):
+    results = []
+    additionalData = butlerLocation.getAdditionalData()
+    for locationString in butlerLocation.getLocations():
+        logLoc = LogicalLocation(butlerLocation.getStorage().locationWithRoot(locationString),
+                                 butlerLocation.getAdditionalData())
+        storageList = StorageList()
+        storage = PosixStorage.getPersistence().getRetrieveStorage(butlerLocation.getStorageName(), logLoc)
+        storageList.append(storage)
+        finalItem = PosixStorage.getPersistence().unsafeRetrieve(butlerLocation.getCppType(), storageList,
+                                                                 additionalData)
+        results.append(finalItem)
+    return results
+
+
+def writeBoostStorage(butlerLocation, obj):
+    additionalData = butlerLocation.getAdditionalData()
+    location = butlerLocation.getStorage().locationWithRoot(butlerLocation.getLocations()[0])
+    with SafeFilename(location) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        # Create a list of Storages for the item.
+        storageList = StorageList()
+        storage = PosixStorage.getPersistence().getPersistStorage(butlerLocation.getStorageName(), logLoc)
+        storageList.append(storage)
+        # Persist the item.
+        if hasattr(obj, '__deref__'):
+            # We have a smart pointer, so dereference it.
+            PosixStorage.getPersistence().persist(obj.__deref__(), storageList, additionalData)
+        else:
+            PosixStorage.getPersistence().persist(obj, storageList, additionalData)
+
+
+PosixStorage.registerFormatters("FitsStorage", readFitsStorage, writeFitsStorage)
+PosixStorage.registerFormatters("ConfigStorage", readConfigStorage, writeConfigStorage)
+PosixStorage.registerFormatters("PickleStorage", readPickleStorage, writePickleStorage)
+PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, writeFitsCatalogStorage)
+PosixStorage.registerWriteFormatter("PafStorage", readPafStorage)
+PosixStorage.registerReadFormatter("YamlStorage", readYamlStorage)
+PosixStorage.registerFormatters("BoostStorage", readFitsStorage, writeFitsStorage)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
