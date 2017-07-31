@@ -297,9 +297,7 @@ class PosixStorage(StorageInterface):
             storageName = butlerLocation.getStorageName()
             locationString = os.path.join(self.root, locationString)
             logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
-            if storageName == "PafStorage":
-                finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
-            elif storageName == "YamlStorage":
+            if storageName == "YamlStorage":
                 finalItem = Policy(filePath=logLoc.locString())
             results.append(finalItem)
         return results
@@ -726,10 +724,43 @@ class FitsCatalogStorageFormatter():
             return
 
 
+class PafStorageFormatter():
+
+    def read(self, butlerLocation):
+        """Read from a butlerLocation.
+
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object(s) to be read.
+
+        Returns
+        -------
+        A list of objects as described by the butler location. One item for
+        each location in butlerLocation.getLocations()
+        """
+        results = []
+        for locationString in butlerLocation.getLocations():
+            storageName = butlerLocation.getStorageName()
+            locationString = os.path.join(self.root, locationString)
+            logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
+            if storageName == "PafStorage":
+                finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
+            results.append(finalItem)
+        return results
+
+    def write(self, butlerLocation, obj):
+        """PafStorageFormatter.write is not implemented."""
+        # when this formatter was factored from PosixStorage.write, writing PafStorage objects was not
+        # implemented.
+        raise NotImplementedError
+
+
 PosixStorage.registerFormatter("ConfigStorage", ConfigStorageFormatter)
 PosixStorage.registerFormatter("FitsStorage", FitsStorageFormatter)
 PosixStorage.registerFormatter("PickleStorage", PickleStorageFormatter)
 PosixStorage.registerFormatter("FitsCatalogStorage", FitsCatalogStorageFormatter)
+PosixStorage.registerFormatter("PafStorage", PafStorageFormatter)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
