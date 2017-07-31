@@ -291,16 +291,7 @@ class PosixStorage(StorageInterface):
         formatter = self._getFormatter(butlerLocation.getStorageName())
         if formatter:
             return formatter.read(butlerLocation)
-
-        results = []
-        for locationString in butlerLocation.getLocations():
-            storageName = butlerLocation.getStorageName()
-            locationString = os.path.join(self.root, locationString)
-            logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
-            if storageName == "YamlStorage":
-                finalItem = Policy(filePath=logLoc.locString())
-            results.append(finalItem)
-        return results
+        return []
 
     def butlerLocationExists(self, location):
         """Implementaion of PosixStorage.exists for ButlerLocation objects."""
@@ -752,6 +743,36 @@ class PafStorageFormatter():
     def write(self, butlerLocation, obj):
         """PafStorageFormatter.write is not implemented."""
         # when this formatter was factored from PosixStorage.write, writing PafStorage objects was not
+        # implemented.
+        raise NotImplementedError
+
+
+class YamlStorageFormatter():
+
+    def read(self, butlerLocation):
+        """Read from a butlerLocation.
+
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object(s) to be read.
+
+        Returns
+        -------
+        A list of objects as described by the butler location. One item for
+        each location in butlerLocation.getLocations()
+        """
+        results = []
+        for locationString in butlerLocation.getLocations():
+            locationString = os.path.join(self.root, locationString)
+            logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
+            finalItem = Policy(filePath=logLoc.locString())
+            results.append(finalItem)
+        return results
+
+    def write(self, butlerLocation, obj):
+        """YamlStorageFormatter.write is not implemented."""
+        # when this formatter was factored from PosixStorage.write, writing YamlStorage objects was not
         # implemented.
         raise NotImplementedError
 
