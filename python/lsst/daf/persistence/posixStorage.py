@@ -263,33 +263,10 @@ class PosixStorage(StorageInterface):
         """
         self.log.debug("Put location=%s obj=%s", butlerLocation, obj)
 
-
-        pythonType = butlerLocation.getPythonType()
-        if pythonType is not None:
-            if isinstance(pythonType, basestring):
-                # import this pythonType dynamically
-                pythonType = doImport(pythonType)
-
         formatter = self._getFormatter(butlerLocation.getStorageName())
         if formatter:
             formatter.write(butlerLocation, obj)
             return
-
-        additionalData = butlerLocation.getAdditionalData()
-        storageName = butlerLocation.getStorageName()
-        locations = butlerLocation.getLocations()
-
-        # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
-        # implications; write now I'm worried that any python type that can be written to disk and has a
-        # method called 'put' will be called here (even if it's e.g. destined for FitsStorage).
-        # We might want a somewhat more specific API.
-        if hasattr(pythonType, 'butlerWrite'):
-            pythonType.butlerWrite(obj, butlerLocation=butlerLocation)
-            return
-
-        with SafeFilename(os.path.join(self.root, locations[0])) as locationString:
-            logLoc = LogicalLocation(locationString, additionalData)
-
 
     def read(self, butlerLocation):
         """Read from a butlerLocation.
@@ -316,25 +293,15 @@ class PosixStorage(StorageInterface):
             return formatter.read(butlerLocation)
 
         results = []
-        additionalData = butlerLocation.getAdditionalData()
-        storageName = butlerLocation.getStorageName()
-        # see note re. discomfort with the name 'butlerWrite' in the write method, above.
-        # Same applies to butlerRead.
-        if hasattr(pythonType, 'butlerRead'):
-            results = pythonType.butlerRead(butlerLocation=butlerLocation)
-            return results
-
         for locationString in butlerLocation.getLocations():
+            storageName = butlerLocation.getStorageName()
             locationString = os.path.join(self.root, locationString)
-
-            logLoc = LogicalLocation(locationString, additionalData)
-
+            logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
             if storageName == "PafStorage":
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
             elif storageName == "YamlStorage":
                 finalItem = Policy(filePath=logLoc.locString())
             results.append(finalItem)
-
         return results
 
     def butlerLocationExists(self, location):
