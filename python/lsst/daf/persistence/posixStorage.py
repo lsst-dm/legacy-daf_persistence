@@ -290,10 +290,6 @@ class PosixStorage(StorageInterface):
         with SafeFilename(os.path.join(self.root, locations[0])) as locationString:
             logLoc = LogicalLocation(locationString, additionalData)
 
-            if storageName == "ConfigStorage":
-                obj.save(logLoc.locString())
-                return
-
             if storageName == "FitsCatalogStorage":
                 flags = additionalData.getInt("flags", 0)
                 obj.writeFits(logLoc.locString(), flags=flags)
@@ -603,7 +599,8 @@ class ConfigStorageFormatter():
         obj : object instance
             The object to be written.
         """
-        with SafeFilename(os.path.join(butlerLocation.getStorage().root, butlerLocation.getLocations()[0])) as locationString:
+        with SafeFilename(os.path.join(butlerLocation.getStorage().root, butlerLocation.getLocations()[0])) \
+                as locationString:
             logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
             obj.save(logLoc.locString())
 
