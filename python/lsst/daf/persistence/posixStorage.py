@@ -290,11 +290,6 @@ class PosixStorage(StorageInterface):
         with SafeFilename(os.path.join(self.root, locations[0])) as locationString:
             logLoc = LogicalLocation(locationString, additionalData)
 
-            if storageName == "PickleStorage":
-                with open(logLoc.locString(), "wb") as outfile:
-                    pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
-                return
-
             if storageName == "ConfigStorage":
                 obj.save(logLoc.locString())
                 return
@@ -346,17 +341,6 @@ class PosixStorage(StorageInterface):
                 finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
             elif storageName == "YamlStorage":
                 finalItem = Policy(filePath=logLoc.locString())
-            elif storageName == "PickleStorage":
-                if not os.path.exists(logLoc.locString()):
-                    raise RuntimeError("No such pickle file: " + logLoc.locString())
-                with open(logLoc.locString(), "rb") as infile:
-                    # py3: We have to specify encoding since some files were written
-                    # by python2, and 'latin1' manages that conversion safely. See:
-                    # http://stackoverflow.com/questions/28218466/unpickling-a-python-2-object-with-python-3/28218598#28218598
-                    if sys.version_info.major >= 3:
-                        finalItem = pickle.load(infile, encoding="latin1")
-                    else:
-                        finalItem = pickle.load(infile)
             elif storageName == "FitsCatalogStorage":
                 if not os.path.exists(logLoc.locString()):
                     raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
@@ -681,8 +665,64 @@ class FitsStorageFormatter():
 
 
 
+class PickleStorageFormatter():
+
+    @staticmethod
+    def read(butlerLocation):
+        """Read from a butlerLocation.
+
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object(s) to be read.
+
+        Returns
+        -------
+        A list of objects as described by the butler location. One item for
+        each location in butlerLocation.getLocations()
+        """
+        # Create a list of Storages for the item.
+        results = []
+        additionalData = butlerLocation.getAdditionalData()
+        for locationString in butlerLocation.getLocations():
+            locationString = os.path.join(butlerLocation.getStorage().root, locationString)
+            logLoc = LogicalLocation(locationString, additionalData)
+            if not os.path.exists(logLoc.locString()):
+                raise RuntimeError("No such pickle file: " + logLoc.locString())
+            with open(logLoc.locString(), "rb") as infile:
+                # py3: We have to specify encoding since some files were written
+                # by python2, and 'latin1' manages that conversion safely. See:
+                # http://stackoverflow.com/questions/28218466/unpickling-a-python-2-object-with-python-3/28218598#28218598
+                if sys.version_info.major >= 3:
+                    finalItem = pickle.load(infile, encoding="latin1")
+                else:
+                    finalItem = pickle.load(infile)
+            results.append(finalItem)
+        return results
+
+    @staticmethod
+    def write(butlerLocation, obj):
+        """Writes an object to a location and persistence format specified by
+        ButlerLocation
+
+        Parameters
+        ----------
+        butlerLocation : ButlerLocation
+            The location & formatting for the object to be written.
+        obj : object instance
+            The object to be written.
+        """
+        additionalData = butlerLocation.getAdditionalData()
+        locations = butlerLocation.getLocations()
+        with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+            logLoc = LogicalLocation(locationString, additionalData)
+            with open(logLoc.locString(), "wb") as outfile:
+                pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
+
+
 PosixStorage.registerFormatter("ConfigStorage", ConfigStorageFormatter)
 PosixStorage.registerFormatter("FitsStorage", FitsStorageFormatter)
+PosixStorage.registerFormatter("PickleStorage", PickleStorageFormatter)
 
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
