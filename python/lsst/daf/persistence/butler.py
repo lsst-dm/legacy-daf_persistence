@@ -842,6 +842,7 @@ class Butler(object):
             if repoData.cfg.parents is None:
                 repoDataIdx += 1
                 continue  # if there are no parents then there's nothing to do.
+            # import pdb; pdb.set_trace()
             for repoParentIdx, repoParent in enumerate(repoData.cfg.parents):
                 parentIdxInRepoDataList = repoDataIdx + repoParentIdx + 1
                 if not isinstance(repoParent, RepositoryCfg):

@@ -603,6 +603,7 @@ class TestMapperInference(unittest.TestCase):
         butler = dp.Butler(inputs=(os.path.join(ROOT, 'TestMapperInference/repoA'),
                                    os.path.join(ROOT, 'TestMapperInference/repoB')),
                            outputs=repoCArgs)
+        import pdb; pdb.set_trace()
         self.assertIsInstance(butler._repos.outputs()[0].repo._mapper, MapperForTestWriting)
 
     def testMultipleParentsDifferentMappers(self):
@@ -868,6 +869,19 @@ class TestOldButlerParent(unittest.TestCase):
         # use 'repoB' as an input, and verify that 'repoA' is loaded, including the mapperArgs.
         butler = dp.Butler(inputs=repoBDir)
         self.assertEqual(butler._repos.inputs()[1].repo._mapper.kwargs, {'foo': 1})
+        del butler
+
+        cfg = dp.PosixStorage.getRepositoryCfg(repoBDir)
+        os.remove(os.path.join(repoBDir, 'repositoryCfg.yaml'))
+
+        cfg._parents = []
+        cfg.extendParents(self.repoADir)
+        dp.PosixStorage.putRepositoryCfg(cfg)
+        butler = dp.Butler(inputs={'root': self.repoADir,
+                                   'mapperArgs': {'foo': 1}},
+                           outputs={'root': repoBDir,
+                                    'mapperArgs': {'foo': 1},
+                                    'mode': 'rw'})
 
 
 class TestOldButlerParentTagging(unittest.TestCase):

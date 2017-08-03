@@ -94,6 +94,8 @@ class RepositoryCfg(yaml.YAMLObject):
     def __eq__(self, other):
         if not other:
             return False
+        if not isinstance(other, RepositoryCfg):
+            return False
         return self.root == other.root and \
             self.mapper == other.mapper and \
             self.mapperArgs == other.mapperArgs and \
