@@ -55,7 +55,7 @@ class RepositoryCfg(yaml.YAMLObject):
     def __init__(self, root, mapper, mapperArgs, parents, policy):
         self._root = root
         self._mapper = mapper
-        self._mapperArgs = mapperArgs
+        self._mapperArgs = {} if mapperArgs is None else mapperArgs
         self._parents = []
         self.addParents(iterify(parents))
         self._policy = policy

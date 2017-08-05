@@ -243,6 +243,14 @@ class TestExtendParents(unittest.TestCase):
     # todo include a repositoryCfg in parents lists in this test
 
 
+class TestMapperArgsNone(unittest.TestCase):
+    """Tests that the RepositoryCfg.mapperArgs is converted to a dict if None is passed in.
+    """
+    def test(self):
+        cfg = dp.RepositoryCfg(root='foo', mapper='foo', mapperArgs=None, parents=None, policy=None)
+        self.assertIsInstance(cfg.mapperArgs, dict)
+
+
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
 

@@ -53,6 +53,8 @@ class RepositoryArgs(object):
     mapper : string or class object, optional
         The mapper to use with this repository. If string, should refer an importable object. If class object,
         should be a mapper to be instantiated by the Butler during Butler init.
+    mapperArgs : dict
+        Arguments & values to pass to the mapper when initializing it.
     tags : list or object, optional
         One or more unique identifiers to uniquely identify this repository and its parents when performing
         Butler.get.
@@ -62,6 +64,9 @@ class RepositoryArgs(object):
         will raise a RuntimeError during Butler init, although 'rw' works and is equivalent to 'r'. Output
         repositories may be 'r' or 'rw', 'r' for an output repository will raise a RuntimeError during Butler
         init.
+    policy : dict
+        Policy associated with this repository, overrides all other policy data (which may be loaded from
+        policies in derived packages).
     """
     def __init__(self, cfgRoot=None, root=None, mapper=None, mapperArgs=None, tags=None,
                  mode=None, policy=None):
