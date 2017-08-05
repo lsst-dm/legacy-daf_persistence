@@ -259,6 +259,12 @@ class PosixStorage(StorageInterface):
             if isinstance(pythonType, basestring):
                 # import this pythonType dynamically
                 pythonType = doImport(pythonType)
+
+        writeFormatter = self._getWriteFormatter(butlerLocation.getStorageName())
+        if writeFormatter:
+            writeFormatter.write(butlerLocation, obj)
+            return
+
         # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
         # implications; write now I'm worried that any python type that can be written to disk and has a
         # method called 'put' will be called here (even if it's e.g. destined for FitsStorage).
@@ -325,6 +331,10 @@ class PosixStorage(StorageInterface):
         if pythonType is not None:
             if isinstance(pythonType, basestring):
                 pythonType = doImport(pythonType)
+
+        readFormatter = self._getReadFormatter(butlerLocation.getStorageName())
+        if readFormatter:
+            return readFormatter.read(butlerLocation)
 
         # see note re. discomfort with the name 'butlerWrite' in the write method, above.
         # Same applies to butlerRead.
