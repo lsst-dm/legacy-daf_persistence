@@ -52,10 +52,11 @@ class StorageInterface:
         """initialzer"""
         pass
 
-    formatters = {}
+    readFormatters = {}
+    writeFormatters = {}
 
     @classmethod
-    def registerFormatter(cls, formatable, formatter):
+    def registerFormatters(cls, formatable, readFormatter, writeFormatter):
         """Register a formatter for a storageInterface subclass
 
         Parameters
@@ -64,28 +65,50 @@ class StorageInterface:
             The type of StorageInterface the formatter is being registered for.
         formatable : class object
             The class object whose instances can be formatted by the formatter.
-        formatter : Formatter class
-            The formatter class that can be used by the StorageInterface instance to read and write the object
-            to the storage.
+        readFormatter : a read formatter callable
+            The formatter function that can be used by the StorageInterface instance to read the object from
+            the storage.
+        writeFormatter : a write formatter callable
+            The formatter function that can be used by the StorageInterface instance to write the object to
+            the storage.
 
         Raises
         ------
         RuntimeError
-            For each object type and StorageInterface subclass a formatter should only be registered once. If
-            a second registration occurs a RuntimeError is raised.
+            For each object type and StorageInterface subclass the read and write formatters should only be
+            registered once. If a second registration occurs for either a RuntimeError is raised.
         """
-        classFormatters = StorageInterface.formatters.setdefault(cls, {})
+        cls.registerReadFormatter(formatable, readFormatter)
+        cls.registerWriteFormatter(formatable, writeFormatter)
+
+    @classmethod
+    def registerReadFormatter(cls, formatable, readFormatter):
+        """Similar to registerFormatters, but only for the readFormatter."""
+        cls._registerFormatter(formatable, readFormatter, 'read')
+
+    @classmethod
+    def registerWriteFormatter(cls, formatable, writeFormatter):
+        """Similar to registerFormatters, but only for the writeFormatter."""
+        cls._registerFormatter(formatable, writeFormatter, 'write')
+
+    @classmethod
+    def _registerFormatter(cls, formatable, formatter, rw):
+        """Implementation of the registerFormatter... funcitons."""
+        if rw == 'read':
+            classFormatters = StorageInterface.readFormatters.setdefault(cls, {})
+        elif rw == 'write':
+            classFormatters = StorageInterface.writeFormatters.setdefault(cls, {})
+        else:
+            raise RuntimeError("invalid value for rw: {}".format(rw))
+
         if formatable in classFormatters:
-            raise RuntimeError(("Registration of second formatter {} for formattable class {} in " +
-                                " storageInterface {}").format(formatter, formatable, cls))
+            raise RuntimeError(("Registration of second {} formatter {} for formattable class {} in " +
+                                " storageInterface {}").format(rw, formatter, formatable, cls))
         classFormatters[formatable] = formatter
 
     @classmethod
-    def _getFormatter(cls, objType):
-        """Search in the registered formatters for the formatter for obj.
-
-        Will attempt to find formatters registered for the objec type, and then
-        for base classes of the object in resolution order.
+    def _getReadFormatter(cls, objType):
+        """Search in the registered formatters for the objType read formatter.
 
         Parameters
         ----------
@@ -94,14 +117,33 @@ class StorageInterface:
 
         Returns
         -------
-        formatter class object
-            The formatter class object to instantiate & use to read/write the object from/into the
-            storageInterface.
+        formatter callable
+            The formatter callable used to read the object from the storageInterface.
         """
-        classFormatters = StorageInterface.formatters.get(cls, None)
+        classFormatters = StorageInterface.readFormatters.get(cls, None)
         if classFormatters is None:
             return None
         return classFormatters.get(objType, None)
+
+    @classmethod
+    def _getWriteFormatter(cls, objType):
+        """Search in the registered formatters for the objType write formatter.
+
+        Parameters
+        ----------
+        objType : class type
+            The type of class to find a formatter for.
+
+        Returns
+        -------
+        formatter callable
+            The formatter callable used to write the object to the storageInterface.
+        """
+        classFormatters = StorageInterface.writeFormatters.get(cls, None)
+        if classFormatters is None:
+            return None
+        return classFormatters.get(objType, None)
+
 
     @abstractmethod
     def write(self, butlerLocation, obj):
