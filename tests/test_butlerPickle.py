@@ -23,6 +23,8 @@
 
 import pickle
 import unittest
+import shutil
+import tempfile
 import lsst.utils.tests
 import os
 
@@ -48,11 +50,13 @@ class ButlerPickleTestCase(unittest.TestCase):
     localTypeNameIsAliasOf = "x"
 
     def setUp(self):
-        self.butler = dafPersist.Butler(root='.', mapper=MinMapper)
+        self.tempRoot = tempfile.mkdtemp()
+        self.butler = dafPersist.Butler(root=self.tempRoot, mapper=MinMapper)
         self.butler.defineAlias(self.localTypeName, self.localTypeNameIsAliasOf)
 
     def tearDown(self):
         del self.butler
+        shutil.rmtree(self.tempRoot, ignore_errors=True)
 
     def checkIO(self, butler, bbox, ccd):
         butler.put(bbox, self.localTypeName, ccd=ccd)
