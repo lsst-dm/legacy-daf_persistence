@@ -26,6 +26,8 @@ import unittest
 
 import os
 import pickle
+import shutil
+import tempfile
 import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
 from cameraMapper import CameraMapper
@@ -98,13 +100,10 @@ class ButlerSubsetTestCase(unittest.TestCase):
     rawTypeName = "@veggies"
 
     def setUp(self):
-        self.tearDown()
+        self.tmpRoot = tempfile.mkdtemp()
 
     def tearDown(self):
-        if os.path.exists(os.path.join(ROOT, 'butlerSubset')):
-            shutil.rmtree(os.path.join(ROOT, 'butlerSubset'))
-        if os.path.exists('repositoryCfg.yaml'):
-            os.remove('repositoryCfg.yaml')
+        shutil.rmtree(self.tmpRoot, ignore_errors=True)
 
     @staticmethod
     def registerAliases(butler):
@@ -114,9 +113,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
 
     def testSingleIteration(self):
         butler = dafPersist.Butler(
-            outputs={'mode': 'rw',
-                     'root': os.path.join(ROOT, 'butlerSubset'),
-                     'mapper': ImgMapper})
+            outputs={'mode': 'rw', 'root': self.tmpRoot, 'mapper': ImgMapper})
 
         ButlerSubsetTestCase.registerAliases(butler)
 
@@ -125,7 +122,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                      "calexp_v654321_R1,3_S1,1.pickle",
                      "calexp_v654321_R1,3_S1,2.pickle"]
         for fileName in inputList:
-            with open(os.path.join(ROOT, 'butlerSubset', fileName), "wb") as f:
+            with open(os.path.join(self.tmpRoot, fileName), "wb") as f:
                 pickle.dump(inputList, f)
 
         subset = butler.subset(self.calexpTypeName, skyTile=6)
@@ -149,22 +146,18 @@ class ButlerSubsetTestCase(unittest.TestCase):
             self.assertEqual(image, inputList)
 
         for fileName in inputList:
-            os.unlink(os.path.join(ROOT, 'butlerSubset', fileName))
+            os.unlink(os.path.join(self.tmpRoot, fileName))
 
     def testNonexistentValue(self):
         butler = dafPersist.Butler(
-            outputs={'mode': 'rw',
-                     'root': os.path.join(ROOT, 'butlerSubset'),
-                     'mapper': ImgMapper})
+            outputs={'mode': 'rw', 'root': self.tmpRoot, 'mapper': ImgMapper})
         ButlerSubsetTestCase.registerAliases(butler)
         subset = butler.subset(self.calexpTypeName, skyTile=2349023905239)
         self.assertEqual(len(subset), 0)
 
     def testInvalidValue(self):
         butler = dafPersist.Butler(
-            outputs={'mode': 'rw',
-                     'root': os.path.join(ROOT, 'butlerSubset'),
-                     'mapper': ImgMapper})
+            outputs={'mode': 'rw', 'root': self.tmpRoot, 'mapper': ImgMapper})
         ButlerSubsetTestCase.registerAliases(butler)
         subset = butler.subset(self.calexpTypeName, skyTile="foo")
         self.assertEqual(len(subset), 0)
@@ -181,13 +174,11 @@ class ButlerSubsetTestCase(unittest.TestCase):
                      "flat_R1,2_S2,1_C0,0_E001.pickle",
                      "flat_R1,2_S2,2_C0,0_E000.pickle"]
         for fileName in inputList:
-            with open(fileName, "wb") as f:
+            with open(os.path.join(self.tmpRoot, fileName), "wb") as f:
                 pickle.dump(inputList, f)
 
         butler = dafPersist.Butler(
-            outputs={'mode': 'rw',
-                     'root': '.',
-                     'mapper': ImgMapper})
+            outputs={'mode': 'rw', 'root': self.tmpRoot, 'mapper': ImgMapper})
 
         ButlerSubsetTestCase.registerAliases(butler)
 
@@ -223,7 +214,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
                 iterator.put(calexp, self.calexpTypeName)
 
         for fileName in inputList:
-            os.unlink(fileName)
+            os.unlink(os.path.join(self.tmpRoot, fileName))
         ref = butler.dataRef(self.rawTypeName,
                              visit=123456, raft="1,1", sensor="2,2", amp="0,1", snap=0)
         self.assertFalse(ref.datasetExists("flat"))
@@ -231,14 +222,12 @@ class ButlerSubsetTestCase(unittest.TestCase):
         for fileName in ["calexp_v123456_R1,1_S2,2.pickle",
                          "calexp_v123456_R1,2_S2,1.pickle",
                          "calexp_v123456_R1,2_S2,2.pickle"]:
-            self.assertTrue(os.path.exists(fileName))
-            os.unlink(fileName)
+            self.assertTrue(os.path.exists(os.path.join(self.tmpRoot, fileName)))
+            os.unlink(os.path.join(self.tmpRoot, fileName))
 
     def testCompleteDataRef(self):
         butler = dafPersist.Butler(
-            outputs={'mode': 'rw',
-                     'root': os.path.join(ROOT, 'butlerSubset'),
-                     'mapper': ImgMapper})
+            outputs={'mode': 'rw', 'root': self.tmpRoot, 'mapper': ImgMapper})
         ButlerSubsetTestCase.registerAliases(butler)
 
         # Test by using junk data
