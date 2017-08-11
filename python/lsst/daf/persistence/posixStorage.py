@@ -135,30 +135,30 @@ class PosixStorage(StorageInterface):
         A RepositoryCfg instance or None
         """
         storage = Storage.makeFromURI(uri)
-        readFormatter = storage._getReadFormatter(RepositoryCfg)
-        return readFormatter(ButlerLocation(pythonType=None,
-                                            cppType=None,
-                                            storageName=None,
-                                            locationList='repositoryCfg.yaml',
-                                            dataId={},
-                                            mapper=None,
-                                            storage=storage,
-                                            usedDataId=None,
-                                            datasetType=None))
+        location = ButlerLocation(pythonType=RepositoryCfg,
+                                  cppType=None,
+                                  storageName=None,
+                                  locationList='repositoryCfg.yaml',
+                                  dataId={},
+                                  mapper=None,
+                                  storage=storage,
+                                  usedDataId=None,
+                                  datasetType=None)
+        return storage.read(location)
 
     @staticmethod
     def putRepositoryCfg(cfg, loc=None):
         storage = Storage.makeFromURI(cfg.root if loc is None else loc, create=True)
-        writeFormatter = storage._getWriteFormatter(type(cfg))
-        writeFormatter(cfg, ButlerLocation(pythonType=None,
-                                           cppType=None,
-                                           storageName=None,
-                                           locationList='repositoryCfg.yaml',
-                                           dataId={},
-                                           mapper=None,
-                                           storage=storage,
-                                           usedDataId=None,
-                                           datasetType=None))
+        location = ButlerLocation(pythonType=RepositoryCfg,
+                                  cppType=None,
+                                  storageName=None,
+                                  locationList='repositoryCfg.yaml',
+                                  dataId={},
+                                  mapper=None,
+                                  storage=storage,
+                                  usedDataId=None,
+                                  datasetType=None)
+        storage.write(location, cfg)
 
     @staticmethod
     def getMapperClass(root):
@@ -261,8 +261,10 @@ class PosixStorage(StorageInterface):
                 pythonType = doImport(pythonType)
 
         writeFormatter = self._getWriteFormatter(butlerLocation.getStorageName())
+        if not writeFormatter:
+            writeFormatter = self._getWriteFormatter(butlerLocation.getPythonType())
         if writeFormatter:
-            writeFormatter.write(butlerLocation, obj)
+            writeFormatter(butlerLocation, obj)
             return
 
         # todo this effectively defines the butler posix "do serialize" command to be named "put". This has
@@ -333,8 +335,10 @@ class PosixStorage(StorageInterface):
                 pythonType = doImport(pythonType)
 
         readFormatter = self._getReadFormatter(butlerLocation.getStorageName())
+        if not readFormatter:
+            readFormatter = self._getReadFormatter(butlerLocation.getPythonType())
         if readFormatter:
-            return readFormatter.read(butlerLocation)
+            return readFormatter(butlerLocation)
 
         # see note re. discomfort with the name 'butlerWrite' in the write method, above.
         # Same applies to butlerRead.
