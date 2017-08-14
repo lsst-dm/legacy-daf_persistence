@@ -29,6 +29,7 @@ import unittest
 import yaml
 
 import lsst.daf.persistence as dp
+from lsst.daf.persistence.test.utils import makeOldButlerRepo
 import lsst.daf.persistence.test as dpTest
 import lsst.utils.tests
 
@@ -44,8 +45,8 @@ class TestCfgRelationship(unittest.TestCase):
         self.tearDown()
 
     def tearDown(self):
-        if os.path.exists(os.path.join(self.testDir, 'repositoryCfg')):
-            shutil.rmtree(os.path.join(self.testDir, 'repositoryCfg'))
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testRWModes(self):
         args = dp.RepositoryArgs(mode='w', mapper=dpTest.EmptyTestMapper,
@@ -130,6 +131,7 @@ class TestCfgRelationship(unittest.TestCase):
                                        os.path.join(self.testDir, 'repositoryCfg/a')),
                                outputs=os.path.join(self.testDir, 'repositoryCfg/b'))
 
+
     def testSymLinkInPath(self):
         """Test that when a symlink is in an output repo path that the repoCfg
         stored in the output repo has a parent path from the actual output
@@ -166,6 +168,7 @@ class TestCfgRelationship(unittest.TestCase):
         cfg = storage.getRepositoryCfg(os.path.join(self.testDir, 'repositoryCfg/a'))
         self.assertEqual(cfg, storage.repositoryCfgs[os.path.join(self.testDir, 'repositoryCfg/a')])
 
+
 class TestNestedCfg(unittest.TestCase):
 
     rootDir = os.path.join(ROOT, 'repositoryCfg_TestNestedCfg')
@@ -192,6 +195,30 @@ class TestNestedCfg(unittest.TestCase):
         reloadedCfg = dp.PosixStorage.getRepositoryCfg(self.rootDir)
         self.assertEqual(cfg, reloadedCfg)
         self.assertEqual(cfg.parents[0], parentCfg)
+
+
+class TestExtendParentsWithOldButlerParent(unittest.TestCase):
+
+    testDir = os.path.join(ROOT, 'TestExtendParentsWithOldButlerParent')
+
+    def setUp(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+        self.repoADir = os.path.join(self.testDir, 'a')
+        makeOldButlerRepo(self.repoADir, 'lsst.daf.persistence.test.EmptyTestMapper')
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def test(self):
+        repoBDir = os.path.join(self.testDir, 'b')
+        butler = dp.Butler(inputs={'root': self.repoADir, 'mapperArgs': {'calibRoot': '/CALIB'}},
+                           outputs=repoBDir)
+        del butler
+        butler = dp.Butler(inputs={'root': self.repoADir},
+                           outputs=repoBDir)
+        del butler
 
 
 # "fake" repository version 0
@@ -221,8 +248,8 @@ class TestCfgFileVersion(unittest.TestCase):
         self.tearDown()
 
     def tearDown(self):
-        if os.path.exists(os.path.join(self.testDir, 'repositoryCfg')):
-            shutil.rmtree(os.path.join(self.testDir, 'repositoryCfg'))
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def test(self):
         os.makedirs(os.path.join(self.testDir, 'repositoryCfg'))
