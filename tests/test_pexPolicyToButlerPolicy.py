@@ -24,28 +24,27 @@ import collections
 import os
 import shutil
 import unittest
+import tempfile
 
 from past.builtins import basestring
 
 import lsst.daf.persistence
 import lsst.pex.policy
 import lsst.utils.tests
-from lsst.utils import getPackageDir
 
 pafPolicyPath = os.path.join(os.path.dirname(__file__), 'pexToButlerPolicy', 'policy.paf')
-packageDir = getPackageDir('daf_persistence')
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 class PolicyTestCase(unittest.TestCase):
     """A test case for the butler policy to verify that it can load a pex policy properly."""
 
     def setUp(self):
-        self.testData = os.path.join(packageDir, 'tests', 'testPexPolicyToButlerPolicy')
-        self.tearDown()
-        os.makedirs(self.testData)
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='testPexPolicyToButlerPolicy-')
 
     def tearDown(self):
-        if os.path.exists(self.testData):
-            shutil.rmtree(self.testData)
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testPafReader(self):
         """Test that Butler Policy can read a paf file and the keys compare the same as when the same file is
@@ -90,9 +89,9 @@ class PolicyTestCase(unittest.TestCase):
         as a pex policy, verify they compare equal.
         """
         policy = lsst.daf.persistence.Policy(pafPolicyPath)
-        yamlPolicyFile = os.path.join(self.testData, 'policy.yaml')
-        policy.dumpToFile(os.path.join(self.testData, 'policy.yaml'))
-        self.assertTrue(os.path.exists(os.path.join(self.testData, 'policy.yaml')))
+        yamlPolicyFile = os.path.join(self.testDir, 'policy.yaml')
+        policy.dumpToFile(os.path.join(self.testDir, 'policy.yaml'))
+        self.assertTrue(os.path.exists(os.path.join(self.testDir, 'policy.yaml')))
 
         # test that the data went through the entire wringer correctly - verify the
         # original pex data matches the lsst.daf.persistence.Policy data

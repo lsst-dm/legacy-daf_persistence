@@ -30,6 +30,7 @@ import os
 import shutil
 import unittest
 import urllib.parse
+import tempfile
 
 
 def setup_module(module):
@@ -42,6 +43,7 @@ class MapperTest(dp.Mapper):
 # Define the root of the tests relative to this file
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
+
 class DefaultMapper(unittest.TestCase):
     """Tests for finding the default mapper for a repository given different inputs.
 
@@ -53,9 +55,7 @@ class DefaultMapper(unittest.TestCase):
     will return None."""
 
     def setUp(self):
-        self.testDir = os.path.join(ROOT, 'DefaultMapper')
-        self.tearDown()
-        os.makedirs(self.testDir)
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix="DefaultMapper-")
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -111,8 +111,7 @@ class ParseRootURI(unittest.TestCase):
     """Verify that supported root URI schemas are identified and build the correct Storage.
     """
     def setUp(self):
-        self.testDir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'ParseRootURI')
-        self.tearDown()
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix="ParseRootURI-")
 
     def tearDown(self):
         if os.path.exists(self.testDir):

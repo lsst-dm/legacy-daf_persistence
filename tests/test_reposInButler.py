@@ -27,6 +27,7 @@ import pickle
 import os
 import shutil
 import unittest
+import tempfile
 
 import yaml
 
@@ -98,15 +99,12 @@ class MapperTest(dp.Mapper):
 
 class ReposInButler(unittest.TestCase):
 
-    def clean(self):
-        if os.path.exists(os.path.join(ROOT, 'repoOfRepos')):
-            shutil.rmtree(os.path.join(ROOT, 'repoOfRepos'))
-
-    def setup(self):
-        self.clean()
+    def setUp(self):
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='repoOfRepos-')
 
     def tearDown(self):
-        self.clean()
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     # disable this test until we work more on repo of repos; starting with DM-6227
     @unittest.expectedFailure
@@ -122,15 +120,14 @@ class ReposInButler(unittest.TestCase):
         }
 
         # create a cfg of a repository for our repositories
-        storageCfg = dp.PosixStorage.cfg(root=os.path.join(ROOT, 'repoOfRepos'))
+        storageCfg = dp.PosixStorage.cfg(root=self.testDir)
         accessCfg = dp.Access.cfg(storageCfg=storageCfg)
         mapperCfg = dp.RepositoryMapper.cfg(policy=repoMapperPolicy)
         # Note that right now a repo is either input OR output, there is no input-output repo, this design
         # is result of butler design conversations. Right now, if a user wants to write to and then read from
         # a repo, a repo can have a parent repo with the same access (and mapper) parameters as itself.
         repoOfRepoCfg = dp.Repository.cfg(mode='rw',
-                                          storageCfg=dp.PosixStorage.cfg(root=os.path.join(ROOT,
-                                                                                           'repoOfRepos')),
+                                          storageCfg=dp.PosixStorage.cfg(root=self.testDir),
                                           mapper=dp.RepositoryMapper.cfg(policy=repoMapperPolicy))
 
         repoButler = dp.Butler(outputs=repoOfRepoCfg)

@@ -25,6 +25,7 @@ import os
 import pickle
 import shutil
 import unittest
+import tempfile
 import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
@@ -38,15 +39,16 @@ class MapperImportTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
     def setUp(self):
-        if os.path.exists(os.path.join(ROOT, 'root/out')):
-            shutil.rmtree(os.path.join(ROOT, 'root/out'))
+        self.testDir = os.path.join(ROOT, 'root')
+        self.rootPath = tempfile.mkdtemp(dir=self.testDir, prefix="out-")
+        self.outPath = os.path.split(self.rootPath)[1]
 
-        self.butler = dafPersist.Butler(os.path.join(ROOT, "root"), outPath="out")
+        self.butler = dafPersist.Butler(self.testDir, outPath=self.outPath)
 
     def tearDown(self):
         del self.butler
-        if os.path.exists(os.path.join(ROOT, 'root/out')):
-            shutil.rmtree(os.path.join(ROOT, 'root/out'))
+        if os.path.exists(self.rootPath):
+            shutil.rmtree(self.rootPath)
 
     def testMapperClass(self):
         repository = self.butler._repos.outputs()[0].repo
@@ -56,8 +58,8 @@ class MapperImportTestCase(unittest.TestCase):
         butler.put(bbox, "x", ccd=ccd)
         y = butler.get("x", ccd=ccd, immediate=True)
         self.assertEqual(bbox, y)
-        self.assert_(os.path.exists(
-            os.path.join(ROOT, "root", "out", "foo%d.pickle" % ccd)))
+        self.assertTrue(os.path.exists(
+            os.path.join(self.rootPath, "foo%d.pickle" % ccd)))
 
     def testIO(self):
         bbox = [[3, 4], [5, 6]]
