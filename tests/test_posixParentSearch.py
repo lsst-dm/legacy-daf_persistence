@@ -130,8 +130,8 @@ class PosixParentSearch(unittest.TestCase):
             f.write('abc')
         os.symlink('../a', os.path.join(childDir, '_parent'))
         storage = dafPersist.PosixStorage(uri=childDir, create=True)
-        self.assertEquals(storage.search(storage.root, 'foo.txt', searchParents=True), ['_parent/foo.txt'])
-        self.assertEquals(storage.search(storage.root, 'foo.txt', searchParents=False), None)
+        self.assertEqual(storage.search(storage.root, 'foo.txt', searchParents=True), ['_parent/foo.txt'])
+        self.assertEqual(storage.search(storage.root, 'foo.txt', searchParents=False), None)
 
     def testNoResults(self):
         storage = dafPersist.PosixStorage(uri=self.testDir, create=True)

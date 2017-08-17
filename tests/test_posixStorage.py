@@ -132,13 +132,13 @@ class TestGetLocalFile(unittest.TestCase):
         None when it does not exist."""
         storage = dp.PosixStorage(self.testDir, create=True)
         self.assertIsNone(storage.getLocalFile('foo.txt'))
-        f = open(os.path.join(self.testDir, 'foo.txt'), 'w')
-        f.write('foobarbaz')
-        f.close()
+        with open(os.path.join(self.testDir, 'foo.txt'), 'w') as f:
+            f.write('foobarbaz')
         del f
         f = storage.getLocalFile('foo.txt')
         self.assertIsInstance(f, FileType)
         self.assertEqual(f.read(), 'foobarbaz')
+        f.close()
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

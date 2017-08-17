@@ -224,10 +224,9 @@ class TestCfgFileVersion(unittest.TestCase):
             shutil.rmtree(self.testDir)
 
     def test(self):
-        f = open(os.path.join(self.testDir, 'repositoryCfg.yaml'), 'w')
-        f.write("""!RepositoryCfg_v0
-                   _root: 'foo/bar'""")
-        f.close()
+        with open(os.path.join(self.testDir, 'repositoryCfg.yaml'), 'w') as f:
+            f.write("""!RepositoryCfg_v0
+                    _root: 'foo/bar'""")
         cfg = dp.PosixStorage.getRepositoryCfg(self.testDir)
 
 
