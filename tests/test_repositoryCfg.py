@@ -40,7 +40,7 @@ class TestCfgRelationship(unittest.TestCase):
 
     def setUp(self):
         self.testDir = tempfile.mkdtemp(dir=ROOT,
-                                        prefix="repositoryCfg-")
+                                        prefix="TestCfgRelationship-")
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -167,11 +167,12 @@ class TestCfgRelationship(unittest.TestCase):
         cfg = storage.getRepositoryCfg(os.path.join(self.testDir, 'a'))
         self.assertEqual(cfg, storage.repositoryCfgs[os.path.join(self.testDir, 'a')])
 
+
 class TestNestedCfg(unittest.TestCase):
 
     def setUp(self):
         self.testDir = tempfile.mkdtemp(dir=ROOT,
-                                        prefix="repositoryCfg_TestNestedCfg-")
+                                        prefix="TestNestedCfg-")
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -217,7 +218,7 @@ class TestCfgFileVersion(unittest.TestCase):
 
     def setUp(self):
         self.testDir = tempfile.mkdtemp(dir=ROOT,
-                                        prefix="repositoryCfg-")
+                                        prefix="TestCfgFileVersion-")
 
     def tearDown(self):
         if os.path.exists(self.testDir):

@@ -44,7 +44,7 @@ def setup_module(module):
 class WriteOnceCompareSameTest(unittest.TestCase):
 
     def setUp(self):
-        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='safeFileIo-')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='WriteOnceCompareSameTest-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -154,7 +154,7 @@ class TestOneThousandWriters(unittest.TestCase):
     system."""
 
     def setUp(self):
-        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestOneThousandWriters')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestOneThousandWriters-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):

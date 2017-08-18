@@ -768,8 +768,7 @@ class TestParentRepository(unittest.TestCase):
     """A test to verify that when a parent repository is used the correct one is found."""
 
     def setUp(self):
-        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix="TestBasics-")
-        self.testDir = os.path.join(self.testDir, 'TestParentRepository')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix="TestParentRepository-")
 
     def tearDown(self):
         if os.path.exists(self.testDir):

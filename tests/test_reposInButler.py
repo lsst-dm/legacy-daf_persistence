@@ -1,4 +1,4 @@
-#
+    #
 # LSST Data Management System
 # Copyright 2016 LSST Corporation.
 #
@@ -100,7 +100,7 @@ class MapperTest(dp.Mapper):
 class ReposInButler(unittest.TestCase):
 
     def setUp(self):
-        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='repoOfRepos-')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='ReposInButler-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
