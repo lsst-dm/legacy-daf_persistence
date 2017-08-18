@@ -39,16 +39,15 @@ class MapperImportTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
     def setUp(self):
-        self.testDir = os.path.join(ROOT, 'root')
-        self.rootPath = tempfile.mkdtemp(dir=self.testDir, prefix="out-")
-        self.outPath = os.path.split(self.rootPath)[1]
+        self.inputDir = os.path.join(ROOT, 'root')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix="out-")
 
-        self.butler = dafPersist.Butler(self.testDir, outPath=self.outPath)
+        self.butler = dafPersist.Butler(self.inputDir, outPath=self.testDir)
 
     def tearDown(self):
         del self.butler
-        if os.path.exists(self.rootPath):
-            shutil.rmtree(self.rootPath)
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testMapperClass(self):
         repository = self.butler._repos.outputs()[0].repo
@@ -59,7 +58,7 @@ class MapperImportTestCase(unittest.TestCase):
         y = butler.get("x", ccd=ccd, immediate=True)
         self.assertEqual(bbox, y)
         self.assertTrue(os.path.exists(
-            os.path.join(self.rootPath, "foo%d.pickle" % ccd)))
+            os.path.join(self.testDir, "foo%d.pickle" % ccd)))
 
     def testIO(self):
         bbox = [[3, 4], [5, 6]]
@@ -77,6 +76,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()
