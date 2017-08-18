@@ -23,7 +23,6 @@
 import os
 import unittest
 import lsst.daf.persistence as dafPersist
-from lsst.utils import getPackageDir
 import lsst.utils.tests
 import shutil
 import tempfile

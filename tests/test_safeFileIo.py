@@ -29,14 +29,12 @@ import unittest
 import tempfile
 
 import lsst.daf.persistence as dp
-from lsst.utils import getPackageDir
 import lsst.utils.tests
 from lsst.log import Log
 
 
 # Define the root of the tests relative to this file
 ROOT = os.path.abspath(os.path.dirname(__file__))
-packageDir = os.path.join(getPackageDir('daf_persistence'))
 
 
 def setup_module(module):
@@ -106,11 +104,8 @@ def readFile(filename, readQueue):
 class TestFileLocking(unittest.TestCase):
     """A test case for safeFileIo file read and write locking"""
 
-    testDir = os.path.join(packageDir, 'tests', 'TestFileLocking')
-
     def setUp(self):
-        if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestFileLocking-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -158,11 +153,8 @@ class TestOneThousandWriters(unittest.TestCase):
     to run. When the squash performance monitoring framework is done, this test could be monitored in that
     system."""
 
-    testDir = os.path.join(packageDir, 'tests', 'TestOneThousandWriters')
-
     def setUp(self):
-        if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestOneThousandWriters')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
