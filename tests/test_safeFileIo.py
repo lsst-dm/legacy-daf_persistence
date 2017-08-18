@@ -182,7 +182,7 @@ class TestOneThousandWriters(unittest.TestCase):
             pass
         startTime = time.time()
         go = multiprocessing.Value('b', False)
-        cfg = dp.RepositoryCfg(root=os.path.join(TestOneThousandWriters.testDir), mapper='bar', mapperArgs={},
+        cfg = dp.RepositoryCfg(root=os.path.join(self.testDir), mapper='bar', mapperArgs={},
                                parents=None, policy=None)
         procs = [multiprocessing.Process(target=TestOneThousandWriters.writeCfg, args=(cfg, go))
                  for x in range(numWriters)]
