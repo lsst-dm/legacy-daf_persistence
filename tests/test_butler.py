@@ -28,6 +28,7 @@ import lsst.daf.persistence.test as dpTest
 import lsst.utils.tests
 import os
 import shutil
+import tempfile
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -39,7 +40,8 @@ def setup_module(module):
 class ButlerTest(unittest.TestCase):
     """Test case for basic Butler operations."""
 
-    testDir = os.path.join(ROOT, 'ButlerTest')
+    def setUp(self):
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='ButlerTest-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):

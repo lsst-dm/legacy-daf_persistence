@@ -25,6 +25,7 @@ import os
 import pickle
 import shutil
 import unittest
+import tempfile
 import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
@@ -38,15 +39,15 @@ class MapperImportTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
     def setUp(self):
-        if os.path.exists(os.path.join(ROOT, 'root/out')):
-            shutil.rmtree(os.path.join(ROOT, 'root/out'))
+        self.inputDir = os.path.join(ROOT, 'root')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix="out-")
 
-        self.butler = dafPersist.Butler(os.path.join(ROOT, "root"), outPath="out")
+        self.butler = dafPersist.Butler(self.inputDir, outPath=self.testDir)
 
     def tearDown(self):
         del self.butler
-        if os.path.exists(os.path.join(ROOT, 'root/out')):
-            shutil.rmtree(os.path.join(ROOT, 'root/out'))
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testMapperClass(self):
         repository = self.butler._repos.outputs()[0].repo
@@ -56,8 +57,8 @@ class MapperImportTestCase(unittest.TestCase):
         butler.put(bbox, "x", ccd=ccd)
         y = butler.get("x", ccd=ccd, immediate=True)
         self.assertEqual(bbox, y)
-        self.assert_(os.path.exists(
-            os.path.join(ROOT, "root", "out", "foo%d.pickle" % ccd)))
+        self.assertTrue(os.path.exists(
+            os.path.join(self.testDir, "foo%d.pickle" % ccd)))
 
     def testIO(self):
         bbox = [[3, 4], [5, 6]]
@@ -75,6 +76,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

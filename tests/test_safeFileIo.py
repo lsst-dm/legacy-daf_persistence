@@ -26,16 +26,15 @@ import shutil
 import stat
 import time
 import unittest
+import tempfile
 
 import lsst.daf.persistence as dp
-from lsst.utils import getPackageDir
 import lsst.utils.tests
 from lsst.log import Log
 
 
 # Define the root of the tests relative to this file
 ROOT = os.path.abspath(os.path.dirname(__file__))
-packageDir = os.path.join(getPackageDir('daf_persistence'))
 
 
 def setup_module(module):
@@ -45,37 +44,37 @@ def setup_module(module):
 class WriteOnceCompareSameTest(unittest.TestCase):
 
     def setUp(self):
-        self.tearDown()
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='WriteOnceCompareSameTest-')
 
     def tearDown(self):
-        if os.path.exists(os.path.join(ROOT, 'safeFileIo')):
-            shutil.rmtree(os.path.join(ROOT, 'safeFileIo'))
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testCompareSame(self):
 
-        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
+        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(self.testDir, 'test.txt')) as f:
             f.write('bar\n')
             f.write('baz\n')
-        self.assertTrue(os.path.exists(os.path.join(ROOT, 'safeFileIo/test.txt')))
-        self.assertEqual(len(os.listdir(os.path.join(ROOT, 'safeFileIo'))), 1)
+        self.assertTrue(os.path.exists(os.path.join(self.testDir, 'test.txt')))
+        self.assertEqual(len(os.listdir(self.testDir)), 1)
 
         # write the same file, verify the dir & file stay the same
-        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
+        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(self.testDir, 'test.txt')) as f:
             f.write('bar\n')
             f.write('baz\n')
-        self.assertTrue(os.path.exists(os.path.join(ROOT, 'safeFileIo/test.txt')))
-        self.assertEqual(len(os.listdir(os.path.join(ROOT, 'safeFileIo'))), 1)
+        self.assertTrue(os.path.exists(os.path.join(self.testDir, 'test.txt')))
+        self.assertEqual(len(os.listdir(self.testDir)), 1)
 
     def testCompareDifferent(self):
-        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
+        with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(self.testDir, 'test.txt')) as f:
             f.write('bar\n')
             f.write('baz\n')
-        self.assertTrue(os.path.exists(os.path.join(ROOT, 'safeFileIo/test.txt')))
-        self.assertEqual(len(os.listdir(os.path.join(ROOT, 'safeFileIo'))), 1)
+        self.assertTrue(os.path.exists(os.path.join(self.testDir, 'test.txt')))
+        self.assertEqual(len(os.listdir(self.testDir)), 1)
 
         # write the same file, verify the dir & file stay the same
         def writeNonMatchingFile():
-            with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(ROOT, 'safeFileIo/test.txt')) as f:
+            with dp.safeFileIo.FileForWriteOnceCompareSame(os.path.join(self.testDir, 'test.txt')) as f:
                 f.write('boo\n')
                 f.write('fop\n')
         self.assertRaises(RuntimeError, writeNonMatchingFile)
@@ -86,7 +85,7 @@ class WriteOnceCompareSameTest(unittest.TestCase):
         umask = os.umask(0)
         os.umask(umask)
 
-        fileName = os.path.join(ROOT, 'safeFileIo/test.txt')
+        fileName = os.path.join(self.testDir, 'test.txt')
         with dp.safeFileIo.FileForWriteOnceCompareSame(fileName) as f:
             f.write('bar\n')
             f.write('baz\n')
@@ -105,11 +104,8 @@ def readFile(filename, readQueue):
 class TestFileLocking(unittest.TestCase):
     """A test case for safeFileIo file read and write locking"""
 
-    testDir = os.path.join(packageDir, 'tests', 'TestFileLocking')
-
     def setUp(self):
-        if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestFileLocking-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -157,11 +153,8 @@ class TestOneThousandWriters(unittest.TestCase):
     to run. When the squash performance monitoring framework is done, this test could be monitored in that
     system."""
 
-    testDir = os.path.join(packageDir, 'tests', 'TestOneThousandWriters')
-
     def setUp(self):
-        if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestOneThousandWriters-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -189,7 +182,7 @@ class TestOneThousandWriters(unittest.TestCase):
             pass
         startTime = time.time()
         go = multiprocessing.Value('b', False)
-        cfg = dp.RepositoryCfg(root=os.path.join(TestOneThousandWriters.testDir), mapper='bar', mapperArgs={},
+        cfg = dp.RepositoryCfg(root=os.path.join(self.testDir), mapper='bar', mapperArgs={},
                                parents=None, policy=None)
         procs = [multiprocessing.Process(target=TestOneThousandWriters.writeCfg, args=(cfg, go))
                  for x in range(numWriters)]

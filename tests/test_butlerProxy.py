@@ -25,6 +25,7 @@ from __future__ import absolute_import
 import os
 import shutil
 import unittest
+import tempfile
 import lsst.utils.tests
 
 import lsst.daf.persistence as dafPersist
@@ -40,20 +41,16 @@ class ButlerProxyTestCase(unittest.TestCase):
     """A test case for the data butler finding a Mapper in a root"""
 
     inputDir = os.path.join(ROOT, 'root')
-    outputDir = os.path.join(ROOT, 'ButlerProxyTestCase')
-
-    def removeTestDir(self):
-        if os.path.exists(self.outputDir):
-            shutil.rmtree(self.outputDir)
 
     def setUp(self):
-        self.removeTestDir()
+        self.outputDir = tempfile.mkdtemp(dir=ROOT, prefix='ButlerProxyTestCase-')
         self.butler = dafPersist.Butler(self.inputDir,
                                         outPath=os.path.join(self.outputDir, "proxyOut"))
 
     def tearDown(self):
         del self.butler
-        self.removeTestDir()
+        if os.path.exists(self.outputDir):
+            shutil.rmtree(self.outputDir)
 
     def testCheckProxy(self):
         """Attempt to cycle a DateTime object through the butler

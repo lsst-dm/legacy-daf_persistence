@@ -23,9 +23,9 @@
 import os
 import unittest
 import lsst.daf.persistence as dp
-from lsst.utils import getPackageDir
 import lsst.utils.tests
 import shutil
+import tempfile
 
 try:
     FileType = file
@@ -34,7 +34,7 @@ except NameError:
     FileType = IOBase
 
 
-packageDir = os.path.join(getPackageDir('daf_persistence'))
+ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def setup_module(module):
@@ -43,21 +43,19 @@ def setup_module(module):
 class GetParentFromSymlink(unittest.TestCase):
     """A test case for getting the relative path to parent from a symlink in PosixStorage."""
 
-    testDir = os.path.join(packageDir, 'tests', 'GetParentFromSymlink')
-
     def setUp(self):
-        self.tearDown()
-        self.parentFolderPath = os.path.join(GetParentFromSymlink.testDir, "theParent")
-        self.childFolderPath = os.path.join(GetParentFromSymlink.testDir, "theChild")
-        self.parentlessFolderPath = os.path.join(GetParentFromSymlink.testDir, "parentlessRepo")
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='GetParentFromSymlink-')
+        self.parentFolderPath = os.path.join(self.testDir, "theParent")
+        self.childFolderPath = os.path.join(self.testDir, "theChild")
+        self.parentlessFolderPath = os.path.join(self.testDir, "parentlessRepo")
         for p in (self.parentFolderPath, self.childFolderPath, self.parentlessFolderPath):
             os.makedirs(p)
         relpath = os.path.relpath(self.parentFolderPath, self.childFolderPath)
         os.symlink(relpath, os.path.join(self.childFolderPath, '_parent'))
 
     def tearDown(self):
-        if os.path.exists(GetParentFromSymlink.testDir):
-            shutil.rmtree(GetParentFromSymlink.testDir)
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
 
     def testV1RepoWithParen(self):
         parentPath = dp.PosixStorage.getParentSymlinkPath(self.childFolderPath)
@@ -71,10 +69,8 @@ class GetParentFromSymlink(unittest.TestCase):
 class TestRelativePath(unittest.TestCase):
     """A test case for the PosixStorage.relativePath function."""
 
-    testDir = os.path.join(packageDir, 'tests', 'TestRelativePath')
-
     def setUp(self):
-        self.tearDown()
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestRelativePath-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -100,10 +96,8 @@ class TestRelativePath(unittest.TestCase):
 class TestAbsolutePath(unittest.TestCase):
     """A test case for the PosixStorage.absolutePath function."""
 
-    testDir = os.path.join(packageDir, 'tests', 'TestAbsolutePath')
-
     def setUp(self):
-        self.tearDown()
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestAbsolutePath-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -126,10 +120,8 @@ class TestAbsolutePath(unittest.TestCase):
 class TestGetLocalFile(unittest.TestCase):
     """A test case for the PosixStorage.getLocalFile function."""
 
-    testDir = os.path.join(packageDir, 'tests', 'TestGetLocalFile')
-
     def setUp(self):
-        self.tearDown()
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestGetLocalFile-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -138,15 +130,15 @@ class TestGetLocalFile(unittest.TestCase):
     def testAbsolutePath(self):
         """Tests that GetLocalFile returns a file when it exists and returns
         None when it does not exist."""
-        storage = dp.PosixStorage(TestGetLocalFile.testDir, create=True)
+        storage = dp.PosixStorage(self.testDir, create=True)
         self.assertIsNone(storage.getLocalFile('foo.txt'))
-        f = open(os.path.join(TestGetLocalFile.testDir, 'foo.txt'), 'w')
-        f.write('foobarbaz')
-        f.close()
+        with open(os.path.join(self.testDir, 'foo.txt'), 'w') as f:
+            f.write('foobarbaz')
         del f
         f = storage.getLocalFile('foo.txt')
         self.assertIsInstance(f, FileType)
         self.assertEqual(f.read(), 'foobarbaz')
+        f.close()
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
