@@ -25,24 +25,18 @@
 # -*- python -*-
 
 """This module defines the Butler class."""
-from future import standard_library
-standard_library.install_aliases()
 from builtins import str
 from past.builtins import basestring
 from builtins import object
 
-import collections
 import copy
 import inspect
-import json
-import os
-import weakref
 
 import yaml
 
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
-from . import LogicalLocation, ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
+from . import ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
     genericDisassembler, PosixStorage, ParentsMismatch
@@ -1386,12 +1380,16 @@ class Butler(object):
 
         if hasattr(location, 'bypass'):
             # this type loader block should get moved into a helper someplace, and duplications removed.
-            callback = lambda : location.bypass
+            def callback():
+                return location.bypass
         else:
-            callback = lambda: self._read(location)
+            def callback():
+                return self._read(location)
         if location.mapper.canStandardize(location.datasetType):
             innerCallback = callback
-            callback = lambda: location.mapper.standardize(location.datasetType, innerCallback(), dataId)
+
+            def callback():
+                return location.mapper.standardize(location.datasetType, innerCallback(), dataId)
         if immediate:
             return callback()
         return ReadProxy(callback)
@@ -1530,7 +1528,8 @@ class Butler(object):
                     obj = self.get(componentInfo.datasetType, location.dataId, immediate=True)
                     componentInfo.obj = obj
                 assembler = location.assembler or genericAssembler
-            results = assembler(dataId=location.dataId, componentInfo=location.componentInfo, cls=location.python)
+            results = assembler(dataId=location.dataId, componentInfo=location.componentInfo,
+                                cls=location.python)
             return results
         else:
             results = location.repository.read(location)

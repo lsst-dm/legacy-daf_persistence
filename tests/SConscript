@@ -1,6 +1,5 @@
 # -*- python -*-
 from lsst.sconsUtils import scripts
-import os
 
 ignoreList = ["cameraMapper.py", "pickleMapper.py"]
 

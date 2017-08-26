@@ -19,9 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import object
-
-import copy
 import os
 import shutil
 import tempfile
@@ -181,12 +178,12 @@ class TestNestedCfg(unittest.TestCase):
     def test(self):
         parentCfg = dp.RepositoryCfg(root=os.path.join(self.testDir, 'parent'),
                                      mapper='lsst.daf.persistence.SomeMapper',
-                                     mapperArgs = {},
+                                     mapperArgs={},
                                      parents=None,
                                      policy=None)
         cfg = dp.RepositoryCfg(root=self.testDir,
                                mapper='lsst.daf.persistence.SomeMapper',
-                               mapperArgs = {},
+                               mapperArgs={},
                                parents=[parentCfg],
                                policy=None)
         dp.PosixStorage.putRepositoryCfg(cfg)
@@ -259,6 +256,7 @@ class MemoryTester(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == '__main__':
     lsst.utils.tests.init()

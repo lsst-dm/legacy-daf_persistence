@@ -20,8 +20,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from future import standard_library
-standard_library.install_aliases()
 from builtins import object
 
 from lsst.daf.persistence import Policy

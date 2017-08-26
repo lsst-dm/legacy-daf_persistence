@@ -23,7 +23,6 @@
 
 import re
 import lsst.daf.persistence as dafPersist
-import os
 
 
 class CameraMapper(dafPersist.Mapper):

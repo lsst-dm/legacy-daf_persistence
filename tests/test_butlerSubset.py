@@ -26,7 +26,6 @@ import unittest
 
 import os
 import pickle
-import shutil
 import tempfile
 import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
@@ -246,6 +245,7 @@ class ButlerSubsetTestCase(unittest.TestCase):
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
+
 
 if __name__ == '__main__':
     lsst.utils.tests.init()

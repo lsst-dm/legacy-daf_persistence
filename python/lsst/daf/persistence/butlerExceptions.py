@@ -1,6 +1,3 @@
-from builtins import str
-#!/usr/bin/env python
-
 #
 # LSST Data Management System
 # Copyright 2016 LSST Corporation.
@@ -22,6 +19,7 @@ from builtins import str
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from builtins import str
 
 
 class NoMapperException(Exception):

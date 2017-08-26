@@ -24,7 +24,6 @@
 
 from builtins import str
 from builtins import range
-from builtins import object
 
 import os
 import astropy.io.fits
@@ -817,6 +816,7 @@ class TestParentRepository(unittest.TestCase):
         self.assertIsInstance(registry, dp.SqliteRegistry)
         tables = registry.conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         self.assertEqual(tables, [('repoB', )])
+
 
 class TestOldButlerParent(unittest.TestCase):
     """A test to verify that when a parent is an old butler repo that it still gets loaded correctly,

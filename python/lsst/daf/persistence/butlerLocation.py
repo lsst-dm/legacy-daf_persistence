@@ -27,7 +27,6 @@
 
 import lsst.daf.base as dafBase
 
-from collections import namedtuple
 import os
 from past.builtins import basestring
 import yaml
@@ -54,7 +53,6 @@ class ButlerComposite(object):
     mapper : Mapper instance
         A reference to the mapper that created this ButlerComposite object.
     """
-
 
     class ComponentInfo():
         """Information about a butler composite object. Some details come from the policy and some are filled
@@ -89,23 +87,22 @@ class ButlerComposite(object):
 
         def __repr__(self):
             return 'ComponentInfo(datasetType:%s, obj:%s, setter:%s, getter:%s, subset:%s)' % \
-                    (self.datasetType, self.obj, self.setter, self.getter, self.subset)
-
+                (self.datasetType, self.obj, self.setter, self.getter, self.subset)
 
     def __repr__(self):
-        return 'ButlerComposite(assembler:%s, disassembler:%s, python:%s, dataId:%s, mapper:%s, componentInfo:%s, repository:%s)' % \
-                (self.assembler,
-                self.disassembler,
-                self.python,
-                self.dataId,
-                self.mapper,
-                self.componentInfo,
-                self.repository)
+        return 'ButlerComposite(assembler:%s, disassembler:%s, python:%s, dataId:%s, mapper:%s, ' \
+            'componentInfo:%s, repository:%s)' % \
+            (self.assembler,
+             self.disassembler,
+             self.python,
+             self.dataId,
+             self.mapper,
+             self.componentInfo,
+             self.repository)
 
         def __repr__(self):
             return "ComponentInfo(datasetType=%s, obj=%s, setter=%s, getter=%s)" % (
                 self.datasetType, self.obj, self.setter, self.getter)
-
 
     def __init__(self, assembler, disassembler, python, dataId, mapper):
         self.assembler = doImport(assembler) if isinstance(assembler, basestring) else assembler
@@ -137,7 +134,7 @@ class ButlerComposite(object):
             If true, indicates that the obj should not be serialized when performing a butler.put.
         """
         self.componentInfo[id] = ButlerComposite.ComponentInfo(datasetType=datasetType,
-                                                               obj = None,
+                                                               obj=None,
                                                                setter=setter,
                                                                getter=getter,
                                                                subset=subset,

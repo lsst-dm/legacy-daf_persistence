@@ -4,12 +4,14 @@ from lsst.utils import continueClass
 
 from .testLib import TypeWithProxy, TypeWithoutProxy
 
-@continueClass
+
+@continueClass  # noqa F811 redefinition
 class TypeWithProxy:
     def __reduce__(self):
         return (TypeWithProxy, ())
 
-@continueClass
+
+@continueClass  # noqa F811 redefinition
 class TypeWithoutProxy:
     def __reduce__(self):
         return (TypeWithoutProxy, ())

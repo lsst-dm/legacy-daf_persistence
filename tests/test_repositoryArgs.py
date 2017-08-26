@@ -22,8 +22,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from future import standard_library
-standard_library.install_aliases()
 import lsst.daf.persistence as dp
 import lsst.utils.tests
 import os
@@ -39,6 +37,7 @@ def setup_module(module):
 
 class MapperTest(dp.Mapper):
     pass
+
 
 # Define the root of the tests relative to this file
 ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -98,7 +97,6 @@ class DefaultMapper(unittest.TestCase):
         found."""
         butler = self._setup(dp.Mapper, dp.Mapper)
         self.assertEqual(butler._getDefaultMapper(), lsst.daf.persistence.Mapper)
-
 
     def testClassObjAndNotMatchingInstance(self):
         """Pass a class object and a class instance of a different type, and verify a default mapper can not

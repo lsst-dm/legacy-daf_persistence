@@ -24,8 +24,6 @@
 from builtins import str
 from past.builtins import basestring
 from future.utils import with_metaclass
-from future.standard_library import install_aliases
-install_aliases()
 
 import collections
 import copy
@@ -34,11 +32,11 @@ import sys
 import warnings
 import yaml
 
-from yaml.representer import Representer
-yaml.add_representer(collections.defaultdict, Representer.represent_dict)
-
 import lsst.pex.policy as pexPolicy
 import lsst.utils
+
+from yaml.representer import Representer
+yaml.add_representer(collections.defaultdict, Representer.represent_dict)
 
 # UserDict and yaml have defined metaclasses and Python 3 does not allow multiple
 # inheritance of classes with distinct metaclasses. We therefore have to

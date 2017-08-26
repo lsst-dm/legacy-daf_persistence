@@ -23,7 +23,6 @@
 #
 from __future__ import absolute_import
 
-from builtins import object
 from future import standard_library
 import urllib.parse
 from . import NoRepositroyAtRoot

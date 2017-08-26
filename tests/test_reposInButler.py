@@ -1,4 +1,4 @@
-    #
+#
 # LSST Data Management System
 # Copyright 2016 LSST Corporation.
 #
@@ -19,8 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from future import standard_library
-standard_library.install_aliases()
 from builtins import object
 
 import pickle
