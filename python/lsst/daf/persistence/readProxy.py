@@ -126,6 +126,7 @@ class ReadProxy(ReadProxyBase):
     def __rpow__(self, ob):
         return pow(ob, self.__subject__)
 
+
 get_callback = ReadProxy.__callback__.__get__
 set_callback = ReadProxy.__callback__.__set__
 get_cache = ReadProxy.__cache__.__get__
@@ -138,6 +139,7 @@ def __subject__(self, get_cache=get_cache, set_cache=set_cache):
     except AttributeError:
         set_cache(self, get_callback(self)())
         return get_cache(self)
+
 
 ReadProxy.__subject__ = property(__subject__, set_cache)
 del __subject__

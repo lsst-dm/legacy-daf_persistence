@@ -23,8 +23,6 @@
 import os
 import lsst.daf.persistence as dafPersist
 
-from testLib import TypeWithProxy, TypeWithoutProxy
-
 
 class PickleMapper(dafPersist.Mapper):
 

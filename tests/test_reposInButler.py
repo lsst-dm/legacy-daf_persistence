@@ -1,4 +1,4 @@
-    #
+#
 # LSST Data Management System
 # Copyright 2016 LSST Corporation.
 #
@@ -19,8 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from future import standard_library
-standard_library.install_aliases()
 from builtins import object
 
 import pickle
@@ -122,7 +120,9 @@ class ReposInButler(unittest.TestCase):
         # create a cfg of a repository for our repositories
         storageCfg = dp.PosixStorage.cfg(root=self.testDir)
         accessCfg = dp.Access.cfg(storageCfg=storageCfg)
+        self.assertIsNotNone(accessCfg)
         mapperCfg = dp.RepositoryMapper.cfg(policy=repoMapperPolicy)
+        self.assertIsNotNone(mapperCfg)
         # Note that right now a repo is either input OR output, there is no input-output repo, this design
         # is result of butler design conversations. Right now, if a user wants to write to and then read from
         # a repo, a repo can have a parent repo with the same access (and mapper) parameters as itself.

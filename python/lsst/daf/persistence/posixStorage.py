@@ -23,16 +23,12 @@
 #
 from past.builtins import basestring
 import sys
-import copy
 import pickle
 import importlib
 import os
 import urllib.parse
 import glob
 import shutil
-import fcntl
-
-import yaml
 
 from . import (LogicalLocation, Persistence, Policy, StorageList,
                StorageInterface, Storage, ButlerLocation,
@@ -40,8 +36,7 @@ from . import (LogicalLocation, Persistence, Policy, StorageList,
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
-from future import standard_library
-standard_library.install_aliases()
+
 
 class PosixStorage(StorageInterface):
     """Defines the interface for a storage location on the local filesystem.
@@ -453,10 +448,10 @@ class PosixStorage(StorageInterface):
             True if the repository at root exists, else False.
         """
         return os.path.exists(root) and (
-                os.path.exists(os.path.join(root, "registry.sqlite3")) or
-                os.path.exists(os.path.join(root, "_mapper")) or
-                os.path.exists(os.path.join(root, "_parent"))
-                )
+            os.path.exists(os.path.join(root, "registry.sqlite3")) or
+            os.path.exists(os.path.join(root, "_mapper")) or
+            os.path.exists(os.path.join(root, "_parent"))
+        )
 
     def copyFile(self, fromLocation, toLocation):
         """Copy a file from one location to another on the local filesystem.
@@ -614,6 +609,7 @@ class PosixStorage(StorageInterface):
             True if the storage exists, false if not
         """
         return os.path.exists(PosixStorage._pathFromURI(uri))
+
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)

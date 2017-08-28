@@ -19,9 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import object
-
-import copy
 import os
 import shutil
 import tempfile
@@ -68,6 +65,7 @@ class TestCfgRelationship(unittest.TestCase):
         args = dp.RepositoryArgs(mode='rw', mapper=dpTest.EmptyTestMapper,
                                  root=self.testDir)
         butler = dp.Butler(outputs=args)
+        self.assertIsInstance(butler, dp.Butler)
         args = dp.RepositoryArgs(mode='r', mapper=dpTest.EmptyTestMapper,
                                  root=self.testDir)
         self.assertRaises(RuntimeError, dp.Butler, outputs=args)
@@ -146,6 +144,7 @@ class TestCfgRelationship(unittest.TestCase):
         os.symlink(tmpDir, repoBDir)
         # create an output repo at 'b' with the input repo 'a'
         butler = dp.Butler(inputs=repoADir, outputs=repoBDir)
+        self.assertIsInstance(butler, dp.Butler)
         # verify a repoCfg in the tmp dir with a proper parent path from tmp
         # to 'a' (not from 'b' to 'a')
         cfg = dp.PosixStorage.getRepositoryCfg(tmpDir)
@@ -181,12 +180,12 @@ class TestNestedCfg(unittest.TestCase):
     def test(self):
         parentCfg = dp.RepositoryCfg(root=os.path.join(self.testDir, 'parent'),
                                      mapper='lsst.daf.persistence.SomeMapper',
-                                     mapperArgs = {},
+                                     mapperArgs={},
                                      parents=None,
                                      policy=None)
         cfg = dp.RepositoryCfg(root=self.testDir,
                                mapper='lsst.daf.persistence.SomeMapper',
-                               mapperArgs = {},
+                               mapperArgs={},
                                parents=[parentCfg],
                                policy=None)
         dp.PosixStorage.putRepositoryCfg(cfg)
@@ -229,6 +228,7 @@ class TestCfgFileVersion(unittest.TestCase):
             f.write("""!RepositoryCfg_v0
                     _root: 'foo/bar'""")
         cfg = dp.PosixStorage.getRepositoryCfg(self.testDir)
+        self.assertIsInstance(cfg, dp.RepositoryCfg)
 
 
 class TestExtendParents(unittest.TestCase):
@@ -259,6 +259,7 @@ class MemoryTester(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == '__main__':
     lsst.utils.tests.init()

@@ -23,7 +23,6 @@
 #
 from builtins import object
 
-import yaml
 
 from . import Policy
 
@@ -165,7 +164,6 @@ class Mapper(object):
         """
         func = getattr(self, 'map_' + datasetType)
         return func(self.validate(dataId), write)
-
 
     def canStandardize(self, datasetType):
         """Return true if this mapper can standardize an object of the given

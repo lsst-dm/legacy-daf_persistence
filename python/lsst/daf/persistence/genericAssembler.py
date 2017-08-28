@@ -22,7 +22,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import inspect
 
 def genericAssembler(dataId, componentInfo, cls):
     """A generic assembler for butler composite datasets, that can be used when the component names match the

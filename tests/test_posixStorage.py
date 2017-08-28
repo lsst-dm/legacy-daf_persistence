@@ -40,6 +40,7 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 def setup_module(module):
     lsst.utils.tests.init()
 
+
 class GetParentFromSymlink(unittest.TestCase):
     """A test case for getting the relative path to parent from a symlink in PosixStorage."""
 

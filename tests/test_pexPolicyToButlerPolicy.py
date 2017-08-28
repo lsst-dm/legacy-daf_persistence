@@ -79,6 +79,7 @@ class PolicyTestCase(unittest.TestCase):
 
     def testGetStringArray(self):
         pexPolicy = lsst.pex.policy.Policy.createPolicy(pafPolicyPath)
+        self.assertIsInstance(pexPolicy, lsst.pex.policy.Policy)
         policy = lsst.daf.persistence.Policy(pafPolicyPath)
         s = policy.asArray('exposures.fcr.tables')
         self.assertEqual(s, ['raw', 'raw_visit', 'raw_skyTile'])

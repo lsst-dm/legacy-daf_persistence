@@ -42,9 +42,6 @@ class TestObject(object):
     def __le__(self, other):
         return self.data <= other.data
 
-    def __eq__(self, other):
-        return self.data == other.data
-
     def __gt__(self, other):
         return self.data > other.data
 
@@ -115,4 +112,3 @@ class TestObjectUnderscoreSetter(object):
 
     def get_foo(self):
         return self._foo
-

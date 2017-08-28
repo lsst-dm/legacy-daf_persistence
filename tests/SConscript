@@ -1,9 +1,8 @@
 # -*- python -*-
 from lsst.sconsUtils import scripts
-import os
 
 ignoreList = ["cameraMapper.py", "pickleMapper.py"]
 
-scripts.BasicSConscript.tests(ignoreList=ignoreList, noBuildList=['testLib.cc'])
+scripts.BasicSConscript.tests(ignoreList=ignoreList, noBuildList=['testLib.cc'],
+                              pyList=[])
 scripts.BasicSConscript.pybind11(['testLib/testLib'], addUnderscore=False)
-

@@ -22,12 +22,10 @@
 
 import copy
 import errno
-import fcntl
 import yaml
 import os
 import urllib
 from . import PosixStorage, RepositoryCfg, safeFileIo, ParentsMismatch
-from lsst.log import Log
 
 
 class RepositoryCfgPosixFormatter():

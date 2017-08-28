@@ -25,6 +25,7 @@ import unittest
 import lsst.daf.persistence as dp
 import lsst.utils.tests
 
+
 def setup_module(module):
     lsst.utils.tests.init()
 
@@ -41,8 +42,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual((1, ), dp.sequencify((1,)))
         self.assertEqual([1], dp.sequencify([1]))
         self.assertEqual(set([1]), dp.sequencify(set([1])))
-        self.assertEqual(('a', 'b', 'c'), dp.sequencify({'a':1, 'b':2, 'c':3}))
-        self.assertNotEqual(('b', 'c', 'a'), dp.sequencify({'a':1, 'b':2, 'c':3}))
+        self.assertEqual(('a', 'b', 'c'), dp.sequencify({'a': 1, 'b': 2, 'c': 3}))
+        self.assertNotEqual(('b', 'c', 'a'), dp.sequencify({'a': 1, 'b': 2, 'c': 3}))
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass

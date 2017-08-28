@@ -485,6 +485,6 @@ class PgsqlRegistry(SqlRegistry):
     def lookup(self, *args, **kwargs):
         try:
             return SqlRegistry.lookup(self, *args, **kwargs)
-        except Exception as exc:
+        except Exception:
             self.conn.rollback()
             raise

@@ -57,7 +57,7 @@ class DbPersistence1TestCase(unittest.TestCase):
 
         # pybind11 automatically returns most derived type
         rdp = persistence.unsafeRetrieve("PropertySet", storageList,
-                    additionalData)
+                                         additionalData)
 
         self.assertEqual(rdp.nameCount(), 1)
         self.assertTrue(rdp.exists("foo"))
@@ -70,6 +70,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()
