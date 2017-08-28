@@ -65,6 +65,7 @@ class TestCfgRelationship(unittest.TestCase):
         args = dp.RepositoryArgs(mode='rw', mapper=dpTest.EmptyTestMapper,
                                  root=self.testDir)
         butler = dp.Butler(outputs=args)
+        self.assertIsInstance(butler, dp.Butler)
         args = dp.RepositoryArgs(mode='r', mapper=dpTest.EmptyTestMapper,
                                  root=self.testDir)
         self.assertRaises(RuntimeError, dp.Butler, outputs=args)
@@ -143,6 +144,7 @@ class TestCfgRelationship(unittest.TestCase):
         os.symlink(tmpDir, repoBDir)
         # create an output repo at 'b' with the input repo 'a'
         butler = dp.Butler(inputs=repoADir, outputs=repoBDir)
+        self.assertIsInstance(butler, dp.Butler)
         # verify a repoCfg in the tmp dir with a proper parent path from tmp
         # to 'a' (not from 'b' to 'a')
         cfg = dp.PosixStorage.getRepositoryCfg(tmpDir)
@@ -226,6 +228,7 @@ class TestCfgFileVersion(unittest.TestCase):
             f.write("""!RepositoryCfg_v0
                     _root: 'foo/bar'""")
         cfg = dp.PosixStorage.getRepositoryCfg(self.testDir)
+        self.assertIsInstance(cfg, dp.RepositoryCfg)
 
 
 class TestExtendParents(unittest.TestCase):

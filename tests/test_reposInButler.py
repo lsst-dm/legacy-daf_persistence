@@ -120,7 +120,9 @@ class ReposInButler(unittest.TestCase):
         # create a cfg of a repository for our repositories
         storageCfg = dp.PosixStorage.cfg(root=self.testDir)
         accessCfg = dp.Access.cfg(storageCfg=storageCfg)
+        self.assertIsNotNone(accessCfg)
         mapperCfg = dp.RepositoryMapper.cfg(policy=repoMapperPolicy)
+        self.assertIsNotNone(mapperCfg)
         # Note that right now a repo is either input OR output, there is no input-output repo, this design
         # is result of butler design conversations. Right now, if a user wants to write to and then read from
         # a repo, a repo can have a parent repo with the same access (and mapper) parameters as itself.

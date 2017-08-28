@@ -120,12 +120,12 @@ class ParseRootURI(unittest.TestCase):
         uri = urllib.parse.urljoin('file://', self.testDir)
         args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
         butler = dp.Butler(outputs=args)
+        self.assertIsInstance(butler, dp.Butler)
         self.assertTrue(os.path.exists(os.path.join(self.testDir, 'repositoryCfg.yaml')))
-
-        butler2 = dp.Butler(inputs=uri)
 
         try:
             butler2 = dp.Butler(inputs=uri)
+            self.assertIsInstance(butler2, dp.Butler)
         except RuntimeError:
             self.fail("Butler init raised a runtime error loading input %s" % uri)
 
@@ -134,10 +134,12 @@ class ParseRootURI(unittest.TestCase):
         uri = self.testDir
         args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
         butler = dp.Butler(outputs=args)
+        self.assertIsInstance(butler, dp.Butler)
         self.assertTrue(os.path.exists(os.path.join(uri, 'repositoryCfg.yaml')))
 
         try:
             butler2 = dp.Butler(inputs=uri)
+            self.assertIsInstance(butler2, dp.Butler)
         except RuntimeError:
             self.fail("Butler init raised a runtime error loading input %s" % uri)
 
@@ -149,10 +151,12 @@ class ParseRootURI(unittest.TestCase):
         uri = os.path.relpath(self.testDir)
         args = dp.RepositoryArgs(root=uri, mapper='lsst.daf.persistence.Mapper')
         butler = dp.Butler(outputs=args)
+        self.assertIsInstance(butler, dp.Butler)
         self.assertTrue(self.testDir, 'repositoryCfg.yaml')
 
         try:
             butler2 = dp.Butler(inputs=uri)
+            self.assertIsInstance(butler2, dp.Butler)
         except RuntimeError:
             self.fail("Butler init raised a runtime error loading input %s" % uri)
 

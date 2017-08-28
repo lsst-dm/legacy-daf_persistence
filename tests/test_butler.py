@@ -70,33 +70,40 @@ class ButlerTest(unittest.TestCase):
         with open(os.path.join(repoDir, '_mapper'), 'w') as f:
             f.write('lsst.daf.persistence.test.EmptyTestMapper')
         butler = dp.Butler(repoDir)
+        self.assertIsInstance(butler, dp.Butler)
 
     def testMapperCanBeString(self):
         # should not raise
         butler = dp.Butler(outputs={'root': self.testDir,
                                     'mapper': 'lsst.daf.persistence.test.EmptyTestMapper'})
+        self.assertIsInstance(butler, dp.Butler)
 
     def testMapperCanBeStringV1Api(self):
         # should not raise
         butler = dp.Butler(root=self.testDir, mapper='lsst.daf.persistence.test.EmptyTestMapper')
+        self.assertIsInstance(butler, dp.Butler)
 
     def testMapperCanBeClassObject(self):
         # should not raise
         butler = dp.Butler(outputs={'root': self.testDir,
                                     'mapper': dpTest.EmptyTestMapper})
+        self.assertIsInstance(butler, dp.Butler)
 
     def testMapperCanBeClassObjectV1Api(self):
         # should not raise
         butler = dp.Butler(root=self.testDir, mapper=dpTest.EmptyTestMapper)
+        self.assertIsInstance(butler, dp.Butler)
 
     def testMapperCanBeClassInstance(self):
         # should warn but not raise
         butler = dp.Butler(outputs={'root': self.testDir,
                                     'mapper': dpTest.EmptyTestMapper()})
+        self.assertIsInstance(butler, dp.Butler)
 
     def testMapperCanBeClassInstanceV1Api(self):
         # should warn but not raise
         butler = dp.Butler(root=self.testDir, mapper=dpTest.EmptyTestMapper())
+        self.assertIsInstance(butler, dp.Butler)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
