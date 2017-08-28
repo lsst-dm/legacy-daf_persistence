@@ -144,7 +144,6 @@ class StorageInterface:
             return None
         return classFormatters.get(objType, None)
 
-
     @abstractmethod
     def write(self, butlerLocation, obj):
         """Writes an object to a location and persistence format specified by ButlerLocation
