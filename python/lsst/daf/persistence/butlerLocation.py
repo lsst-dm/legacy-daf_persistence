@@ -100,10 +100,6 @@ class ButlerComposite(object):
              self.componentInfo,
              self.repository)
 
-        def __repr__(self):
-            return "ComponentInfo(datasetType=%s, obj=%s, setter=%s, getter=%s)" % (
-                self.datasetType, self.obj, self.setter, self.getter)
-
     def __init__(self, assembler, disassembler, python, dataId, mapper):
         self.assembler = doImport(assembler) if isinstance(assembler, basestring) else assembler
         self.disassembler = doImport(disassembler) if isinstance(disassembler, basestring) else disassembler
@@ -139,10 +135,6 @@ class ButlerComposite(object):
                                                                getter=getter,
                                                                subset=subset,
                                                                inputOnly=inputOnly)
-
-    def __repr__(self):
-        return "ButlerComposite(assembler=%s, disassembler=%s, python=%s, dataId=%s, components=%s)" % (
-            self.assembler, self.disassembler, self.python, self.dataId, self.componentInfo)
 
     def setRepository(self, repository):
         self.repository = repository
