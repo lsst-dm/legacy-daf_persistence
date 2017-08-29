@@ -257,9 +257,9 @@ class PosixStorage(StorageInterface):
         """
         self.log.debug("Put location=%s obj=%s", butlerLocation, obj)
 
-        writeFormatter = self._getWriteFormatter(butlerLocation.getStorageName())
+        writeFormatter = self.getWriteFormatter(butlerLocation.getStorageName())
         if not writeFormatter:
-            writeFormatter = self._getWriteFormatter(butlerLocation.getPythonType())
+            writeFormatter = self.getWriteFormatter(butlerLocation.getPythonType())
         if writeFormatter:
             writeFormatter(butlerLocation, obj)
             return
@@ -279,10 +279,9 @@ class PosixStorage(StorageInterface):
         A list of objects as described by the butler location. One item for
         each location in butlerLocation.getLocations()
         """
-
-        readFormatter = self._getReadFormatter(butlerLocation.getStorageName())
+        readFormatter = self.getReadFormatter(butlerLocation.getStorageName())
         if not readFormatter:
-            readFormatter = self._getReadFormatter(butlerLocation.getPythonType())
+            readFormatter = self.getReadFormatter(butlerLocation.getPythonType())
         if readFormatter:
             return readFormatter(butlerLocation)
 
@@ -795,8 +794,8 @@ PosixStorage.registerFormatters("FitsStorage", readFitsStorage, writeFitsStorage
 PosixStorage.registerFormatters("ConfigStorage", readConfigStorage, writeConfigStorage)
 PosixStorage.registerFormatters("PickleStorage", readPickleStorage, writePickleStorage)
 PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, writeFitsCatalogStorage)
-PosixStorage.registerWriteFormatter("PafStorage", readPafStorage)
-PosixStorage.registerReadFormatter("YamlStorage", readYamlStorage)
+PosixStorage.registerFormatters("PafStorage", writeFormatter=readPafStorage)
+PosixStorage.registerFormatters("YamlStorage", readFormatter=readYamlStorage)
 PosixStorage.registerFormatters("BoostStorage", readFitsStorage, writeFitsStorage)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
