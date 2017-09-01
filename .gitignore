@@ -36,3 +36,4 @@ tests/PropertySetPersist
 tests/PropertySet_2
 tests/data
 tests/root/out
+pytest_session.txt
