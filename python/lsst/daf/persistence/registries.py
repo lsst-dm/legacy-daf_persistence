@@ -315,6 +315,10 @@ class SqlRegistry(Registry):
         Registry.__init__(self)
         self.conn = conn
 
+    def __del__(self):
+        self.conn.close()
+        super(SqlRegistry, self).__del__()
+
     def lookup(self, lookupProperties, reference, dataId, **kwargs):
         """Perform a lookup in the registry.
 
