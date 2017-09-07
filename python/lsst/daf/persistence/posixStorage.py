@@ -709,8 +709,11 @@ def writeFitsCatalogStorage(butlerLocation, obj):
     locations = butlerLocation.getLocations()
     with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
         logLoc = LogicalLocation(locationString, additionalData)
-        flags = additionalData.getInt("flags", 0)
-        obj.writeFits(logLoc.locString(), flags=flags)
+        if additionalData.exists("flags"):
+            kwds = dict(flags=additionalData.getInt("flags"))
+        else:
+            kwds = {}
+        obj.writeFits(logLoc.locString(), **kwds)
         return
 
 
