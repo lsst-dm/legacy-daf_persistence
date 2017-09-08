@@ -686,10 +686,12 @@ def readFitsCatalogStorage(butlerLocation):
         logLoc = LogicalLocation(locStringWithRoot, additionalData)
         if not os.path.exists(logLoc.locString()):
             raise RuntimeError("No such FITS catalog file: " + logLoc.locString())
-        INT_MIN = -(1 << 31)
-        hdu = additionalData.getInt("hdu", INT_MIN)
-        flags = additionalData.getInt("flags", 0)
-        finalItem = pythonType.readFits(logLoc.locString(), hdu, flags)
+        kwds = {}
+        if additionalData.exists("hdu"):
+            kwds["hdu"] = additionalData.getInt("hdu")
+        if additionalData.exists("flags"):
+            kwds["flags"] = additionalData.getInt("flags")
+        finalItem = pythonType.readFits(logLoc.locString(), **kwds)
         results.append(finalItem)
     return results
 
@@ -709,8 +711,11 @@ def writeFitsCatalogStorage(butlerLocation, obj):
     locations = butlerLocation.getLocations()
     with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
         logLoc = LogicalLocation(locationString, additionalData)
-        flags = additionalData.getInt("flags", 0)
-        obj.writeFits(logLoc.locString(), flags=flags)
+        if additionalData.exists("flags"):
+            kwds = dict(flags=additionalData.getInt("flags"))
+        else:
+            kwds = {}
+        obj.writeFits(logLoc.locString(), **kwds)
         return
 
 
