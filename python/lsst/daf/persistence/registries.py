@@ -68,6 +68,9 @@ class Registry(object):
     def __init__(self):
         pass
 
+    def __del__(self):
+        pass
+
     @staticmethod
     def create(location):
         """Create a registry object of an appropriate type.
