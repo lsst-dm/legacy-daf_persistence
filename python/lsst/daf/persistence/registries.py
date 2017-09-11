@@ -33,7 +33,7 @@ is only used by CameraMapper and by PosixStorage, both of which work on the
 local filesystem only, so this works for the time being.
 """
 from __future__ import absolute_import
-from builtins import object
+from builtins import object, super
 from past.builtins import basestring
 
 import copy
@@ -317,7 +317,7 @@ class SqlRegistry(Registry):
 
     def __del__(self):
         self.conn.close()
-        super(SqlRegistry, self).__del__()
+        super().__del__()
 
     def lookup(self, lookupProperties, reference, dataId, **kwargs):
         """Perform a lookup in the registry.
