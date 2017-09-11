@@ -319,7 +319,8 @@ class SqlRegistry(Registry):
         self.conn = conn
 
     def __del__(self):
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
         super().__del__()
 
     def lookup(self, lookupProperties, reference, dataId, **kwargs):
@@ -441,10 +442,6 @@ class PgsqlRegistry(SqlRegistry):
         conn = pgsql.connect(host=config["host"], port=config["port"], database=config["database"],
                              user=config["user"], password=config["password"])
         SqlRegistry.__init__(self, conn)
-
-    def __del__(self):
-        if self.conn:
-            self.conn.close()
 
     @staticmethod
     def readYaml(location):
