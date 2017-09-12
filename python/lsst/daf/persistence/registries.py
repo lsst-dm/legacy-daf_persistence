@@ -33,7 +33,7 @@ is only used by CameraMapper and by PosixStorage, both of which work on the
 local filesystem only, so this works for the time being.
 """
 from __future__ import absolute_import
-from builtins import object
+from builtins import object, super
 from past.builtins import basestring
 
 import copy
@@ -66,6 +66,9 @@ class Registry(object):
     """The registry base class."""
 
     def __init__(self):
+        pass
+
+    def __del__(self):
         pass
 
     @staticmethod
@@ -316,8 +319,9 @@ class SqlRegistry(Registry):
         self.conn = conn
 
     def __del__(self):
-        self.conn.close()
-        super(SqlRegistry, self).__del__()
+        if self.conn:
+            self.conn.close()
+        super().__del__()
 
     def lookup(self, lookupProperties, reference, dataId, **kwargs):
         """Perform a lookup in the registry.
@@ -438,10 +442,6 @@ class PgsqlRegistry(SqlRegistry):
         conn = pgsql.connect(host=config["host"], port=config["port"], database=config["database"],
                              user=config["user"], password=config["password"])
         SqlRegistry.__init__(self, conn)
-
-    def __del__(self):
-        if self.conn:
-            self.conn.close()
 
     @staticmethod
     def readYaml(location):
