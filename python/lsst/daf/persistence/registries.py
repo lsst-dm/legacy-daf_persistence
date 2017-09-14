@@ -33,7 +33,6 @@ is only used by CameraMapper and by PosixStorage, both of which work on the
 local filesystem only, so this works for the time being.
 """
 from __future__ import absolute_import
-from builtins import object, super
 from past.builtins import basestring
 
 import copy

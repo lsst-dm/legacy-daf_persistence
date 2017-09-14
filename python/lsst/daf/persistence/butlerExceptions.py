@@ -30,7 +30,7 @@ class NoResults(RuntimeError):
 
     def __init__(self, message, datasetType, dataId):
         message += ' datasetType:' + datasetType + ' dataId:' + str(dataId)
-        super(NoResults, self).__init__(message)
+        super().__init__(message)
 
 
 class MultipleResults(RuntimeError):
@@ -39,7 +39,7 @@ class MultipleResults(RuntimeError):
         message += ' datasetType:' + datasetType + ' dataId:' + str(dataId) + ' locations:'
         for location in locations:
             message += ' ' + str(location)
-        super(MultipleResults, self).__init__(message)
+        super().__init__(message)
         self.locations = locations
 
 
@@ -48,4 +48,4 @@ class ParentsMismatch(RuntimeError):
     value.
     """
     def __init__(self, message):
-        super(ParentsMismatch, self).__init__(message)
+        super().__init__(message)
