@@ -25,7 +25,7 @@
 # -*- python -*-
 
 """This module defines the Butler class."""
-from builtins import str
+from builtins import str, super
 from past.builtins import basestring
 from builtins import object
 

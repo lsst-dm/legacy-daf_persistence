@@ -19,7 +19,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import object
+from builtins import object, super
 
 import pickle
 import os
