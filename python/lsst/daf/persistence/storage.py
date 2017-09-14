@@ -30,7 +30,18 @@ standard_library.install_aliases()
 
 
 class Storage:
-    """Base class for storages"""
+    """Storage is a factory class for Storage Interface instances. Storage
+    interface classes register themselves with the Storage class by calling
+    `Storage.registerStorageClass(scheme, cls)`, where `scheme` matches the scheme of
+    the URI that describes a Repository root, and cls is the class object that
+    implements the StorageInterface protocol.
+
+    Storage also is a helper for accessing storage interface functions.
+    Without it, users would have to call e.g.
+    `Storage.makeFromUri(uri).putRepositoryCfg(uri, cfg)`, whereas with the
+    helper in Storage, the user can call Storage.putRepositoryCfg(uri, cfg)
+    and Storage handles making a temporary Storage Interface instance inside
+    the body of the function."""
 
     storages = {}
 
