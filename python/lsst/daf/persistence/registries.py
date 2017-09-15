@@ -34,6 +34,7 @@ local filesystem only, so this works for the time being.
 """
 from __future__ import absolute_import
 from past.builtins import basestring
+from builtins import super
 
 import copy
 from . import fsScanner, sequencify
