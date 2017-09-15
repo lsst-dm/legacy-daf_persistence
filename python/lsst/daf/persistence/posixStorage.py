@@ -315,6 +315,7 @@ class PosixStorage(StorageInterface):
         bool
             True if exists, else False.
         """
+        import pdb; pdb.set_trace()
         if isinstance(location, ButlerLocation):
             return self.butlerLocationExists(location)
 
