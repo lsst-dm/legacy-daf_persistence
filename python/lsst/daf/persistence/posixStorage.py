@@ -481,6 +481,7 @@ class PosixStorage(StorageInterface):
 
         dir = rootDir
         while True:
+            import pdb; pdb.set_trace()
             paths = glob.glob(os.path.join(dir, strippedPath))
             if len(paths) > 0:
                 if pathPrefix != rootDir:
