@@ -21,7 +21,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import object
+from builtins import object, super
 
 
 from . import Policy
@@ -94,7 +94,7 @@ class Mapper(object):
         responsibility (except when overriding __new__, but that
         is not common).
         """
-        self = super(Mapper, cls).__new__(cls)
+        self = super().__new__(cls)
         self._arguments = (args, kwargs)
         return self
 

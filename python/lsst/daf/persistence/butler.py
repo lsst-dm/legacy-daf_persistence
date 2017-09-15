@@ -60,7 +60,7 @@ class ButlerCfg(Policy, yaml.YAMLObject):
     yaml_tag = u"!ButlerCfg"
 
     def __init__(self, cls, repoCfg):
-        super(ButlerCfg, self).__init__({'repoCfg': repoCfg, 'cls': cls})
+        super().__init__({'repoCfg': repoCfg, 'cls': cls})
 
 
 class RepoData(object):

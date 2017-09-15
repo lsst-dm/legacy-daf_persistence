@@ -31,7 +31,7 @@ class AccessCfg(Policy, yaml.YAMLObject):
     yaml_tag = u"!AccessCfg"
 
     def __init__(self, cls, storageCfg):
-        super(AccessCfg, self).__init__({'storageCfg': storageCfg, 'cls': cls})
+        super().__init__({'storageCfg': storageCfg, 'cls': cls})
 
 
 class Access(object):

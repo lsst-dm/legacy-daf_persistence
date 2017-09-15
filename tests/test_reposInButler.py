@@ -65,7 +65,7 @@ class MapperTestCfg(Policy, yaml.YAMLObject):
     yaml_tag = u"!MapperTestCfg"
 
     def __init__(self, cls, root):
-        super(MapperTestCfg, self).__init__({'root': root, 'cls': cls})
+        super().__init__({'root': root, 'cls': cls})
 
 
 class MapperTest(dp.Mapper):
@@ -75,7 +75,7 @@ class MapperTest(dp.Mapper):
         return MapperTestCfg(cls=cls, root=root)
 
     def __init__(self, cfg):
-        super(MapperTest, self).__init__()
+        super().__init__()
         # self.root = cfg['root']
         self.storage = cfg['storage']
         self.cfg = cfg
