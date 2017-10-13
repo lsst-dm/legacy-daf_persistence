@@ -319,7 +319,7 @@ class SqlRegistry(Registry):
         self.conn = conn
 
     def __del__(self):
-        if self.conn:
+        if hasattr(self, "conn") and self.conn:
             self.conn.close()
         super().__del__()
 
