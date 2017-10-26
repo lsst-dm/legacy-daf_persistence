@@ -420,12 +420,12 @@ class Policy(_PolicyBase):
                 'exposures', 'calibrations', 'datasets']
         for key in keys:
             try:
-                yaml.dump({key: data.pop(key)}, output, default_flow_style=False)
+                yaml.safe_dump({key: data.pop(key)}, output, default_flow_style=False)
                 output.write('\n')
             except KeyError:
                 pass
         if data:
-            yaml.dump(data, output, default_flow_style=False)
+            yaml.safe_dump(data, output, default_flow_style=False)
 
     def dumpToFile(self, path):
         """Writes the policy to a file.
