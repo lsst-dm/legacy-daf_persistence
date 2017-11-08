@@ -791,6 +791,28 @@ class Butler(object):
                                 root=repoData.repoArgs.cfgRoot,
                                 isV1Repository=isOldButlerRepository)
             else:
+
+                # This is a hack fix for an issue introduced by DM-11284; Old Butler parent repositories used
+                # to be stored as a path to the repository in the parents list and it was changed so that the
+                # whole RepositoryCfg, that described the Old Butler repository (including the mapperArgs that
+                # were used with it), was recorded as a "nested" repository cfg. That checkin did not account
+                # for the fact that there were repositoryCfg.yaml files in the world with only the path to
+                # Old Butler repositories in the parents list.
+                if cfg.parents:
+                    for i, parent in enumerate(cfg.parents):
+                        if isinstance(parent, RepositoryCfg):
+                            continue
+                        parentCfg, parentIsOldButlerRepository = self._getRepositoryCfg(parent)
+                        if parentIsOldButlerRepository:
+                            parentCfg.mapperArgs = cfg.mapperArgs
+                            self.log.info(("Butler is replacing an Old Butler parent repository path '{}' "
+                                           "found in the parents list of a New Butler repositoryCfg: {} "
+                                           "with a repositoryCfg that includes the child repository's "
+                                           "mapperArgs: {}. This affects the instantiated RepositoryCfg "
+                                           "but does not change the persisted child repositoryCfg.yaml file."
+                                           ).format(parent, cfg, parentCfg))
+                            cfg._parents[i] = cfg._normalizeParents(cfg.root, [parentCfg])[0]
+
                 if 'w' in repoData.repoArgs.mode:
                     # if it's an output repository, the RepositoryArgs must match the existing cfg.
                     if not cfgMatchesArgs(repoData.repoArgs, cfg):
