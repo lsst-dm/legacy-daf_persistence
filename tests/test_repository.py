@@ -120,6 +120,16 @@ class ChildrenMapper(dp.Mapper):
                                      dataId, self, self.storage)
         return None
 
+    def map_pickled(self, dataId, write):
+        python = 'dict'
+        persistable = None
+        storage = 'PickleStorage'
+        path = os.path.join(self.root, 'raw')
+        path = os.path.join(path, 'pickled_v' + str(dataId['visit']) + '_f' + dataId['filter'] + '.fits.gz')
+        if write or os.path.exists(path):
+            return dp.ButlerLocation(python, persistable, storage, path,
+                                     dataId, self, self.storage)
+
     def bypass_raw(self, datasetType, pythonType, location, dataId):
         return astropy.io.fits.open(location.getLocations()[0])
 
@@ -232,7 +242,7 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(val, [])
 
     def testDatasetExists(self):
-        # test the valeus that are expected to be true:
+        # test the values that are expected to be true:
         self.assertEqual(self.butler.datasetExists('raw', {'filter': 'g', 'visit': 1}), True)
         self.assertEqual(self.butler.datasetExists('raw', {'filter': 'g', 'visit': 2}), True)
         self.assertEqual(self.butler.datasetExists('raw', {'filter': 'r', 'visit': 3}), True)
@@ -241,6 +251,17 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(self.butler.datasetExists('raw', {'filter': 'f', 'visit': 1}), False)
         self.assertEqual(self.butler.datasetExists('raw', {'filter': 'r', 'visit': 1}), False)
         self.assertEqual(self.butler.datasetExists('raw', {'filter': 'g', 'visit': 3}), False)
+
+        # test that we don't see datasets in the input repo as being in the output repo
+        self.assertEqual(self.butler.datasetExists('raw', {'filter': 'g', 'visit': 1}, write=True), False)
+        self.assertEqual(self.butler.datasetExists('raw', {'filter': 'g', 'visit': 2}, write=True), False)
+        self.assertEqual(self.butler.datasetExists('raw', {'filter': 'r', 'visit': 3}, write=True), False)
+
+        # write a dataset to the output repo and check that we see it with both write=True and write=False
+        dataId = {'visit': '2', 'filter': 'g'}
+        self.butler.put({"number": 3}, 'pickled', dataId)
+        self.assertEqual(self.butler.datasetExists('pickled', dataId, write=True), True)
+        self.assertEqual(self.butler.datasetExists('pickled', dataId, write=False), True)
 
 
 ##############################################################################################################

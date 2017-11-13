@@ -263,19 +263,20 @@ class ButlerDataRef(object):
         return self.butlerSubset.butler.subset(self.butlerSubset.datasetType,
                                                level, self.dataId)
 
-    def datasetExists(self, datasetType=None, **rest):
+    def datasetExists(self, datasetType=None, write=False, **rest):
         """
         Determine if a dataset exists of the given type (or the type used when
         creating the ButlerSubset, if None) as specified by the ButlerDataRef.
 
         @param datasetType (str) dataset type to check.
+        @param write (bool) if True, search only in output repositories
         @param **rest            keywords arguments with data identifiers
         @returns bool
         """
         if datasetType is None:
             datasetType = self.butlerSubset.datasetType
         return self.butlerSubset.butler.datasetExists(
-            datasetType, self.dataId, **rest)
+            datasetType, self.dataId, write=write, **rest)
 
     def getButler(self):
         """

@@ -1225,7 +1225,7 @@ class Butler(object):
 
         return tuples
 
-    def datasetExists(self, datasetType, dataId={}, **rest):
+    def datasetExists(self, datasetType, dataId={}, write=False, **rest):
         """Determines if a dataset file exists.
 
         Parameters
@@ -1234,6 +1234,9 @@ class Butler(object):
             The type of dataset to inquire about.
         dataId - DataId, dict
             The data id of the dataset.
+        write - bool
+            If True, look only in locations where the dataset could be written,
+            and return True only if it is present in all of them.
         **rest keyword arguments for the data id.
 
         Returns
@@ -1244,24 +1247,31 @@ class Butler(object):
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
-        location = self._locate(datasetType, dataId, write=False)
-        if location is None:
+        locations = self._locate(datasetType, dataId, write=write)
+        if not write:  # when write=False, locations is not a sequence
+            if locations is None:
+                return False
+            locations = [locations]
+
+        if not locations:  # empty list
             return False
 
-        # If the location is a ButlerComposite (as opposed to a ButlerLocation), verify the component objects
-        # exist.
-        if isinstance(location, ButlerComposite):
-            for name, componentInfo in location.componentInfo.items():
-                if componentInfo.subset:
-                    subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
-                    exists = all([obj.datasetExists() for obj in subset])
-                else:
-                    exists = self.datasetExists(componentInfo.datasetType, location.dataId)
-                if exists is False:
-                    break
-        else:
-            exists = location.repository.exists(location)
-        return exists
+        for location in locations:
+            # If the location is a ButlerComposite (as opposed to a ButlerLocation),
+            # verify the component objects exist.
+            if isinstance(location, ButlerComposite):
+                for name, componentInfo in location.componentInfo.items():
+                    if componentInfo.subset:
+                        subset = self.subset(datasetType=componentInfo.datasetType, dataId=location.dataId)
+                        exists = all([obj.datasetExists() for obj in subset])
+                    else:
+                        exists = self.datasetExists(componentInfo.datasetType, location.dataId)
+                    if exists is False:
+                        return False
+            else:
+                if not location.repository.exists(location):
+                    return False
+        return True
 
     def _locate(self, datasetType, dataId, write):
         """Get one or more ButlerLocations and/or ButlercComposites.
