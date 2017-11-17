@@ -238,8 +238,8 @@ class PosixRegistry(Registry):
             if 'incomplete' == lookupData.status():
                 PosixRegistry.lookupMetadata(os.path.join(self.root, path), template, lookupData, storage)
             if 'match' == lookupData.status():
-                l = tuple(lookupData.foundItems[key] for key in lookupData.lookupProperties)
-                retItems.append(l)
+                ll = tuple(lookupData.foundItems[key] for key in lookupData.lookupProperties)
+                retItems.append(ll)
         return retItems
 
     @staticmethod

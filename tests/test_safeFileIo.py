@@ -177,7 +177,7 @@ class TestOneThousandWriters(unittest.TestCase):
             allowedOpen = int(limit[0] * 0.8)
             if allowedOpen < numWriters:
                 numWriters = allowedOpen
-        except:
+        except Exception:
             # Use the default number if we had trouble obtaining resources
             pass
         startTime = time.time()
