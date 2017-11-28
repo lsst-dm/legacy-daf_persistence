@@ -33,6 +33,7 @@ class EmptyTestMapper(Mapper):
     """Class that can be used as a stub for a mapper."""
 
     def __init__(self, root=None, parentRegistry=None, repositoryCfg=None, **kwargs):
+        self.root = root
         self.kwargs = kwargs
         pass
 
