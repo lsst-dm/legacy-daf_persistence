@@ -1536,6 +1536,39 @@ class Butler(object):
                                (str(datasetType), str(level), str(dataId), str(rest)))
         return ButlerDataRef(subset, subset.cache[0])
 
+    def getUri(self, datasetType, dataId=None, write=False, **rest):
+        """Return the URI for a dataset
+
+        .. warning:: This is intended only for debugging. The URI should
+        never be used for anything other than printing.
+
+        .. note:: In the event there are multiple URIs, we return only
+        the first.
+
+        Parameters
+        ----------
+        datasetType : `str`
+           The dataset type of interest.
+        dataId : `dict`, optional
+           The data identifier.
+        write : `bool`, optional
+           Return the URI for writing?
+        rest : `dict`, optional
+           Keyword arguments for the data id.
+
+        Returns
+        -------
+        uri : `str`
+           URI for dataset.
+        """
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
+        dataId = DataId(dataId)
+        dataId.update(**rest)
+        location = self._locate(datasetType, dataId, write=write)
+        if location is None:
+            raise NoResults("No locations for getUri: ", datasetType, dataId)
+        return location.getLocationsWithRoot()[0]
+
     def _read(self, location):
         """Unpersist an object using data inside a ButlerLocation or ButlerComposite object.
 
