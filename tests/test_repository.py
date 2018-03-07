@@ -10,7 +10,7 @@
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your option) any later version.1n
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -171,6 +171,12 @@ class TestBasics(unittest.TestCase):
         raw_image = self.butler.get('raw', {'visit': '2', 'filter': 'g'})
         # in this case the width is known to be 1026:
         self.assertEqual(raw_image[1].header["NAXIS1"], 1026)
+
+    def testGetUri(self):
+        raw_uri = self.butler.getUri('raw', {'visit': '2', 'filter': 'g'})
+        self.assertEqual(raw_uri,
+                         os.path.join(ROOT, 'butlerAlias', 'data', 'input', 'raw', 'raw_v2_fg.fits.gz'))
+        self.assertEqual(os.path.isfile(raw_uri), True)
 
     def testSubset(self):
         subset = self.butler.subset('raw')
