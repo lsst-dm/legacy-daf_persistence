@@ -1542,7 +1542,7 @@ class Butler(object):
         .. warning:: This is intended only for debugging. The URI should
         never be used for anything other than printing.
 
-        .. note:: In the event there are multiple URIs, we return only
+        .. note:: In the event there are multiple URIs for read, we return only
         the first.
 
         Parameters
@@ -1564,10 +1564,26 @@ class Butler(object):
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
-        location = self._locate(datasetType, dataId, write=write)
-        if location is None:
+        locations = self._locate(datasetType, dataId, write=write)
+        if locations is None:
             raise NoResults("No locations for getUri: ", datasetType, dataId)
-        return location.getLocationsWithRoot()[0]
+
+        if write:
+            # Follow the write path
+            # Return the first valid write location.
+            for location in locations:
+                if isinstance(location, ButlerComposite):
+                    disassembler = location.disassembler if location.disassembler else genericDisassembler
+                    disassembler(obj=obj, dataId=location.dataId, componentInfo=location.componentInfo)
+                    for name, info in location.componentInfo.items():
+                        if not info.inputOnly:
+                            return self.getUri(info.datasetType, location.dataId, write=True)
+                else:
+                    return location.getLocationsWithRoot()[0]
+            return locs
+        else:
+            # Follow the read path, only return the first valid read
+            return location.getLocationsWithRoot()[0]
 
     def _read(self, location):
         """Unpersist an object using data inside a ButlerLocation or ButlerComposite object.
