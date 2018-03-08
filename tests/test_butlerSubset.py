@@ -144,6 +144,13 @@ class ButlerSubsetTestCase(unittest.TestCase):
             self.assertEqual(type(image), list)
             self.assertEqual(image, inputList)
 
+            # Tests for new getUri
+            imageUri = iterator.getUri(self.calexpTypeName)
+            fileName = 'calexp_v%(visit)d_R%(raft)s_S%(sensor)s.pickle' % iterator.dataId
+            self.assertEqual(imageUri, os.path.join(self.tmpRoot, fileName))
+            self.assertEqual(os.path.isfile(imageUri), True)
+
+
         for fileName in inputList:
             os.unlink(os.path.join(self.tmpRoot, fileName))
 
