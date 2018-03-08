@@ -1573,8 +1573,6 @@ class Butler(object):
             # Return the first valid write location.
             for location in locations:
                 if isinstance(location, ButlerComposite):
-                    disassembler = location.disassembler if location.disassembler else genericDisassembler
-                    disassembler(obj=obj, dataId=location.dataId, componentInfo=location.componentInfo)
                     for name, info in location.componentInfo.items():
                         if not info.inputOnly:
                             return self.getUri(info.datasetType, location.dataId, write=True)
