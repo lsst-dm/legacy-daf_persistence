@@ -1580,10 +1580,11 @@ class Butler(object):
                             return self.getUri(info.datasetType, location.dataId, write=True)
                 else:
                     return location.getLocationsWithRoot()[0]
-            return locs
+            # fall back to raise
+            raise NoResults("No locations for getUri(write=True): ", datasetType, dataId)
         else:
             # Follow the read path, only return the first valid read
-            return location.getLocationsWithRoot()[0]
+            return locations.getLocationsWithRoot()[0]
 
     def _read(self, location):
         """Unpersist an object using data inside a ButlerLocation or ButlerComposite object.
