@@ -150,7 +150,6 @@ class ButlerSubsetTestCase(unittest.TestCase):
             self.assertEqual(imageUri, os.path.join(self.tmpRoot, fileName))
             self.assertEqual(os.path.isfile(imageUri), True)
 
-
         for fileName in inputList:
             os.unlink(os.path.join(self.tmpRoot, fileName))
 
