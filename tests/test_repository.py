@@ -182,7 +182,7 @@ class TestBasics(unittest.TestCase):
         raw_uri = self.butler.getUri('src', {'visit': '9', 'filter': 'g'}, write=True)
         self.assertEqual(raw_uri,
                          os.path.join(self.testDir, 'repoA', 'raw', 'raw_v9_fg.fits'))
-        self.assertEqual(os.path.isfile(raw_uri, False)
+        self.assertEqual(os.path.isfile(raw_uri), False)
 
     def testSubset(self):
         subset = self.butler.subset('raw')
