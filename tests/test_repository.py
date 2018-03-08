@@ -179,7 +179,7 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(os.path.isfile(raw_uri), True)
 
     def testGetUriWrite(self):
-        raw_uri = self.butler.getUri('src', {'visit': '9', 'filter': 'g'}, write=True)
+        raw_uri = self.butler.getUri('raw', {'visit': '9', 'filter': 'g'}, write=True)
         self.assertEqual(raw_uri,
                          os.path.join(self.testDir, 'repoA', 'raw', 'raw_v9_fg.fits'))
         self.assertEqual(os.path.isfile(raw_uri), False)
