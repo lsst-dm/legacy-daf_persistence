@@ -1536,6 +1536,56 @@ class Butler(object):
                                (str(datasetType), str(level), str(dataId), str(rest)))
         return ButlerDataRef(subset, subset.cache[0])
 
+    def getUri(self, datasetType, dataId=None, write=False, **rest):
+        """Return the URI for a dataset
+
+        .. warning:: This is intended only for debugging. The URI should
+        never be used for anything other than printing.
+
+        .. note:: In the event there are multiple URIs for read, we return only
+        the first.
+
+        .. note:: getUri() does not currently support composite datasets.
+
+        Parameters
+        ----------
+        datasetType : `str`
+           The dataset type of interest.
+        dataId : `dict`, optional
+           The data identifier.
+        write : `bool`, optional
+           Return the URI for writing?
+        rest : `dict`, optional
+           Keyword arguments for the data id.
+
+        Returns
+        -------
+        uri : `str`
+           URI for dataset.
+        """
+        datasetType = self._resolveDatasetTypeAlias(datasetType)
+        dataId = DataId(dataId)
+        dataId.update(**rest)
+        locations = self._locate(datasetType, dataId, write=write)
+        if locations is None:
+            raise NoResults("No locations for getUri: ", datasetType, dataId)
+
+        if write:
+            # Follow the write path
+            # Return the first valid write location.
+            for location in locations:
+                if isinstance(location, ButlerComposite):
+                    for name, info in location.componentInfo.items():
+                        if not info.inputOnly:
+                            return self.getUri(info.datasetType, location.dataId, write=True)
+                else:
+                    return location.getLocationsWithRoot()[0]
+            # fall back to raise
+            raise NoResults("No locations for getUri(write=True): ", datasetType, dataId)
+        else:
+            # Follow the read path, only return the first valid read
+            return locations.getLocationsWithRoot()[0]
+
     def _read(self, location):
         """Unpersist an object using data inside a ButlerLocation or ButlerComposite object.
 

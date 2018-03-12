@@ -215,6 +215,36 @@ class ButlerDataRef(object):
             datasetType = self.butlerSubset.datasetType
         self.butlerSubset.butler.put(obj, datasetType, self.dataId, doBackup=doBackup, **rest)
 
+    def getUri(self, datasetType=None, write=False, **rest):
+        """Return the URL for a dataset
+
+        .. warning:: This is intended only for debugging. The URI should
+        never be used for anything other than printing.
+
+        .. note:: In the event there are multiple URIs, we return only
+        the first.
+
+        .. note:: getUri() does not currently support composite datasets.
+
+        Parameters
+        ----------
+        datasetType : `str`, optional
+           The dataset type of interest.
+        write : `bool`, optional
+           Return the URI for writing?
+        rest : `dict`, optional
+           Keyword arguments for the data id.
+
+        Returns
+        -------
+        uri : `str`
+           URI for dataset
+        """
+
+        if datasetType is None:
+            datasetType = self.butlerSubset.datasetType
+        return self.butlerSubset.butler.getUri(datasetType, self.dataId, write=write, **rest)
+
     def subLevels(self):
         """
         Return a list of the lower levels of the hierarchy than this
