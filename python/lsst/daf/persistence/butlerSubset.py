@@ -224,6 +224,8 @@ class ButlerDataRef(object):
         .. note:: In the event there are multiple URIs, we return only
         the first.
 
+        .. note:: getUri() does not currently support composite datasets.
+
         Parameters
         ----------
         datasetType : `str`, optional
