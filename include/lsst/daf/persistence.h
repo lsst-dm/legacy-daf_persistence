@@ -37,7 +37,6 @@
 
 #include <lsst/daf/persistence/BoostStorage.h>
 #include <lsst/daf/persistence/DbAuth.h>
-#include <lsst/daf/persistence/DbTsvStorage.h>
 #include <lsst/daf/persistence/FitsStorage.h>
 #include <lsst/daf/persistence/Formatter.h>
 #include <lsst/daf/persistence/FormatterImpl.h>
