@@ -31,7 +31,6 @@
 #include <sys/time.h>
 #include "lsst/daf/base/PropertySet.h"
 #include "lsst/daf/persistence/BoostStorage.h"
-#include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/Formatter.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 #include "lsst/daf/persistence/Persistence.h"

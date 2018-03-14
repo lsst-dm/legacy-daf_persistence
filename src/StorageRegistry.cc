@@ -49,8 +49,6 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 // All FormatterStorage subclasses must be included here.
 
 #include "lsst/daf/persistence/BoostStorage.h"
-#include "lsst/daf/persistence/DbStorage.h"
-#include "lsst/daf/persistence/DbTsvStorage.h"
 #include "lsst/daf/persistence/FitsStorage.h"
 #include "lsst/daf/persistence/XmlStorage.h"
 
@@ -80,12 +78,6 @@ StorageRegistry::~StorageRegistry(void) {
 FormatterStorage::Ptr StorageRegistry::createInstance(std::string const& name) {
     if (name == "BoostStorage") {
         return FormatterStorage::Ptr(new BoostStorage);
-    }
-    else if (name == "DbStorage") {
-        return FormatterStorage::Ptr(new DbStorage);
-    }
-    else if (name == "DbTsvStorage") {
-        return FormatterStorage::Ptr(new DbTsvStorage);
     }
     else if (name == "FitsStorage") {
         return FormatterStorage::Ptr(new FitsStorage);
