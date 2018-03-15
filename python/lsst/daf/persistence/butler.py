@@ -1358,7 +1358,9 @@ class Butler(object):
                             bypass = bypass()
                             location.bypass = bypass
                         except (NoResults, IOError):
-                            pass
+                            self.log.info("NoResults or IOError (continuing search) while evaluating "
+                                          "bypass function for Dataset type:{} Data ID:{} at "
+                                          "location {}".format(datasetType, dataId, location))
                     # If a location was found but the location does not exist, keep looking in input
                     # repositories (the registry may have had enough data for a lookup even thought the object
                     # exists in a different repository.)
