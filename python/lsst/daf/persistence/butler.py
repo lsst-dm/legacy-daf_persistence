@@ -1350,15 +1350,17 @@ class Butler(object):
                     # exists in storage, because the bypass function may not actually use the location
                     # according to the template. Instead, execute the bypass function and include its results
                     # in the bypass attribute of the location. The bypass function may fail for any reason,
-                    # the most common case being that a file does not exist. If it raises an exception we
-                    # ignore its existance and proceed as though it does not exist.
+                    # the most common case being that a file does not exist. If it raises an exception
+                    # indicating such, we ignore the bypass function and proceed as though it does not exist.
                     if hasattr(location.mapper, "bypass_" + location.datasetType):
                         bypass = self._getBypassFunc(location, dataId)
                         try:
                             bypass = bypass()
                             location.bypass = bypass
-                        except Exception:
-                            pass
+                        except (NoResults, IOError):
+                            self.log.info("NoResults or IOError (continuing search) while evaluating "
+                                          "bypass function for Dataset type:{} Data ID:{} at "
+                                          "location {}".format(datasetType, dataId, location))
                     # If a location was found but the location does not exist, keep looking in input
                     # repositories (the registry may have had enough data for a lookup even thought the object
                     # exists in a different repository.)
