@@ -56,7 +56,6 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 #include "lsst/daf/persistence/FormatterImpl.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
 #include "lsst/daf/persistence/BoostStorage.h"
-#include "lsst/daf/persistence/DbStorage.h"
 #include "lsst/daf/persistence/XmlStorage.h"
 #include <lsst/pex/exceptions.h>
 #include <lsst/log/Log.h>
@@ -116,96 +115,6 @@ void dafPersist::PropertySetFormatter::write(
         dafPersist::XmlStorage* xml =
             dynamic_cast<dafPersist::XmlStorage*>(storage.get());
         xml->getOArchive() & make_nvp("propertySet", *ps);
-        LOGLS_TRACE(_log, "PropertySetFormatter write end");
-        return;
-    }
-    else if (typeid(*storage) == typeid(dafPersist::DbStorage)) {
-        LOGLS_TRACE(_log, "PropertySetFormatter write DbStorage");
-        dafPersist::DbStorage* db =
-            dynamic_cast<dafPersist::DbStorage*>(storage.get());
-
-        std::string itemName = additionalData->getAsString("itemName");
-        std::string tableName = itemName;
-        pexPolicy::Policy::Ptr itemPolicy;
-        if (_policy && _policy->exists(itemName)) {
-            itemPolicy = _policy->getPolicy(itemName);
-            if (itemPolicy->exists("TableName")) {
-                tableName = itemPolicy->getString("TableName");
-            }
-        }
-        db->setTableForInsert(tableName);
-
-        std::vector<std::string> list;
-        if (itemPolicy && itemPolicy->exists("KeyList")) {
-            pexPolicy::Policy::StringArray const& array(
-                itemPolicy->getStringArray("KeyList"));
-            for (pexPolicy::Policy::StringArray::const_iterator it =
-                 array.begin(); it != array.end(); ++it) {
-                list.push_back(*it);
-            }
-        }
-        else {
-            list = ps->paramNames(false);
-        }
-
-        for (std::vector<std::string>::const_iterator it = list.begin();
-             it != list.end(); ++it) {
-            std::string::size_type split = it->find('=');
-            std::string colName;
-            std::string key;
-            if (split == std::string::npos) {
-                colName = key = *it;
-            }
-            else {
-                colName = it->substr(0, split);
-                key = it->substr(split + 1);
-            }
-
-            if (!ps->exists(key)) {
-                db->setColumnToNull(colName);
-                continue;
-            }
-
-            std::type_info const& type(ps->typeOf(key));
-
-            if (type == typeid(bool)) {
-                db->setColumn<bool>(colName, ps->get<bool>(key));
-            }
-            else if (type == typeid(char)) {
-                db->setColumn<char>(colName, ps->get<char>(key));
-            }
-            else if (type == typeid(short)) {
-                db->setColumn<short>(colName, ps->get<short>(key));
-            }
-            else if (type == typeid(int)) {
-                db->setColumn<int>(colName, ps->get<int>(key));
-            }
-            else if (type == typeid(long)) {
-                db->setColumn<long>(colName, ps->get<long>(key));
-            }
-            else if (type == typeid(long long)) {
-                db->setColumn<long long>(colName, ps->get<long long>(key));
-            }
-            else if (type == typeid(float)) {
-                db->setColumn<float>(colName, ps->get<float>(key));
-            }
-            else if (type == typeid(double)) {
-                db->setColumn<double>(colName, ps->get<double>(key));
-            }
-            else if (type == typeid(std::string)) {
-                db->setColumn<std::string>(colName, ps->get<std::string>(key));
-            }
-            else if (type == typeid(dafBase::DateTime)) {
-                db->setColumn<dafBase::DateTime>(
-                    colName, ps->get<dafBase::DateTime>(key));
-            }
-            else {
-                throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
-                    std::string("Unknown type ") + type.name() +
-                    " in PropertySetFormatter write");
-            }
-        }
-        db->insertRow();
         LOGLS_TRACE(_log, "PropertySetFormatter write end");
         return;
     }
