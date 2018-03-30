@@ -291,7 +291,8 @@ class PosixStorage(StorageInterface):
         """Implementaion of PosixStorage.exists for ButlerLocation objects."""
         storageName = location.getStorageName()
         if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                               'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
+                               'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage',
+                               'ParquetStorage'):
             self.log.warn("butlerLocationExists for non-supported storage %s" % location)
             return False
         for locationString in location.getLocations():
