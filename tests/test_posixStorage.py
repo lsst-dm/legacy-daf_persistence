@@ -112,17 +112,21 @@ class TestRelativePath(unittest.TestCase):
 
         os.symlink(abspathA, absSymlinkPathA)
         os.symlink(abspathB, absSymlinkPathB)
-        # 1.
-        relpathA = os.path.relpath(abspathA)
-        relpathB = os.path.relpath(abspathB)
-        relpathAtoB = dp.PosixStorage.relativePath(relpathA, relpathB)
-        self.assertEqual('../b', relpathAtoB)
-        # 2.
-        relpathAtoB = dp.PosixStorage.relativePath(abspathA, abspathB)
-        self.assertEqual('../b', relpathAtoB)
+        # 1. Symlink->Abs
+        relpathSymlinkAtoB = dp.PosixStorage.relativePath(absSymlinkPathA, abspathB)
+        self.assertEqual('../b', relpathSymlinkAtoB)
 
+        # 2. Symlink->Abs
+        relpathSymlinkBtoA = dp.PosixStorage.relativePath(absSymlinkPathB, abspathA)
+        self.assertEqual('../a', relpathSymlinkBtoA)
+
+        # 3. Symlink->Symlink
         relpathSymlinkAtoB = dp.PosixStorage.relativePath(absSymlinkPathA, absSymlinkPathB)
         self.assertEqual('../b', relpathSymlinkAtoB)
+
+        # 4. Symlink->Symlink
+        relpathSymlinkBtoA = dp.PosixStorage.relativePath(absSymlinkPathB, absSymlinkPathA)
+        self.assertEqual('../a', relpathSymlinkBtoA)
 
 
 class TestAbsolutePath(unittest.TestCase):
