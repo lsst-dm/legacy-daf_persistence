@@ -96,7 +96,7 @@ class TestRelativePath(unittest.TestCase):
     @unittest.expectedFailure
     def testRelativeSymlinkPath(self):
         """Test that a relative path returns the correct relative path for
-        1. relative inputs, 2. absolute inputs."""
+        a repo directory with symlinks."""
         repoDir = os.path.join(self.testDir, 'repo')
         symlinkDir = os.path.join(self.testDir, 'symlink')
 
