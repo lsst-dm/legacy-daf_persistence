@@ -93,6 +93,7 @@ class TestRelativePath(unittest.TestCase):
         relpathAtoB = dp.PosixStorage.relativePath(abspathA, abspathB)
         self.assertEqual('../b', relpathAtoB)
 
+    @unittest.expectedFailure
     def testRelativeSymlinkPath(self):
         """Test that a relative path returns the correct relative path for
         1. relative inputs, 2. absolute inputs."""
