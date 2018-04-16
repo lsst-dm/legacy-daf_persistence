@@ -93,6 +93,36 @@ class TestRelativePath(unittest.TestCase):
         relpathAtoB = dp.PosixStorage.relativePath(abspathA, abspathB)
         self.assertEqual('../b', relpathAtoB)
 
+    def testRelativeSymlinkPath(self):
+        """Test that a relative path returns the correct relative path for
+        1. relative inputs, 2. absolute inputs."""
+        repoDir = os.path.join(self.testDir, 'repo')
+        symlinkDir = os.path.join(self.testDir, 'symlink')
+
+        abspathA = os.path.join(repoDir, 'a')
+        abspathB = os.path.join(repoDir, 'b')
+        absSymlinkPathA = os.path.join(symlinkDir, 'a')
+        absSymlinkPathB = os.path.join(symlinkDir, 'b')
+
+        os.makedirs(repoDir)
+        os.makedirs(symlinkDir)
+        os.makedirs(abspathA)
+        os.makedirs(abspathB)
+
+        os.symlink(abspathA, absSymlinkPathA)
+        os.symlink(abspathB, absSymlinkPathB)
+        # 1.
+        relpathA = os.path.relpath(abspathA)
+        relpathB = os.path.relpath(abspathB)
+        relpathAtoB = dp.PosixStorage.relativePath(relpathA, relpathB)
+        self.assertEqual('../b', relpathAtoB)
+        # 2.
+        relpathAtoB = dp.PosixStorage.relativePath(abspathA, abspathB)
+        self.assertEqual('../b', relpathAtoB)
+
+        relpathSymlinkAtoB = dp.PosixStorage.relativePath(absSymlinkPathA, absSymlinkPathB)
+        self.assertEqual('../b', relpathSymlinkAtoB)
+
 
 class TestAbsolutePath(unittest.TestCase):
     """A test case for the PosixStorage.absolutePath function."""
