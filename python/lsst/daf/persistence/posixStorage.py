@@ -288,10 +288,12 @@ class PosixStorage(StorageInterface):
         raise(RuntimeError("No formatter for location:{}".format(butlerLocation)))
 
     def butlerLocationExists(self, location):
-        """Implementaion of PosixStorage.exists for ButlerLocation objects."""
+        """Implementation of PosixStorage.exists for ButlerLocation objects.
+        """
         storageName = location.getStorageName()
         if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
-                               'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage'):
+                               'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage',
+                               'ParquetStorage'):
             self.log.warn("butlerLocationExists for non-supported storage %s" % location)
             return False
         for locationString in location.getLocations():
@@ -610,6 +612,68 @@ def writeFitsStorage(butlerLocation, obj):
             persistence.persist(obj, storageList, butlerLocation.getAdditionalData())
 
 
+def readParquetStorage(butlerLocation):
+    """Read from a butlerLocation.
+
+    The object returned by this is expected to be a subtype
+    of `ParquetTable`, which is a thin wrapper to `pyarrow.ParquetFile`
+    that allows for lazy loading of the data.  
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    results = []
+    additionalData = butlerLocation.getAdditionalData()
+
+    for locationString in butlerLocation.getLocations():
+        locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
+        logLoc = LogicalLocation(locStringWithRoot, additionalData)
+        if not os.path.exists(logLoc.locString()):
+            raise RuntimeError("No such parquet file: " + logLoc.locString())
+
+        pythonType = butlerLocation.getPythonType()
+        if pythonType is not None:
+            if isinstance(pythonType, basestring):
+                pythonType = doImport(pythonType)
+
+        filename = logLoc.locString()
+
+        # pythonType will be ParquetTable (or perhaps MultilevelParquetTable)
+        #  filename should be the first kwarg, but being explicit here.
+        results.append(pythonType(filename=filename))
+
+    if len(results) > 1:
+        Log.getLogger("daf.persistence.butler").warning('Not using multiple locations!')
+
+    return results[0]
+
+
+def writeParquetStorage(butlerLocation, obj):
+    """Writes pandas dataframe to parquet file
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+    obj : `lsst.qa.explorer.parquetTable.ParquetTable`
+        Wrapped DataFrame to write.
+
+    """
+    additionalData = butlerLocation.getAdditionalData()
+    locations = butlerLocation.getLocations()
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        filename = logLoc.locString()
+        obj.write(filename)
+
+
 def readPickleStorage(butlerLocation):
     """Read from a butlerLocation.
 
@@ -796,6 +860,7 @@ def writeBoostStorage(butlerLocation, obj):
 
 
 PosixStorage.registerFormatters("FitsStorage", readFitsStorage, writeFitsStorage)
+PosixStorage.registerFormatters("ParquetStorage", readParquetStorage, writeParquetStorage)
 PosixStorage.registerFormatters("ConfigStorage", readConfigStorage, writeConfigStorage)
 PosixStorage.registerFormatters("PickleStorage", readPickleStorage, writePickleStorage)
 PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, writeFitsCatalogStorage)
