@@ -288,7 +288,7 @@ class PosixStorage(StorageInterface):
         raise(RuntimeError("No formatter for location:{}".format(butlerLocation)))
 
     def butlerLocationExists(self, location):
-        """Implementaion of PosixStorage.exists for ButlerLocation objects.
+        """Implementation of PosixStorage.exists for ButlerLocation objects.
         """
         storageName = location.getStorageName()
         if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
@@ -617,9 +617,7 @@ def readParquetStorage(butlerLocation):
 
     The object returned by this is expected to be a subtype
     of `ParquetTable`, which is a thin wrapper to `pyarrow.ParquetFile`
-    that allows for lazy loading of the data.  This is notably
-    a different object from what gets passed to the butler `put` function,
-    which should be a `pandas.DataFrame`.
+    that allows for lazy loading of the data.  
 
     Parameters
     ----------
@@ -650,22 +648,22 @@ def readParquetStorage(butlerLocation):
         # pythonType will be ParquetTable (or perhaps MultilevelParquetTable)
         #  filename should be the first kwarg, but being explicit here.
         results.append(pythonType(filename=filename))
-    return results
+
+    if len(results) > 1:
+        Log.getLogger("daf.persistence.butler").warning('Not using multiple locations!')
+
+    return results[0]
 
 
 def writeParquetStorage(butlerLocation, obj):
     """Writes pandas dataframe to parquet file
 
-    Note, this takes a `pandas.DataFrame` to write, whereas
-    `readParquetStorage` returns a wrapper to `pyarrow.ParquetFile`
-    that allows for lazy loading of the on-disk data.
-
     Parameters
     ----------
     butlerLocation : ButlerLocation
         The location & formatting for the object(s) to be read.
-    obj : `pandas.DataFrame`
-        DataFrame to write.
+    obj : `lsst.qa.explorer.parquetTable.ParquetTable`
+        Wrapped DataFrame to write.
 
     """
     additionalData = butlerLocation.getAdditionalData()
