@@ -617,8 +617,8 @@ def readParquetStorage(butlerLocation):
 
     The object returned by this is expected to be a subtype
     of `ParquetTable`, which is a thin wrapper to `pyarrow.ParquetFile`
-    that allows for lazy loading of the data.  This is notably 
-    a different object from what gets passed to the butler `put` function, 
+    that allows for lazy loading of the data.  This is notably
+    a different object from what gets passed to the butler `put` function,
     which should be a `pandas.DataFrame`.
 
     Parameters
