@@ -652,7 +652,7 @@ def readParquetStorage(butlerLocation):
     if len(results) > 1:
         Log.getLogger("daf.persistence.butler").warning('Not using multiple locations!')
 
-    return results[0]
+    return results
 
 
 def writeParquetStorage(butlerLocation, obj):
