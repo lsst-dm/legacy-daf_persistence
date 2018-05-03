@@ -649,10 +649,7 @@ def readParquetStorage(butlerLocation):
         #  filename should be the first kwarg, but being explicit here.
         results.append(pythonType(filename=filename))
 
-    if len(results) > 1:
-        Log.getLogger("daf.persistence.butler").warning('Not using multiple locations!')
-
-    return results[0]
+    return results
 
 
 def writeParquetStorage(butlerLocation, obj):
