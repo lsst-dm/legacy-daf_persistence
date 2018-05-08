@@ -293,7 +293,7 @@ class PosixStorage(StorageInterface):
         storageName = location.getStorageName()
         if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
                                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage',
-                               'ParquetStorage'):
+                               'ParquetStorage', 'MatplotlibStorage'):
             self.log.warn("butlerLocationExists for non-supported storage %s" % location)
             return False
         for locationString in location.getLocations():
@@ -780,6 +780,51 @@ def writeFitsCatalogStorage(butlerLocation, obj):
         return
 
 
+def readMatplotlibStorage(butlerLocation):
+    """Read from a butlerLocation (always fails for this storage type).
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    raise NotImplementedError("Figures saved with MatplotlibStorage cannot be retreived using the Butler.")
+
+
+def writeMatplotlibStorage(butlerLocation, obj):
+    """Writes a matplotlib.figure.Figure to a location, using the template's
+    filename suffix to infer the file format.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object to be written.
+    obj : matplotlib.figure.Figure
+        The object to be written.
+    """
+    additionalData = butlerLocation.getAdditionalData()
+    locations = butlerLocation.getLocations()
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        # SafeFilename appends a random suffix, which corrupts the extension
+        # matplotlib uses to guess the file format.
+        # Instead, we extract the extension from the original location
+        # and pass that as the format directly.
+        _, ext = os.path.splitext(locations[0])
+        if ext:
+            ext = ext[1:]  # strip off leading '.'
+        else:
+            # If there is no extension, we let matplotlib fall back to its
+            # default.
+            ext = None
+        obj.savefig(logLoc.locString(), format=ext)
+
+
 def readPafStorage(butlerLocation):
     """Read from a butlerLocation.
 
@@ -861,6 +906,7 @@ PosixStorage.registerFormatters("ParquetStorage", readParquetStorage, writeParqu
 PosixStorage.registerFormatters("ConfigStorage", readConfigStorage, writeConfigStorage)
 PosixStorage.registerFormatters("PickleStorage", readPickleStorage, writePickleStorage)
 PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, writeFitsCatalogStorage)
+PosixStorage.registerFormatters("MatplotlibStorage", readMatplotlibStorage, writeMatplotlibStorage)
 PosixStorage.registerFormatters("PafStorage", writeFormatter=readPafStorage)
 PosixStorage.registerFormatters("YamlStorage", readFormatter=readYamlStorage)
 PosixStorage.registerFormatters("BoostStorage", readFitsStorage, writeFitsStorage)
