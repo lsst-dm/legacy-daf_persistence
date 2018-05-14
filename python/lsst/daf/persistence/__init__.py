@@ -53,5 +53,6 @@ from .repositoryMapper import *
 from .repository import *
 from .butler import *
 from .butlerFactory import *
+from .butlerHelpers import *
 from .version import *
 
