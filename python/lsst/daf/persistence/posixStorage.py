@@ -29,6 +29,7 @@ import os
 import urllib.parse
 import glob
 import shutil
+import yaml
 
 from . import (LogicalLocation, Persistence, Policy, StorageList,
                StorageInterface, Storage, ButlerLocation,
@@ -36,6 +37,7 @@ from . import (LogicalLocation, Persistence, Policy, StorageList,
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
+from . import baseYaml  # noqa F401
 
 
 __all__ = ["PosixStorage"]
@@ -293,7 +295,7 @@ class PosixStorage(StorageInterface):
         storageName = location.getStorageName()
         if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
                                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage',
-                               'ParquetStorage', 'MatplotlibStorage'):
+                               'YamlStorage', 'ParquetStorage', 'MatplotlibStorage'):
             self.log.warn("butlerLocationExists for non-supported storage %s" % location)
             return False
         for locationString in location.getLocations():
@@ -671,6 +673,25 @@ def writeParquetStorage(butlerLocation, obj):
         obj.write(filename)
 
 
+def writeYamlStorage(butlerLocation, obj):
+    """Writes an object to a location and persistence format specified by
+    ButlerLocation
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location & formatting for the object to be written.
+    obj : object instance
+        The object to be written.
+    """
+    additionalData = butlerLocation.getAdditionalData()
+    locations = butlerLocation.getLocations()
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        with open(logLoc.locString(), "w") as outfile:
+            yaml.dump(obj, outfile)
+
+
 def readPickleStorage(butlerLocation):
     """Read from a butlerLocation.
 
@@ -863,7 +884,13 @@ def readYamlStorage(butlerLocation):
     for locationString in butlerLocation.getLocations():
         logLoc = LogicalLocation(butlerLocation.getStorage().locationWithRoot(locationString),
                                  butlerLocation.getAdditionalData())
-        finalItem = Policy(filePath=logLoc.locString())
+        if not os.path.exists(logLoc.locString()):
+            raise RuntimeError("No such YAML file: " + logLoc.locString())
+        if butlerLocation.pythonType == 'lsst.daf.persistence.RepositoryCfg':
+            finalItem = Policy(filePath=logLoc.locString())
+        else:
+            with open(logLoc.locString(), "rb") as infile:
+                finalItem = yaml.load(infile)
         results.append(finalItem)
     return results
 
@@ -907,7 +934,7 @@ PosixStorage.registerFormatters("PickleStorage", readPickleStorage, writePickleS
 PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, writeFitsCatalogStorage)
 PosixStorage.registerFormatters("MatplotlibStorage", readMatplotlibStorage, writeMatplotlibStorage)
 PosixStorage.registerFormatters("PafStorage", writeFormatter=readPafStorage)
-PosixStorage.registerFormatters("YamlStorage", readFormatter=readYamlStorage)
+PosixStorage.registerFormatters("YamlStorage", readFormatter=readYamlStorage, writeFormatter=writeYamlStorage)
 PosixStorage.registerFormatters("BoostStorage", readFitsStorage, writeFitsStorage)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
