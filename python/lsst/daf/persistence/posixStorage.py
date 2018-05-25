@@ -933,7 +933,7 @@ PosixStorage.registerFormatters("ConfigStorage", readConfigStorage, writeConfigS
 PosixStorage.registerFormatters("PickleStorage", readPickleStorage, writePickleStorage)
 PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, writeFitsCatalogStorage)
 PosixStorage.registerFormatters("MatplotlibStorage", readMatplotlibStorage, writeMatplotlibStorage)
-PosixStorage.registerFormatters("PafStorage", writeFormatter=readPafStorage)
+PosixStorage.registerFormatters("PafStorage", readFormatter=readPafStorage)
 PosixStorage.registerFormatters("YamlStorage", readFormatter=readYamlStorage, writeFormatter=writeYamlStorage)
 PosixStorage.registerFormatters("BoostStorage", readFitsStorage, writeFitsStorage)
 
