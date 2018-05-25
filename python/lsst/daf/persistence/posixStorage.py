@@ -777,7 +777,6 @@ def writeFitsCatalogStorage(butlerLocation, obj):
         else:
             kwds = {}
         obj.writeFits(logLoc.locString(), **kwds)
-        return
 
 
 def readMatplotlibStorage(butlerLocation):
