@@ -25,6 +25,7 @@ import yaml
 
 import lsst.daf.base
 
+
 # YAML representers for key lsst.daf.base classes
 
 
@@ -40,11 +41,9 @@ yaml.add_representer(lsst.daf.base.DateTime, dt_representer)
 
 def pl_representer(dumper, data):
     """Represent an lsst.daf.base.PropertyList as an ordered sequence of
-    name/value/comment triples)"""
-    pairList = []
-    for name in data.getOrderedNames():
-        pairList.append([name, data.get(name), data.getComment(name)])
-    return dumper.represent_sequence(u'lsst.daf.base.PropertyList', pairList,
+    name/type/value/comment tuples)"""
+    result = lsst.daf.base.getstate(data)
+    return dumper.represent_sequence(u'lsst.daf.base.PropertyList', result,
                                      flow_style=None)
 
 
@@ -53,12 +52,10 @@ yaml.add_representer(lsst.daf.base.PropertyList, pl_representer)
 
 def ps_representer(dumper, data):
     """Represent an lsst.daf.base.PropertySet as a mapping from names to
-    values."""
-    result = {}
-    for name in data.names(True):
-        result[name] = data.get(name)
-    return dumper.represent_mapping(u'lsst.daf.base.PropertySet', result,
-                                    flow_style=None)
+    type/value pairs."""
+    result = lsst.daf.base.getstate(data)
+    return dumper.represent_sequence(u'lsst.daf.base.PropertySet', result,
+                                     flow_style=None)
 
 
 yaml.add_representer(lsst.daf.base.PropertySet, ps_representer)
@@ -79,26 +76,22 @@ yaml.add_constructor(u'lsst.daf.base.DateTime', dt_constructor)
 
 
 def pl_constructor(loader, node):
-    """Construct an lsst.daf.base.PropertyList from a sequence of
-    name/value/comment triples."""
+    """Construct an lsst.daf.base.PropertyList from a pickle-state."""
     pl = lsst.daf.base.PropertyList()
     yield pl
-    pairList = loader.construct_sequence(node, deep=True)
-    for (name, value, comment) in pairList:
-        pl.set(name, value, comment)
+    state = loader.construct_sequence(node, deep=True)
+    lsst.daf.base.setstate(pl, state)
 
 
 yaml.add_constructor(u'lsst.daf.base.PropertyList', pl_constructor)
 
 
 def ps_constructor(loader, node):
-    """Construct an lsst.daf.base.PropertyList from a mapping from names to
-    values."""
+    """Construct an lsst.daf.base.PropertyList from a pickle-state."""
     ps = lsst.daf.base.PropertySet()
     yield ps
-    d = loader.construct_mapping(node, deep=True)
-    for name, value in d.items():
-        ps.set(name, value)
+    state = loader.construct_sequence(node, deep=True)
+    lsst.daf.base.setstate(ps, state)
 
 
 yaml.add_constructor(u'lsst.daf.base.PropertySet', ps_constructor)

@@ -66,11 +66,18 @@ class ButlerYamlTestCase(unittest.TestCase):
         pset.set("e", 2.71828)
         pset.set("f.a", [1, 2, 3])
         pset.set("f.b", 201805241715)
+        pset.setBool("bool0", False)
+        pset.setBool("bool1", True)
+        pset.setShort("short1", 32767)
+        pset.setShort("short2", -32768)
+        pset.setFloat("float1", 9.8765)
+        pset.setFloat("float2", -1.234)
         self.butler.put(pset, self.localTypeName, ccd=3)
         y = self.butler.get(self.localTypeName, ccd=3, immediate=True)
         self.assertEqual(set(pset.names(False)), set(y.names(False)))
         for i in pset.paramNames(False):
             self.assertEqual(pset.get(i), y.get(i))
+            self.assertEqual(pset.typeOf(i), y.typeOf(i))
 
     def testPropertyList(self):
         plist = dafBase.PropertyList()
@@ -78,11 +85,20 @@ class ButlerYamlTestCase(unittest.TestCase):
         plist.set("bar", dafBase.DateTime.now())
         plist.set("baz", ['a', 'b', 'c'])
         plist.set("e", 2.71828)
+        plist.set("f.a", [1, 2, 3])
+        plist.set("f.b", 201805241715)
+        plist.setBool("bool0", False)
+        plist.setBool("bool1", True)
+        plist.setShort("short1", 32767)
+        plist.setShort("short2", -32768)
+        plist.setFloat("float1", 9.8765)
+        plist.setFloat("float2", -1.234)
         self.butler.put(plist, self.localTypeName, ccd=3)
         y = self.butler.get(self.localTypeName, ccd=3, immediate=True)
         self.assertEqual(plist.names(False), y.names(False))
         for i in plist.names(False):
             self.assertEqual(plist.get(i), y.get(i))
+            self.assertEqual(plist.typeOf(i), y.typeOf(i))
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
