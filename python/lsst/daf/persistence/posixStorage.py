@@ -37,6 +37,7 @@ from . import (LogicalLocation, Persistence, Policy, StorageList,
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
+# Make YAML representers for daf_base classes available
 from . import baseYaml  # noqa F401
 
 
@@ -886,6 +887,7 @@ def readYamlStorage(butlerLocation):
                                  butlerLocation.getAdditionalData())
         if not os.path.exists(logLoc.locString()):
             raise RuntimeError("No such YAML file: " + logLoc.locString())
+        # Butler Gen2 repository configurations are handled specially
         if butlerLocation.pythonType == 'lsst.daf.persistence.RepositoryCfg':
             finalItem = Policy(filePath=logLoc.locString())
         else:
