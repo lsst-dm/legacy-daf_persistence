@@ -30,10 +30,10 @@ import lsst.daf.base
 
 
 def dt_representer(dumper, data):
-    """Represent an lsst.daf.base.DateTime (as ISO8601-formatted string in UTC)
+    """Represent an lsst.daf.base.DateTime (as ISO8601-formatted string in TAI)
     """
     return dumper.represent_scalar(u'lsst.daf.base.DateTime',
-                                   data.toString(lsst.daf.base.DateTime.UTC))
+                                   data.toString(lsst.daf.base.DateTime.TAI))
 
 
 yaml.add_representer(lsst.daf.base.DateTime, dt_representer)
@@ -67,9 +67,9 @@ yaml.add_representer(lsst.daf.base.PropertySet, ps_representer)
 
 def dt_constructor(loader, node):
     """Construct an lsst.daf.base.DateTime from an ISO8601-formatted string in
-    UTC"""
+    TAI"""
     dt = loader.construct_scalar(node)
-    return lsst.daf.base.DateTime(str(dt), lsst.daf.base.DateTime.UTC)
+    return lsst.daf.base.DateTime(str(dt), lsst.daf.base.DateTime.TAI)
 
 
 yaml.add_constructor(u'lsst.daf.base.DateTime', dt_constructor)
