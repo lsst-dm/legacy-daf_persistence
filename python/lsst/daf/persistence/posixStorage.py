@@ -517,12 +517,12 @@ class PosixStorage(StorageInterface):
 
 
 def readConfigStorage(butlerLocation):
-    """Read from a butlerLocation.
+    """Read an lsst.pex.config.Config from a butlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -546,13 +546,13 @@ def readConfigStorage(butlerLocation):
 
 
 def writeConfigStorage(butlerLocation, obj):
-    """Writes an object to a location and persistence format specified by
-    ButlerLocation
+    """Writes an lsst.pex.config.Config  object to a location specified by
+    ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object to be written.
+        The location for the object to be written.
     obj : object instance
         The object to be written.
     """
@@ -563,12 +563,12 @@ def writeConfigStorage(butlerLocation, obj):
 
 
 def readFitsStorage(butlerLocation):
-    """Read from a butlerLocation.
+    """Read a FITS image from a butlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -590,13 +590,12 @@ def readFitsStorage(butlerLocation):
 
 
 def writeFitsStorage(butlerLocation, obj):
-    """Writes an object to a location and persistence format specified by
-    ButlerLocation
+    """Writes an object to a FITS file specified by ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object to be written.
+        The location for the object to be written.
     obj : object instance
         The object to be written.
     """
@@ -616,7 +615,7 @@ def writeFitsStorage(butlerLocation, obj):
 
 
 def readParquetStorage(butlerLocation):
-    """Read from a butlerLocation.
+    """Read a catalog from a Parquet file specified by ButlerLocation.
 
     The object returned by this is expected to be a subtype
     of `ParquetTable`, which is a thin wrapper to `pyarrow.ParquetFile`
@@ -625,7 +624,7 @@ def readParquetStorage(butlerLocation):
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -656,12 +655,12 @@ def readParquetStorage(butlerLocation):
 
 
 def writeParquetStorage(butlerLocation, obj):
-    """Writes pandas dataframe to parquet file
+    """Writes pandas dataframe to parquet file.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
     obj : `lsst.qa.explorer.parquetTable.ParquetTable`
         Wrapped DataFrame to write.
 
@@ -675,13 +674,12 @@ def writeParquetStorage(butlerLocation, obj):
 
 
 def writeYamlStorage(butlerLocation, obj):
-    """Writes an object to a location and persistence format specified by
-    ButlerLocation
+    """Writes an object to a YAML file specified by ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object to be written.
+        The location for the object to be written.
     obj : object instance
         The object to be written.
     """
@@ -694,12 +692,12 @@ def writeYamlStorage(butlerLocation, obj):
 
 
 def readPickleStorage(butlerLocation):
-    """Read from a butlerLocation.
+    """Read an object from a pickle file specified by ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -727,13 +725,12 @@ def readPickleStorage(butlerLocation):
 
 
 def writePickleStorage(butlerLocation, obj):
-    """Writes an object to a location and persistence format specified by
-    ButlerLocation
+    """Writes an object to a pickle file specified by ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object to be written.
+        The location for the object to be written.
     obj : object instance
         The object to be written.
     """
@@ -746,12 +743,12 @@ def writePickleStorage(butlerLocation, obj):
 
 
 def readFitsCatalogStorage(butlerLocation):
-    """Read from a butlerLocation.
+    """Read a catalog from a FITS table specified by ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -780,13 +777,12 @@ def readFitsCatalogStorage(butlerLocation):
 
 
 def writeFitsCatalogStorage(butlerLocation, obj):
-    """Writes an object to a location and persistence format specified by
-    ButlerLocation
+    """Writes a catalog to a FITS table specified by ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object to be written.
+        The location for the object to be written.
     obj : object instance
         The object to be written.
     """
@@ -807,7 +803,7 @@ def readMatplotlibStorage(butlerLocation):
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -847,12 +843,12 @@ def writeMatplotlibStorage(butlerLocation, obj):
 
 
 def readPafStorage(butlerLocation):
-    """Read from a butlerLocation.
+    """Read a policy from a PAF file specified by a ButlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -869,12 +865,12 @@ def readPafStorage(butlerLocation):
 
 
 def readYamlStorage(butlerLocation):
-    """Read from a butlerLocation.
+    """Read an object from a YAML file specified by a butlerLocation.
 
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object(s) to be read.
+        The location for the object(s) to be read.
 
     Returns
     -------
@@ -898,6 +894,18 @@ def readYamlStorage(butlerLocation):
 
 
 def readBoostStorage(butlerLocation):
+    """Read an object from a boost::serialization file.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
     results = []
     additionalData = butlerLocation.getAdditionalData()
     for locationString in butlerLocation.getLocations():
@@ -913,6 +921,15 @@ def readBoostStorage(butlerLocation):
 
 
 def writeBoostStorage(butlerLocation, obj):
+    """Writes an object via boost::serialization.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location for the object to be written.
+    obj : object instance
+        The object to be written.
+    """
     additionalData = butlerLocation.getAdditionalData()
     location = butlerLocation.getStorage().locationWithRoot(butlerLocation.getLocations()[0])
     with SafeFilename(location) as locationString:
