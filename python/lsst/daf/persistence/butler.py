@@ -520,7 +520,9 @@ class Butler(object):
 
         self._getCfgs(repoDataList)
 
+        self.log.debug("__init__ before add parents: repoDataList:{}".format(repoDataList))
         self._addParents(repoDataList)
+        self.log.debug("__init__ after add parents: repoDataList:{}".format(repoDataList))
 
         self._setAndVerifyParentsLists(repoDataList)
 
@@ -531,6 +533,8 @@ class Butler(object):
         self._repos = RepoDataContainer(repoDataList)
 
         self._setRepoDataTags()
+
+        self.log.debug("__init__: repoDataList:{}".format(repoDataList))
 
         for repoData in reversed(repoDataList):
             self._setParentRegistry(repoData)
