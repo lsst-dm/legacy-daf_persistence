@@ -29,6 +29,7 @@ import inspect
 import os
 
 from lsst.daf.persistence import Storage, listify, doImport, Policy
+from lsst.log import Log
 
 
 class RepositoryArgs(object):
