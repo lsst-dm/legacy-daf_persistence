@@ -136,6 +136,7 @@ class Repository(object):
         repoData : RepoData
             Object that contains the parameters with which to init the Repository.
         """
+        self.log = Log.getLogger("daf.persistence.butler")
         self._storage = Storage.makeFromURI(repoData.cfg.root)
         if repoData.cfg.dirty and not repoData.isV1Repository and repoData.cfgOrigin != 'nested':
             self._storage.putRepositoryCfg(repoData.cfg, repoData.cfgRoot)
@@ -167,6 +168,7 @@ class Repository(object):
                 mapperArgs = {}
             if 'root' not in mapperArgs:
                 mapperArgs['root'] = repoData.cfg.root
+            self.log.debug("Repository::_initMapper for RepoData:{}".format(repoData))
             mapper = mapper(parentRegistry=repoData.parentRegistry,
                             repositoryCfg=repoData.cfg,
                             **mapperArgs)
