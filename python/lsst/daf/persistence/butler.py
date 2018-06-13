@@ -532,56 +532,24 @@ class Butler(object):
 
         self._setRepoDataTags()
 
-        for repoData in reversed(repoDataList):
-            self._setParentRegistry(repoData)
-            repoData.repo = Repository(repoData)
+        for repoData in repoDataList:
+            self._initRepo(repoData)
 
-    def _setParentRegistry(self, repoData):
-        """Try to get a parent registry that can be used by this repository. To be usable the repository must
-        "match", meaning the mapper in the passed-in repo is the same type as the mapper in the parent.
-        """
-
-        def getParentRegsitry(repoData, context):
-            """Get the first found registry that matches the the passed-in repo.
-
-            Parameters
-            ----------
-            repoData : RepoData
-                The RepoData for the repository for which we are searching for a
-                parent registry.
-
-            Returns
-            -------
-            Registry or None
-                A registry from a parent if one can be found, or None.
-
-            Raises
-            ------
-            RuntimeError
-                Indicates a butler init order problem, all parents should be initialized before child
-                repositories, so this function should be able to get any parent of any child repo.
-            """
-            if id(self) in context:
-                return None
-            else:
-                context.add(id(self))
-            for parentRepoData in repoData.getParentRepoDatas():
-                if parentRepoData.cfg.mapper == repoData.cfg.mapper:
-                    if parentRepoData.repo is None:
-                        self.log.debug(
-                            "_getParentRegistry: Parent {} of new repo {} not yet created, ignoring.".format(
-                                parentRepoData, repoData))
-                    else:
-                        parentRegistry = parentRepoData.repo.getRegistry()
-                        if parentRegistry:
-                            return parentRegistry
-                        else:
-                            parentRegistry = getParentRegsitry(parentRepoData, context)
-                            if parentRegistry:
-                                return parentRegistry
-            return None
-
-        repoData.repoData.parentRegistry = getParentRegsitry(repoData.repoData, set())
+    def _initRepo(self, repoData):
+        if repoData.repo is not None:
+            # this repository may have already been initialized by its children, in which case there is
+            # nothing more to do.
+            return
+        for parentRepoData in repoData.parentRepoDatas:
+            if parentRepoData.cfg.mapper != repoData.cfg.mapper:
+                continue
+            if parentRepoData.repo is None:
+                self._initRepo(parentRepoData)
+            parentRegistry = parentRepoData.repo.getRegistry()
+            repoData.parentRegistry = parentRegistry if parentRegistry else parentRepoData.parentRegistry
+            if repoData.parentRegistry:
+                break
+        repoData.repo = Repository(repoData)
 
     def _processInputArguments(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
         """Process, verify, and standardize the input arguments.
