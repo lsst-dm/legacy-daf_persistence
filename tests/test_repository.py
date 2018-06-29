@@ -330,6 +330,46 @@ class TestWriting(unittest.TestCase):
         self.assertEqual(objB, butlerD.get('foo', {'val': 2}))
 
 
+class TestDiamondPattern(unittest.TestCase):
+    """A test case for when a butler is created with an output repository and two input repositories that have
+    a common parent; verifies that the parent's registry is loaded as the parentRegistry of the output
+    repository.
+    """
+    @staticmethod
+    def makeRegistry(location, name):
+        conn = sqlite3.connect(location)
+        conn.execute("CREATE TABLE {name} (real)".format(name=name))
+        conn.commit()
+        conn.close()
+
+    def setUp(self):
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix="TestDiamondPattern-")
+
+    def tearDown(self):
+        if os.path.exists(self.testDir):
+            shutil.rmtree(self.testDir)
+
+    def test(self):
+        repoARoot = os.path.join(self.testDir, 'repoA')
+        butler = dp.Butler(outputs={'root': repoARoot, 'mapper': ParentRepoTestMapper})
+        self.makeRegistry(os.path.join(repoARoot, 'registry.sqlite3'), 'repoA')
+        del butler
+
+        repoBRoot = os.path.join(self.testDir, 'repoB')
+        butlerB = dp.Butler(inputs=repoARoot, outputs=repoBRoot)
+        del butlerB
+
+        repoCRoot = os.path.join(self.testDir, 'repoC')
+        butlerC = dp.Butler(inputs=repoARoot, outputs=repoCRoot)
+        del butlerC
+
+        repoDRoot = os.path.join(self.testDir, 'repoD')
+        butlerD = dp.Butler(inputs=(repoBRoot, repoCRoot), outputs=repoDRoot)
+
+        self.assertEqual(1, len(butlerD._repos.outputs()))
+        self.assertEqual(os.path.dirname(butlerD._repos.outputs()[0].parentRegistry.root), repoARoot)
+
+
 class TestMasking(unittest.TestCase):
     """A test case for the repository classes.
 
