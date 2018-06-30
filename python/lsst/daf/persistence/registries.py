@@ -418,6 +418,7 @@ class SqliteRegistry(SqlRegistry):
         if os.path.exists(location):
             conn = sqlite3.connect(location)
             conn.text_factory = str
+            self.root = location
         else:
             conn = None
         SqlRegistry.__init__(self, conn)
@@ -441,6 +442,7 @@ class PgsqlRegistry(SqlRegistry):
         self._config = config
         conn = pgsql.connect(host=config["host"], port=config["port"], database=config["database"],
                              user=config["user"], password=config["password"])
+        self.root = location
         SqlRegistry.__init__(self, conn)
 
     @staticmethod
