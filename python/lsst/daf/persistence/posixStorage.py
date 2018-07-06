@@ -820,7 +820,7 @@ def writeMatplotlibStorage(butlerLocation, obj):
     Parameters
     ----------
     butlerLocation : ButlerLocation
-        The location & formatting for the object to be written.
+        The location for the object to be written.
     obj : matplotlib.figure.Figure
         The object to be written.
     """
