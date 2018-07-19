@@ -15,10 +15,8 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
-PYBIND11_PLUGIN(persistence) {
+PYBIND11_MODULE(persistence, mod) {
     py::module::import("lsst.daf.base");
-
-    py::module mod("persistence");
 
     py::class_<python::ReadProxyBase, std::shared_ptr<python::ReadProxyBase>>(mod, "ReadProxyBase")
             .def(py::init<>())
@@ -32,8 +30,6 @@ PYBIND11_PLUGIN(persistence) {
     clsPersistence.def("retrieve", &Persistence::retrieve);
     clsPersistence.def("unsafeRetrieve", &Persistence::unsafeRetrieve);
     clsPersistence.def_static("getPersistence", &Persistence::getPersistence);
-
-    return mod.ptr();
 }
 
 }  // persistence

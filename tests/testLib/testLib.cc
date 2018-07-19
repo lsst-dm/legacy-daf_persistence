@@ -16,9 +16,7 @@ namespace {
     };
 }
 
-PYBIND11_PLUGIN(testLib) {
-    py::module mod("testLib");
-
+PYBIND11_MODULE(testLib, mod) {
     py::class_<TypeWithProxy>(mod, "TypeWithProxy")
         .def(py::init<>());
 
@@ -29,8 +27,6 @@ PYBIND11_PLUGIN(testLib) {
     python::register_proxy<TypeWithProxy>();
 
     mod.def("isValidDateTime", [](lsst::daf::base::DateTime const & dt) { return dt.isValid(); });
-
-    return mod.ptr();
 }
 
 }}}
