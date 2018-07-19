@@ -42,7 +42,7 @@ yaml.add_representer(lsst.daf.base.DateTime, dt_representer)
 def pl_representer(dumper, data):
     """Represent an lsst.daf.base.PropertyList as an ordered sequence of
     name/type/value/comment tuples)"""
-    result = lsst.daf.base.getstate(data)
+    result = lsst.daf.base.getPropertyListState(data)
     return dumper.represent_sequence(u'lsst.daf.base.PropertyList', result,
                                      flow_style=None)
 
@@ -53,7 +53,7 @@ yaml.add_representer(lsst.daf.base.PropertyList, pl_representer)
 def ps_representer(dumper, data):
     """Represent an lsst.daf.base.PropertySet as a mapping from names to
     type/value pairs."""
-    result = lsst.daf.base.getstate(data)
+    result = lsst.daf.base.getPropertySetState(data)
     return dumper.represent_sequence(u'lsst.daf.base.PropertySet', result,
                                      flow_style=None)
 
@@ -80,7 +80,7 @@ def pl_constructor(loader, node):
     pl = lsst.daf.base.PropertyList()
     yield pl
     state = loader.construct_sequence(node, deep=True)
-    lsst.daf.base.setstate(pl, state)
+    lsst.daf.base.setPropertyListState(pl, state)
 
 
 yaml.add_constructor(u'lsst.daf.base.PropertyList', pl_constructor)
@@ -91,7 +91,7 @@ def ps_constructor(loader, node):
     ps = lsst.daf.base.PropertySet()
     yield ps
     state = loader.construct_sequence(node, deep=True)
-    lsst.daf.base.setstate(ps, state)
+    lsst.daf.base.setPropertySetState(ps, state)
 
 
 yaml.add_constructor(u'lsst.daf.base.PropertySet', ps_constructor)
