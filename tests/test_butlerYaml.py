@@ -76,7 +76,7 @@ class ButlerYamlTestCase(unittest.TestCase):
         y = self.butler.get(self.localTypeName, ccd=3, immediate=True)
         self.assertEqual(set(pset.names(False)), set(y.names(False)))
         for i in pset.paramNames(False):
-            self.assertEqual(pset.get(i), y.get(i))
+            self.assertEqual(pset.getArray(i), y.getArray(i))
             self.assertEqual(pset.typeOf(i), y.typeOf(i))
 
     def testPropertyList(self):
@@ -97,7 +97,7 @@ class ButlerYamlTestCase(unittest.TestCase):
         y = self.butler.get(self.localTypeName, ccd=3, immediate=True)
         self.assertEqual(plist.names(False), y.names(False))
         for i in plist.names(False):
-            self.assertEqual(plist.get(i), y.get(i))
+            self.assertEqual(plist.getArray(i), y.getArray(i))
             self.assertEqual(plist.typeOf(i), y.typeOf(i))
 
 

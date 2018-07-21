@@ -16,10 +16,14 @@ doc/doxygen.conf
 doc/xml
 tests/.tests
 .cache
+.pytest_cache
+pytest_session.txt
+.coverage
 tests/.cache
 version.py
 foo1.pickle
 foo3.pickle
+foo3.yaml
 flat_R1,1_S2,2_C0,0_E000.pickle
 flat_R1,1_S2,2_C0,0_E001.pickle
 flat_R1,1_S2,2_C0,1_E000.pickle

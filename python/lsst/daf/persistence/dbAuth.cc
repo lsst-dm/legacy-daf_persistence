@@ -8,9 +8,7 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
-PYBIND11_PLUGIN(dbAuth) {
-    py::module mod("dbAuth");
-
+PYBIND11_MODULE(dbAuth, mod) {
     py::class_<DbAuth> cls(mod, "DbAuth");
 
     cls.def_static("setPolicy", &DbAuth::setPolicy);
@@ -19,8 +17,6 @@ PYBIND11_PLUGIN(dbAuth) {
     cls.def_static("authString", &DbAuth::authString);
     cls.def_static("username", &DbAuth::username);
     cls.def_static("password", &DbAuth::password);
-
-    return mod.ptr();
 }
 
 }  // persistence

@@ -12,14 +12,10 @@ namespace lsst {
 namespace daf {
 namespace persistence {
 
-PYBIND11_PLUGIN(formatterStorage) {
+PYBIND11_MODULE(formatterStorage, mod) {
     py::module::import("lsst.daf.base");
 
-    py::module mod("formatterStorage");
-
     py::class_<FormatterStorage, std::shared_ptr<FormatterStorage>, base::Citizen> cls(mod, "FormatterStorage");
-
-    return mod.ptr();
 }
 
 }  // persistence
