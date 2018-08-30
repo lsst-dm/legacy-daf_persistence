@@ -26,6 +26,7 @@ import sys
 import pickle
 import importlib
 import os
+import re
 import urllib.parse
 import glob
 import shutil
@@ -561,7 +562,74 @@ def writeConfigStorage(butlerLocation, obj):
 
 
 def readFitsStorage(butlerLocation):
-    """Read a FITS image from a butlerLocation.
+    """Read objects from a FITS file specified by ButlerLocation.
+
+    The object is read using class or static method
+    ``readFitsWithOptions(path, options)``, if it exists, else
+    ``readFits(path)``. The ``options`` argument is the data returned by
+    ``butlerLocation.getAdditionalData()``.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location for the object(s) to be read.
+
+    Returns
+    -------
+    A list of objects as described by the butler location. One item for
+    each location in butlerLocation.getLocations()
+    """
+    pythonType = butlerLocation.getPythonType()
+    if pythonType is not None:
+        if isinstance(pythonType, basestring):
+            pythonType = doImport(pythonType)
+    supportsOptions = hasattr(pythonType, "readFitsWithOptions")
+    results = []
+    additionalData = butlerLocation.getAdditionalData()
+    for locationString in butlerLocation.getLocations():
+        locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
+        logLoc = LogicalLocation(locStringWithRoot, additionalData)
+        # test for existence of file, ignoring trailing [...]
+        # because that can specify the HDU or other information
+        filePath = re.sub(r"(\.fits(.[a-zA-Z0-9]+)?)(\[.+\])$", r"\1", logLoc.locString())
+        if not os.path.exists(filePath):
+            raise RuntimeError("No such FITS file: " + logLoc.locString())
+        if supportsOptions:
+            finalItem = pythonType.readFitsWithOptions(logLoc.locString(), options=additionalData)
+        else:
+            finalItem = pythonType.readFits(logLoc.locString())
+        results.append(finalItem)
+    return results
+
+
+def writeFitsStorage(butlerLocation, obj):
+    """Writes an object to a FITS file specified by ButlerLocation.
+
+    The object is written using method
+    ``writeFitsWithOptions(path, options)``, if it exists, else
+    ``writeFits(path)``. The ``options`` argument is the data returned by
+    ``butlerLocation.getAdditionalData()``.
+
+    Parameters
+    ----------
+    butlerLocation : ButlerLocation
+        The location for the object to be written.
+    obj : object instance
+        The object to be written.
+    """
+    supportsOptions = hasattr(obj, "writeFitsWithOptions")
+    additionalData = butlerLocation.getAdditionalData()
+    locations = butlerLocation.getLocations()
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        if supportsOptions:
+            obj.writeFitsWithOptions(logLoc.locString(), options=additionalData)
+        else:
+            obj.writeFits(logLoc.locString())
+
+
+def boostReadFitsStorage(butlerLocation):
+    """Read a FITS image from a butlerLocation using boost peristence
 
     Parameters
     ----------
@@ -587,8 +655,9 @@ def readFitsStorage(butlerLocation):
     return results
 
 
-def writeFitsStorage(butlerLocation, obj):
-    """Writes an object to a FITS file specified by ButlerLocation.
+def boostWriteFitsStorage(butlerLocation, obj):
+    """Writes an object to a FITS file specified by ButlerLocation
+    using boost peristence
 
     Parameters
     ----------
@@ -952,7 +1021,7 @@ PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, wr
 PosixStorage.registerFormatters("MatplotlibStorage", readMatplotlibStorage, writeMatplotlibStorage)
 PosixStorage.registerFormatters("PafStorage", readFormatter=readPafStorage)
 PosixStorage.registerFormatters("YamlStorage", readYamlStorage, writeYamlStorage)
-PosixStorage.registerFormatters("BoostStorage", readFitsStorage, writeFitsStorage)
+PosixStorage.registerFormatters("BoostStorage", boostReadFitsStorage, boostWriteFitsStorage)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
