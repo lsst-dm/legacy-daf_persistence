@@ -37,8 +37,6 @@ from . import (LogicalLocation, Persistence, Policy, StorageList,
 from lsst.log import Log
 import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
-# Make YAML representers for daf_base classes available
-from . import baseYaml  # noqa F401
 
 
 __all__ = ["PosixStorage"]
