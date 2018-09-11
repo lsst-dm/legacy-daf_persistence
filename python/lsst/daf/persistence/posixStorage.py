@@ -628,59 +628,6 @@ def writeFitsStorage(butlerLocation, obj):
             obj.writeFits(logLoc.locString())
 
 
-def boostReadFitsStorage(butlerLocation):
-    """Read a FITS image from a butlerLocation using boost peristence
-
-    Parameters
-    ----------
-    butlerLocation : ButlerLocation
-        The location for the object(s) to be read.
-
-    Returns
-    -------
-    A list of objects as described by the butler location. One item for
-    each location in butlerLocation.getLocations()
-    """
-    results = []
-    for locationString in butlerLocation.getLocations():
-        locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
-        logLoc = LogicalLocation(locStringWithRoot, butlerLocation.getAdditionalData())
-        storageList = StorageList()
-        storage = PosixStorage.getPersistence().getRetrieveStorage(butlerLocation.getStorageName(),
-                                                                   logLoc)
-        storageList.append(storage)
-        finalItem = PosixStorage.getPersistence().unsafeRetrieve(
-            butlerLocation.getCppType(), storageList, butlerLocation.getAdditionalData())
-        results.append(finalItem)
-    return results
-
-
-def boostWriteFitsStorage(butlerLocation, obj):
-    """Writes an object to a FITS file specified by ButlerLocation
-    using boost peristence
-
-    Parameters
-    ----------
-    butlerLocation : ButlerLocation
-        The location for the object to be written.
-    obj : object instance
-        The object to be written.
-    """
-    location = butlerLocation.getLocations()[0]
-    with SafeFilename(os.path.join(butlerLocation.getStorage().root, location)) as locationString:
-        logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
-        # Create a list of Storages for the item.
-        storageList = StorageList()
-        storage = PosixStorage.getPersistence().getPersistStorage(butlerLocation.getStorageName(), logLoc)
-        storageList.append(storage)
-        persistence = PosixStorage.getPersistence()
-        if hasattr(obj, '__deref__'):
-            # We have a smart pointer, so dereference it.
-            persistence.persist(obj.__deref__(), storageList, butlerLocation.getAdditionalData())
-        else:
-            persistence.persist(obj, storageList, butlerLocation.getAdditionalData())
-
-
 def readParquetStorage(butlerLocation):
     """Read a catalog from a Parquet file specified by ButlerLocation.
 
@@ -1021,7 +968,6 @@ PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, wr
 PosixStorage.registerFormatters("MatplotlibStorage", readMatplotlibStorage, writeMatplotlibStorage)
 PosixStorage.registerFormatters("PafStorage", readFormatter=readPafStorage)
 PosixStorage.registerFormatters("YamlStorage", readYamlStorage, writeYamlStorage)
-PosixStorage.registerFormatters("BoostStorage", boostReadFitsStorage, boostWriteFitsStorage)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
