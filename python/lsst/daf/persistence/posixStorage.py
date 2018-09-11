@@ -26,6 +26,7 @@ import sys
 import pickle
 import importlib
 import os
+import re
 import urllib.parse
 import glob
 import shutil
@@ -561,7 +562,12 @@ def writeConfigStorage(butlerLocation, obj):
 
 
 def readFitsStorage(butlerLocation):
-    """Read a FITS image from a butlerLocation.
+    """Read objects from a FITS file specified by ButlerLocation.
+
+    The object is read using class or static method
+    ``readFitsWithOptions(path, options)``, if it exists, else
+    ``readFits(path)``. The ``options`` argument is the data returned by
+    ``butlerLocation.getAdditionalData()``.
 
     Parameters
     ----------
@@ -573,22 +579,36 @@ def readFitsStorage(butlerLocation):
     A list of objects as described by the butler location. One item for
     each location in butlerLocation.getLocations()
     """
+    pythonType = butlerLocation.getPythonType()
+    if pythonType is not None:
+        if isinstance(pythonType, basestring):
+            pythonType = doImport(pythonType)
+    supportsOptions = hasattr(pythonType, "readFitsWithOptions")
     results = []
+    additionalData = butlerLocation.getAdditionalData()
     for locationString in butlerLocation.getLocations():
         locStringWithRoot = os.path.join(butlerLocation.getStorage().root, locationString)
-        logLoc = LogicalLocation(locStringWithRoot, butlerLocation.getAdditionalData())
-        storageList = StorageList()
-        storage = PosixStorage.getPersistence().getRetrieveStorage(butlerLocation.getStorageName(),
-                                                                   logLoc)
-        storageList.append(storage)
-        finalItem = PosixStorage.getPersistence().unsafeRetrieve(
-            butlerLocation.getCppType(), storageList, butlerLocation.getAdditionalData())
+        logLoc = LogicalLocation(locStringWithRoot, additionalData)
+        # test for existence of file, ignoring trailing [...]
+        # because that can specify the HDU or other information
+        filePath = re.sub(r"(\.fits(.[a-zA-Z0-9]+)?)(\[.+\])$", r"\1", logLoc.locString())
+        if not os.path.exists(filePath):
+            raise RuntimeError("No such FITS file: " + logLoc.locString())
+        if supportsOptions:
+            finalItem = pythonType.readFitsWithOptions(logLoc.locString(), options=additionalData)
+        else:
+            finalItem = pythonType.readFits(logLoc.locString())
         results.append(finalItem)
     return results
 
 
 def writeFitsStorage(butlerLocation, obj):
     """Writes an object to a FITS file specified by ButlerLocation.
+
+    The object is written using method
+    ``writeFitsWithOptions(path, options)``, if it exists, else
+    ``writeFits(path)``. The ``options`` argument is the data returned by
+    ``butlerLocation.getAdditionalData()``.
 
     Parameters
     ----------
@@ -597,19 +617,15 @@ def writeFitsStorage(butlerLocation, obj):
     obj : object instance
         The object to be written.
     """
-    location = butlerLocation.getLocations()[0]
-    with SafeFilename(os.path.join(butlerLocation.getStorage().root, location)) as locationString:
-        logLoc = LogicalLocation(locationString, butlerLocation.getAdditionalData())
-        # Create a list of Storages for the item.
-        storageList = StorageList()
-        storage = PosixStorage.getPersistence().getPersistStorage(butlerLocation.getStorageName(), logLoc)
-        storageList.append(storage)
-        persistence = PosixStorage.getPersistence()
-        if hasattr(obj, '__deref__'):
-            # We have a smart pointer, so dereference it.
-            persistence.persist(obj.__deref__(), storageList, butlerLocation.getAdditionalData())
+    supportsOptions = hasattr(obj, "writeFitsWithOptions")
+    additionalData = butlerLocation.getAdditionalData()
+    locations = butlerLocation.getLocations()
+    with SafeFilename(os.path.join(butlerLocation.getStorage().root, locations[0])) as locationString:
+        logLoc = LogicalLocation(locationString, additionalData)
+        if supportsOptions:
+            obj.writeFitsWithOptions(logLoc.locString(), options=additionalData)
         else:
-            persistence.persist(obj, storageList, butlerLocation.getAdditionalData())
+            obj.writeFits(logLoc.locString())
 
 
 def readParquetStorage(butlerLocation):
@@ -952,7 +968,6 @@ PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, wr
 PosixStorage.registerFormatters("MatplotlibStorage", readMatplotlibStorage, writeMatplotlibStorage)
 PosixStorage.registerFormatters("PafStorage", readFormatter=readPafStorage)
 PosixStorage.registerFormatters("YamlStorage", readYamlStorage, writeYamlStorage)
-PosixStorage.registerFormatters("BoostStorage", readFitsStorage, writeFitsStorage)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)
 Storage.registerStorageClass(scheme='file', cls=PosixStorage)
