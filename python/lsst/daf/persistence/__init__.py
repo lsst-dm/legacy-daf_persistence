@@ -31,7 +31,6 @@ from .persistence import *
 from .formatterStorage import *
 from .storageInterface import *
 from .storage import *
-from .dbAuth import *
 
 from .utils import *
 from .genericAssembler import *
