@@ -32,7 +32,6 @@ import sys
 import warnings
 import yaml
 
-import lsst.pex.policy as pexPolicy
 import lsst.utils
 
 from yaml.representer import Representer
@@ -64,12 +63,11 @@ class Policy(_PolicyBase):
 
     Storage formats supported:
     - yaml: read and write is supported.
-    - pex policy: read is supported, although this is deprecated and will at some point be removed.
     """
 
     def __init__(self, other=None):
         """Initialize the Policy. Other can be used to initialize the Policy in a variety of ways:
-        other (string) Treated as a path to a policy file on disk. Must end with '.paf' or '.yaml'.
+        other (string) Treated as a path to a policy file on disk. Must end with '.yaml'.
         other (Pex Policy) Initializes this Policy with the values in the passed-in Pex Policy.
         other (Policy) Copies the other Policy's values into this one.
         other (dict) Copies the values from the dict into this Policy.
@@ -86,9 +84,6 @@ class Policy(_PolicyBase):
         elif isinstance(other, basestring):
             # if other is a string, assume it is a file path.
             self.__initFromFile(other)
-        elif isinstance(other, pexPolicy.Policy):
-            # if other is an instance of a Pex Policy, load it accordingly.
-            self.__initFromPexPolicy(other)
         else:
             # if the policy specified by other could not be loaded raise a runtime error.
             raise RuntimeError("A Policy could not be loaded from other:%s" % other)
@@ -114,35 +109,10 @@ class Policy(_PolicyBase):
         succeeds.
         :return:
         """
-        policy = None
         if path.endswith('yaml'):
             self.__initFromYamlFile(path)
-        elif path.endswith('paf'):
-            policy = pexPolicy.Policy.createPolicy(path)
-            self.__initFromPexPolicy(policy)
         else:
             raise RuntimeError("Unhandled policy file type:%s" % path)
-
-    def __initFromPexPolicy(self, pexPolicy):
-        """Load values from a pex policy.
-
-        :param pexPolicy:
-        :return:
-        """
-        names = pexPolicy.names()
-        names.sort()
-        for name in names:
-            if pexPolicy.getValueType(name) == pexPolicy.POLICY:
-                if name in self:
-                    continue
-                else:
-                    self[name] = {}
-            else:
-                if pexPolicy.isArray(name):
-                    self[name] = pexPolicy.getArray(name)
-                else:
-                    self[name] = pexPolicy.get(name)
-        return self
 
     def __initFromYamlFile(self, path):
         """Opens a file at a given path and attempts to load it in from yaml.

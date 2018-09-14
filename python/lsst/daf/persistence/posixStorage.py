@@ -36,7 +36,6 @@ from . import (LogicalLocation, Policy,
                StorageInterface, Storage, ButlerLocation,
                NoRepositroyAtRoot, RepositoryCfg, doImport)
 from lsst.log import Log
-import lsst.pex.policy as pexPolicy
 from .safeFileIo import SafeFilename, safeMakeDir
 
 
@@ -285,7 +284,7 @@ class PosixStorage(StorageInterface):
         """Implementation of PosixStorage.exists for ButlerLocation objects.
         """
         storageName = location.getStorageName()
-        if storageName not in ('FitsStorage', 'PafStorage',
+        if storageName not in ('FitsStorage',
                                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage',
                                'YamlStorage', 'ParquetStorage', 'MatplotlibStorage'):
             self.log.warn("butlerLocationExists for non-supported storage %s" % location)
@@ -848,28 +847,6 @@ def writeMatplotlibStorage(butlerLocation, obj):
         obj.savefig(logLoc.locString(), format=ext)
 
 
-def readPafStorage(butlerLocation):
-    """Read a policy from a PAF file specified by a ButlerLocation.
-
-    Parameters
-    ----------
-    butlerLocation : ButlerLocation
-        The location for the object(s) to be read.
-
-    Returns
-    -------
-    A list of objects as described by the butler location. One item for
-    each location in butlerLocation.getLocations()
-    """
-    results = []
-    for locationString in butlerLocation.getLocations():
-        logLoc = LogicalLocation(butlerLocation.getStorage().locationWithRoot(locationString),
-                                 butlerLocation.getAdditionalData())
-        finalItem = pexPolicy.Policy.createPolicy(logLoc.locString())
-        results.append(finalItem)
-    return results
-
-
 def readYamlStorage(butlerLocation):
     """Read an object from a YAML file specified by a butlerLocation.
 
@@ -905,7 +882,6 @@ PosixStorage.registerFormatters("ConfigStorage", readConfigStorage, writeConfigS
 PosixStorage.registerFormatters("PickleStorage", readPickleStorage, writePickleStorage)
 PosixStorage.registerFormatters("FitsCatalogStorage", readFitsCatalogStorage, writeFitsCatalogStorage)
 PosixStorage.registerFormatters("MatplotlibStorage", readMatplotlibStorage, writeMatplotlibStorage)
-PosixStorage.registerFormatters("PafStorage", readFormatter=readPafStorage)
 PosixStorage.registerFormatters("YamlStorage", readYamlStorage, writeYamlStorage)
 
 Storage.registerStorageClass(scheme='', cls=PosixStorage)

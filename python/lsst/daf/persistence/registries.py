@@ -80,11 +80,6 @@ class Registry(object):
         if location is None:
             return
 
-        # if re.match(r'.*\.registry', location):
-        #     return FileRegistry(location)
-        # if re.match(r'.*\.paf', location):
-        #     return CalibRegistry(location)
-
         if location.endswith(".pgsql"):
             return PgsqlRegistry(location)
 
