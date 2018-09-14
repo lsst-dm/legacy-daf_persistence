@@ -32,7 +32,7 @@ import glob
 import shutil
 import yaml
 
-from . import (LogicalLocation, Persistable, Policy,
+from . import (LogicalLocation, Policy,
                StorageInterface, Storage, ButlerLocation,
                NoRepositroyAtRoot, RepositoryCfg, doImport)
 from lsst.log import Log
@@ -68,14 +68,6 @@ class PosixStorage(StorageInterface):
             if not create:
                 raise NoRepositroyAtRoot("No repository at {}".format(uri))
             safeMakeDir(self.root)
-
-        self.persistence = self.getPersistence()
-
-    @staticmethod
-    def getPersistence():
-        # Always use an empty Persistence policy until we can get rid of it
-        persistencePolicy = pexPolicy.Policy()
-        return Persistence.getPersistence(persistencePolicy)
 
     def __repr__(self):
         return 'PosixStorage(root=%s)' % self.root
