@@ -48,10 +48,6 @@ static char const* SVNid __attribute__((unused)) = "$Id$";
 
 // All FormatterStorage subclasses must be included here.
 
-#include "lsst/daf/persistence/BoostStorage.h"
-#include "lsst/daf/persistence/FitsStorage.h"
-#include "lsst/daf/persistence/XmlStorage.h"
-
 namespace lsst {
 namespace daf {
 namespace persistence {
@@ -76,16 +72,7 @@ StorageRegistry::~StorageRegistry(void) {
  * Implemented as code; could be a lookup in a data structure.
  */
 FormatterStorage::Ptr StorageRegistry::createInstance(std::string const& name) {
-    if (name == "BoostStorage") {
-        return FormatterStorage::Ptr(new BoostStorage);
-    }
-    else if (name == "FitsStorage") {
-        return FormatterStorage::Ptr(new FitsStorage);
-    }
-    else if (name == "XmlStorage") {
-        return FormatterStorage::Ptr(new XmlStorage);
-    }
-    else throw std::invalid_argument("Invalid FormatterStorage type: " + name);
+    throw std::invalid_argument("Invalid FormatterStorage type: " + name);
 }
 
 /** Return a reference to a subclass registry.
