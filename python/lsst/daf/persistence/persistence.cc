@@ -1,10 +1,6 @@
 #include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
-#include "lsst/daf/base/Citizen.h"
-#include "lsst/daf/persistence/FormatterStorage.h"
 #include "lsst/daf/persistence/LogicalLocation.h"
-
 #include "lsst/daf/persistence/python/readProxy.h"
 
 namespace py = pybind11;
