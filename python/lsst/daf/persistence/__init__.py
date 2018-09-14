@@ -28,7 +28,6 @@ StorageList = list
 
 from .logicalLocation import *
 from .persistence import *
-from .formatterStorage import *
 from .storageInterface import *
 from .storage import *
 from .dbAuth import *

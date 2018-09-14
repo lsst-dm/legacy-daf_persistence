@@ -36,8 +36,5 @@
   */
 
 #include <lsst/daf/persistence/DbAuth.h>
-#include <lsst/daf/persistence/Formatter.h>
-#include <lsst/daf/persistence/FormatterImpl.h>
-#include <lsst/daf/persistence/LogicalLocation.h>
 
 #endif // #ifndef LSST_DAF_PERSISTENCE_H
