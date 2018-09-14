@@ -35,8 +35,7 @@ import inspect
 import yaml
 
 from lsst.log import Log
-import lsst.pex.policy as pexPolicy
-from . import ReadProxy, ButlerSubset, ButlerDataRef, Persistence, \
+from . import ReadProxy, ButlerSubset, ButlerDataRef, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
     genericDisassembler, PosixStorage, ParentsMismatch
@@ -506,9 +505,6 @@ class Butler(object):
                           'mapperArgs': mapperArgs}
 
         self.log = Log.getLogger("daf.persistence.butler")
-        # Always use an empty Persistence policy until we can get rid of it
-        persistencePolicy = pexPolicy.Policy()
-        self.persistence = Persistence.getPersistence(persistencePolicy)
 
         inputs, outputs = self._processInputArguments(
             root=root, mapper=mapper, inputs=inputs, outputs=outputs, **mapperArgs)
@@ -1033,8 +1029,8 @@ class Butler(object):
         return inputs, outputs
 
     def __repr__(self):
-        return 'Butler(datasetTypeAliasDict=%s, repos=%s, persistence=%s)' % (
-            self.datasetTypeAliasDict, self._repos, self.persistence)
+        return 'Butler(datasetTypeAliasDict=%s, repos=%s)' % (
+            self.datasetTypeAliasDict, self._repos)
 
     def _getDefaultMapper(self):
 

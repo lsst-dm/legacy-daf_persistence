@@ -39,6 +39,5 @@
 #include <lsst/daf/persistence/Formatter.h>
 #include <lsst/daf/persistence/FormatterImpl.h>
 #include <lsst/daf/persistence/LogicalLocation.h>
-#include <lsst/daf/persistence/Persistence.h>
 
 #endif // #ifndef LSST_DAF_PERSISTENCE_H
