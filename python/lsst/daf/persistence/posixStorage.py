@@ -584,6 +584,13 @@ def readFitsStorage(butlerLocation):
         if isinstance(pythonType, basestring):
             pythonType = doImport(pythonType)
     supportsOptions = hasattr(pythonType, "readFitsWithOptions")
+    if not supportsOptions:
+        from lsst.daf.base import PropertySet, PropertyList
+        if issubclass(pythonType, (PropertySet, PropertyList)):
+            from lsst.afw.image import readMetadata
+            reader = readMetadata
+        else:
+            reader = pythonType.readFits
     results = []
     additionalData = butlerLocation.getAdditionalData()
     for locationString in butlerLocation.getLocations():
@@ -597,7 +604,7 @@ def readFitsStorage(butlerLocation):
         if supportsOptions:
             finalItem = pythonType.readFitsWithOptions(logLoc.locString(), options=additionalData)
         else:
-            finalItem = pythonType.readFits(logLoc.locString())
+            finalItem = reader(logLoc.locString())
         results.append(finalItem)
     return results
 
