@@ -172,10 +172,6 @@ class Repository(object):
                             **mapperArgs)
         self._mapper = mapper
 
-        def __repr__(self):
-            return 'config(id=%s, storage=%s, parent=%s, mapper=%s, mapperArgs=%s, cls=%s)' % \
-                   (self.id, self._storage, self.parent, self._mapper, self.mapperArgs, self.cls)
-
     # todo want a way to make a repository read-only
     def write(self, butlerLocation, obj):
         """Write a dataset to Storage.

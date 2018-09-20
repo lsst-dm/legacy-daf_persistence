@@ -133,7 +133,7 @@ get_cache = ReadProxy.__cache__.__get__
 set_cache = ReadProxy.__cache__.__set__
 
 
-def __subject__(self, get_cache=get_cache, set_cache=set_cache):
+def _subject(self, get_cache=get_cache, set_cache=set_cache):
     try:
         return get_cache(self)
     except AttributeError:
@@ -141,5 +141,5 @@ def __subject__(self, get_cache=get_cache, set_cache=set_cache):
         return get_cache(self)
 
 
-ReadProxy.__subject__ = property(__subject__, set_cache)
-del __subject__
+ReadProxy.__subject__ = property(_subject, set_cache)
+del _subject
