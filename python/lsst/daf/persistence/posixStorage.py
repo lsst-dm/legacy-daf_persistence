@@ -604,7 +604,16 @@ def readFitsStorage(butlerLocation):
         if supportsOptions:
             finalItem = pythonType.readFitsWithOptions(logLoc.locString(), options=additionalData)
         else:
-            finalItem = reader(logLoc.locString())
+            fileName = logLoc.locString()
+            mat = re.search(r"^(.*)\[(\d+)\]$", fileName)
+
+            if mat and reader == readMetadata:  # readMetadata() only understands the hdu argument, not [hdu]
+                fileName = mat.group(1)
+                hdu = int(mat.group(2))
+
+                finalItem = reader(fileName, hdu=hdu)
+            else:
+                finalItem = reader(fileName)
         results.append(finalItem)
     return results
 
