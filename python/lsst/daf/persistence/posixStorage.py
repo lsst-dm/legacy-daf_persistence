@@ -32,7 +32,7 @@ import glob
 import shutil
 import yaml
 
-from . import (LogicalLocation, Persistence, Policy, StorageList,
+from . import (LogicalLocation, Policy,
                StorageInterface, Storage, ButlerLocation,
                NoRepositroyAtRoot, RepositoryCfg, doImport)
 from lsst.log import Log
@@ -68,14 +68,6 @@ class PosixStorage(StorageInterface):
             if not create:
                 raise NoRepositroyAtRoot("No repository at {}".format(uri))
             safeMakeDir(self.root)
-
-        self.persistence = self.getPersistence()
-
-    @staticmethod
-    def getPersistence():
-        # Always use an empty Persistence policy until we can get rid of it
-        persistencePolicy = pexPolicy.Policy()
-        return Persistence.getPersistence(persistencePolicy)
 
     def __repr__(self):
         return 'PosixStorage(root=%s)' % self.root
@@ -293,7 +285,7 @@ class PosixStorage(StorageInterface):
         """Implementation of PosixStorage.exists for ButlerLocation objects.
         """
         storageName = location.getStorageName()
-        if storageName not in ('BoostStorage', 'FitsStorage', 'PafStorage',
+        if storageName not in ('FitsStorage', 'PafStorage',
                                'PickleStorage', 'ConfigStorage', 'FitsCatalogStorage',
                                'YamlStorage', 'ParquetStorage', 'MatplotlibStorage'):
             self.log.warn("butlerLocationExists for non-supported storage %s" % location)
@@ -921,59 +913,6 @@ def readYamlStorage(butlerLocation):
                 finalItem = yaml.load(infile)
         results.append(finalItem)
     return results
-
-
-def readBoostStorage(butlerLocation):
-    """Read an object from a boost::serialization file.
-
-    Parameters
-    ----------
-    butlerLocation : ButlerLocation
-        The location for the object(s) to be read.
-
-    Returns
-    -------
-    A list of objects as described by the butler location. One item for
-    each location in butlerLocation.getLocations()
-    """
-    results = []
-    additionalData = butlerLocation.getAdditionalData()
-    for locationString in butlerLocation.getLocations():
-        logLoc = LogicalLocation(butlerLocation.getStorage().locationWithRoot(locationString),
-                                 butlerLocation.getAdditionalData())
-        storageList = StorageList()
-        storage = PosixStorage.getPersistence().getRetrieveStorage(butlerLocation.getStorageName(), logLoc)
-        storageList.append(storage)
-        finalItem = PosixStorage.getPersistence().unsafeRetrieve(butlerLocation.getCppType(), storageList,
-                                                                 additionalData)
-        results.append(finalItem)
-    return results
-
-
-def writeBoostStorage(butlerLocation, obj):
-    """Writes an object via boost::serialization.
-
-    Parameters
-    ----------
-    butlerLocation : ButlerLocation
-        The location for the object to be written.
-    obj : object instance
-        The object to be written.
-    """
-    additionalData = butlerLocation.getAdditionalData()
-    location = butlerLocation.getStorage().locationWithRoot(butlerLocation.getLocations()[0])
-    with SafeFilename(location) as locationString:
-        logLoc = LogicalLocation(locationString, additionalData)
-        # Create a list of Storages for the item.
-        storageList = StorageList()
-        storage = PosixStorage.getPersistence().getPersistStorage(butlerLocation.getStorageName(), logLoc)
-        storageList.append(storage)
-        # Persist the item.
-        if hasattr(obj, '__deref__'):
-            # We have a smart pointer, so dereference it.
-            PosixStorage.getPersistence().persist(obj.__deref__(), storageList, additionalData)
-        else:
-            PosixStorage.getPersistence().persist(obj, storageList, additionalData)
 
 
 PosixStorage.registerFormatters("FitsStorage", readFitsStorage, writeFitsStorage)

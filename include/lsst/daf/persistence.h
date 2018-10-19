@@ -35,13 +35,6 @@
   * @date $Date: 2008-04-01 14:28:07 -0700 (Tue, 01 Apr 2008) $
   */
 
-#include <lsst/daf/persistence/BoostStorage.h>
 #include <lsst/daf/persistence/DbAuth.h>
-#include <lsst/daf/persistence/FitsStorage.h>
-#include <lsst/daf/persistence/Formatter.h>
-#include <lsst/daf/persistence/FormatterImpl.h>
-#include <lsst/daf/persistence/LogicalLocation.h>
-#include <lsst/daf/persistence/Persistence.h>
-#include <lsst/daf/persistence/XmlStorage.h>
 
 #endif // #ifndef LSST_DAF_PERSISTENCE_H
