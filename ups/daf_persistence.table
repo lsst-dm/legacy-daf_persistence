@@ -1,9 +1,5 @@
 setupRequired(log)
 setupRequired(pex_policy)
-setupRequired(astropy)
-setupRequired(pyyaml)
-setupRequired(pybind11)
-setupRequired(python)
 
 envPrepend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envPrepend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
