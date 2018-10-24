@@ -87,10 +87,10 @@ class FsScanner(object):
                 self.reString += r'(?P<' + fieldName + '>.+)'
             elif m.group(2) in 'eEfFgG':
                 fieldType = float
-                self.reString += r'(?P<' + fieldName + '>[\d.eE+-]+)'
+                self.reString += r'(?P<' + fieldName + r'>[\d.eE+-]+)'
             else:
                 fieldType = int
-                self.reString += r'(?P<' + fieldName + '>[\d+-]+)'
+                self.reString += r'(?P<' + fieldName + r'>[\d+-]+)'
 
             self.fields[fieldName] = dict(pos=pos, fieldType=fieldType)
             pos += 1
