@@ -1416,8 +1416,7 @@ class Butler(object):
 
         locations = self._locate(datasetType, dataId, write=True)
         if not locations:
-            raise RuntimeError("Could not find a location to write dataset type '%s' with %s" %
-                               (datasetType, dataId))
+            raise NoResults("No locations for put:", datasetType, dataId)
         for location in locations:
             if isinstance(location, ButlerComposite):
                 disassembler = location.disassembler if location.disassembler else genericDisassembler
