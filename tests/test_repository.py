@@ -281,6 +281,22 @@ class TestBasics(unittest.TestCase):
 ##############################################################################################################
 
 
+class NoResultsMapper(dp.Mapper):
+
+    def __init__(self, root, **kwargs):
+        self.root = root
+        self.storage = dp.Storage.makeFromURI(self.root)
+
+    def __repr__(self):
+        return 'ParentMapper(root=%s)' % self.root
+
+    def map_list(self, dataId, write):
+        return []
+
+    def map_None(self, dataId, write):
+        return None
+
+
 class TestWriting(unittest.TestCase):
     """A test case for the repository classes.
 
@@ -328,6 +344,17 @@ class TestWriting(unittest.TestCase):
         self.assertEqual(objA, butlerC.get('foo', {'val': 1}))
         self.assertEqual(objB, butlerD.get('foo', {'val': 2}))
         self.assertEqual(objB, butlerD.get('foo', {'val': 2}))
+
+    def testPutWithIncompleteDataId(self):
+        repoAArgs = dp.RepositoryArgs(mode='rw',
+                                      root=os.path.join(self.testDir, 'repoA'),
+                                      mapper=NoResultsMapper)
+        butler = dp.Butler(outputs=repoAArgs)
+        obj = tstObj('abc')
+        with self.assertRaises(RuntimeError):
+            butler.put(obj, 'list', {'visit': '2'})
+        with self.assertRaises(RuntimeError):
+            butler.put(obj, 'None', {'visit': '2'})
 
 
 class TestDiamondPattern(unittest.TestCase):

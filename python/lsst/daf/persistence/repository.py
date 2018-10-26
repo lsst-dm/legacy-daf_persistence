@@ -240,7 +240,7 @@ class Repository(object):
         if self._mapper is None:
             raise RuntimeError("No mapper assigned to Repository")
         loc = self._mapper.map(*args, **kwargs)
-        if loc is None:
+        if not loc:
             return None
         loc.setRepository(self)
         return loc
