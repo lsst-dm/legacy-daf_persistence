@@ -1414,7 +1414,11 @@ class Butler(object):
         dataId = DataId(dataId)
         dataId.update(**rest)
 
-        for location in self._locate(datasetType, dataId, write=True):
+        locations = self._locate(datasetType, dataId, write=True)
+        if not locations:
+            raise RuntimeError("Could not find a location to write dataset type '%s' with %s" %
+                               (datasetType, dataId))
+        for location in locations:
             if isinstance(location, ButlerComposite):
                 disassembler = location.disassembler if location.disassembler else genericDisassembler
                 disassembler(obj=obj, dataId=location.dataId, componentInfo=location.componentInfo)
