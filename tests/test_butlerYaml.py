@@ -25,7 +25,6 @@ import unittest
 import shutil
 import tempfile
 import lsst.utils.tests
-import os
 
 import lsst.daf.persistence as dafPersist
 import lsst.daf.base as dafBase
@@ -34,13 +33,13 @@ import lsst.daf.base as dafBase
 class MinMapper(dafPersist.Mapper):
 
     def __init__(self, root, parentRegistry, repositoryCfg):
-        pass
+        self.root = root
 
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.yaml" % dataId
         return dafPersist.ButlerLocation(
             "lsst.daf.base.PropertySet", "PropertySet", "YamlStorage",
-            [path], dataId, self, dafPersist.Storage.makeFromURI(os.getcwd()))
+            [path], dataId, self, dafPersist.Storage.makeFromURI(self.root))
 
 
 class ButlerYamlTestCase(unittest.TestCase):
