@@ -51,18 +51,20 @@ class ButlerTest(unittest.TestCase):
         """Test that a RuntimeError is raised when Butler v1 init api (root,
         mapper, mapperArgs**) is used with Butler v2 init api
         (inputs, outputs)."""
+        foobar = os.path.join(self.testDir, "bar")
+        foobaz = os.path.join(self.testDir, "baz")
         with self.assertRaises(RuntimeError):
-            dp.Butler(root='foo/bar', inputs='foo/bar')
+            dp.Butler(root=foobar, inputs=foobar)
         with self.assertRaises(RuntimeError):
-            dp.Butler(mapper='lsst.obs.base.CameraMapper', inputs='foo/bar')
+            dp.Butler(mapper='lsst.obs.base.CameraMapper', inputs=foobar)
         with self.assertRaises(RuntimeError):
-            dp.Butler(inputs='foo/bar', calibRoot='foo/baz')
+            dp.Butler(inputs=foobar, calibRoot=foobaz)
         with self.assertRaises(RuntimeError):
-            dp.Butler(root='foo/bar', outputs='foo/bar')
+            dp.Butler(root=foobar, outputs=foobar)
         with self.assertRaises(RuntimeError):
-            dp.Butler(mapper='lsst.obs.base.CameraMapper', outputs='foo/bar')
+            dp.Butler(mapper='lsst.obs.base.CameraMapper', outputs=foobar)
         with self.assertRaises(RuntimeError):
-            dp.Butler(inputs='foo/bar', outputs='foo/baz')
+            dp.Butler(inputs=foobar, outputs=foobaz)
 
     def testV1RepoWithRootOnly(self):
         repoDir = os.path.join(self.testDir, 'repo')

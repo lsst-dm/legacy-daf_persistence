@@ -25,7 +25,6 @@ import unittest
 import shutil
 import tempfile
 import lsst.utils.tests
-import os
 
 import lsst.daf.persistence as dafPersist
 import lsst.daf.base as dafBase
@@ -34,13 +33,13 @@ import lsst.daf.base as dafBase
 class MinMapper(dafPersist.Mapper):
 
     def __init__(self, root, parentRegistry, repositoryCfg):
-        pass
+        self.root = root
 
     def map_x(self, dataId, write):
         path = "foo%(ccd)d.yaml" % dataId
         return dafPersist.ButlerLocation(
             "lsst.daf.base.PropertySet", "PropertySet", "YamlStorage",
-            [path], dataId, self, dafPersist.Storage.makeFromURI(os.getcwd()))
+            [path], dataId, self, dafPersist.Storage.makeFromURI(self.root))
 
 
 class ButlerYamlTestCase(unittest.TestCase):
@@ -74,10 +73,7 @@ class ButlerYamlTestCase(unittest.TestCase):
         pset.setFloat("float2", -1.234)
         self.butler.put(pset, self.localTypeName, ccd=3)
         y = self.butler.get(self.localTypeName, ccd=3, immediate=True)
-        self.assertEqual(set(pset.names(False)), set(y.names(False)))
-        for i in pset.paramNames(False):
-            self.assertEqual(pset.getArray(i), y.getArray(i))
-            self.assertEqual(pset.typeOf(i), y.typeOf(i))
+        self.assertEqual(y, pset)
 
     def testPropertyList(self):
         plist = dafBase.PropertyList()
@@ -95,10 +91,7 @@ class ButlerYamlTestCase(unittest.TestCase):
         plist.setFloat("float2", -1.234)
         self.butler.put(plist, self.localTypeName, ccd=3)
         y = self.butler.get(self.localTypeName, ccd=3, immediate=True)
-        self.assertEqual(plist.names(False), y.names(False))
-        for i in plist.names(False):
-            self.assertEqual(plist.getArray(i), y.getArray(i))
-            self.assertEqual(plist.typeOf(i), y.typeOf(i))
+        self.assertEqual(y, plist)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
