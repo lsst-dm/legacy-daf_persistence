@@ -500,6 +500,10 @@ class Butler(object):
     order; for each RepoData a parent registry is searched for, and then the Repository is instantiated with
     whatever registry could be found."""
 
+    GENERATION = 2
+    """This is a Generation 2 Butler.
+    """
+
     def __init__(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}

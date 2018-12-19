@@ -60,6 +60,10 @@ class ButlerSubset(object):
 
     """
 
+    GENERATION = 2
+    """This is a Generation 2 ButlerSubset.
+    """
+
     def __init__(self, butler, datasetType, level, dataId):
         """
         Create a ButlerSubset by querying a butler for data ids matching a
@@ -170,6 +174,10 @@ class ButlerDataRef(object):
     datasetExists(self, datasetType=None, **rest)
 
     getButler(self)
+    """
+
+    GENERATION = 2
+    """This is a Generation 2 DataRef.
     """
 
     def __init__(self, butlerSubset, dataId):
