@@ -20,7 +20,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import collections
+import collections.abc
 import os
 import shutil
 import unittest
@@ -106,7 +106,7 @@ class PolicyTestCase(unittest.TestCase):
         for name in yamlNames:
             if not isinstance(yamlPolicy[name], lsst.daf.persistence.Policy):
                 yamlPolicyVal = yamlPolicy[name]
-                if isinstance(yamlPolicyVal, collections.Iterable) and \
+                if isinstance(yamlPolicyVal, collections.abc.Iterable) and \
                         not isinstance(yamlPolicyVal, basestring):
                     self.assertEqual(yamlPolicyVal, pexPolicy.getArray(name))
                 else:
