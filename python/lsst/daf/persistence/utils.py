@@ -23,10 +23,7 @@
 #
 from past.builtins import basestring
 
-try:
-    from collections.abc import Sequence, Set, Mapping
-except ImportError:
-    from collections import Sequence, Set, Mapping
+from collections.abc import Sequence, Set, Mapping
 
 
 # -*- python -*-

@@ -26,6 +26,7 @@ from past.builtins import basestring
 from future.utils import with_metaclass
 
 import collections
+import collections.abc
 import copy
 import os
 import sys
@@ -79,7 +80,7 @@ class Policy(_PolicyBase):
         if other is None:
             return
 
-        if isinstance(other, collections.Mapping):
+        if isinstance(other, collections.abc.Mapping):
             self.update(other)
         elif isinstance(other, Policy):
             self.data = copy.deepcopy(other.data)
@@ -172,12 +173,12 @@ class Policy(_PolicyBase):
                 data = data[key]
             else:
                 return None
-        if isinstance(data, collections.Mapping):
+        if isinstance(data, collections.abc.Mapping):
             data = Policy(data)
         return data
 
     def __setitem__(self, name, value):
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, collections.abc.Mapping):
             keys = name.split('.')
             d = {}
             cur = d
@@ -239,8 +240,8 @@ class Policy(_PolicyBase):
         """
         def doUpdate(d, u):
             for k, v in u.items():
-                if isinstance(d, collections.Mapping):
-                    if isinstance(v, collections.Mapping):
+                if isinstance(d, collections.abc.Mapping):
+                    if isinstance(v, collections.abc.Mapping):
                         r = doUpdate(d.get(k, {}), v)
                         d[k] = r
                     else:
@@ -274,7 +275,7 @@ class Policy(_PolicyBase):
                 val = d[key]
                 levelKey = base + '.' + key if base is not None else key
                 keys.append(levelKey)
-                if isinstance(val, collections.Mapping):
+                if isinstance(val, collections.abc.Mapping):
                     getKeys(val, keys, levelKey)
         keys = []
         getKeys(self.data, keys, None)
@@ -289,7 +290,7 @@ class Policy(_PolicyBase):
         val = self.get(name)
         if isinstance(val, basestring):
             val = [val]
-        elif not isinstance(val, collections.Container):
+        elif not isinstance(val, collections.abc.Container):
             val = [val]
         return val
 
@@ -369,7 +370,7 @@ class Policy(_PolicyBase):
         val = self.get(key)
         if isinstance(val, basestring):
             val = [val]
-        elif not isinstance(val, collections.Container):
+        elif not isinstance(val, collections.abc.Container):
             val = [val]
         return val
 
