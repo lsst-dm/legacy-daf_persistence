@@ -48,7 +48,7 @@ class TestDM12117(unittest.TestCase):
     """Test case for basic Butler operations."""
 
     def setUp(self):
-            self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='test_DM-12117-')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='test_DM-12117-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):

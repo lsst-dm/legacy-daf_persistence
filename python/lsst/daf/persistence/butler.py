@@ -914,7 +914,7 @@ class Butler(object):
             If a default mapper can not be established and there is an output that does not have a mapper.
         """
         needyOutputs = [rd for rd in repoDataList if rd.role == 'output' and rd.cfg.mapper is None]
-        if len(needyOutputs) is 0:
+        if len(needyOutputs) == 0:
             return
         mappers = set([rd.cfg.mapper for rd in repoDataList if rd.role == 'input'])
         if len(mappers) != 1:
