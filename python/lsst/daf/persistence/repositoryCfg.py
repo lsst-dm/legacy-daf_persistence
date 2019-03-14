@@ -317,4 +317,15 @@ class RepositoryCfg(yaml.YAMLObject):
             self._policy)
 
 
-yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor)
+loaderList = [yaml.Loader, ]
+try:
+    loaderList.append(yaml.FullLoader)
+except AttributeError:
+    pass
+try:
+    loaderList.append(yaml.UnsafeLoader)
+except AttributeError:
+    pass
+
+for loader in loaderList:
+    yaml.add_constructor(u"!RepositoryCfg_v1", RepositoryCfg.v1Constructor, Loader=loader)

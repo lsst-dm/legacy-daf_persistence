@@ -208,7 +208,18 @@ class RepositoryCfg(yaml.YAMLObject):
         return dp.RepositoryCfg(root=d['_root'], mapper=None, mapperArgs=None, parents=None, policy=None)
 
 
-yaml.add_constructor(u"!RepositoryCfg_v0", RepositoryCfg.v0Constructor)
+loaderList = [yaml.Loader, ]
+try:
+    loaderList.append(yaml.FullLoader)
+except AttributeError:
+    pass
+try:
+    loaderList.append(yaml.UnsafeLoader)
+except AttributeError:
+    pass
+
+for loader in loaderList:
+    yaml.add_constructor(u"!RepositoryCfg_v0", RepositoryCfg.v0Constructor, Loader=loader)
 
 
 class TestCfgFileVersion(unittest.TestCase):
