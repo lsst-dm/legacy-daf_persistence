@@ -470,8 +470,13 @@ class PgsqlRegistry(SqlRegistry):
         config : `dict`
             Configuration
         """
+        try:
+            # PyYAML >=5.1 prefers a different loader
+            loader = yaml.FullLoader
+        except AttributeError:
+            loader = yaml.Loader
         with open(location) as ff:
-            data = yaml.load(ff)
+            data = yaml.load(ff, Loader=loader)
         requireKeys = set(["host", "port", "database", "user"])
         optionalKeys = set(["password"])
         haveKeys = set(data.keys())
