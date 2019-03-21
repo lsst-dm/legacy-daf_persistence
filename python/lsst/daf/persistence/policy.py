@@ -161,7 +161,12 @@ class Policy(_PolicyBase):
         :return:
         """
         # will raise yaml.YAMLError if there is an error loading the file.
-        self.data = yaml.load(stream)
+        try:
+            # PyYAML >=5.1 prefers a different loader
+            loader = yaml.FullLoader
+        except AttributeError:
+            loader = yaml.Loader
+        self.data = yaml.load(stream, Loader=loader)
         return self
 
     def __getitem__(self, name):

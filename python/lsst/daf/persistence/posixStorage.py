@@ -909,8 +909,13 @@ def readYamlStorage(butlerLocation):
         if butlerLocation.pythonType == 'lsst.daf.persistence.RepositoryCfg':
             finalItem = Policy(filePath=logLoc.locString())
         else:
+            try:
+                # PyYAML >=5.1 prefers a different loader
+                loader = yaml.FullLoader
+            except AttributeError:
+                loader = yaml.Loader
             with open(logLoc.locString(), "rb") as infile:
-                finalItem = yaml.load(infile)
+                finalItem = yaml.load(infile, Loader=loader)
         results.append(finalItem)
     return results
 

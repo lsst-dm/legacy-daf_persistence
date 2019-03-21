@@ -193,7 +193,11 @@ class ButlerLocation(yaml.YAMLObject):
     """
 
     yaml_tag = u"!ButlerLocation"
-    yaml_loader = yaml.Loader
+    try:
+        # PyYAML >=5.1 prefers a different loader
+        yaml_loader = yaml.FullLoader
+    except AttributeError:
+        yaml_loader = yaml.Loader
     yaml_dumper = yaml.Dumper
 
     def __repr__(self):

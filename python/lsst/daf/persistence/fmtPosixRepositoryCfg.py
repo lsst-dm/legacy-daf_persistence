@@ -30,6 +30,14 @@ from . import PosixStorage, RepositoryCfg, safeFileIo, ParentsMismatch
 
 __all__ = []
 
+try:
+    # PyYAML >=5.1 prefers a different loader
+    # We need to use Unsafe because obs packages do not register
+    # constructors but rely on python object syntax.
+    Loader = yaml.UnsafeLoader
+except AttributeError:
+    Loader = yaml.Loader
+
 
 def _write(butlerLocation, cfg):
     """Serialize a RepositoryCfg to a location.
@@ -97,7 +105,7 @@ def _doRead(fileObject, uri):
     -------
     A RepositoryCfg instance or None
     """
-    repositoryCfg = yaml.load(fileObject)
+    repositoryCfg = yaml.load(fileObject, Loader=Loader)
     if repositoryCfg is not None:
         if repositoryCfg.root is None:
             repositoryCfg.root = uri
