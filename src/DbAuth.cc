@@ -40,7 +40,6 @@
 #endif
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
-#include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/persistence/DbAuth.h"
 
 #include <cstdlib>
@@ -88,7 +87,6 @@ search(std::string const& host, std::string const& port) {
                     filename + " is missing or accessible by others");
         }
         {
-            dafBase::PersistentCitizenScope scopeGuard;
             authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(filename));
         }
     }
@@ -117,14 +115,12 @@ search(std::string const& host, std::string const& port) {
  * \param[in] policy Pointer to a Policy
  */
 void dafPersist::DbAuth::setPolicy(pexPolicy::Policy::Ptr policy) {
-    dafBase::PersistentCitizenScope scopeGuard;
     authPolicy = pexPolicy::Policy::Ptr(new pexPolicy::Policy(*policy, true));
 }
 
 /** Set the authenticator Policy back to null.
  */
 void dafPersist::DbAuth::resetPolicy() {
-    dafBase::PersistentCitizenScope scopeGuard;
     authPolicy = nullptr;
 }
 

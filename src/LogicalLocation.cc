@@ -59,8 +59,7 @@ dafBase::PropertySet::Ptr dafPersist::LogicalLocation::_map;
 /** Constructor from string and additional data.
  */
 dafPersist::LogicalLocation::LogicalLocation(
-    std::string const& locString, CONST_PTR(dafBase::PropertySet) additionalData) :
-    lsst::daf::base::Citizen(typeid(*this)), _locString() {
+    std::string const& locString, CONST_PTR(dafBase::PropertySet) additionalData) : _locString() {
     boost::regex expr("(%.*?)\\((\\w+?)\\)");
     boost::sregex_iterator i = make_regex_iterator(locString, expr);
     boost::sregex_iterator last;
@@ -132,7 +131,6 @@ std::string const& dafPersist::LogicalLocation::locString(void) const {
 /** Set the logical-to-less-logical map.
   */
 void dafPersist::LogicalLocation::setLocationMap(PTR(dafBase::PropertySet) map) {
-    dafBase::PersistentCitizenScope scope;
     if (map) {
         _map = map->deepCopy();
     } else {

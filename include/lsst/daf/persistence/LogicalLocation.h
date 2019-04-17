@@ -48,7 +48,6 @@
 #include <string>
 
 #include "lsst/base.h"
-#include "lsst/daf/base/Citizen.h"
 #include "lsst/daf/base/PropertySet.h"
 
 namespace lsst {
@@ -57,7 +56,7 @@ namespace persistence {
 
 namespace dafBase = lsst::daf::base;
 
-class LogicalLocation : public dafBase::Citizen {
+class LogicalLocation {
 public:
     typedef std::shared_ptr<LogicalLocation> Ptr;
 
