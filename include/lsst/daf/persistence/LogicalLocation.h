@@ -26,23 +26,23 @@
 #define LSST_MWI_PERSISTENCE_LOGICALLOCATION_H
 
 /** @file
-  * @ingroup daf_persistence
-  *
-  * @brief Interface for LogicalLocation class
-  *
-  * @author Kian-Tat Lim (ktl@slac.stanford.edu)
-  * @version $Revision$
-  * @date $Date$
-  */
+ * @ingroup daf_persistence
+ *
+ * @brief Interface for LogicalLocation class
+ *
+ * @author Kian-Tat Lim (ktl@slac.stanford.edu)
+ * @version $Revision$
+ * @date $Date$
+ */
 
 /** @class lsst::daf::persistence::LogicalLocation
-  * @brief Class for logical location of a persisted Persistable instance.
-  *
-  * Implemented as a minimal string representing a pathname or a database
-  * connection string.  Interpreted by FormatterStorage subclasses.
-  *
-  * @ingroup daf_persistence
-  */
+ * @brief Class for logical location of a persisted Persistable instance.
+ *
+ * Implemented as a minimal string representing a pathname or a database
+ * connection string.  Interpreted by FormatterStorage subclasses.
+ *
+ * @ingroup daf_persistence
+ */
 
 #include <memory>
 #include <string>
@@ -67,10 +67,12 @@ public:
     static void setLocationMap(PTR(dafBase::PropertySet) map);
 
 private:
-    std::string _locString; ///< The location string.
-    static PTR(dafBase::PropertySet) _map; ///< The logical-to-less-logical map.
+    std::string _locString;                 ///< The location string.
+    static PTR(dafBase::PropertySet) _map;  ///< The logical-to-less-logical map.
 };
 
-}}} // namespace lsst::daf::persistence
+}  // namespace persistence
+}  // namespace daf
+}  // namespace lsst
 
 #endif
