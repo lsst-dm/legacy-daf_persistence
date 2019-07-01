@@ -26,15 +26,15 @@
 #define LSST_DAF_PERSISTENCE_H
 
 /** @file
-  * @ingroup daf_persistence
-  *
-  * @brief daf_persistence package header file
-  *
-  * @author Kian-Tat Lim, SLAC
-  * @version $Revision: 4654 $
-  * @date $Date: 2008-04-01 14:28:07 -0700 (Tue, 01 Apr 2008) $
-  */
+ * @ingroup daf_persistence
+ *
+ * @brief daf_persistence package header file
+ *
+ * @author Kian-Tat Lim, SLAC
+ * @version $Revision: 4654 $
+ * @date $Date: 2008-04-01 14:28:07 -0700 (Tue, 01 Apr 2008) $
+ */
 
 #include <lsst/daf/persistence/DbAuth.h>
 
-#endif // #ifndef LSST_DAF_PERSISTENCE_H
+#endif  // #ifndef LSST_DAF_PERSISTENCE_H
