@@ -27,7 +27,6 @@
 import copy
 import yaml
 from . import iterify, doImport, Storage, ParentsMismatch
-from past.builtins import basestring
 
 
 class RepositoryCfg(yaml.YAMLObject):
@@ -291,9 +290,9 @@ class RepositoryCfg(yaml.YAMLObject):
 
         repoArgsMapper = repositoryArgs.mapper
         cfgMapper = self._mapper
-        if isinstance(repoArgsMapper, basestring):
+        if isinstance(repoArgsMapper, str):
             repoArgsMapper = doImport(repoArgsMapper)
-        if isinstance(cfgMapper, basestring):
+        if isinstance(cfgMapper, str):
             cfgMapper = doImport(cfgMapper)
         if repoArgsMapper is not None and repoArgsMapper != cfgMapper:
             return False

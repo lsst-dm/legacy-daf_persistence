@@ -26,8 +26,6 @@ import shutil
 import unittest
 import tempfile
 
-from past.builtins import basestring
-
 import lsst.daf.persistence
 import lsst.pex.policy
 import lsst.utils.tests
@@ -107,7 +105,7 @@ class PolicyTestCase(unittest.TestCase):
             if not isinstance(yamlPolicy[name], lsst.daf.persistence.Policy):
                 yamlPolicyVal = yamlPolicy[name]
                 if isinstance(yamlPolicyVal, collections.abc.Iterable) and \
-                        not isinstance(yamlPolicyVal, basestring):
+                        not isinstance(yamlPolicyVal, str):
                     self.assertEqual(yamlPolicyVal, pexPolicy.getArray(name))
                 else:
                     self.assertEqual(yamlPolicyVal, pexPolicy.get(name))

@@ -19,7 +19,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import object, super
 
 import pickle
 import os
@@ -41,7 +40,7 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 
-class PosixPickleStringHanlder(object):
+class PosixPickleStringHanlder:
 
     @staticmethod
     def get(butlerLocation):

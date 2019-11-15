@@ -21,7 +21,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from past.builtins import basestring
 import sys
 import pickle
 import importlib
@@ -528,7 +527,7 @@ def readConfigStorage(butlerLocation):
             raise RuntimeError("No such config file: " + logLoc.locString())
         pythonType = butlerLocation.getPythonType()
         if pythonType is not None:
-            if isinstance(pythonType, basestring):
+            if isinstance(pythonType, str):
                 pythonType = doImport(pythonType)
         finalItem = pythonType()
         finalItem.load(logLoc.locString())
@@ -573,7 +572,7 @@ def readFitsStorage(butlerLocation):
     """
     pythonType = butlerLocation.getPythonType()
     if pythonType is not None:
-        if isinstance(pythonType, basestring):
+        if isinstance(pythonType, str):
             pythonType = doImport(pythonType)
     supportsOptions = hasattr(pythonType, "readFitsWithOptions")
     if not supportsOptions:
@@ -664,7 +663,7 @@ def readParquetStorage(butlerLocation):
 
         pythonType = butlerLocation.getPythonType()
         if pythonType is not None:
-            if isinstance(pythonType, basestring):
+            if isinstance(pythonType, str):
                 pythonType = doImport(pythonType)
 
         filename = logLoc.locString()
@@ -779,7 +778,7 @@ def readFitsCatalogStorage(butlerLocation):
     """
     pythonType = butlerLocation.getPythonType()
     if pythonType is not None:
-        if isinstance(pythonType, basestring):
+        if isinstance(pythonType, str):
             pythonType = doImport(pythonType)
     results = []
     additionalData = butlerLocation.getAdditionalData()

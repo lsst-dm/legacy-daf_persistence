@@ -21,15 +21,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from past.builtins import basestring
-
-# On Python 3 collections.UserDict is iterable but on Python 2
-# we have to use UserDict.IterableUserDict. Since collections.UserDict
-# exists on Python 2 we try the Python 2 variant first.
-try:
-    from UserDict import IterableUserDict as UserDict
-except ImportError:
-    from collections import UserDict
+from collections import UserDict
 
 import copy
 
@@ -59,7 +51,7 @@ class DataId(UserDict):
             self.tag = set()
 
         if tag is not None:
-            if isinstance(tag, basestring):
+            if isinstance(tag, str):
                 self.tag.update([tag])
             else:
                 try:

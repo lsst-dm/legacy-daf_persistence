@@ -20,8 +20,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from __future__ import print_function
-from builtins import str
 import lsst.daf.persistence as dafPersist
 import lsst.utils.tests
 import astropy.io.fits

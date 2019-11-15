@@ -26,8 +26,6 @@
 
 """This module defines the ReadProxy class."""
 
-from __future__ import absolute_import
-
 from .persistence import ReadProxyBase
 
 

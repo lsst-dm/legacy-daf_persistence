@@ -32,10 +32,6 @@ SqliteRegistry can be remote/not on the local filesystem. For now this module
 is only used by CameraMapper and by PosixStorage, both of which work on the
 local filesystem only, so this works for the time being.
 """
-from __future__ import absolute_import
-from past.builtins import basestring
-from builtins import super
-
 import copy
 from . import fsScanner, sequencify
 import os
@@ -62,7 +58,7 @@ except ImportError:
     havePgsql = False
 
 
-class Registry(object):
+class Registry:
     """The registry base class."""
 
     def __init__(self):
@@ -140,7 +136,7 @@ class PosixRegistry(Registry):
             return dataId[hduKey]
         return None
 
-    class LookupData(object):
+    class LookupData:
 
         def __init__(self, lookupProperties, dataId):
             self.dataId = copy.copy(dataId)
@@ -356,7 +352,7 @@ class SqlRegistry(Registry):
         if dataId is not None and len(dataId) > 0:
             whereList = []
             for k, v in dataId.items():
-                if hasattr(k, '__iter__') and not isinstance(k, basestring):
+                if hasattr(k, '__iter__') and not isinstance(k, str):
                     if len(k) != 2:
                         raise RuntimeError("Wrong number of keys for range:%s" % (k,))
                     whereList.append("(%s BETWEEN %s AND %s)" % (self.placeHolder, k[0], k[1]))

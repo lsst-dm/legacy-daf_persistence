@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from lsst.utils import continueClass
 
 from .testLib import TypeWithProxy, TypeWithoutProxy

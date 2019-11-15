@@ -21,12 +21,9 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from __future__ import absolute_import
 
-from future import standard_library
 import urllib.parse
 from . import NoRepositroyAtRoot
-standard_library.install_aliases()
 
 
 class Storage:

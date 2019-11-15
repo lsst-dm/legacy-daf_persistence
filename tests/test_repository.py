@@ -22,9 +22,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from builtins import str
-from builtins import range
-
 import os
 import astropy.io.fits
 import shutil

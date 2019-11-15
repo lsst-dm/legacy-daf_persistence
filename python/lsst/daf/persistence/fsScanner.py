@@ -22,9 +22,6 @@
 
 
 """This module provides the FsScanner class."""
-from __future__ import print_function
-from builtins import range
-from builtins import object
 
 import glob
 import os
@@ -32,7 +29,7 @@ import re
 import sys
 
 
-class FsScanner(object):
+class FsScanner:
     """Class to scan a filesystem location for paths matching a template.
 
     Decomposes the resulting paths into fields and passes them to a callback
