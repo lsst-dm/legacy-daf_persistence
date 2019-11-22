@@ -21,15 +21,10 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import str
-from past.builtins import basestring
-from future.utils import with_metaclass
-
 import collections
 import collections.abc
 import copy
 import os
-import sys
 import warnings
 import yaml
 
@@ -39,20 +34,16 @@ import lsst.utils
 from yaml.representer import Representer
 yaml.add_representer(collections.defaultdict, Representer.represent_dict)
 
+
 # UserDict and yaml have defined metaclasses and Python 3 does not allow multiple
 # inheritance of classes with distinct metaclasses. We therefore have to
-# create a new baseclass that Policy can inherit from. This is because the metaclass
-# syntax differs between versions
+# create a new baseclass that Policy can inherit from.
+class _PolicyMeta(type(collections.UserDict), type(yaml.YAMLObject)):
+    pass
 
-if sys.version_info[0] >= 3:
-    class _PolicyMeta(type(collections.UserDict), type(yaml.YAMLObject)):
-        pass
 
-    class _PolicyBase(with_metaclass(_PolicyMeta, collections.UserDict, yaml.YAMLObject)):
-        pass
-else:
-    class _PolicyBase(collections.UserDict, yaml.YAMLObject):
-        pass
+class _PolicyBase(collections.UserDict, yaml.YAMLObject, metaclass=_PolicyMeta):
+    pass
 
 
 class Policy(_PolicyBase):
@@ -84,7 +75,7 @@ class Policy(_PolicyBase):
             self.update(other)
         elif isinstance(other, Policy):
             self.data = copy.deepcopy(other.data)
-        elif isinstance(other, basestring):
+        elif isinstance(other, str):
             # if other is a string, assume it is a file path.
             self.__initFromFile(other)
         elif isinstance(other, pexPolicy.Policy):
@@ -293,7 +284,7 @@ class Policy(_PolicyBase):
         :return:
         """
         val = self.get(name)
-        if isinstance(val, basestring):
+        if isinstance(val, str):
             val = [val]
         elif not isinstance(val, collections.abc.Container):
             val = [val]
@@ -373,7 +364,7 @@ class Policy(_PolicyBase):
         """
         warnings.warn("Deprecated. Use asArray()", DeprecationWarning)
         val = self.get(key)
-        if isinstance(val, basestring):
+        if isinstance(val, str):
             val = [val]
         elif not isinstance(val, collections.abc.Container):
             val = [val]

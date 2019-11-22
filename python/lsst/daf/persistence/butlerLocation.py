@@ -28,13 +28,12 @@
 import lsst.daf.base as dafBase
 
 import os
-from past.builtins import basestring
 import yaml
 
 from . import iterify, doImport
 
 
-class ButlerComposite(object):
+class ButlerComposite:
     """Initializer
 
     Parameters
@@ -101,9 +100,9 @@ class ButlerComposite(object):
              self.repository)
 
     def __init__(self, assembler, disassembler, python, dataId, mapper):
-        self.assembler = doImport(assembler) if isinstance(assembler, basestring) else assembler
-        self.disassembler = doImport(disassembler) if isinstance(disassembler, basestring) else disassembler
-        self.python = doImport(python) if isinstance(python, basestring) else python
+        self.assembler = doImport(assembler) if isinstance(assembler, str) else assembler
+        self.disassembler = doImport(disassembler) if isinstance(disassembler, str) else disassembler
+        self.python = doImport(python) if isinstance(python, str) else python
         self.dataId = dataId
         self.mapper = mapper
         self.componentInfo = {}
@@ -209,8 +208,7 @@ class ButlerLocation(yaml.YAMLObject):
 
     def __init__(self, pythonType, cppType, storageName, locationList, dataId, mapper, storage,
                  usedDataId=None, datasetType=None, additionalData=None):
-        # pythonType is sometimes unicode with Python 2 and pybind11; this breaks the interpreter
-        self.pythonType = str(pythonType) if isinstance(pythonType, basestring) else pythonType
+        self.pythonType = pythonType
         self.cppType = cppType
         self.storageName = storageName
         self.mapper = mapper

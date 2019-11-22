@@ -21,9 +21,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from past.builtins import basestring
-from builtins import object
-
 import copy
 import inspect
 import os
@@ -31,7 +28,7 @@ import os
 from lsst.daf.persistence import Storage, listify, doImport, Policy
 
 
-class RepositoryArgs(object):
+class RepositoryArgs:
 
     """Arguments passed into a Butler that are used to instantiate a repository. This includes arguments that
     can be used to create a new repository (cfgRoot, root, mapper, mapperArgs, policy) and are persisted along
@@ -115,7 +112,7 @@ class RepositoryArgs(object):
 
     def tag(self, tag):
         """add a tag to the repository cfg"""
-        if isinstance(tag, basestring):
+        if isinstance(tag, str):
             self.tags.add(tag)
         else:
             try:
@@ -124,7 +121,7 @@ class RepositoryArgs(object):
                 self.tags.add(tag)
 
 
-class Repository(object):
+class Repository:
     """Represents a repository of persisted data and has methods to access that data.
     """
 
@@ -158,7 +155,7 @@ class Repository(object):
         mapper = repoData.cfg.mapper
 
         # if mapper is a string, import it:
-        if isinstance(mapper, basestring):
+        if isinstance(mapper, str):
             mapper = doImport(mapper)
         # now if mapper is a class type (not instance), instantiate it:
         if inspect.isclass(mapper):

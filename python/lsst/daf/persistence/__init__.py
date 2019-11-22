@@ -22,7 +22,6 @@
 
 """Python interface to lsst::daf::persistence classes
 """
-from __future__ import absolute_import
 
 StorageList = list
 
@@ -54,4 +53,3 @@ from .butler import *
 from .butlerFactory import *
 from .butlerHelpers import *
 from .version import *
-

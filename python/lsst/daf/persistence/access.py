@@ -20,7 +20,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import object, super
 
 from lsst.daf.persistence import Policy
 
@@ -34,7 +33,7 @@ class AccessCfg(Policy, yaml.YAMLObject):
         super().__init__({'storageCfg': storageCfg, 'cls': cls})
 
 
-class Access(object):
+class Access:
     """Implements an butler framework interface for Transport, Storage, and Registry
 
     .. warning::

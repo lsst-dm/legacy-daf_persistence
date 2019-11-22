@@ -26,14 +26,11 @@
 
 """This module defines the ButlerSubset class and the ButlerDataRefs contained
 within it as well as an iterator over the subset."""
-from builtins import next
-from builtins import range
-from builtins import object
 
 from . import DataId
 
 
-class ButlerSubset(object):
+class ButlerSubset:
 
     """ButlerSubset is a container for ButlerDataRefs.  It represents a
     collection of data ids that can be used to obtain datasets of the type
@@ -130,7 +127,7 @@ class ButlerSubset(object):
         return ButlerSubsetIterator(self)
 
 
-class ButlerSubsetIterator(object):
+class ButlerSubsetIterator:
     """
     An iterator over the ButlerDataRefs in a ButlerSubset.
     """
@@ -146,7 +143,7 @@ class ButlerSubsetIterator(object):
         return ButlerDataRef(self.butlerSubset, next(self.iter))
 
 
-class ButlerDataRef(object):
+class ButlerDataRef:
     """
     A ButlerDataRef is a reference to a potential dataset or group of datasets
     that is portable between compatible dataset types.  As such, it can be

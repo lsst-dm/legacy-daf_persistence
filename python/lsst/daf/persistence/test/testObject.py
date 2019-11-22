@@ -22,7 +22,7 @@
 #
 
 
-class TestObject(object):
+class TestObject:
     """A basic object for testing. Contains a data blob that can be compared with other TestObject instances
     for equality (or inequality).
     """
@@ -52,7 +52,7 @@ class TestObject(object):
         return "TestObject(data=%r)" % self.data
 
 
-class TestObjectPair(object):
+class TestObjectPair:
     """An object for testing that contains 2 objects.
     """
 
@@ -90,7 +90,7 @@ class TestObjectPair(object):
         return self.objB
 
 
-class TestObjectCamelCaseSetter(object):
+class TestObjectCamelCaseSetter:
     """A test object with camel case setter and getter e.g. `def setFoo...`"""
     def __init__(self):
         self._foo = None
@@ -102,7 +102,7 @@ class TestObjectCamelCaseSetter(object):
         return self._foo
 
 
-class TestObjectUnderscoreSetter(object):
+class TestObjectUnderscoreSetter:
     """A test object with lower case camel case setter and getter e.g. `def setFoo...`"""
     def __init__(self):
         self._foo = None

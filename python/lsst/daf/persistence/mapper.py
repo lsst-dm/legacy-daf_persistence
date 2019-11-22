@@ -21,15 +21,12 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import object, super
-
-
 from . import Policy
 
 """This module defines the Mapper base class."""
 
 
-class Mapper(object):
+class Mapper:
     """Mapper is a base class for all mappers.
 
     Subclasses may define the following methods:

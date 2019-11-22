@@ -21,8 +21,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from past.builtins import basestring
-
 from collections.abc import Sequence, Set, Mapping
 
 
@@ -37,7 +35,7 @@ def listify(x):
     """
     if x is None:
         x = []
-    elif isinstance(x, basestring):
+    elif isinstance(x, str):
         x = [x]
     elif isinstance(x, dict):
         x = [x]
@@ -57,7 +55,7 @@ def iterify(x):
     """
     if x is None:
         x = []
-    elif isinstance(x, basestring):
+    elif isinstance(x, str):
         x = [x]
     elif hasattr(x, '__iter__'):
         pass
@@ -70,7 +68,7 @@ def sequencify(x):
     """Takes an object, if it is a sequence return it,
     else put it in a tuple. Strings are not sequences.
     If x is a dict, returns a sorted tuple of keys."""
-    if isinstance(x, (Sequence, Set)) and not isinstance(x, basestring):
+    if isinstance(x, (Sequence, Set)) and not isinstance(x, str):
         pass
     elif isinstance(x, Mapping):
         x = tuple(sorted(x.keys()))
@@ -93,7 +91,7 @@ def setify(x):
     # want the list to be an item; we want each item in the list to be represented by an item in the set.
     # Then, we have to fall back to braces init because if the item is NOT a list then the set initializer
     # won't take it.
-    if isinstance(x, basestring):
+    if isinstance(x, str):
         x = set([x])
     else:
         try:
@@ -106,11 +104,10 @@ def setify(x):
 def doImport(pythonType):
     """Import a python object given an importable string"""
     try:
-        if not isinstance(pythonType, basestring):
+        if not isinstance(pythonType, str):
             raise TypeError("Unhandled type of pythonType, val:%s" % pythonType)
         # import this pythonType dynamically
-        # pythonType is sometimes unicode with Python 2 and pybind11; this breaks the interpreter
-        pythonTypeTokenList = str(pythonType).split('.')
+        pythonTypeTokenList = pythonType.split('.')
         importClassString = pythonTypeTokenList.pop()
         importClassString = importClassString.strip()
         importPackage = ".".join(pythonTypeTokenList)

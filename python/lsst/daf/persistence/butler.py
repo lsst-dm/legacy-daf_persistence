@@ -25,10 +25,6 @@
 # -*- python -*-
 
 """This module defines the Butler class."""
-from builtins import str, super
-from past.builtins import basestring
-from builtins import object
-
 import copy
 import inspect
 
@@ -62,7 +58,7 @@ class ButlerCfg(Policy, yaml.YAMLObject):
         super().__init__({'repoCfg': repoCfg, 'cls': cls})
 
 
-class RepoData(object):
+class RepoData:
     """Container object for repository data used by Butler
 
     Parameters
@@ -240,7 +236,7 @@ class RepoData(object):
         self.tags = self.tags.union(tags)
 
 
-class RepoDataContainer(object):
+class RepoDataContainer:
     """Container object for RepoData instances owned by a Butler instance.
 
         Parameters
@@ -322,7 +318,7 @@ class RepoDataContainer(object):
         self._outputs = [repoData.repoData for repoData in outputs]
 
 
-class Butler(object):
+class Butler:
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
 
     A Butler manages a collection of datasets known as a repository. Each dataset has a type representing its
@@ -625,7 +621,7 @@ class Butler(object):
                 raise RuntimeError("The mode of an output should be writable.")
         # check for class instances in args.mapper (not allowed)
         for args in inputs + outputs:
-            if (args.mapper and not isinstance(args.mapper, basestring) and
+            if (args.mapper and not isinstance(args.mapper, str) and
                not inspect.isclass(args.mapper)):
                 self.log.warn(preinitedMapperWarning)
         # if the output is readable, there must be only one output:
@@ -1015,7 +1011,7 @@ class Butler(object):
         tuple
             (inputs, outputs) - values to be used for inputs and outputs in Butler.__init__
         """
-        if (mapper and not isinstance(mapper, basestring) and
+        if (mapper and not isinstance(mapper, str) and
            not inspect.isclass(mapper)):
             self.log.warn(preinitedMapperWarning)
         inputs = None
@@ -1067,7 +1063,7 @@ class Butler(object):
                 # * a string, import it.
                 # * a class instance, get its class type
                 # * a class, do nothing; use it
-                if isinstance(mapper, basestring):
+                if isinstance(mapper, str):
                     mapper = doImport(mapper)
                 elif not inspect.isclass(mapper):
                     mapper = mapper.__class__
@@ -1348,7 +1344,7 @@ class Butler(object):
     def _getBypassFunc(location, dataId):
         pythonType = location.getPythonType()
         if pythonType is not None:
-            if isinstance(pythonType, basestring):
+            if isinstance(pythonType, str):
                 pythonType = doImport(pythonType)
         bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
         return lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
