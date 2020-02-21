@@ -347,6 +347,8 @@ class Butler:
 
     getKeys(self, datasetType=None, level=None)
 
+    getDatasetTypes(self)
+
     queryMetadata(self, datasetType, format=None, dataId={}, **rest)
 
     datasetExists(self, datasetType, dataId={}, **rest)
@@ -1141,9 +1143,8 @@ class Butler:
             The hierarchy level to descend to. None if it should not be restricted. Use an empty string if the
             mapper should lookup the default level.
         tags - any, or list of any
-            Any object that can be tested to be the same as the tag in a dataId passed into butler input
-            functions. Applies only to input repositories: If tag is specified by the dataId then the repo
-            will only be read from used if the tag in the dataId matches a tag used for that repository.
+            If tag is specified then the repo will only be used if the tag
+            or a tag in the list matches a tag used for that repository.
 
         Returns
         -------
@@ -1163,6 +1164,28 @@ class Butler:
                 if keys is not None:
                     break
         return keys
+
+    def getDatasetTypes(self, tag=None):
+        """Get the valid dataset types for all known repos or those matching
+        the tags.
+
+        Parameters
+        ----------
+        tag - any, or list of any
+            If tag is specified then the repo will only be used if the tag
+            or a tag in the list matches a tag used for that repository.
+
+        Returns
+        -------
+        Returns the dataset types as a set of strings.
+        """
+        datasetTypes = set()
+        tag = setify(tag)
+        for repoData in self._repos.outputs() + self._repos.inputs():
+            if not tag or len(tag.intersection(repoData.tags)) > 0:
+                datasetTypes = datasetTypes.union(
+                    repoData.repo.mappers()[0].getDatasetTypes())
+        return datasetTypes
 
     def queryMetadata(self, datasetType, format, dataId={}, **rest):
         """Returns the valid values for one or more keys when given a partial
