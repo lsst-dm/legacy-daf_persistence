@@ -213,6 +213,9 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(keys['filter'], str)
         self.assertEqual(keys['visit'], int)
 
+    def testGetDatasetTypes(self):
+        self.assertEqual(self.butler.getDatasetTypes(), {"raw", "str", "pickled"})
+
     def testQueryMetadata(self):
         val = self.butler.queryMetadata('raw', ('filter',))
         val.sort()
