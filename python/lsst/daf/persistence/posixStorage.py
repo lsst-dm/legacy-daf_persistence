@@ -445,7 +445,10 @@ class PosixStorage(StorageInterface):
         while len(rootDir) > 1 and rootDir[-1] == '/':
             rootDir = rootDir[:-1]
 
-        if path.startswith(rootDir + "/"):
+        if not path.startswith('/'):
+            # Most common case is a relative path from a template
+            pathPrefix = None
+        elif path.startswith(rootDir + "/"):
             # Common case; we have the same root prefix string
             path = path[len(rootDir + '/'):]
             pathPrefix = rootDir
