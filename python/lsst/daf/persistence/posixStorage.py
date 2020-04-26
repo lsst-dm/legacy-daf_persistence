@@ -343,9 +343,9 @@ class PosixStorage(StorageInterface):
             True if the repository at root exists, else False.
         """
         return os.path.exists(root) and (
-            os.path.exists(os.path.join(root, "registry.sqlite3")) or
-            os.path.exists(os.path.join(root, "_mapper")) or
-            os.path.exists(os.path.join(root, "_parent"))
+            os.path.exists(os.path.join(root, "registry.sqlite3"))
+            or os.path.exists(os.path.join(root, "_mapper"))
+            or os.path.exists(os.path.join(root, "_parent"))
         )
 
     def copyFile(self, fromLocation, toLocation):

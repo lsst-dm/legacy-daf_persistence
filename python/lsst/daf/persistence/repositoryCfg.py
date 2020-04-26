@@ -120,10 +120,10 @@ class RepositoryCfg(yaml.YAMLObject):
             (If this RepositoryCfg's parents can not be extended with the parents of the other repository,
             extendParents will raise).
         """
-        if (self.root != other.root or
-                self.mapper != other.mapper or
-                self.mapperArgs != other.mapperArgs or
-                self.policy != other.policy):
+        if (self.root != other.root
+                or self.mapper != other.mapper
+                or self.mapperArgs != other.mapperArgs
+                or self.policy != other.policy):
             raise RuntimeError("{} can not be extended with cfg:{}".format(self, other))
         self.extendParents(other.parents)
 
@@ -176,7 +176,7 @@ class RepositoryCfg(yaml.YAMLObject):
             else:
                 doRaise = True
         if doRaise:
-            raise ParentsMismatch(("The beginning of the passed-in parents list: {} does not match the " +
+            raise ParentsMismatch(("The beginning of the passed-in parents list: {} does not match the "
                                   "existing parents list in this RepositoryCfg: {}").format(
                                   newParents, self._parents))
 
