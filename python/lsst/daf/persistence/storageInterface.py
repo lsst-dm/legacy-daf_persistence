@@ -139,7 +139,7 @@ class StorageInterface:
         """
         def register(formatable, formatter, formatters, storageInterface):
             if formatable in formatters:
-                raise RuntimeError(("Registration of second formatter {} for formattable {} in " +
+                raise RuntimeError(("Registration of second formatter {} for formattable {} in "
                                     " storageInterface {}").format(formatter, formatable, storageInterface))
             formatters[formatable] = formatter
 

@@ -36,11 +36,11 @@ from . import ReadProxy, ButlerSubset, ButlerDataRef, \
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
     genericDisassembler, PosixStorage, ParentsMismatch
 
-preinitedMapperWarning = ("Passing an instantiated mapper into " +
-                          "Butler.__init__ will prevent Butler from passing " +
-                          "parentRegistry or repositoryCfg information to " +
-                          "the mapper, which is done only at init time. " +
-                          "It is better to pass a importable string or " +
+preinitedMapperWarning = ("Passing an instantiated mapper into "
+                          "Butler.__init__ will prevent Butler from passing "
+                          "parentRegistry or repositoryCfg information to "
+                          "the mapper, which is done only at init time. "
+                          "It is better to pass a importable string or "
                           "class object.")
 
 
@@ -142,11 +142,11 @@ class RepoData:
                 "repoArgs={}"
                 "cfg={!r},"
                 "cfgOrigin={},"
-                "cfgRoot={}," +
+                "cfgRoot={},"
                 "repo={},"
-                "parentRepoDatas={}," +
+                "parentRepoDatas={},"
                 "isV1Repository={},"
-                "role={}," +
+                "role={},"
                 "parentRegistry={})").format(
                     self.__class__.__name__,
                     id(self),
@@ -594,7 +594,7 @@ class Butler:
                                                   mapperArgs=mapperArgs or None)
         elif root or mapper or mapperArgs:
             raise RuntimeError(
-                'Butler version 1 API (root, mapper, **mapperArgs) may ' +
+                'Butler version 1 API (root, mapper, **mapperArgs) may '
                 'not be used with version 2 API (inputs, outputs)')
         self.datasetTypeAliasDict = {}
 
@@ -623,8 +623,8 @@ class Butler:
                 raise RuntimeError("The mode of an output should be writable.")
         # check for class instances in args.mapper (not allowed)
         for args in inputs + outputs:
-            if (args.mapper and not isinstance(args.mapper, str) and
-               not inspect.isclass(args.mapper)):
+            if (args.mapper and not isinstance(args.mapper, str)
+               and not inspect.isclass(args.mapper)):
                 self.log.warn(preinitedMapperWarning)
         # if the output is readable, there must be only one output:
         for o in outputs:
@@ -638,13 +638,13 @@ class Butler:
         # output, to the command line parser.
         def inputIsInOutputs(inputArgs, outputArgsList):
             for o in outputArgsList:
-                if ('r' in o.mode and
-                        o.root == inputArgs.root and
-                        o.mapper == inputArgs.mapper and
-                        o.mapperArgs == inputArgs.mapperArgs and
-                        o.tags == inputArgs.tags and
-                        o.policy == inputArgs.policy):
-                    self.log.debug(("Input repositoryArgs {} is also listed in outputs as readable; " +
+                if ('r' in o.mode
+                        and o.root == inputArgs.root
+                        and o.mapper == inputArgs.mapper
+                        and o.mapperArgs == inputArgs.mapperArgs
+                        and o.tags == inputArgs.tags
+                        and o.policy == inputArgs.policy):
+                    self.log.debug(("Input repositoryArgs {} is also listed in outputs as readable; "
                                     "throwing away the input.").format(inputArgs))
                     return True
             return False
@@ -782,7 +782,7 @@ class Butler:
                 if 'w' in repoData.repoArgs.mode:
                     # if it's an output repository, the RepositoryArgs must match the existing cfg.
                     if not cfgMatchesArgs(repoData.repoArgs, cfg):
-                        raise RuntimeError(("The RepositoryArgs and RepositoryCfg must match for writable " +
+                        raise RuntimeError(("The RepositoryArgs and RepositoryCfg must match for writable "
                                             "repositories, RepositoryCfg:{}, RepositoryArgs:{}").format(
                                                 cfg, repoData.repoArgs))
                     repoData.setCfg(cfg=cfg, origin='existing', root=repoData.repoArgs.cfgRoot,
@@ -834,8 +834,8 @@ class Butler:
                     isOldButlerRepository = False
                     repoParentCfg = repoParent
                     cfgOrigin = 'nested'
-                if (parentIdxInRepoDataList < len(repoDataList) and
-                        repoDataList[parentIdxInRepoDataList].cfg == repoParentCfg):
+                if (parentIdxInRepoDataList < len(repoDataList)
+                        and repoDataList[parentIdxInRepoDataList].cfg == repoParentCfg):
                     continue
                 args = RepositoryArgs(cfgRoot=repoParentCfg.root, mode='r')
                 role = 'input' if repoData.role == 'output' else 'parent'
@@ -891,7 +891,7 @@ class Butler:
                     try:
                         repoData.cfg.extendParents(parents)
                     except ParentsMismatch as e:
-                        raise RuntimeError(("Inputs of this Butler:{} do not match parents of existing " +
+                        raise RuntimeError(("Inputs of this Butler:{} do not match parents of existing "
                                            "writable cfg:{} (ParentMismatch exception: {}").format(
                                            parents, repoData.cfg.parents, e))
 
@@ -918,7 +918,7 @@ class Butler:
         if len(mappers) != 1:
             inputs = [rd for rd in repoDataList if rd.role == 'input']
             raise RuntimeError(
-                ("No default mapper could be established from inputs:{} and no mapper specified " +
+                ("No default mapper could be established from inputs:{} and no mapper specified "
                  "for outputs:{}").format(inputs, needyOutputs))
         defaultMapper = mappers.pop()
         for repoData in needyOutputs:
@@ -1013,8 +1013,8 @@ class Butler:
         tuple
             (inputs, outputs) - values to be used for inputs and outputs in Butler.__init__
         """
-        if (mapper and not isinstance(mapper, str) and
-           not inspect.isclass(mapper)):
+        if (mapper and not isinstance(mapper, str)
+           and not inspect.isclass(mapper)):
             self.log.warn(preinitedMapperWarning)
         inputs = None
         if root is None:
@@ -1351,8 +1351,8 @@ class Butler:
                     # If a location was found but the location does not exist, keep looking in input
                     # repositories (the registry may have had enough data for a lookup even thought the object
                     # exists in a different repository.)
-                    if (isinstance(location, ButlerComposite) or hasattr(location, 'bypass') or
-                            location.repository.exists(location)):
+                    if (isinstance(location, ButlerComposite) or hasattr(location, 'bypass')
+                            or location.repository.exists(location)):
                         return location
                 else:
                     try:
