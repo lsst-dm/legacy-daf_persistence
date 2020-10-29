@@ -120,14 +120,12 @@ class PolicyTestCase(unittest.TestCase):
         os.remove('testDumpFile.yaml')
 
     def testNonExistantPolicyAtPath(self):
-        # Test that loading paf & yaml files that do not exist raises an IOError.
+        # Test that loading yaml files that do not exist raises an IOError.
         with self.assertRaises(IOError):
             dafPersist.Policy("c:/nonExistantPath/policy.yaml")
-        with self.assertRaises(IOError):
-            dafPersist.Policy("c:/nonExistantPath/policy.paf")
 
     def testInvalidPolicyFileType(self):
-        # We only support files with '.paf' or '.yaml' extension; check that trying to load a file with a
+        # We only support files with '.yaml' extension; check that trying to load a file with a
         # different extension (in this case '.txt') raises a RuntimeError.
         with self.assertRaises(RuntimeError):
             dafPersist.Policy("c:/policy.txt")
