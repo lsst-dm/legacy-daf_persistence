@@ -580,7 +580,7 @@ def readFitsStorage(butlerLocation):
     if not supportsOptions:
         from lsst.daf.base import PropertySet, PropertyList
         if issubclass(pythonType, (PropertySet, PropertyList)):
-            from lsst.afw.image import readMetadata
+            from lsst.afw.fits import readMetadata
             reader = readMetadata
         else:
             reader = pythonType.readFits
