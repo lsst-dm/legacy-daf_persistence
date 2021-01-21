@@ -466,7 +466,7 @@ class PgsqlRegistry(SqlRegistry):
         """
         try:
             # PyYAML >=5.1 prefers a different loader
-            loader = yaml.FullLoader
+            loader = yaml.UnsafeLoader
         except AttributeError:
             loader = yaml.Loader
         with open(location) as ff:
