@@ -890,7 +890,7 @@ def readYamlStorage(butlerLocation):
         else:
             try:
                 # PyYAML >=5.1 prefers a different loader
-                loader = yaml.FullLoader
+                loader = yaml.UnsafeLoader
             except AttributeError:
                 loader = yaml.Loader
             with open(logLoc.locString(), "rb") as infile:

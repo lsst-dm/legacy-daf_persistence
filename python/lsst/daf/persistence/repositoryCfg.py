@@ -318,10 +318,6 @@ class RepositoryCfg(yaml.YAMLObject):
 
 loaderList = [yaml.Loader, ]
 try:
-    loaderList.append(yaml.FullLoader)
-except AttributeError:
-    pass
-try:
     loaderList.append(yaml.UnsafeLoader)
 except AttributeError:
     pass

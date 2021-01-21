@@ -123,7 +123,7 @@ class Policy(_PolicyBase):
         # will raise yaml.YAMLError if there is an error loading the file.
         try:
             # PyYAML >=5.1 prefers a different loader
-            loader = yaml.FullLoader
+            loader = yaml.UnsafeLoader
         except AttributeError:
             loader = yaml.Loader
         self.data = yaml.load(stream, Loader=loader)
