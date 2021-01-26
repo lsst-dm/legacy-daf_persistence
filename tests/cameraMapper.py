@@ -72,9 +72,9 @@ class CameraMapper(dafPersist.Mapper):
             ])
             keyDict.update(d)
         if level is not None:
-            for l in self.levels[level]:
-                if l in keyDict:
-                    del keyDict[l]
+            for lev in self.levels[level]:
+                if lev in keyDict:
+                    del keyDict[lev]
         return keyDict
 
     def getDefaultLevel(self):
