@@ -263,7 +263,7 @@ class ButlerLocation(yaml.YAMLObject):
         return self.locationList
 
     def getLocationsWithRoot(self):
-        return [os.path.join(self.storage.root, l) for l in self.getLocations()]
+        return [os.path.join(self.storage.root, loc) for loc in self.getLocations()]
 
     def getAdditionalData(self):
         return self.additionalData
