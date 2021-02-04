@@ -147,14 +147,14 @@ class TestFileLocking(unittest.TestCase):
             self.assertEqual(f.read(), "some test string")
 
 
-class TestOneThousandWriters(unittest.TestCase):
+class TestMultipleWriters(unittest.TestCase):
     """Test for efficient file updating with shared & exclusive locks by serializing a RepositoryCfg to a
     location 1000 times. When this was tested on a 2.8 GHz Intel Core i7 macbook pro it took about 1.3 seconds
     to run. When the squash performance monitoring framework is done, this test could be monitored in that
     system."""
 
     def setUp(self):
-        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestOneThousandWriters-')
+        self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestMultipleWriters-')
 
     def tearDown(self):
         if os.path.exists(self.testDir):
@@ -167,28 +167,12 @@ class TestOneThousandWriters(unittest.TestCase):
         dp.PosixStorage.putRepositoryCfg(cfg)
 
     def testWriteCfg(self):
-        # The number of writers to use can result in too many open files
-        # We calculate this as the 80% of the maximum allowed number for this
-        # process, or 1000, whichever is smaller.
-        # Reduce the number on macOS due to the cost of multiprocessing spawn
-        if os.uname()[0] == "Darwin":
-            numWriters = 3
-        else:
-            numWriters = 1000
-            try:
-                import resource
-                limit = resource.getrlimit(resource.RLIMIT_NOFILE)
-                allowedOpen = int(limit[0] * 0.8)
-                if allowedOpen < numWriters:
-                    numWriters = allowedOpen
-            except Exception:
-                # Use the default number if we had trouble obtaining resources
-                pass
+        numWriters = 3
         startTime = time.time()
         go = multiprocessing.Value('b', False)
         cfg = dp.RepositoryCfg(root=os.path.join(self.testDir), mapper='bar', mapperArgs={},
                                parents=None, policy=None)
-        procs = [multiprocessing.Process(target=TestOneThousandWriters.writeCfg, args=(cfg, go))
+        procs = [multiprocessing.Process(target=TestMultipleWriters.writeCfg, args=(cfg, go))
                  for x in range(numWriters)]
         for proc in procs:
             proc.start()
@@ -197,7 +181,7 @@ class TestOneThousandWriters(unittest.TestCase):
             proc.join()
         endTime = time.time()
         log = Log.getLogger("daf.persistence")
-        log.trace("TestOneThousandWriters took {} seconds.".format(endTime-startTime))
+        log.trace("TestMultipleWriters took {} seconds.".format(endTime-startTime))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
