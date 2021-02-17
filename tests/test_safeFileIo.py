@@ -148,10 +148,8 @@ class TestFileLocking(unittest.TestCase):
 
 
 class TestMultipleWriters(unittest.TestCase):
-    """Test for efficient file updating with shared & exclusive locks by serializing a RepositoryCfg to a
-    location 1000 times. When this was tested on a 2.8 GHz Intel Core i7 macbook pro it took about 1.3 seconds
-    to run. When the squash performance monitoring framework is done, this test could be monitored in that
-    system."""
+    """Test for efficient file updating with shared & exclusive locks by
+    serializing a RepositoryCfg to a location several times in parallel."""
 
     def setUp(self):
         self.testDir = tempfile.mkdtemp(dir=ROOT, prefix='TestMultipleWriters-')
@@ -162,11 +160,21 @@ class TestMultipleWriters(unittest.TestCase):
 
     @staticmethod
     def writeCfg(cfg, go):
+        """Write a configuration file after waiting on a condition variable."""
         while go is False:
             pass
         dp.PosixStorage.putRepositoryCfg(cfg)
 
     def testWriteCfg(self):
+        """Test parallel writes to a configuration file.
+
+        multiprocessing is used to spawn several writer function executions,
+        all of which wait to be released by the condition variable "go".
+
+        There are no asserts here, so success is measured solely by not
+        failing with an exception, but the time it took to do the writes can
+        be logged as a potential performance metric.
+        """
         numWriters = 3
         startTime = time.time()
         go = multiprocessing.Value('b', False)
