@@ -38,6 +38,7 @@ class ReadProxy(ReadProxyBase):
     __slots__ = ('__cache__', '__callback__')
 
     def __init__(self, func):
+        ReadProxyBase.__init__(self)
         set_callback(self, func)
 
     def __getattr__(self, attr):
