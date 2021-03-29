@@ -31,6 +31,7 @@ import inspect
 import yaml
 
 from lsst.log import Log
+from .deprecation import deprecateGen2
 from . import ReadProxy, ButlerSubset, ButlerDataRef, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
@@ -503,6 +504,7 @@ class Butler:
     """
 
     def __init__(self, root=None, mapper=None, inputs=None, outputs=None, **mapperArgs):
+        deprecateGen2("Butler")
         self._initArgs = {'root': root, 'mapper': mapper, 'inputs': inputs, 'outputs': outputs,
                           'mapperArgs': mapperArgs}
 

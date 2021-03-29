@@ -107,6 +107,14 @@ class ButlerTest(unittest.TestCase):
         butler = dp.Butler(root=self.testDir, mapper=dpTest.EmptyTestMapper())
         self.assertIsInstance(butler, dp.Butler)
 
+    def testWarning(self):
+        with self.assertWarns(FutureWarning):
+            current = lsst.daf.persistence.deprecation.always_warn
+            lsst.daf.persistence.deprecation.always_warn = True
+            dp.Butler(outputs={'root': self.testDir,
+                               'mapper': 'lsst.daf.persistence.test.EmptyTestMapper'})
+            lsst.daf.persistence.deprecation.always_warn = current
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass

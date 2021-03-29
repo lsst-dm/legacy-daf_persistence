@@ -22,6 +22,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 from . import Policy
+from .deprecation import deprecateGen2
 
 """This module defines the Mapper base class."""
 
@@ -96,6 +97,7 @@ class Mapper:
         return self
 
     def __init__(self, **kwargs):
+        deprecateGen2("Mapper")
         pass
 
     def __getstate__(self):
