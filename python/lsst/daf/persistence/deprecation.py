@@ -20,12 +20,12 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-__all__ = ("deprecateGen2", "always_warn")
+__all__ = ("deprecateGen2", "always_warn", "deprecate_class")
 
 import traceback
 import warnings
 
-always_warn = None
+always_warn = False
 """Control how often a warning is issued.
 
 Options are:
@@ -85,3 +85,24 @@ def deprecateGen2(component=None):
     warnings.warn(f"Gen2 Butler has been deprecated{label}. It will be removed sometime after v23.0 but no"
                   " earlier than the end of 2021.", category=FutureWarning, stacklevel=stacklevel)
     _issued[component] = True
+
+
+class Deprecator:
+    """Class for deprecation decorator to use."""
+
+    def __call__(self, wrapped):
+        """Intercept the call to ``__new__`` and issue the warning first."""
+        old_new1 = wrapped.__new__
+
+        def wrapped_cls(cls, *args, **kwargs):
+            deprecateGen2(cls.__name__)
+            if old_new1 is object.__new__:
+                return old_new1(cls)
+            return old_new1(cls, *args, **kwargs)
+
+        wrapped.__new__ = staticmethod(wrapped_cls)
+        return wrapped
+
+
+def deprecate_class(cls):
+    return Deprecator()(cls)
