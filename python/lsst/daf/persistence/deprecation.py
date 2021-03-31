@@ -134,6 +134,15 @@ class Deprecator:
         wrapped.__new__ = staticmethod(wrapped_cls)
         _add_deprecation_docstring(wrapped)
 
+        # Want to add the deprecation message to subclasses as well
+        # so register an __init_subclass__ method to attach it.
+        # We know that daf_persistence does not use __init_subclass_
+        # so do not need to get any cleverer here.
+        def add_deprecation_docstring_to_subclass(cls, **kwargs):
+            _add_deprecation_docstring(cls)
+
+        wrapped.__init_subclass__ = classmethod(add_deprecation_docstring_to_subclass)
+
         return wrapped
 
 
