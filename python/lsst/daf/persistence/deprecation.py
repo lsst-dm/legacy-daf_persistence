@@ -22,6 +22,7 @@
 
 __all__ = ("deprecateGen2", "always_warn", "deprecate_class")
 
+import textwrap
 import traceback
 import warnings
 
@@ -35,7 +36,15 @@ Options are:
 * `None`: Only issue a warning once regardless of component.
 """
 
+# Cache recording which components have issued previously
 _issued = {}
+
+# This is the warning message to issue. There is a "label" placeholder
+# that should be inserted on format.
+_warning_msg = "Gen2 Butler has been deprecated{label}. It will be removed sometime after v23.0 but no" \
+               " earlier than the end of 2021."
+
+_version_deprecated = "v22.0"
 
 
 def deprecateGen2(component=None):
@@ -82,9 +91,31 @@ def deprecateGen2(component=None):
     if component is not None and always_warn is not None:
         label = f" ({component})"
 
-    warnings.warn(f"Gen2 Butler has been deprecated{label}. It will be removed sometime after v23.0 but no"
-                  " earlier than the end of 2021.", category=FutureWarning, stacklevel=stacklevel)
+    warnings.warn(_warning_msg.format(label=label), category=FutureWarning, stacklevel=stacklevel)
     _issued[component] = True
+
+
+def _add_deprecation_docstring(wrapped):
+    """Add the deprecation docstring to the supplied class"""
+    # Add the deprecation message to the docstring.
+    # (logic taken from deprecated.sphinx)
+    reason = textwrap.dedent(_warning_msg.format(label="")).strip()
+    reason = '\n'.join(
+        textwrap.fill(line, width=70, initial_indent='   ',
+                      subsequent_indent='   ') for line in reason.splitlines()
+    ).strip()
+
+    docstring = textwrap.dedent(wrapped.__doc__ or "")
+
+    if docstring:
+        docstring += "\n\n"
+    docstring += f".. deprecated:: {_version_deprecated}\n"
+
+    # No need for a component label since this message will be associated
+    # with the class directly.
+    docstring += "   {reason}\n".format(reason=reason)
+    wrapped.__doc__ = docstring
+    return wrapped
 
 
 class Deprecator:
@@ -101,6 +132,8 @@ class Deprecator:
             return old_new1(cls, *args, **kwargs)
 
         wrapped.__new__ = staticmethod(wrapped_cls)
+        _add_deprecation_docstring(wrapped)
+
         return wrapped
 
 
