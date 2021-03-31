@@ -22,10 +22,12 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 from . import Policy
+from .deprecation import deprecate_class
 
 """This module defines the Mapper base class."""
 
 
+@deprecate_class
 class Mapper:
     """Mapper is a base class for all mappers.
 

@@ -31,6 +31,7 @@ import inspect
 import yaml
 
 from lsst.log import Log
+from .deprecation import deprecate_class
 from . import ReadProxy, ButlerSubset, ButlerDataRef, \
     Storage, Policy, NoResults, Repository, DataId, RepositoryCfg, \
     RepositoryArgs, listify, setify, sequencify, doImport, ButlerComposite, genericAssembler, \
@@ -318,6 +319,7 @@ class RepoDataContainer:
         self._outputs = [repoData.repoData for repoData in outputs]
 
 
+@deprecate_class
 class Butler:
     """Butler provides a generic mechanism for persisting and retrieving data using mappers.
 
