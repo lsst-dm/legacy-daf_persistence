@@ -37,11 +37,13 @@
 #ifndef __GNUC__
 #define __attribute__(x) /*NOTHING*/
 #endif
+
+#include <regex>
+
 static char const* SVNid __attribute__((unused)) = "$Id$";
 
 #include "lsst/daf/persistence/LogicalLocation.h"
 
-#include "boost/regex.hpp"
 #include "lsst/pex/exceptions.h"
 #include "lsst/log/Log.h"
 
@@ -60,11 +62,11 @@ dafBase::PropertySet::Ptr dafPersist::LogicalLocation::_map;
 dafPersist::LogicalLocation::LogicalLocation(std::string const& locString,
                                              CONST_PTR(dafBase::PropertySet) additionalData)
         : _locString() {
-    boost::regex expr("(%.*?)\\((\\w+?)\\)");
-    boost::sregex_iterator i = make_regex_iterator(locString, expr);
-    boost::sregex_iterator last;
+    std::regex expr("(%.*?)\\((\\w+?)\\)");
+    std::sregex_iterator i = std::sregex_iterator(locString.begin(), locString.end(), expr);
+    std::sregex_iterator last;
     LOGLS_DEBUG(_log, "Input string: " << locString);
-    while (i != boost::sregex_iterator()) {
+    while (i != std::sregex_iterator()) {
         last = i;
         if ((*i).prefix().matched) {
             _locString += (*i).prefix().str();
@@ -105,7 +107,7 @@ dafPersist::LogicalLocation::LogicalLocation(std::string const& locString,
         }
         ++i;
     }
-    if (last == boost::sregex_iterator()) {
+    if (last == std::sregex_iterator()) {
         _locString = locString;
         LOGLS_DEBUG(_log, "Copy to: " << _locString);
     } else {
