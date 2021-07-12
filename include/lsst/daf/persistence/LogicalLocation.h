@@ -61,14 +61,14 @@ public:
     typedef std::shared_ptr<LogicalLocation> Ptr;
 
     LogicalLocation(std::string const& locString,
-                    CONST_PTR(dafBase::PropertySet) additionalData = CONST_PTR(dafBase::PropertySet)());
+                    std::shared_ptr<dafBase::PropertySet const> additionalData = std::shared_ptr<dafBase::PropertySet const>());
     std::string const& locString(void) const;
 
-    static void setLocationMap(PTR(dafBase::PropertySet) map);
+    static void setLocationMap(std::shared_ptr<dafBase::PropertySet> map);
 
 private:
     std::string _locString;                 ///< The location string.
-    static PTR(dafBase::PropertySet) _map;  ///< The logical-to-less-logical map.
+    static std::shared_ptr<dafBase::PropertySet> _map;  ///< The logical-to-less-logical map.
 };
 
 }  // namespace persistence

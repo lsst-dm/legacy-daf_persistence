@@ -14,7 +14,7 @@ PYBIND11_MODULE(logicalLocation, mod) {
     py::class_<LogicalLocation> cls(mod, "LogicalLocation");
 
     cls.def(py::init<std::string const&>());
-    cls.def(py::init<std::string const&, CONST_PTR(dafBase::PropertySet)>());
+    cls.def(py::init<std::string const&, std::shared_ptr<dafBase::PropertySet const>>());
     cls.def("locString", &LogicalLocation::locString);
     cls.def_static("setLocationMap", LogicalLocation::setLocationMap);
 }
