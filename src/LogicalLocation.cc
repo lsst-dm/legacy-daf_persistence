@@ -60,7 +60,7 @@ dafBase::PropertySet::Ptr dafPersist::LogicalLocation::_map;
 /** Constructor from string and additional data.
  */
 dafPersist::LogicalLocation::LogicalLocation(std::string const& locString,
-                                             CONST_PTR(dafBase::PropertySet) additionalData)
+                                             std::shared_ptr<dafBase::PropertySet const> additionalData)
         : _locString() {
     std::regex expr("(%.*?)\\((\\w+?)\\)");
     std::sregex_iterator i = std::sregex_iterator(locString.begin(), locString.end(), expr);
@@ -122,7 +122,7 @@ std::string const& dafPersist::LogicalLocation::locString(void) const { return _
 
 /** Set the logical-to-less-logical map.
  */
-void dafPersist::LogicalLocation::setLocationMap(PTR(dafBase::PropertySet) map) {
+void dafPersist::LogicalLocation::setLocationMap(std::shared_ptr<dafBase::PropertySet> map) {
     if (map) {
         _map = map->deepCopy();
     } else {
