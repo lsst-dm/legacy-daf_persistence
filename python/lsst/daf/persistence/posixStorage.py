@@ -35,6 +35,7 @@ from . import (LogicalLocation, Policy,
                StorageInterface, Storage, ButlerLocation,
                NoRepositroyAtRoot, RepositoryCfg, doImport)
 from lsst.log import Log
+import lsst.pex.config as pexConfig
 from .safeFileIo import SafeFilename, safeMakeDir
 
 
@@ -527,13 +528,20 @@ def readConfigStorage(butlerLocation):
         logLoc = LogicalLocation(locStringWithRoot, butlerLocation.getAdditionalData())
         if not os.path.exists(logLoc.locString()):
             raise RuntimeError("No such config file: " + logLoc.locString())
+
+        # Automatically determine the Config class from the serialized form
+        with open(logLoc.locString(), "r") as fd:
+            config_py = fd.read()
+        config = pexConfig.Config._fromPython(config_py)
+
         pythonType = butlerLocation.getPythonType()
         if pythonType is not None:
             if isinstance(pythonType, str):
                 pythonType = doImport(pythonType)
-        finalItem = pythonType()
-        finalItem.load(logLoc.locString())
-        results.append(finalItem)
+            if not isinstance(config, pythonType):
+                raise TypeError(f"Unexpected type of config: {type(config)}, expected {pythonType}")
+
+        results.append(config)
     return results
 
 
