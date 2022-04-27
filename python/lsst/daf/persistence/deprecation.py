@@ -42,7 +42,9 @@ _issued = {}
 # This is the warning message to issue. There is a "label" placeholder
 # that should be inserted on format.
 _warning_msg = "Gen2 Butler has been deprecated{label}. "\
-               " This Gen2 code may be removed in any future daily or weekly release."
+               " This Gen2 code may be removed in any future daily or weekly release."\
+               " For a Gen3-based Getting Started Tutorial, please see" \
+               " https://pipelines.lsst.io/getting-started/index.html."
 
 _version_deprecated = "v22.0"
 
