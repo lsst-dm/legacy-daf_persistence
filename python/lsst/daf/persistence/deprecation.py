@@ -41,9 +41,8 @@ _issued = {}
 
 # This is the warning message to issue. There is a "label" placeholder
 # that should be inserted on format.
-_warning_msg = "Gen2 Butler has been deprecated{label}. It will be removed sometime after v23.0 but no" \
-               " earlier than the end of 2021." \
-               " It is now 2022. This Gen2 code could stop working at any moment without additional warning."
+_warning_msg = "Gen2 Butler has been deprecated{label}. "\
+               " This Gen2 code may be removed in any future daily or weekly release."
 
 _version_deprecated = "v22.0"
 
