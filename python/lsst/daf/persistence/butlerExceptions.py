@@ -21,18 +21,18 @@
 #
 
 
-class NoMapperException(Exception):
+class NoMapperException(Exception):  # noqa: N818
     pass
 
 
-class NoResults(RuntimeError):
+class NoResults(RuntimeError):  # noqa: N818
 
     def __init__(self, message, datasetType, dataId):
         message += ' datasetType:' + datasetType + ' dataId:' + str(dataId)
         super().__init__(message)
 
 
-class MultipleResults(RuntimeError):
+class MultipleResults(RuntimeError):  # noqa: N818
 
     def __init__(self, message, datasetType, dataId, locations):
         message += ' datasetType:' + datasetType + ' dataId:' + str(dataId) + ' locations:'
@@ -42,7 +42,7 @@ class MultipleResults(RuntimeError):
         self.locations = locations
 
 
-class ParentsMismatch(RuntimeError):
+class ParentsMismatch(RuntimeError):  # noqa: N818
     """Raised when issues arise related to the list of parents in a RepositoryCfg not matching the expected
     value.
     """
