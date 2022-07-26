@@ -1258,7 +1258,7 @@ class Butler:
         datasetType = self._resolveDatasetTypeAlias(datasetType)
         dataId = DataId(dataId)
         dataId.update(**rest)
-        locations = self._locate(datasetType, dataId, write=write)
+        locations = self._locate(datasetType, dataId, write=write, checkExistence=True)
         if not write:  # when write=False, locations is not a sequence
             if locations is None:
                 return False
@@ -1284,7 +1284,7 @@ class Butler:
                     return False
         return True
 
-    def _locate(self, datasetType, dataId, write):
+    def _locate(self, datasetType, dataId, write, checkExistence=False):
         """Get one or more ButlerLocations and/or ButlercComposites.
 
         Parameters
@@ -1299,6 +1299,9 @@ class Butler:
         write : bool
             True if this is a search to write an object. False if it is a search to read an object. This
             affects what type (an object or a container) is returned.
+
+        checkExistence : bool
+            Only check if the file exists (useful with bypass functions)
 
         Returns
         -------
@@ -1337,15 +1340,23 @@ class Butler:
                 if not write:
                     # If there is a bypass function for this dataset type, we can't test to see if the object
                     # exists in storage, because the bypass function may not actually use the location
-                    # according to the template. Instead, execute the bypass function and include its results
+                    # according to the template.
+                    # If the user provides a bypass_datasetExists_dataType method use that to set
+                    # location.bypass to True/False.
+                    # Otherwise execute the bypass function and include its results
                     # in the bypass attribute of the location. The bypass function may fail for any reason,
                     # the most common case being that a file does not exist. If it raises an exception
                     # indicating such, we ignore the bypass function and proceed as though it does not exist.
-                    if hasattr(location.mapper, "bypass_" + location.datasetType):
+
+                    bypass = None
+                    if checkExistence:
+                        bypass = self._getBypassFunc(location, dataId, "bypass_datasetExists_")
+                    if not bypass:
                         bypass = self._getBypassFunc(location, dataId)
+
+                    if bypass:
                         try:
-                            bypass = bypass()
-                            location.bypass = bypass
+                            location.bypass = bypass()
                         except (NoResults, IOError):
                             self.log.debug("Continuing dataset search while evaluating "
                                            "bypass function for Dataset type:{} Data ID:{} at "
@@ -1366,12 +1377,21 @@ class Butler:
         return locations
 
     @staticmethod
-    def _getBypassFunc(location, dataId):
+    def _getBypassFunc(location, dataId, bypassBasename="bypass_"):
+        """Return a bypass function for the location and dataId, or None
+
+        location: `lsst.daf.persistence.butlerLocation.ButlerLocation`
+        dataId: `lsst.daf.persistence.dataId.DataId`
+        bypassBasename : `str` the prefix for the bypass method's name (default: "bypass_")
+        """
+        if not hasattr(location.mapper, bypassBasename + location.datasetType):
+            return None
+
         pythonType = location.getPythonType()
         if pythonType is not None:
             if isinstance(pythonType, str):
                 pythonType = doImport(pythonType)
-        bypassFunc = getattr(location.mapper, "bypass_" + location.datasetType)
+        bypassFunc = getattr(location.mapper, bypassBasename + location.datasetType)
         return lambda: bypassFunc(location.datasetType, pythonType, location, dataId)
 
     def get(self, datasetType, dataId=None, immediate=True, **rest):

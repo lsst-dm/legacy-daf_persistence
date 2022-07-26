@@ -289,6 +289,10 @@ class PosixStorage(StorageInterface):
                                'YamlStorage', 'ParquetStorage', 'MatplotlibStorage'):
             self.log.warn("butlerLocationExists for non-supported storage %s" % location)
             return False
+
+        if hasattr(location, "bypass"):
+            return location.bypass
+
         for locationString in location.getLocations():
             logLoc = LogicalLocation(locationString, location.getAdditionalData()).locString()
             obj = self.instanceSearch(path=logLoc)
