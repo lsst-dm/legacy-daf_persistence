@@ -351,7 +351,8 @@ class SqlRegistry(Registry):
                     try:
                         self.conn.cursor().execute(
                             f'SELECT {k} FROM {" NATURAL JOIN ".join(reference)} LIMIT 1')
-                    except sqlite3.OperationalError:
+                    except (pgsql.errors.UndefinedColumn, sqlite3.OperationalError):
+                        self.conn.rollback()
                         continue
 
                 if hasattr(k, '__iter__') and not isinstance(k, str):
@@ -395,7 +396,9 @@ class SqlRegistry(Registry):
 
         try:
             return self._lookup(lookupProperties, dataId, reference)
-        except sqlite3.OperationalError:  # try again, with extra checking of the dataId keys
+        except (pgsql.errors.UndefinedColumn,
+                sqlite3.OperationalError):  # try again, with extra checking of the dataId keys
+            self.conn.rollback()
             return self._lookup(lookupProperties, dataId, reference, checkColumns=True)
 
     def executeQuery(self, returnFields, joinClause, whereFields, range, values):
